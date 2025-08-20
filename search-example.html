@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Asset Share Commons - Search Example</title>
+  <link rel="stylesheet" href="blocks/search-bar/search-bar.css">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 40px 20px;
+      background-color: #f8fafc;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    h1 {
+      text-align: center;
+      color: #1f2937;
+      margin-bottom: 40px;
+    }
+    
+    .search-section {
+      background: white;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      margin-bottom: 40px;
+    }
+    
+    .config-example {
+      background: #f1f5f9;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+      font-family: monospace;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Asset Share Commons - Search Bar Block</h1>
+    
+    <!-- Hidden search form for the search service -->
+    <form id="asset-search-form" style="display: none;">
+      <!-- This form will be populated by the search service -->
+    </form>
+    
+    <div class="search-section">
+      <h2>Default Search Bar</h2>
+      <p>Basic search bar with button:</p>
+      
+      <!-- Search Bar Block with default configuration -->
+      <div class="search-bar block" data-block-name="search-bar">
+        <div>
+          <div>placeholder</div>
+          <div>Search for assets...</div>
+        </div>
+        <div>
+          <div>buttonLabel</div>
+          <div>Search</div>
+        </div>
+        <div>
+          <div>hideButton</div>
+          <div>false</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="search-section">
+      <h2>Search Bar without Button</h2>
+      <p>Search bar with hidden button (auto-submit on Enter):</p>
+      
+      <!-- Search Bar Block without button -->
+      <div class="search-bar block" data-block-name="search-bar">
+        <div>
+          <div>placeholder</div>
+          <div>Type to search assets...</div>
+        </div>
+        <div>
+          <div>hideButton</div>
+          <div>true</div>
+        </div>
+        <div>
+          <div>autoSubmit</div>
+          <div>true</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="search-section">
+      <h2>Block Configuration Examples</h2>
+      
+      <h3>Basic Configuration (in Document):</h3>
+      <div class="config-example">
+| placeholder | buttonLabel | hideButton |
+|-------------|-------------|------------|
+| Search for assets... | Search | false |
+      </div>
+      
+      <h3>Advanced Configuration:</h3>
+      <div class="config-example">
+| placeholder | buttonLabel | hideButton | autoSubmit | name |
+|-------------|-------------|------------|------------|------|
+| Find assets by keyword... | Find | false | false | q |
+      </div>
+      
+      <h3>Auto-submit Configuration:</h3>
+      <div class="config-example">
+| placeholder | hideButton | autoSubmit |
+|-------------|------------|------------|
+| Start typing to search... | true | true |
+      </div>
+    </div>
+    
+    <div class="search-section">
+      <h2>Event Integration</h2>
+      <p>The search bar emits the following events:</p>
+      <ul>
+        <li><code>asc:search</code> - When search input changes or button is clicked</li>
+      </ul>
+      <p>The search service emits:</p>
+      <ul>
+        <li><code>asc:search:start</code> - When search execution begins</li>
+        <li><code>asc:search:complete</code> - When search execution completes successfully</li>
+        <li><code>asc:search:error</code> - When search execution fails</li>
+      </ul>
+      <p>And listens for:</p>
+      <ul>
+        <li><code>asc:search:clear</code> - To clear the search input</li>
+      </ul>
+      
+      <p><strong>Example usage in JavaScript:</strong></p>
+      <div class="config-example">
+// Listen for search completion events
+document.addEventListener('asc:search:complete', (event) => {
+  const { results, query, formData } = event.detail;
+  console.log('Search completed:', { results, query, formData });
+  
+  // Display search results here
+  displaySearchResults(results);
+});
+
+// Listen for search errors
+document.addEventListener('asc:search:error', (event) => {
+  const { error } = event.detail;
+  console.error('Search failed:', error);
+});
+
+// Clear search programmatically
+document.dispatchEvent(new CustomEvent('asc:search:clear'));
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    // Import and initialize the search-bar block
+    import decorate from './blocks/search-bar/search-bar.js';
+    
+    // Import the search service to handle search events
+    import './scripts/asc/services/search.js';
+    
+    // Auto-decorate all search-bar blocks on the page
+    document.querySelectorAll('.search-bar.block').forEach(decorate);
+    
+    // Example event listener for search completion
+    document.addEventListener('asc:search:complete', (event) => {
+      const { results, query, formData } = event.detail;
+      console.log('Search completed:', { results, query, formData });
+      
+      // In a real implementation, this would display the search results
+      alert(`Search completed! Found ${results.hits?.length || 0} results for query: "${query}"`);
+    });
+    
+    // Example event listener for search errors
+    document.addEventListener('asc:search:error', (event) => {
+      const { error } = event.detail;
+      console.error('Search error:', error);
+      alert('Search failed. Check console for details.');
+    });
+    
+    // Example event listener for search start
+    document.addEventListener('asc:search:start', (event) => {
+      const { formData } = event.detail;
+      console.log('Search started with form data:', formData);
+    });
+  </script>
+</body>
+</html>
