@@ -12,8 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import search from './search.js';
+import search from './search/index.js';
+import properties from './properties/index.js';
 
 export default {
-    search
+    search,
+    properties
 }

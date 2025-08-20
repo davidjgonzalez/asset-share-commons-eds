@@ -39,6 +39,9 @@ function html(config, results) {
   const filters = `
   <input type="hidden" name="${config.group}_group.path" value="/content/dam/asset-share-commons" form="${config.form}"/>
   `; 
+
+  return htmlCards(results) + filters
+
   switch (config.display) {
     case 'cards':
       return htmlCards(results) + filters
@@ -53,31 +56,60 @@ function html(config, results) {
 
 function htmlCards(results) {
   return `
-    <div class="cards">
-      ${results.hits.map(result => `<div class="item">${result['jcr:content']['metadata']['dc:title']}</div>`).join('')}
-    </div>
+    <ul class="cards">
+      ${results.assets.map(asset => `
+        <li tabindex="0" role="button" aria-label="View ${asset.getTitle()}">
+          <figure>
+            <img src="${asset.getThumbnail()?.url}" alt="${asset.getTitle()}" loading="lazy">
+          </figure>
+          <div>
+            <h3>${asset.getTitle()}</h3>
+            <span>${asset.getProperty('fileType')}</span>
+          </div>
+        </li>
+      `).join('')}
+    </ul>
   `;
 }
 
 function htmlList(results) {
   return `
-    <div class="list">
-      ${results.hits.map(result => `<div class="item">${result['jcr:content']['metadata']['dc:title']}</div>`).join('')}
-    </div>
+    <table class="list">
+      <thead>
+        <tr>
+          <th>Thumbnail</th>
+          <th>Title</th>
+          <th>Format</th>
+        </tr>
+      </thead>
+      <tbody>
+      ${results.assets.map(asset => `
+        <tr>
+          <td><img src="${asc.aem.host}${asset.getPath()}" alt="${asset.getTitle()}" loading="lazy"></td>
+          <td>${asset.getTitle()}</td>
+          <td>${asset.getProperty('fileType')}</td>
+        </tr>
+      `).join('')}
+      </tbody>
+    </table>
   `;
 }
 
 function htmlMasonry(results) {
   return `
-    <div class="masonry">
-      ${results.hits.map(result => `
-        <div class="item">
-          <img src="${asc.aem.host}${result['jcr:path']}" alt="${result['jcr:content']['metadata']['dc:title']}">
-          <div class="title">${result['jcr:content']['metadata']['dc:title'] || result['jcr:content']['cq:name']}</div>
-          <div class="type">${result['jcr:content']['metadata']['dc:format']}</div>
-        </div>
+    <ul class="masonry">
+      ${results.assets.map(asset => `
+        <li tabindex="0" role="button" aria-label="View ${asset.getTitle()}">
+          <figure>
+            <img src="${asc.aem.host}${asset.getPath()}" alt="${asset.getTitle()}" loading="lazy">
+          </figure>
+          <div>
+            <h3>${asset.getTitle()}</h3>
+            <span>${asset.getProperty('fileType')}</span>
+          </div>
+        </li>
       `).join('')}
-    </div>
+    </ul>
   `;
 }
 
@@ -92,10 +124,63 @@ function noResults() {
 
 
 function addEventListeners(block, config) {
-    // emit and event 'asc:search' with the value of the input
-    document.addEventListener('asc:search:complete', (e) => {
-        const results = e.detail.results;
-        block.innerHTML = html(config, results);
+    // Listen for search start to show loading state
+    document.addEventListener('asc:search:start', () => {
+        block.classList.add('loading');
+        block.innerHTML = '<div class="loading-placeholder"></div>';
     });
 
+    // Listen for search complete to show results
+    document.addEventListener('asc:search:complete', (e) => {
+        block.classList.remove('loading');
+        const results = e.detail.results;
+        block.innerHTML = html(config, results);
+        
+        // Add click handlers to result items
+        addResultItemHandlers(block);
+    });
+
+    // Listen for search error
+    document.addEventListener('asc:search:error', (e) => {
+        block.classList.remove('loading');
+        block.innerHTML = `
+            <div class="no-results">
+                <p>Search failed. Please try again.</p>
+            </div>
+        `;
+    });
+}
+
+function addResultItemHandlers(block) {
+    const items = block.querySelectorAll('li');
+    items.forEach(item => {
+        item.addEventListener('click', handleItemClick);
+        item.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleItemClick(e);
+            }
+        });
+    });
+}
+
+function handleItemClick(e) {
+    const item = e.currentTarget;
+    const img = item.querySelector('img');
+    const title = item.querySelector('h3')?.textContent;
+    
+    if (img && img.src) {
+        // Dispatch custom event for item selection
+        document.dispatchEvent(new CustomEvent('asc:asset:selected', {
+            detail: {
+                src: img.src,
+                alt: img.alt,
+                title: title,
+                element: item
+            }
+        }));
+        
+        // For now, open in new tab (can be customized)
+        window.open(img.src, '_blank');
+    }
 }

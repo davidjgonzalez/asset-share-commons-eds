@@ -165,6 +165,9 @@ document.dispatchEvent(new CustomEvent('asc:search:clear'));
     // Import the search service to handle search events
     import './scripts/asc/services/search.js';
     
+    // Import the theme manager
+    import { themeManager } from './scripts/asc/utils/theme.js';
+    
     // Auto-decorate all search-bar blocks on the page
     document.querySelectorAll('.search-bar.block').forEach(decorate);
     
@@ -178,10 +181,9 @@ document.dispatchEvent(new CustomEvent('asc:search:clear'));
     });
     
     // Example event listener for search errors
-    document.addEventListener('asc:search:error', (event) => {
-      const { error } = event.detail;
-      console.error('Search error:', error);
-      alert('Search failed. Check console for details.');
+    document.addEventListener('asc:theme:changed', (event) => {
+      const { theme } = event.detail;
+      console.log('Theme changed to:', theme);
     });
     
     // Example event listener for search start

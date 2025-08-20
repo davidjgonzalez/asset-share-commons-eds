@@ -11,8 +11,10 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+import { ThemeManager } from './asc/utils/theme.js';
+import properties from './asc/services/properties/index.js';
 
-export default {
+const asc = {
     aem: { 
         host: 'http://localhost:4503',
     },
@@ -24,5 +26,13 @@ export default {
             preprocessQuery: (query) => query,
             postprocessResults: (results) => results
         },
+        properties: {
+            ...properties,
+            // Add your own properties here
+        }
     }
 }
+
+new ThemeManager().setTheme('warm');
+
+export default asc;

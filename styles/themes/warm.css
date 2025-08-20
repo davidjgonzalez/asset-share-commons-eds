@@ -1,0 +1,65 @@
+/* Warm Theme - Earthy and Friendly */
+.theme-warm {
+  /* Colors */
+  --background-color: #fef7ed;
+  --light-color: #ffedd5;
+  --dark-color: #92400e;
+  --text-color: #451a03;
+  --link-color: #ea580c;
+  --link-hover-color: #c2410c;
+
+  /* Component Colors */
+  --search-border-color: #fed7aa;
+  --search-background: #ffffff;
+  --search-text-color: #451a03;
+  --search-placeholder-color: #d97706;
+  --search-primary-color: #ea580c;
+  --search-primary-hover: #c2410c;
+  --search-primary-focus: rgba(234, 88, 12, 0.1);
+
+  --card-background: #ffffff;
+  --card-border-color: #fed7aa;
+  --card-shadow: 0 1px 3px 0 rgba(234, 88, 12, 0.1), 0 1px 2px 0 rgba(234, 88, 12, 0.06);
+  --card-shadow-hover: 0 4px 6px -1px rgba(234, 88, 12, 0.1), 0 2px 4px -1px rgba(234, 88, 12, 0.06);
+
+  --button-primary-bg: #ea580c;
+  --button-primary-text: #ffffff;
+  --button-primary-hover: #c2410c;
+  --button-secondary-bg: transparent;
+  --button-secondary-border: #92400e;
+  --button-secondary-text: #92400e;
+
+  --input-border-color: #fed7aa;
+  --input-border-focus: #ea580c;
+  --input-background: #ffffff;
+  --input-text-color: #451a03;
+  --input-placeholder-color: #d97706;
+
+  /* Form Input Specific Variables */
+  --input-border-color-hover: #fdba74;
+  --input-border-color-error: #f97316;
+  --input-border-color-success: #16a34a;
+  --input-border-color-disabled: #fef3c7;
+  --input-focus-ring-color: rgba(234, 88, 12, 0.1);
+  
+  /* Checkbox & Radio */
+  --checkbox-border-color: #fdba74;
+  --checkbox-border-color-checked: #ea580c;
+  --checkbox-background-checked: #ea580c;
+  --checkbox-color: #ffffff;
+  
+  /* Select/Dropdown */
+  --select-arrow-color: #d97706;
+  --select-option-background: #ffffff;
+  --select-option-background-hover: #fef7ed;
+  --select-option-text-color: #451a03;
+  
+  /* Form Labels */
+  --label-color: #92400e;
+  
+  /* Form Validation */
+  --validation-error-color: #f97316;
+  --validation-success-color: #16a34a;
+  --validation-warning-color: #ca8a04;
+  --validation-info-color: #ea580c;
+}

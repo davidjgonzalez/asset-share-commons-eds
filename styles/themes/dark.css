@@ -1,0 +1,65 @@
+/* Dark Theme - Modern and Sleek */
+.theme-dark {
+  /* Colors */
+  --background-color: #0f172a;
+  --light-color: #1e293b;
+  --dark-color: #cbd5e1;
+  --text-color: #f1f5f9;
+  --link-color: #60a5fa;
+  --link-hover-color: #93c5fd;
+
+  /* Component Colors */
+  --search-border-color: #334155;
+  --search-background: #1e293b;
+  --search-text-color: #f1f5f9;
+  --search-placeholder-color: #64748b;
+  --search-primary-color: #60a5fa;
+  --search-primary-hover: #93c5fd;
+  --search-primary-focus: rgba(96, 165, 250, 0.1);
+
+  --card-background: #1e293b;
+  --card-border-color: #334155;
+  --card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+  --card-shadow-hover: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+
+  --button-primary-bg: #60a5fa;
+  --button-primary-text: #0f172a;
+  --button-primary-hover: #93c5fd;
+  --button-secondary-bg: transparent;
+  --button-secondary-border: #cbd5e1;
+  --button-secondary-text: #cbd5e1;
+
+  --input-border-color: #334155;
+  --input-border-focus: #60a5fa;
+  --input-background: #1e293b;
+  --input-text-color: #f1f5f9;
+  --input-placeholder-color: #64748b;
+
+  /* Form Input Specific Variables */
+  --input-border-color-hover: #4b5563;
+  --input-border-color-error: #f87171;
+  --input-border-color-success: #34d399;
+  --input-border-color-disabled: #374151;
+  --input-focus-ring-color: rgba(96, 165, 250, 0.1);
+  
+  /* Checkbox & Radio */
+  --checkbox-border-color: #4b5563;
+  --checkbox-border-color-checked: #60a5fa;
+  --checkbox-background-checked: #60a5fa;
+  --checkbox-color: #0f172a;
+  
+  /* Select/Dropdown */
+  --select-arrow-color: #9ca3af;
+  --select-option-background: #1e293b;
+  --select-option-background-hover: #334155;
+  --select-option-text-color: #f1f5f9;
+  
+  /* Form Labels */
+  --label-color: #e2e8f0;
+  
+  /* Form Validation */
+  --validation-error-color: #f87171;
+  --validation-success-color: #34d399;
+  --validation-warning-color: #fbbf24;
+  --validation-info-color: #60a5fa;
+}

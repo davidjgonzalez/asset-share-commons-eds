@@ -1,5 +1,6 @@
-import asc from '../../asc.js';
-import { SEARCH_FORM } from '../utils/search.js';
+import asc from '../../../asc.js';
+import { SEARCH_FORM } from '../../utils/search.js';
+import Asset from '../../models/asset.js';
 
 class SearchService {
   constructor(config) {    
@@ -18,7 +19,6 @@ class SearchService {
     });
   }
 
-
   executeSearchFromUrl(queryParams) {
     const formData = new Map(new URLSearchParams(queryParams));
     const cleanedData = this.cleanFormData(formData);
@@ -27,7 +27,6 @@ class SearchService {
       this.submitSearch(cleanedData);
     }
   }
-
 
   executeSearchFromFormData(event) {
     const formId = event.detail?.formId || SEARCH_FORM;
@@ -190,7 +189,14 @@ class SearchService {
 
       // Perform the search
       const response = await fetch(searchUrl);
-      const results = await response.json();
+      const qbResults = await response.json();
+
+      const results = {
+        ...qbResults,
+        assets: qbResults.hits.map(hit => new Asset(hit)),
+      }
+
+      delete results.hits;
 
       // Config Hook: Post process the results
       const processedResults = this.config.postprocessResults ? this.config.postprocessResults(results) : results;
