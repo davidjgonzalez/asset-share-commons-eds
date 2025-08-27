@@ -30,7 +30,8 @@ function html(config) {
     <input type="hidden"
            name="${config.group}_group.${config.name}.property"
            value="${config.property}"
-           form="${config.form}"/>
+           form="${config.form}"
+           data-asc-filter="${config.id}"/>
 
     <!-- Overrides the default AND/OR behavior (default is OR) -->
     ${config.and ? 
@@ -39,7 +40,7 @@ function html(config) {
            name="${config.group}_group.${config.name}.and"
            value="${config.and}"
            form="${config.form}"
-           data-asc-filter-id="${config.id}"/>` : ''}
+           data-asc-filter="${config.id}"/>` : ''}
 
     <!-- Overrides the default operation (default is equals) -->
     ${config.operation ? 
@@ -47,16 +48,16 @@ function html(config) {
            name="${config.group}_group.${config.name}.operation"
            value="${config.operation}"
            form="${config.form}"
-           data-asc-filter-id="${config.id}"/>` : ''}
+           data-asc-filter="${config.id}"/>` : ''}
 
     <!-- Renders the title -->
     ${config.title ? `<label for="${config.group}_${config.name}_fieldset">${config.title}</label>` : ''}
 
-    <ul class="expand-collapse">
+    <div class="expand-collapse">
       ${!config.type || config.type.includes('checkbox') ? htmlCheckboxes(config, config.initial) : ''}
       ${config.type.includes('radio')  ? htmlRadio(config, config.initial) : ''}
       ${config.type.includes('dropdown') || config.type.includes('select') ? htmlDropdown(config, config.initial) : ''}
-    </ul>
+    </div>
 `
 }
 
@@ -75,6 +76,7 @@ function htmlCheckboxes(config) {
 
     return `<li><input type="checkbox"
               id="${id}"
+              for="${config.id}"
               form="${config.form}"
               name="${name}"
               ${selected ? 'checked' : ''}
@@ -97,6 +99,7 @@ function htmlRadio(config) {
     
     return `<input type="radio"
               id="${id}"
+              for="${config.id}"
               form="${config.form}"
               name="${inputName}"
               ${selected ? 'checked' : ''}
@@ -120,6 +123,7 @@ function htmlDropdown(config, initialValues = {}) {
   return `<select
             id="${id}"
             name="${selectName}"
+            for="${config.id}"
             form="${config.form}">
             
         <option value="">${config.label || 'Select...'}</option>

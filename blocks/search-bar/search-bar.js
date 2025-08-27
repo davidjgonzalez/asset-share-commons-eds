@@ -21,10 +21,11 @@ function html(config, values) {
         form="${config.form}"
         name="${config.field}" 
         value="${config.initial[`${config.group}_group.${config.name}`] || ''}"
-        data-asc-predicate-group="${config.group}">
+        data-asc-filter="${config.id}">
 
     <i class="search icon"></i>
-    ${!config.hideButton ? `<button type="submit" form="${config.form}">${config.buttonLabel}</button>` : ''}
+    ${!config.hideButton ? `<button type="submit" 
+      form="${config.form}">${config.buttonLabel}</button>` : ''}
   `;
 }
 

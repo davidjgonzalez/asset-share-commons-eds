@@ -13,7 +13,7 @@ import {
   loadCSS,
 } from './aem.js';
 
-import { default as services } from  './asc/services/index.js';
+import { default as services } from  './asc/services/services.js';
 
 /**
  * Builds hero block and prepends to main in a new section.

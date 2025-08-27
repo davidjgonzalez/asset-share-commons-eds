@@ -36,6 +36,10 @@ export default function get(asset) {
 
     // Get the mime type from the asset
     const mimeType = asset.getMimeType();
+    
+    if (!mimeType || mimeType.indexOf('/') === -1) {
+        return null;
+    }
 
     let value = mimeTypeToLabels[mimeType];
 

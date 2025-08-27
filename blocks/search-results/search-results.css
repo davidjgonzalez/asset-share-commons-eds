@@ -62,6 +62,7 @@
     gap: var(--spacing-lg);
 
     li {
+      min-height: 280px;
       background: var(--card-background);
       border: 1px solid var(--card-border-color);
       border-radius: var(--border-radius-lg);

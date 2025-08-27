@@ -48,11 +48,11 @@ function html(config) {
     <!-- Renders the title -->
     ${config.title ? `<label for="${config.group}_${config.name}_fieldset">${config.title}</label>` : ''}
 
-    <ul class="expand-collapse">
+    <div class="expand-collapse">
       ${!config.type || config.type.includes('checkbox') ? htmlCheckboxes(config, config.initial) : ''}
       ${config.type.includes('radio')  ? htmlRadio(config, config.initial) : ''}
       ${config.type.includes('dropdown') || config.type.includes('select') ? htmlDropdown(config, config.initial) : ''}
-    </ul>
+    </div>
 `
 }
 

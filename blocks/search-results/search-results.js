@@ -1,5 +1,4 @@
-import asc from '../../../scripts/asc.js';
-
+import services from '../../scripts/asc/services/services.js';
 
 export default function decorate(block) {
   const config = extractConfig(block);
@@ -39,8 +38,6 @@ function html(config, results) {
   const filters = `
   <input type="hidden" name="${config.group}_group.path" value="/content/dam/asset-share-commons" form="${config.form}"/>
   `; 
-
-  return htmlCards(results) + filters
 
   switch (config.display) {
     case 'cards':
@@ -85,7 +82,7 @@ function htmlList(results) {
       <tbody>
       ${results.assets.map(asset => `
         <tr>
-          <td><img src="${asc.aem.host}${asset.getPath()}" alt="${asset.getTitle()}" loading="lazy"></td>
+          <td><img src="${asset.getUrl()}" alt="${asset.getTitle()}" loading="lazy"></td>
           <td>${asset.getTitle()}</td>
           <td>${asset.getProperty('fileType')}</td>
         </tr>
@@ -99,10 +96,8 @@ function htmlMasonry(results) {
   return `
     <ul class="masonry">
       ${results.assets.map(asset => `
-        <li tabindex="0" role="button" aria-label="View ${asset.getTitle()}">
-          <figure>
-            <img src="${asc.aem.host}${asset.getPath()}" alt="${asset.getTitle()}" loading="lazy">
-          </figure>
+        <li tabindex="0" data-asc-uuid="${asset.getUuid()}">
+          ${asset.getPictureHtml()}
           <div>
             <h3>${asset.getTitle()}</h3>
             <span>${asset.getProperty('fileType')}</span>
@@ -113,7 +108,6 @@ function htmlMasonry(results) {
   `;
 }
 
-  
 function noResults() {
   return `
     <div class="no-results">
@@ -121,7 +115,6 @@ function noResults() {
     </div>
   `;
 }
-
 
 function addEventListeners(block, config) {
     // Listen for search start to show loading state
@@ -168,7 +161,8 @@ function handleItemClick(e) {
     const item = e.currentTarget;
     const img = item.querySelector('img');
     const title = item.querySelector('h3')?.textContent;
-    
+    const uuid = item.getAttribute('data-asc-uuid');
+
     if (img && img.src) {
         // Dispatch custom event for item selection
         document.dispatchEvent(new CustomEvent('asc:asset:selected', {
@@ -179,8 +173,23 @@ function handleItemClick(e) {
                 element: item
             }
         }));
+
+        // Navigate to details page with asset path as URL parameter
+        const assetPath = extractAssetPath(img.src);
+        const detailsUrl = `/details/asset/${uuid}`;
         
-        // For now, open in new tab (can be customized)
-        window.open(img.src, '_blank');
+        // Navigate to the details page
+        window.location.href = detailsUrl;
+    }
+}
+function extractAssetPath(assetUrl) {
+    // Extract the asset path from the full URL
+    // e.g., "https://author.aem.com/content/dam/path/to/asset.jpg" -> "/content/dam/path/to/asset.jpg"
+    try {
+        const url = new URL(assetUrl);
+        return url.pathname;
+    } catch (error) {
+        // Fallback: assume it's already a path
+        return assetUrl.startsWith('/') ? assetUrl : '/' + assetUrl;
     }
 }

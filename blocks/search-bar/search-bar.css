@@ -2,7 +2,6 @@
 .block.search-bar {
   /* Block Container */
   width: 100%;
-  max-width: 600px;
   margin: 0 auto;
 
   /* Search Input Container */
@@ -30,7 +29,7 @@
   }
 
   /* Search Input */
-  .search-input {
+  input[type="text"] {
     width: 100%;
     padding: var(--spacing-md) var(--spacing-lg) var(--spacing-md) 48px;
     border: none;
