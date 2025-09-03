@@ -3,13 +3,10 @@ import { getBlockConfig } from '../../scripts/asc/utils/search.js';
 export default function decorate(block) {
   const config = getBlockConfig(block, {}, {
     placeholder: 'Search assets...',
-    buttonLabel: 'Search',
-    hideButton: false,
     inputType: 'search',
     name: 'fulltext',
   });
 
-console.log('iv', config.initial);
   block.innerHTML = html(config);
 
   addEventListeners(block, config);
@@ -21,11 +18,7 @@ function html(config, values) {
         form="${config.form}"
         name="${config.field}" 
         value="${config.initial[`${config.group}_group.${config.name}`] || ''}"
-        data-asc-filter="${config.id}">
-
-    <i class="search icon"></i>
-    ${!config.hideButton ? `<button type="submit" 
-      form="${config.form}">${config.buttonLabel}</button>` : ''}
+        data-asc-filter="${config.id}">   
   `;
 }
 

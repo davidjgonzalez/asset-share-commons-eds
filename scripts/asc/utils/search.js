@@ -23,8 +23,6 @@ export function getFieldName({group, name, parameter = ''}) {
   return parameter ? `${group}_group.${name}.${parameter}` : `${group}_group.${name}`;
 }
 
-
-
 export function getOptions({content = '', initialValues = {}, delimiter = ':', splitter = undefined}) {
   const items = content
     .split('\n')
@@ -49,7 +47,6 @@ export function getOptions({content = '', initialValues = {}, delimiter = ':', s
     };
   });
 
-  console.log('options', options);
   return options;
 }
 
@@ -70,10 +67,9 @@ export function getBlockConfig(block, transform = {}, defaults = {}) {
             config[key] = value;
           }
         }
-      });
+    });
 
     const group = getGroup(block);
-    
     return {
       ...defaults,
       form: SEARCH_FORM,
@@ -83,7 +79,7 @@ export function getBlockConfig(block, transform = {}, defaults = {}) {
         index = (!isNaN(index) && Number(index) >= 0) ? `${Number(index)}_` : '';
         return `${getFieldName({group, name: config.name})}.${index}${value}` 
       },
-      id: `${SEARCH_FORM}_${getFieldName({group, name: config.name})}`,
+      fieldset: `${SEARCH_FORM}-${group}_group-${config.name}`,
       initial: getInitialValues(window.location.search, group),
       ...config,
     };
@@ -108,7 +104,6 @@ export function parseKeyValue(content, delimiter = ':') {
     };
   });
 }
-
 
 // Returns an object of initial values from a params object, matching the group pattern
 export function getInitialValues(searchParams, group) {
@@ -140,6 +135,6 @@ export function getInitialValues(searchParams, group) {
       result[k] = result[k][0];
     }
   }
-console.log('result', result);
+
   return result;
 }

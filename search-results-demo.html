@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Results with Infinite Scroll Demo</title>
+    <link rel="stylesheet" href="styles/styles.css">
+    <link rel="stylesheet" href="blocks/search-results/search-results.css">
+</head>
+<body>
+    <main>
+        <h1>Search Results with Infinite Scroll Demo</h1>
+        
+        <!-- Search Form -->
+        <form id="asset-search-form" style="display: none;">
+            <input type="hidden" name="p.limit" value="12">
+            <input type="hidden" name="p.offset" value="0">
+        </form>
+
+        <!-- Search Results Block - Cards Display -->
+        <div class="block search-results">
+            <div>
+                <div>display</div>
+                <div>cards</div>
+            </div>
+            <div>
+                <div>limit</div>
+                <div>12</div>
+            </div>
+            <div>
+                <div>form</div>
+                <div>asset-search-form</div>
+            </div>
+            <div>
+                <div>infinite-scroll</div>
+                <div>true</div>
+            </div>
+            <div>
+                <div>scroll-threshold</div>
+                <div>200</div>
+            </div>
+        </div>
+
+        <!-- Search Results Block - List Display -->
+        <div class="block search-results">
+            <div>
+                <div>display</div>
+                <div>list</div>
+            </div>
+            <div>
+                <div>limit</div>
+                <div>8</div>
+            </div>
+            <div>
+                <div>form</div>
+                <div>asset-search-form</div>
+            </div>
+            <div>
+                <div>infinite-scroll</div>
+                <div>true</div>
+            </div>
+        </div>
+
+        <!-- Search Results Block - Masonry Display -->
+        <div class="block search-results">
+            <div>
+                <div>display</div>
+                <div>masonry</div>
+            </div>
+            <div>
+                <div>limit</div>
+                <div>16</div>
+            </div>
+            <div>
+                <div>form</div>
+                <div>asset-search-form</div>
+            </div>
+            <div>
+                <div>infinite-scroll</div>
+                <div>true</div>
+            </div>
+        </div>
+    </main>
+
+    <script type="module">
+        import decorate from './blocks/search-results/search-results.js';
+        
+        // Decorate all search results blocks
+        document.querySelectorAll('.search-results.block').forEach(decorate);
+        
+        // Mock search service for demo
+        let mockOffset = 0;
+        const mockAssets = Array.from({ length: 100 }, (_, i) => ({
+            getUuid: () => `asset-${i + 1}`,
+            getTitle: () => `Sample Asset ${i + 1}`,
+            getThumbnail: () => ({ url: `https://picsum.photos/300/200?random=${i + 1}` }),
+            getUrl: () => `https://picsum.photos/300/200?random=${i + 1}`,
+            getProperty: (prop) => {
+                const props = {
+                    'fileType': ['JPG', 'PNG', 'GIF', 'PDF', 'DOC'][i % 5],
+                    'fileSize': ['2.3 MB', '1.8 MB', '4.1 MB', '856 KB', '3.2 MB'][i % 5]
+                };
+                return props[prop] || 'Unknown';
+            },
+            getPictureHtml: null
+        }));
+
+        // Listen for search events
+        document.addEventListener('asc:search', (event) => {
+            const { form, type, offset = 0 } = event.detail;
+            
+            // Get the limit from the form
+            const formElement = document.getElementById(form);
+            const limitInput = formElement?.querySelector('input[name="p.limit"]');
+            const limit = limitInput ? parseInt(limitInput.value) || 12 : 12;
+            
+            console.log('Search event received:', { form, type, offset, limit });
+            
+            // Dispatch search start event
+            document.dispatchEvent(new CustomEvent('asc:search:start', {
+                detail: {
+                    form: form,
+                    type: type,
+                    offset: offset
+                }
+            }));
+            
+            // Simulate network delay
+            setTimeout(() => {
+                const startIndex = offset;
+                const endIndex = Math.min(startIndex + limit, mockAssets.length);
+                const results = mockAssets.slice(startIndex, endIndex);
+                
+                console.log('Mock search response:', { 
+                    startIndex, 
+                    endIndex, 
+                    resultsCount: results.length, 
+                    total: mockAssets.length 
+                });
+                
+                if (results.length > 0) {
+                    document.dispatchEvent(new CustomEvent('asc:search:complete', {
+                        detail: {
+                            form: form,
+                            type: type,
+                            results: {
+                                assets: results,
+                                total: mockAssets.length,
+                                offset: startIndex
+                            }
+                        }
+                    }));
+                } else {
+                    document.dispatchEvent(new CustomEvent('asc:search:complete', {
+                        detail: {
+                            form: form,
+                            type: type,
+                            results: {
+                                assets: [],
+                                total: mockAssets.length,
+                                offset: startIndex
+                            }
+                        }
+                    }));
+                }
+            }, 500);
+        });
+
+        // Listen for asset selection
+        document.addEventListener('asc:asset:selected', (event) => {
+            const { title, uuid } = event.detail;
+            console.log('Asset selected:', { title, uuid });
+            alert(`Selected: ${title} (${uuid})`);
+        });
+    </script>
+</body>
+</html>

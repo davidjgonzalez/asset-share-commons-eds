@@ -4,8 +4,7 @@
  **/
 
 import { getBlockConfig, getOptions } from '../../scripts/asc/utils/search.js';
-import { debugFormFields } from '../../scripts/asc/utils/debug.js';
-import { htmlCheckboxes, htmlRadio, htmlDropdown } from '../search-metadata/search-metadata.js';
+import { htmlCheckboxes, htmlRadio, htmlDropdown } from '../search-property/search-property.js';
 
 export default function decorate(block) {
   const config = getBlockConfig(block, {
@@ -24,15 +23,15 @@ export default function decorate(block) {
 
   addEventListeners(block, config);
 
-  debugFormFields(block);
+  //services.debug.formFields(block);
 }
 
 function html(config) {  
   return `
     <!-- Overrides the default exact behavior (default is OR) -->
     ${config.exact ? 
-    `<input
-           type="hidden"
+    `<input type="hidden"
+           for="${config.fieldset}"
            name="${config.parameter('exact')}"
            value="${config.exact}"
            form="${config.form}"/>` : ''}
@@ -40,6 +39,7 @@ function html(config) {
     <!-- Overrides the default flat behavior (default is false) -->
     ${config.flat ? 
     `<input type="hidden"
+           for="${config.fieldset}"
            name="${config.parameter('flat')}"
            value="${config.flat}"
            form="${config.form}"/>` : ''}
@@ -47,92 +47,18 @@ function html(config) {
     <!-- Overrides the default self behavior (default is false) -->
     ${config.self ? 
     `<input type="hidden"
+           for="${config.fieldset}"
            name="${config.parameter('self')}"
            value="${config.self}"
            form="${config.form}"/>` : ''}
 
-
     <!-- Renders the title -->
     ${config.title ? `<label>${config.title}</label>` : ''}
 
-    <ul class="expand-collapse">
       ${!config.type || config.type.includes('checkbox') ? htmlCheckboxes(config, config.initial) : ''}
       ${config.type.includes('radio')  ? htmlRadio(config, config.initial) : ''}
       ${config.type.includes('dropdown') || config.type.includes('select') ? htmlDropdown(config, config.initial) : ''}
-    </ul>
 `
-}
-
-
-/**
- * Render HTML checkboxes
- * 
- * @param {*} config the block configuration
- * @returns HTML to render checkbox-based search filters
- */
-function htmlCheckboxes(config) {
-  return config.options.map((option, index) => {
-    const name = `${config.group}_group.${config.name}.${index}_value`;
-    const id = `${config.group}_group-${config.name}_filter_${config.name}_${index}_value`;
-    const selected = config.initial[name] === option.value;
-
-    return `<li><input type="checkbox"
-              id="${id}"
-              form="${config.form}"
-              name="${name}"
-              ${selected ? 'checked' : ''}
-              value="${option.value}"/>
-            <label for="${id}">${option.text}</label></li>`
-  }).join('');
-}
-
-/**
- * Render HTML radio buttons
- * 
- * @param {*} config the block configuration
- * @returns HTML to render radio-based search filters
- */
-function htmlRadio(config) {
-  return config.options.map((option, index) => {
-    const inputName = `${config.group}_group.${config.name}.value`; // All radio buttons share the same name
-    const id = `${config.group}_${config.name}_${index}_value`;
-    const selected = config.initial[inputName] === option.value;
-    
-    return `<input type="radio"
-              id="${id}"
-              form="${config.form}"
-              name="${inputName}"
-              ${selected ? 'checked' : ''}
-              value="${option.value}"/>
-            <label for="${id}">${option.text}</label>`
-  }).join('');
-}
-
-
-/**
- * Render HTML dropdown
- * 
- * @param {*} config the block configuration
- * @returns HTML to render dropdown-based search filters
- */
-function htmlDropdown(config, initialValues = {}) {
-  const selectName = `${config.group}.${config.name}.value`;
-  const id = `${config.group}_${config.name}_value`;
-  const selectedValue = initialValues.find(v => v.key === selectName)?.value || '';
-  
-  return `<select
-            id="${id}"
-            name="${selectName}"
-            form="${config.form}">
-            
-        <option value="">${config.label || 'Select...'}</option>
-        ${config.options.map(option => `
-          <option value="${option.value}"
-                  ${option.value === selectedValue ? 'selected' : ''}>
-                  ${option.label}
-          </option>
-        `).join('')}
-    </select>`;
 }
 
 /**

@@ -3,7 +3,6 @@
  * https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/implementing/developing/full-stack/search/query-builder-predicates#property
  **/
 import { getBlockConfig, getOptions } from '../../scripts/asc/utils/search.js';
-import { debugFormFields } from '../../scripts/asc/utils/debug.js';
 
 export default function decorate(block) {
   const config = getBlockConfig(block, {
@@ -20,8 +19,6 @@ export default function decorate(block) {
   block.innerHTML = html(config);
 
   addEventListeners(block, config);
-
-  debugFormFields(block);
 }
 
 function html(config) {  
@@ -31,7 +28,7 @@ function html(config) {
            name="${config.group}_group.${config.name}.property"
            value="${config.property}"
            form="${config.form}"
-           data-asc-filter="${config.id}"/>
+           for="${config.fieldset}"/>
 
     <!-- Overrides the default AND/OR behavior (default is OR) -->
     ${config.and ? 
@@ -40,7 +37,7 @@ function html(config) {
            name="${config.group}_group.${config.name}.and"
            value="${config.and}"
            form="${config.form}"
-           data-asc-filter="${config.id}"/>` : ''}
+           for="${config.fieldset}"/>` : ''}
 
     <!-- Overrides the default operation (default is equals) -->
     ${config.operation ? 
@@ -48,7 +45,7 @@ function html(config) {
            name="${config.group}_group.${config.name}.operation"
            value="${config.operation}"
            form="${config.form}"
-           data-asc-filter="${config.id}"/>` : ''}
+           for="${config.fieldset}"/>` : ''}
 
     <!-- Renders the title -->
     ${config.title ? `<label for="${config.group}_${config.name}_fieldset">${config.title}</label>` : ''}
@@ -68,15 +65,14 @@ function html(config) {
  * @param {*} config the block configuration
  * @returns HTML to render checkbox-based search filters
  */
-function htmlCheckboxes(config) {
+export function htmlCheckboxes(config) {
   return config.options.map((option, index) => {
     const name = `${config.group}_group.${config.name}.${index}_value`;
     const id = `${config.group}_group-${config.name}_filter_${config.name}_${index}_value`;
     const selected = config.initial[name] === option.value;
 
     return `<li><input type="checkbox"
-              id="${id}"
-              for="${config.id}"
+              data-asc-fieldset="${config.fieldset}"
               form="${config.form}"
               name="${name}"
               ${selected ? 'checked' : ''}
@@ -91,15 +87,14 @@ function htmlCheckboxes(config) {
  * @param {*} config the block configuration
  * @returns HTML to render radio-based search filters
  */
-function htmlRadio(config) {
+export function htmlRadio(config) {
   return config.options.map((option, index) => {
     const inputName = `${config.group}_group.${config.name}.value`; // All radio buttons share the same name
     const id = `${config.group}_${config.name}_${index}_value`;
     const selected = config.initial[inputName] === option.value;
     
     return `<input type="radio"
-              id="${id}"
-              for="${config.id}"
+              data-asc-fieldset="${config.fieldset}"
               form="${config.form}"
               name="${inputName}"
               ${selected ? 'checked' : ''}
@@ -115,15 +110,14 @@ function htmlRadio(config) {
  * @param {*} config the block configuration
  * @returns HTML to render dropdown-based search filters
  */
-function htmlDropdown(config, initialValues = {}) {
+export function htmlDropdown(config, initialValues = {}) {
   const selectName = `${config.group}.${config.name}.value`;
   const id = `${config.group}_${config.name}_value`;
   const selectedValue = initialValues.find(v => v.key === selectName)?.value || '';
   
   return `<select
-            id="${id}"
             name="${selectName}"
-            for="${config.id}"
+            data-asc-fieldset="${config.fieldset}"
             form="${config.form}">
             
         <option value="">${config.label || 'Select...'}</option>

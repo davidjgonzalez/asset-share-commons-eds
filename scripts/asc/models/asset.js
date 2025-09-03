@@ -183,29 +183,82 @@ export default class Asset {
 
   /* HTML helpers */
 
-  getPictureHtml() {
+  getPictureHtml(options = {}) {
     if (!services.aem.isLocalhost()) {
       return `<div>NOT IMPLEMENTED; USE DYNAMIC URLS</div>`;
     }
 
-    const imageRenditions = this.getRenditions()
+    // Refactored options: allow passing alt, eager, breakpoints, sizes, imgAttributes
+    const {
+      alt = null,                // Optional alt override
+      eager = false,             // If true, loading="eager"
+      breakpoints = null,        // Custom breakpoints: [{ width: 768, renditionWidth: 400 }, ...]
+      sizes = null,              // Optional sizes attribute for <img>
+      imgAttributes = {}         // Additional attributes for <img>
+    } = options;
+
+    let imageRenditions = this.getRenditions()
       .filter(r =>
         /cq5dam\.(thumbnail|web|zoom)\.\d+\.\d+\.(png|jpg|jpeg|gif|webp)/.test(r.name) &&
         r.mimeType?.includes("image/") 
       )
       .sort((a, b) => b.width - a.width);
 
-    if (!imageRenditions.length) return "<div>No image renditions found</div>";
+    if (!imageRenditions.length) return "<div>No suitable image renditions found</div>";
 
-    const webRendition = imageRenditions.find(r => r.name.includes("cq5dam.web.")) || imageRenditions[0];
+    let sources;
+    if (breakpoints) {
+      // Use custom breakpoints
+      sources = breakpoints.map(bp => {
+        const rendition = imageRenditions.find(r => r.width <= bp.renditionWidth) || imageRenditions[imageRenditions.length - 1];
+        return `<source srcset="${rendition.url}" type="${rendition.mimeType}" media="(min-width: ${bp.width}px)" />`;
+      }).join("\n");
+    } else {
+      // Use automatic breakpoints based on rendition widths
+      sources = imageRenditions.map((r, index) => {
+        const nextRendition = imageRenditions[index + 1];
+        const minWidth = nextRendition ? nextRendition.width : 0;
+        const maxWidth = r.width;
+        
+        let mediaQuery;
+        if (index === 0) {
+          mediaQuery = `(min-width: ${minWidth + 1}px)`;
+        } else if (index === imageRenditions.length - 1) {
+          mediaQuery = `(max-width: ${maxWidth}px)`;
+        } else {
+          mediaQuery = `(min-width: ${minWidth + 1}px) and (max-width: ${maxWidth}px)`;
+        }
+        
+        return `<source srcset="${r.url}" type="${r.mimeType}" media="${mediaQuery}" />`;
+      }).join("\n");
+    }
 
-    const sources = imageRenditions.map(r =>
-      `<source srcset="${r.url}" type="${r.mimeType}" media="(min-width: ${r.width}px)" />`
-    ).join("\n");
+    // Fallback image: use the smallest (last) rendition
+    const fallbackImg = imageRenditions[imageRenditions.length - 1];
+
+    // Build img attributes
+    const imgAttrs = {
+      alt: alt !== null ? alt : this.getTitle(),
+      loading: eager ? 'eager' : 'lazy',
+      fetchpriority: eager ? 'high' : 'auto',
+      src: fallbackImg.url,
+      style: (fallbackImg.width && fallbackImg.height)
+        ? `aspect-ratio: ${fallbackImg.width}/${fallbackImg.height}; width: 100%; object-fit: cover;`
+        : 'width: 100%; object-fit: cover;',
+      ...imgAttributes
+    };
+
+    if (sizes) {
+      imgAttrs.sizes = sizes;
+    }
+
+    const imgAttrString = Object.entries(imgAttrs)
+      .map(([key, value]) => `${key}="${value}"`)
+      .join(' ');
 
     return `<picture>
       ${sources}
-      <img src="${webRendition.url}" alt="${this.getTitle()}" loading="lazy" style="aspect-ratio: ${webRendition.width}/${webRendition.height}; width: 100%; object-fit: cover;" />
+      <img ${imgAttrString} />
     </picture>`;
   }
 }

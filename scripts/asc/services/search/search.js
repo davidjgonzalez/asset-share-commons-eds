@@ -1,6 +1,12 @@
 import serviceConfigurations from "../configurations.js";
 import Asset from "../../models/asset.js";
 
+const Events = {
+  SEARCH_START: "asc:search",
+  SEARCH_COMPLETE: "asc:search:complete",
+  SEARCH_ERROR: "asc:search:error",
+};
+
 class SearchService {
   constructor(config) {
     this.config = config;
@@ -12,38 +18,28 @@ class SearchService {
   init() {
     document.addEventListener("asc:search", (event) => {
       if (event.detail?.source === "query-params") {
-        this.executeSearchFromUrl(event.detail.value || "");
+        this.executeSearchFromUrl(event.detail.value || window.location.search);
       } else {
         this.executeSearchFromFormData(event);
       }
+    }); // end addEventListener for asc:search
+
+
+    document.addEventListener("asc:blocks:loaded", (event) => { 
+      this.executeSearchFromUrl(window.location.search);
     });
-
-    if(document.querySelector(".block.search-results")) {
-      const interval = setInterval(() => {
-        // check to make sure that all .block are marked as data-block-status="loaded"
-        const blocks = document.querySelectorAll(".block");
-        const loadedBlocks = Array.from(blocks).filter(
-          (block) => block.getAttribute("data-block-status") === "loaded"
-        );
-
-        if (loadedBlocks.length === blocks.length) {
-          clearInterval(interval);
-          this.executeSearchFromFormData({
-            detail: {
-              formId: this.getForm(),
-              source: "page-load",
-            },
-          });
-        }
-      }, 100);
-    }
   }
 
   executeSearchFromUrl(queryParams) {
-    const formData = new Map(new URLSearchParams(queryParams));
+    const formId = this.getForm();
+    const formData = new Map([
+      ...this.collectFormData(formId),
+      ...new Map(new URLSearchParams(queryParams)),
+    ]);
+
     const cleanedData = this.cleanFormData(formData);
 
-    this.submitSearch(cleanedData);
+    this.search(cleanedData);
   }
 
   executeSearchFromFormData(event) {
@@ -51,7 +47,7 @@ class SearchService {
     const formData = this.collectFormData(formId);
     const cleanedData = this.cleanFormData(formData);
 
-    this.submitSearch(cleanedData);
+    this.search(cleanedData);
   }
 
   getForm() {
@@ -63,8 +59,9 @@ class SearchService {
       type: "dam:Asset",
       path: "/content/dam",
       orderby: "dam:created",
+      mainasset: "true",
       "orderby.sort": "desc",
-      "p.limit": 25,
+      "p.guessTotal": "true",
     };
   }
 
@@ -73,7 +70,7 @@ class SearchService {
 
     // Find all inputs associated with the form
     const inputs = document.querySelectorAll(
-      `[form="${formId}"], form#${formId} input, form#${formId} select, form#${formId} textarea`
+      `[form="${formId}"], form#${formId}`
     );
 
     inputs.forEach((input) => {
@@ -124,15 +121,42 @@ class SearchService {
       }
 
       // Handle predicate-based cleaning
-      const predicateId = this.getPredicateId(name);
-      if (predicateId) {
+      const fieldset = this.getFieldset(name);
+      if (fieldset) {
         // Check if there are supporting inputs for this predicate
-        if (this.hasValidPredicateSupport(predicateId, formData)) {
+        if (this.hasFieldsetSupport(fieldset, formData)) {
+          console.log(
+            "Add to cleaned; Has Valid Support -- name",
+            name,
+            "value",
+            value
+          );
+
           cleaned.set(name, value);
         }
       } else {
-        // Standalone field, always include if not empty
-        cleaned.set(name, value);
+        // Check if this is a supporting field (has 'for' attribute)
+        const input = document.querySelector(`[name="${CSS.escape(name)}"]`);
+        const forAttribute = input?.getAttribute('for');
+        
+        if (forAttribute) {
+          // This is a supporting field - only include if its fieldset is also in cleaned data
+          const fieldsetHasValidInput = Array.from(formData.keys()).some(key => {
+            const fieldsetInput = document.querySelector(`[name="${CSS.escape(key)}"]`);
+            return fieldsetInput?.getAttribute('data-asc-fieldset') === forAttribute && 
+                   !this.isEmpty(formData.get(key));
+          });
+          
+          if (fieldsetHasValidInput) {
+            //console.log("Add to cleaned; Supporting field with valid fieldset -- name", name, "value", value);
+            cleaned.set(name, value);
+          } else {
+            //console.log("Skip; Supporting field without valid fieldset -- name", name, "value", value);
+          }
+        } else {
+          // True standalone field, always include if not empty
+          cleaned.set(name, value);
+        }
       }
     });
 
@@ -143,19 +167,18 @@ class SearchService {
     if (Array.isArray(value)) {
       return value.length === 0 || value.every((v) => v === "");
     }
+
     return value === "" || value == null;
   }
 
-  getPredicateId(inputName) {
-    const input = document.querySelector(`[name="${inputName}"]`);
-    return input?.getAttribute("data-asc-filter") || null;
+  getFieldset(inputName) {
+    const input = document.querySelector(`[name="${CSS.escape(inputName)}"]`);
+    return input?.getAttribute("data-asc-fieldset") || null;
   }
 
-  hasValidPredicateSupport(predicateId, formData) {
-    // Find inputs with for="${predicateId}" and check if they have values
-    const supportingInputs = document.querySelectorAll(
-      `[for="${predicateId}"]`
-    );
+  hasFieldsetSupport(fieldset, formData) {
+    // Find inputs with for="${fieldset}" and check if they have values
+    const supportingInputs = document.querySelectorAll(`[for="${CSS.escape(fieldset)}"]`);
 
     for (const supportingInput of supportingInputs) {
       const supportingName = supportingInput.name;
@@ -186,7 +209,17 @@ class SearchService {
     return adjusted;
   }
 
-  async submitSearch(formData) {
+  // Debounced search: only one search at a time, queue the latest request if needed
+  _searchInProgress = false;
+
+  async search(formData) {
+    // If a search is already in progress, store the latest request and return
+    if (this._searchInProgress) {
+      return;
+    }
+
+    this._searchInProgress = true;
+
     try {
       // Emit search start event
       document.dispatchEvent(
@@ -243,6 +276,7 @@ class SearchService {
           detail: {
             results: processedResults,
             query: queryParams,
+            type: formData.get("p.offset") === "0" ? "initial" : "more",
             formData: new Map(formData),
           },
         })
@@ -256,6 +290,8 @@ class SearchService {
           detail: { error, formData: new Map(formData) },
         })
       );
+    } finally {
+      this._searchInProgress = false;      
     }
   }
 
@@ -283,18 +319,19 @@ class SearchService {
     newParams.forEach((value, key) => {
       url.searchParams.append(key, value);
     });
+    url.searchParams.delete("p.offset");
 
     window.history.replaceState({}, "", url);
   }
 
   async getAssetByPath(path) {
-    const searchUrl = services.aem.getUrl('/bin/querybuilder.json');
+    const searchUrl = services.aem.getUrl("/bin/querybuilder.json");
     const params = new URLSearchParams({
-      'type': 'dam:Asset',
-      'path': path,
-      'p.limit': '1',
-      'p.hits': 'full',
-      'p.nodedepth': '5'
+      type: "dam:Asset",
+      path: path,
+      "p.limit": "1",
+      "p.hits": "full",
+      "p.nodedepth": "5",
     });
 
     const response = await fetch(`${searchUrl}?${params}`);
@@ -304,20 +341,20 @@ class SearchService {
   }
 
   async getAssetById(id) {
-      const searchUrl = services.aem.getUrl('/bin/querybuilder.json');
-      const params = new URLSearchParams({
-          'type': 'dam:Asset',
-          'property': 'jcr:uuid',
-          'property.value': id,
-          'p.limit': '1',
-          'p.hits': 'full',
-          'p.nodedepth': '5'
-      });
+    const searchUrl = services.aem.getUrl("/bin/querybuilder.json");
+    const params = new URLSearchParams({
+      type: "dam:Asset",
+      property: "jcr:uuid",
+      "property.value": id,
+      "p.limit": "1",
+      "p.hits": "full",
+      "p.nodedepth": "5",
+    });
 
-      const response = await fetch(`${searchUrl}?${params}`);
-      const data = await response.json();
+    const response = await fetch(`${searchUrl}?${params}`);
+    const data = await response.json();
 
-      return data.hits?.length > 0 ? new Asset(data.hits[0]) : null;
+    return data.hits?.length > 0 ? new Asset(data.hits[0]) : null;
   }
 }
 

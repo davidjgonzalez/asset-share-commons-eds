@@ -14,12 +14,17 @@
 
 import aem from './aem/aem.js';
 import assetDetails from './asset-details/asset-details.js';
+import debug from './debug/debug.js';
 import properties from './properties/properties.js';
 import search from './search/search.js';
+
+import init from './init/init.js';
 
 const services = {
     aem,
     assetDetails,
+    debug,
+    init,
     properties,
     search,
 }

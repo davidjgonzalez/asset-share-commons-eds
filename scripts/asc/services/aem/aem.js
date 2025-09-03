@@ -23,7 +23,7 @@ class AEM {
   
   preconnect() {
     if (!document.querySelector(`head link[rel="preconnect"][href="${this.getHost()}"]`)) {
-      document.head.insertAdjacentHTML('beforeend', `<link rel="preconnect" href="${this.getHost()}" crossorigin />`);
+      document.head.insertAdjacentHTML('beforeend', `<link rel="preconnect" href="${this.getHost()}" fetchpriority="high" crossorigin />`);
     }    
   }
 

@@ -1,0 +1,43 @@
+.block.search-results .cards {
+    list-style: none;   
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(257px, 1fr));
+    grid-gap: 24px;
+
+    & > li {
+        border: 1px solid #dadada;
+        background-color: var(--background-color);
+
+        img {
+            width: 100%;
+            aspect-ratio: 4 / 3;
+            object-fit: cover;
+            background-color: #e0e0e0; /* grey background for broken images */
+            display: block;
+        }
+        /* Show a grey box if the image fails to load */
+        img:not([src]),
+        img[src=""],
+        img.broken {
+            background-color: #e0e0e0;
+            min-height: 120px;
+            width: 100%;
+            aspect-ratio: 4 / 3;
+            object-fit: contain;
+            content: "";
+            display: block;
+            /* Hide the broken image icon (the default browser icon) */
+            font-size: 0; /* Remove any alt text default font size */
+            color: transparent; /* Hide alt text if shown by browser */
+            border: none;
+        }
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+        text-overflow: ellipsis;
+        overflow: hidden;
+        white-space: wrap;
+    }
+
+  
+}

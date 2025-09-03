@@ -17,6 +17,12 @@ const serviceConfigurations = {
   aem: {
     host: "http://localhost:4503",
   },
+  debug: {
+    debug: true,
+  },
+  init: {
+    
+  },
   assetDetails: {
 
   },
