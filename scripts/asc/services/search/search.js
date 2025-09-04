@@ -45,6 +45,11 @@ class SearchService {
   executeSearchFromFormData(event) {
     const formId = event.detail?.form || this.getForm();
     const formData = this.collectFormData(formId);
+
+    if(event.detail?.type !== 'more') {
+      formData.set('p.offset', '0');
+    }
+
     const cleanedData = this.cleanFormData(formData);
 
     this.search(cleanedData);
