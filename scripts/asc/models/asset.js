@@ -130,33 +130,54 @@ export default class Asset {
 
   getRenditions() {
     const resource = this.data["jcr:content"]["renditions"];
+
     const renditions = [];
     if (resource && typeof resource === "object") {
       Object.entries(resource).forEach(([key, value]) => {
-        if (
-          value &&
-          typeof value === "object" &&
-          value["jcr:primaryType"] === "nt:file" &&
-          value["jcr:content"] &&
-          value["jcr:content"]["metadata"] &&
-          typeof value["jcr:content"] === "object" &&
-          typeof value["jcr:content"]["metadata"] === "object"
-        ) {
+        if (typeof value === "object" && value["jcr:primaryType"] === "nt:file" && value["jcr:content"]) {
+          let renditionAttributes = {};
+
+          if (value["jcr:content"]["metadata"]) {
+            renditionAttributes = {
+              mimeType: value["jcr:content"]["metadata"]["dc:format"] || null,
+              fileSize: value["jcr:content"]["metadata"]["dam:size"] || null,
+              width:
+                value["jcr:content"]["metadata"]["tiff:ImageWidth"] || null,
+              height:
+                value["jcr:content"]["metadata"]["tiff:ImageLength"] || null,
+            };
+          } else if (key === "original") {
+            // Special case for original
+            renditionAttributes = {
+              mimeType: this.getMimeType() || null,
+              fileSize: this.getSizeInBytes() || null,
+              width: this.getProperty("tiff:ImageWidth") || null,
+              height: this.getProperty("tiff:ImageLength") || null,
+            };
+          } else {
+            // given a key like cq5dam.thumbnail.319.319.png, parse the mime type and dimensions
+            const width = key.split(".")[2];
+            const height = key.split(".")[3];
+
+            renditionAttributes = {
+              mimeType: services.fileType.getMimeType(key),
+              fileSize: null,
+              width: width,
+              height: height,
+            };
+          }
+
           renditions.push({
             name: key,
             path: `${this.getPath()}/jcr:content/renditions/${key}`,
             url: services.aem.getUrl(
               `${this.getPath()}/_jcr_content/renditions/${key}`
             ),
-            mimeType: value["jcr:content"]["metadata"]["dc:format"] || null,
-            fileSize: value["jcr:content"]["metadata"]["dam:size"] || null,
-            width: value["jcr:content"]["metadata"]["tiff:ImageWidth"] || null,
-            height: value["jcr:content"]["metadata"]["tiff:ImageLength"] || null,
+            ...renditionAttributes,
           });
         }
       });
     }
-
     return renditions;
   }
 
@@ -190,47 +211,58 @@ export default class Asset {
 
     // Refactored options: allow passing alt, eager, breakpoints, sizes, imgAttributes
     const {
-      alt = null,                // Optional alt override
-      eager = false,             // If true, loading="eager"
-      breakpoints = null,        // Custom breakpoints: [{ width: 768, renditionWidth: 400 }, ...]
-      sizes = null,              // Optional sizes attribute for <img>
-      imgAttributes = {}         // Additional attributes for <img>
+      alt = null, // Optional alt override
+      eager = false, // If true, loading="eager"
+      breakpoints = null, // Custom breakpoints: [{ width: 768, renditionWidth: 400 }, ...]
+      sizes = null, // Optional sizes attribute for <img>
+      imgAttributes = {}, // Additional attributes for <img>
     } = options;
 
     let imageRenditions = this.getRenditions()
-      .filter(r =>
-        /cq5dam\.(thumbnail|web|zoom)\.\d+\.\d+\.(png|jpg|jpeg|gif|webp)/.test(r.name) &&
-        r.mimeType?.includes("image/") 
+      .filter(
+        (r) =>
+          /cq5dam\.(thumbnail|web|zoom)\.\d+\.\d+\.(png|jpg|jpeg|gif|webp)/.test(
+            r.name
+          ) && r.mimeType?.includes("image/")
       )
       .sort((a, b) => b.width - a.width);
 
-    if (!imageRenditions.length) return "<div>No suitable image renditions found</div>";
+    if (!imageRenditions.length)
+      return "<div>No suitable image renditions found</div>";
 
     let sources;
     if (breakpoints) {
       // Use custom breakpoints
-      sources = breakpoints.map(bp => {
-        const rendition = imageRenditions.find(r => r.width <= bp.renditionWidth) || imageRenditions[imageRenditions.length - 1];
-        return `<source srcset="${rendition.url}" type="${rendition.mimeType}" media="(min-width: ${bp.width}px)" />`;
-      }).join("\n");
+      sources = breakpoints
+        .map((bp) => {
+          const rendition =
+            imageRenditions.find((r) => r.width <= bp.renditionWidth) ||
+            imageRenditions[imageRenditions.length - 1];
+          return `<source srcset="${rendition.url}" type="${rendition.mimeType}" media="(min-width: ${bp.width}px)" />`;
+        })
+        .join("\n");
     } else {
       // Use automatic breakpoints based on rendition widths
-      sources = imageRenditions.map((r, index) => {
-        const nextRendition = imageRenditions[index + 1];
-        const minWidth = nextRendition ? nextRendition.width : 0;
-        const maxWidth = r.width;
-        
-        let mediaQuery;
-        if (index === 0) {
-          mediaQuery = `(min-width: ${minWidth + 1}px)`;
-        } else if (index === imageRenditions.length - 1) {
-          mediaQuery = `(max-width: ${maxWidth}px)`;
-        } else {
-          mediaQuery = `(min-width: ${minWidth + 1}px) and (max-width: ${maxWidth}px)`;
-        }
-        
-        return `<source srcset="${r.url}" type="${r.mimeType}" media="${mediaQuery}" />`;
-      }).join("\n");
+      sources = imageRenditions
+        .map((r, index) => {
+          const nextRendition = imageRenditions[index + 1];
+          const minWidth = nextRendition ? nextRendition.width : 0;
+          const maxWidth = r.width;
+
+          let mediaQuery;
+          if (index === 0) {
+            mediaQuery = `(min-width: ${minWidth + 1}px)`;
+          } else if (index === imageRenditions.length - 1) {
+            mediaQuery = `(max-width: ${maxWidth}px)`;
+          } else {
+            mediaQuery = `(min-width: ${
+              minWidth + 1
+            }px) and (max-width: ${maxWidth}px)`;
+          }
+
+          return `<source srcset="${r.url}" type="${r.mimeType}" media="${mediaQuery}" />`;
+        })
+        .join("\n");
     }
 
     // Fallback image: use the smallest (last) rendition
@@ -239,13 +271,14 @@ export default class Asset {
     // Build img attributes
     const imgAttrs = {
       alt: alt !== null ? alt : this.getTitle(),
-      loading: eager ? 'eager' : 'lazy',
-      fetchpriority: eager ? 'high' : 'auto',
+      loading: eager ? "eager" : "lazy",
+      fetchpriority: eager ? "high" : "auto",
       src: fallbackImg.url,
-      style: (fallbackImg.width && fallbackImg.height)
-        ? `aspect-ratio: ${fallbackImg.width}/${fallbackImg.height}; width: 100%; object-fit: cover;`
-        : 'width: 100%; object-fit: cover;',
-      ...imgAttributes
+      style:
+        fallbackImg.width && fallbackImg.height
+          ? `aspect-ratio: ${fallbackImg.width}/${fallbackImg.height}; width: 100%; object-fit: cover;`
+          : "width: 100%; object-fit: cover;",
+      ...imgAttributes,
     };
 
     if (sizes) {
@@ -254,7 +287,7 @@ export default class Asset {
 
     const imgAttrString = Object.entries(imgAttrs)
       .map(([key, value]) => `${key}="${value}"`)
-      .join(' ');
+      .join(" ");
 
     return `<picture>
       ${sources}

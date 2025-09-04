@@ -15,6 +15,7 @@
 import aem from './aem/aem.js';
 import assetDetails from './asset-details/asset-details.js';
 import debug from './debug/debug.js';
+import fileType from './file-type/file-type.js';
 import properties from './properties/properties.js';
 import search from './search/search.js';
 
@@ -24,6 +25,7 @@ const services = {
     aem,
     assetDetails,
     debug,
+    fileType,
     init,
     properties,
     search,
