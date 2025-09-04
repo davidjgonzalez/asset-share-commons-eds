@@ -126,6 +126,11 @@ export function getInitialValues(searchParams, group) {
         result[key] = [];
       }
       result[key].push(value);
+    } else if (key.startsWith('asc.')) {
+      if (!result[key]) {
+        result[key] = [];
+      }
+      result[key].push(value);
     }
   }
 

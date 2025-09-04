@@ -1,12 +1,13 @@
-.block.search-results .cards {
-    list-style: none;   
+.block.search-results .masonry {
+    list-style: none;
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: var(--spacing-lg);
     padding: 0;
     margin: 0;
+    align-items: start;
 
-    /* Card Item */
+    /* Masonry Item */
     & > li {
         background-color: var(--card-background);
         border: 1px solid var(--card-border-color);
@@ -18,11 +19,12 @@
         position: relative;
         display: flex;
         flex-direction: column;
-        height: 100%;
+        height: fit-content;
+        break-inside: avoid;
 
         /* Hover Effects */
         &:hover {
-            transform: translateY(-2px);
+            transform: translateY(-4px);
             box-shadow: var(--card-shadow-hover);
             border-color: var(--input-border-color-hover);
         }
@@ -37,11 +39,10 @@
             outline: none;
         }
 
-        /* Card Image Container */
-        .card-image {
+        /* Masonry Image Container */
+        .masonry-image {
             position: relative;
             width: 100%;
-            aspect-ratio: 4 / 3;
             overflow: hidden;
             background-color: var(--light-color);
             display: flex;
@@ -51,13 +52,10 @@
 
             img {
                 width: 100%;
-                height: 100%;
+                height: auto;
                 object-fit: cover;
                 transition: transform var(--transition-normal);
                 display: block;
-                position: absolute;
-                top: 0;
-                left: 0;
             }
 
             /* Hover effect on image */
@@ -70,17 +68,12 @@
             img[src=""],
             img.broken {
                 background-color: var(--light-color);
+                min-height: 200px;
                 width: 100%;
-                height: 100%;
                 object-fit: contain;
                 content: "";
                 display: block;
-                font-size: 0;
-                color: transparent;
-                border: none;
-                position: absolute;
-                top: 0;
-                left: 0;
+                position: relative;
 
                 /* Add a placeholder icon for broken images */
                 &::before {
@@ -96,8 +89,59 @@
             }
         }
 
-        /* Card Content */
-        .card-content {
+        /* Fallback figure styling */
+        figure {
+            margin: 0;
+            padding: 0;
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+            background-color: var(--light-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            img {
+                width: 100%;
+                height: auto;
+                object-fit: cover;
+                transition: transform var(--transition-normal);
+                display: block;
+            }
+
+            /* Hover effect on figure image */
+            &:hover img {
+                transform: scale(1.05);
+            }
+
+            /* Broken Image States for figure */
+            img:not([src]),
+            img[src=""],
+            img.broken {
+                background-color: var(--light-color);
+                min-height: 200px;
+                width: 100%;
+                object-fit: contain;
+                content: "";
+                display: block;
+                position: relative;
+
+                /* Add a placeholder icon for broken images */
+                &::before {
+                    content: "📷";
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    font-size: 2rem;
+                    color: var(--input-placeholder-color);
+                    opacity: 0.5;
+                }
+            }
+        }
+
+        /* Masonry Content */
+        .masonry-content {
             padding: var(--spacing-lg);
             flex: 1;
             display: flex;
@@ -116,7 +160,7 @@
                 flex: 1;
             }
 
-            .card-meta {
+            .masonry-meta {
                 display: flex;
                 align-items: center;
                 gap: var(--spacing-sm);
@@ -140,8 +184,8 @@
             }
         }
 
-        /* Card Actions (if needed in future) */
-        .card-actions {
+        /* Masonry Actions (if needed in future) */
+        .masonry-actions {
             padding: 0 var(--spacing-lg) var(--spacing-lg);
             display: flex;
             gap: var(--spacing-sm);
@@ -167,20 +211,110 @@
         }
 
         /* Show actions on hover */
-        &:hover .card-actions {
+        &:hover .masonry-actions {
             opacity: 1;
+        }
+
+        /* Different aspect ratios for visual variety */
+        &:nth-child(3n+1) {
+            .masonry-image,
+            figure {
+                aspect-ratio: 4 / 3;
+            }
+        }
+
+        &:nth-child(3n+2) {
+            .masonry-image,
+            figure {
+                aspect-ratio: 3 / 4;
+            }
+        }
+
+        &:nth-child(3n+3) {
+            .masonry-image,
+            figure {
+                aspect-ratio: 16 / 9;
+            }
+        }
+
+        /* Special styling for larger items */
+        &:nth-child(5n) {
+            grid-column: span 2;
+            grid-row: span 2;
+
+            .masonry-image,
+            figure {
+                aspect-ratio: 4 / 3;
+            }
+
+            h3 {
+                font-size: var(--heading-font-size-m);
+            }
+
+            .masonry-meta {
+                .file-type {
+                    font-size: var(--body-font-size-s);
+                    padding: var(--spacing-sm) var(--spacing-md);
+                }
+
+                .file-size {
+                    font-size: var(--body-font-size-s);
+                }
+            }
         }
     }
 
     /* Responsive Design */
-    @media (max-width: 768px) {
+    @media (max-width: 1200px) {
         grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
         gap: var(--spacing-md);
+
+        & > li:nth-child(5n) {
+            grid-column: span 1;
+            grid-row: span 1;
+
+            h3 {
+                font-size: var(--heading-font-size-s);
+            }
+
+            .masonry-meta {
+                .file-type {
+                    font-size: var(--body-font-size-xs);
+                    padding: var(--spacing-xs) var(--spacing-sm);
+                }
+
+                .file-size {
+                    font-size: var(--body-font-size-xs);
+                }
+            }
+        }
+    }
+
+    @media (max-width: 768px) {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: var(--spacing-md);
+
+        & > li {
+            .masonry-content {
+                padding: var(--spacing-md);
+
+                h3 {
+                    font-size: var(--heading-font-size-xs);
+                }
+            }
+        }
     }
 
     @media (max-width: 480px) {
         grid-template-columns: 1fr;
         gap: var(--spacing-md);
+
+        & > li {
+            .masonry-image,
+            figure {
+                aspect-ratio: 4 / 3;
+            }
+        }
     }
 
     /* High Contrast Mode */
@@ -199,7 +333,8 @@
                 transform: none;
             }
 
-            .card-image img {
+            .masonry-image img,
+            figure img {
                 transition: none;
 
                 &:hover {
@@ -217,7 +352,8 @@
             border: 1px solid var(--text-color);
             margin-bottom: var(--spacing-md);
 
-            .card-image {
+            .masonry-image,
+            figure {
                 aspect-ratio: 3 / 2;
             }
         }

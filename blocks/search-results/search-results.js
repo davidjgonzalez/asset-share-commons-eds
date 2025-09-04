@@ -1,16 +1,17 @@
-import { loadScript } from "../../scripts/aem.js";
 import { getBlockConfig } from "../../scripts/asc/utils/search.js";
 
 export default async function decorate(block) {
-  const config = getBlockConfig(block);
-  config.display = "cards";
+  const config = getBlockConfig(block, {}, {
+    'asc.search-results.display': 'cards',
+  });
+  
 
   block.innerHTML = `
 
-    <select name="display">
-      <option value="cards" ${config.display === "cards" ? "selected" : ""}>Cards</option>
-      <option value="list" ${config.display === "list" ? "selected" : ""}>List</option>
-      <option value="masonry" ${config.display === "masonry" ? "selected" : ""}>Masonry</option>
+    <select name="asc.search-results.display" form="${config.form}">
+      <option value="cards" ${config.initial['asc.search-results.display'] === "cards" ? "selected" : ""}>Cards</option>
+      <option value="list" ${config.initial['asc.search-results.display'] === "list" ? "selected" : ""}>List</option>
+      <option value="masonry" ${config.initial['asc.search-results.display'] === "masonry" ? "selected" : ""}>Masonry</option>
     </select>
     
     <input type="text" name="p.limit" value="4" form="${config.form}"/>
@@ -36,7 +37,7 @@ export default async function decorate(block) {
 
 async function addEventListeners(block) {
 
-  block.querySelector('[name="display"]').addEventListener("change", (event) => {
+  block.querySelector('[name="asc.search-results.display"]').addEventListener("change", (event) => {
     document.dispatchEvent(
       new CustomEvent("asc:search")              
     );
@@ -50,7 +51,7 @@ async function addEventListeners(block) {
     block.querySelector('[name="more"]').value = results.more;
     block.querySelector('[name="success"]').value = results.success;
     block.querySelector('[name="total"]').value = results.total;
-    const display = block.querySelector('[name="display"]').value;
+    const display = block.querySelector('[name="asc.search-results.display"]').value;
 
     const { container, item } = await import(`./templates/${display}.js`);
     console.log(event.detail.type, results.more);

@@ -127,7 +127,11 @@ class SearchService {
 
       // Handle predicate-based cleaning
       const fieldset = this.getFieldset(name);
-      if (fieldset) {
+
+      console.log(name, value);
+      if (name.startsWith('asc.')) {
+        cleaned.set(name, value);
+      } else if (fieldset) {
         // Check if there are supporting inputs for this predicate
         if (this.hasFieldsetSupport(fieldset, formData)) {
           console.log(
