@@ -1,16 +1,10 @@
 
-import { loadCSS } from '../../../scripts/aem.js';
+import { loadCSS } from '../../../../scripts/aem.js';
 
-loadCSS('/blocks/search-results/templates/masonry.css');
+loadCSS('/blocks/search-results/templates/masonry/masonry.css');
 
-export function container() {
+export default function masonry(results = {}) {
   return `<ul class="masonry" data-asc-results></ul>`;
-}
-
-export function masonry(assets) {
-  return `
-    <ul class="masonry" data-asc-results>${assets.map((asset, index) => item(asset, index)).join('')}</ul>
-  `;
 }
 
 export function item(asset, index = 0) {

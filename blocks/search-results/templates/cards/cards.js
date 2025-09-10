@@ -1,41 +1,24 @@
-import { loadCSS } from '../../../scripts/aem.js';
+import { loadCSS } from '../../../../scripts/aem.js';
 
-loadCSS('/blocks/search-results/templates/cards.css');
+loadCSS('/blocks/search-results/templates/cards/cards.css');
 
-export function container() {
+export default function cards(results = {}) {
     return `<ul class="cards" data-asc-results></ul>`;
 }
 
 export function item(asset, index = 0) {
     const title = asset.getTitle();
-    const fileType = asset.getProperty('fileType');
-    const fileSize = asset.getProperty('fileSize');
+    const fileType = asset.getProperty('file-type');
+    const fileSize = asset.getProperty('file-size');
     const dimensions = asset.getProperty('dimensions');
-    
-    // Format file size for display
-    const formatFileSize = (size) => {
-        if (!size) return '';
-        const bytes = parseInt(size);
-        if (isNaN(bytes)) return size;
-        
-        const units = ['B', 'KB', 'MB', 'GB'];
-        let unitIndex = 0;
-        let fileSize = bytes;
-        
-        while (fileSize >= 1024 && unitIndex < units.length - 1) {
-            fileSize /= 1024;
-            unitIndex++;
-        }
-        
-        return `${fileSize.toFixed(unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
-    };
 
     return `
        <li tabindex="0" 
            role="button" 
            aria-label="View ${title}"
-           data-asset-id="${asset.getProperty('id') || ''}"
-           data-file-type="${fileType || ''}">
+           data-asc-asset-details="${asset.getUuid()}"
+           data-asc-preload="/details/default/${(asset.getId())}"
+           data-asc-asset-id="${asset.getUuid()}">
           <div class="card-image">
             ${asset.getPictureHtml({
               breakpoints: [
@@ -52,7 +35,8 @@ export function item(asset, index = 0) {
             <h3>${title}</h3>
             <div class="card-meta">
               <span class="file-type">${fileType || 'Unknown'}</span>
-              ${fileSize ? `<span class="file-size">${formatFileSize(fileSize)}</span>` : ''}
+              <span class="file-size">${fileSize}</span>
+              ${dimensions ? `<span class="dimensions">${dimensions.width} x ${dimensions.height}</span>` : ''}
             </div>
           </div>
         </li>`;

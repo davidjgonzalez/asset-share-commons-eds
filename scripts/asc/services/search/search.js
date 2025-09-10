@@ -30,31 +30,6 @@ class SearchService {
     });
   }
 
-  executeSearchFromUrl(queryParams) {
-    const formId = this.getForm();
-    const formData = new Map([
-      ...this.collectFormData(formId),
-      ...new Map(new URLSearchParams(queryParams)),
-    ]);
-
-    const cleanedData = this.cleanFormData(formData);
-
-    this.search(cleanedData);
-  }
-
-  executeSearchFromFormData(event) {
-    const formId = event.detail?.form || this.getForm();
-    const formData = this.collectFormData(formId);
-
-    if(event.detail?.type !== 'more') {
-      formData.set('p.offset', '0');
-    }
-
-    const cleanedData = this.cleanFormData(formData);
-
-    this.search(cleanedData);
-  }
-
   getForm() {
     return this.form;
   }
@@ -63,11 +38,59 @@ class SearchService {
     return {
       type: "dam:Asset",
       path: "/content/dam",
-      orderby: "dam:created",
       mainasset: "true",
+      orderby: "dam:created",
       "orderby.sort": "desc",
       "p.guessTotal": "true",
     };
+  }
+
+  async executeSearchFromUrl(queryParams = window.location.search) {
+    const formId = this.getForm();
+    const formData = new Map([
+      ...this.collectFormData(formId),
+      ...new Map(new URLSearchParams(queryParams)),
+    ]);
+
+    const cleanedData = this.cleanFormData(formData);
+
+    const results = await this.search(cleanedData);
+
+    // Emit search complete event
+    document.dispatchEvent(
+      new CustomEvent("asc:search:complete", {
+        detail: {
+          results: results,
+          query: queryParams,
+          type: "page-load",
+          formData: new Map(formData),
+        },
+      })
+    );
+  }
+
+  async executeSearchFromFormData(event) {
+    const formId = event.detail?.form || this.getForm();
+    const formData = this.collectFormData(formId);
+
+    if(event.detail?.type !== 'load-more') {
+      formData.set('p.offset', '0');
+    }
+
+    const cleanedData = this.cleanFormData(formData);
+
+    const results = await this.search(cleanedData);
+
+    // Emit search complete event
+    document.dispatchEvent(
+      new CustomEvent("asc:search:complete", {
+        detail: {
+          results: results,
+          type: event.detail?.type || "page-load",
+          formData: new Map(formData),
+        },
+      })
+    );
   }
 
   collectFormData(formId) {
@@ -128,19 +151,12 @@ class SearchService {
       // Handle predicate-based cleaning
       const fieldset = this.getFieldset(name);
 
-      console.log(name, value);
+      //console.log(name, value);
       if (name.startsWith('asc.')) {
         cleaned.set(name, value);
       } else if (fieldset) {
         // Check if there are supporting inputs for this predicate
         if (this.hasFieldsetSupport(fieldset, formData)) {
-          console.log(
-            "Add to cleaned; Has Valid Support -- name",
-            name,
-            "value",
-            value
-          );
-
           cleaned.set(name, value);
         }
       } else {
@@ -243,13 +259,15 @@ class SearchService {
         ...formData,
       ]);
 
+      //console.log('formData', formData);
+
       const adjustedData = this.adjustFormData(formData);
 
       adjustedData.set("p.hits", this.config.hits || "full");
       if (this.config.hits === "selective") {
         adjustedData.set("p.properties", this.config.properties.join(" "));
       } else {
-        adjustedData.set("p.nodedepth", "5");
+        adjustedData.set("p.nodedepth", "10");
       }
 
       const queryParams = this.buildQueryParams(adjustedData);
@@ -257,7 +275,7 @@ class SearchService {
 
       // Config Hook: Pre process the query
       const preprocessedQuery = this.config.preprocessQuery
-        ? this.config.preprocessQuery(queryParams)
+        ? await this.config.preprocessQuery(queryParams)
         : queryParams;
 
       // Update browser URL
@@ -266,30 +284,25 @@ class SearchService {
       // Perform the search
       const response = await fetch(searchUrl);
       const qbResults = await response.json();
-
       const results = {
-        ...qbResults,
-        assets: qbResults.hits.map((hit) => new Asset(hit)),
+        more: qbResults.more,
+        offset: qbResults.offset,
+        size: qbResults.results,
+        total: qbResults.total,
+        success: qbResults.success,
+        assets: qbResults.hits?.map((hit) => {
+          const asset = new Asset(hit);
+          window.asc.cache.assets.set(asset.getUuid(), asset);
+          return asset;
+        }) || [],
       };
-
-      delete results.hits;
 
       // Config Hook: Post process the results
       const processedResults = this.config.postprocessResults
-        ? this.config.postprocessResults(results)
+        ? await this.config.postprocessResults(results)
         : results;
 
-      // Emit search complete event
-      document.dispatchEvent(
-        new CustomEvent("asc:search:complete", {
-          detail: {
-            results: processedResults,
-            query: queryParams,
-            type: formData.get("p.offset") === "0" ? "initial" : "more",
-            formData: new Map(formData),
-          },
-        })
-      );
+        return processedResults;
     } catch (error) {
       console.error("Search failed:", error);
 
@@ -333,23 +346,11 @@ class SearchService {
     window.history.replaceState({}, "", url);
   }
 
-  async getAssetByPath(path) {
-    const searchUrl = services.aem.getUrl("/bin/querybuilder.json");
-    const params = new URLSearchParams({
-      type: "dam:Asset",
-      path: path,
-      "p.limit": "1",
-      "p.hits": "full",
-      "p.nodedepth": "5",
-    });
-
-    const response = await fetch(`${searchUrl}?${params}`);
-    const data = await response.json();
-
-    return data.hits?.length > 0 ? new Asset(data.hits[0]) : null;
-  }
-
   async getAssetById(id) {
+    if (window.asc.cache.assets.has(id)) {
+      return window.asc.cache.assets.get(id);
+    }
+
     const searchUrl = services.aem.getUrl("/bin/querybuilder.json");
     const params = new URLSearchParams({
       type: "dam:Asset",
@@ -357,13 +358,15 @@ class SearchService {
       "property.value": id,
       "p.limit": "1",
       "p.hits": "full",
-      "p.nodedepth": "5",
+      "p.nodedepth": "10",
     });
 
     const response = await fetch(`${searchUrl}?${params}`);
     const data = await response.json();
 
-    return data.hits?.length > 0 ? new Asset(data.hits[0]) : null;
+    const asset = data.hits?.length > 0 ? new Asset(data.hits[0]) : null;
+    window.asc.cache.assets.set(asset.getId(), asset);
+    return asset;
   }
 }
 

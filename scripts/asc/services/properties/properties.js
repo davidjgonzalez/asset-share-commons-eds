@@ -1,3 +1,4 @@
+import serviceConfigurations from "../configurations.js";
 import dimensions from './dimensions.js';
 import fileExtension from './file-extension.js';
 import fileSize from './file-size.js';
@@ -7,9 +8,11 @@ import height from './height.js';
 
 export default {
     dimensions,
-    fileExtension,
-    fileSize,
-    fileType,
+    ['file-extension']: fileExtension,
+    ['file-size']: fileSize,
+    ['file-type']: fileType,
     width,
-    height
+    height,
+    /* Add custom, or override existing properties here */
+    ...serviceConfigurations.properties?.custom || {}
 }

@@ -63,6 +63,10 @@ export default class Asset {
   getUuid() {
     return this.data["jcr:uuid"];
   }
+  
+  getId() {
+    return this.getUuid();
+  }
 
   getFilename() {
     return (
@@ -181,11 +185,31 @@ export default class Asset {
     return renditions;
   }
 
-  getProperty(property) {
-    if (services?.properties?.[property]) {
-      return services.properties[property](this);
+  getProperty(property, options = {}) {
+    if (!property) {
+      return null;
     }
 
+    if (services?.properties?.[property]) {
+      return services.properties[property](this, options);
+    }
+
+    // If property starts with metadata then add jcr:content to the beginning, so the next logic block can be used to follow the relative path
+    if (property.startsWith('metadata/')) {
+      property = `jcr:content/${property}`;
+    }
+
+    // If property starts with jcr:content then follow the relative path to get the value from this.data
+    if (property.startsWith('jcr:content/')) {
+      const parts = property.split('/');
+      let value = this.data;
+      for (const part of parts) {
+        value = value[part];
+      }
+      return value;
+    }
+    
+    // Else its probably a property on the metadata, jcr:content, or dam:Asset resource
     return (
       this.metadata[property] ||
       this.data["jcr:content"][property] ||

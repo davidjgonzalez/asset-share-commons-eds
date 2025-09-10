@@ -11,8 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import properties from "./properties/properties.js";
-
 const serviceConfigurations = {
   aem: {
     host: "http://localhost:4503",
@@ -21,7 +19,7 @@ const serviceConfigurations = {
     debug: true,
   },
   init: {
-    
+    preload: true,  
   },
   assetDetails: {
 
@@ -39,10 +37,25 @@ const serviceConfigurations = {
     postprocessResults: (results) => results,
   },
   properties: {
-    computed: {
-      ...properties,
-      // Add your own properties here
-    },
+    // Custom property implementations or overrides of OOTB properties
+    custom: {},
+    
+    // Configuration options for properties (custom, override, or OOTB)
+    configs: {
+      // Example configurations for OOTB properties
+      'file-type': {
+        mimeTypeToLabel: {
+          // Custom MIME type mappings
+        },
+        mediaTypeToLabel: {
+          // Custom prefix mappings
+        }
+      },
+      'file-size': {
+      },
+      'dimensions': {
+      }
+    }
   },
   theme: {
     default: "warm",

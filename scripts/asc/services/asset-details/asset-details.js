@@ -12,21 +12,84 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import serviceConfigurations from '../configurations.js';
-import services from '../services.js';
+import { delegateEvent } from '../../utils/events.js';
 
 class AssetDetails {
     constructor(config) {
-        this.config = config;
+        this.config = {
+            showAssetDetails: this.showAssetDetails,
+            ...config
+        }
+        this.init();
     }
 
-    async getAsset(pathOrId) {        
-        const assetIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        
-        if (assetIdPattern.test(pathOrId)) {
-            return await services.search.getAssetById(pathOrId);
+    init() {
+        // This syntax is used to ensure that the 'showAssetDetails' method is called with the correct 'this' context (the AssetDetails instance).
+        // Without .bind(this), 'this' inside showAssetDetails would refer to the element or window, not the class instance.
+        delegateEvent(document.body, '[data-asc-asset-details]', 'click', this.config.showAssetDetails.bind(this));
+    }
+
+    async getAsset(input) {       
+        if (input.contains('/')) {
+            // assume its a URL where the suffix is the UUID
+            input = input.split('/').pop();
+        } else if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input)) {
+            input = input;
         } else {
-            return await services.search.getAssetByPath(pathOrId);
+            input = null;
         }
+
+        if (input) {
+            return services.search.getAssetById(input);
+        }
+
+        return null;
+    }
+
+    async showAssetDetails(event) {
+        event.preventDefault();
+        console.log('showAssetDetails', event.target);
+        event.target.setAttribute('data-asc-asset-status', 'showing');
+        const assetId = event.target.dataset.ascAssetId;
+        const response = await fetch(`/details/default.plain.html/${assetId}`);
+        const html = await response.text();
+    
+        // Create a <dialog> element and inject the HTML
+        const dialog = document.createElement('dialog');    
+        // Dialog should be fullscreen
+        dialog.style.width = '90vw';
+        dialog.style.height = '90vh';
+        dialog.style.position = 'fixed';
+        dialog.style.top = '0';
+        dialog.style.left = '0';
+        dialog.style.zIndex = '1000';
+        dialog.classList.add('asset-details-dialog');
+        dialog.innerHTML = html;
+
+        // Optionally add a close button if not present in html
+        if (!dialog.querySelector('[data-dialog-close]')) {
+            const closeBtn = document.createElement('button');
+            closeBtn.textContent = 'Close';
+            closeBtn.type = 'button';
+            closeBtn.setAttribute('data-dialog-close', '');
+            closeBtn.style.position = 'absolute';
+            closeBtn.style.top = '1em';
+            closeBtn.style.right = '1em';
+            dialog.appendChild(closeBtn);
+        }
+
+        // Close dialog on close button click or when dialog is canceled (ESC)
+        dialog.addEventListener('click', (e) => {
+            if (e.target.matches('[data-dialog-close]')) {
+                dialog.close();
+            }
+        });
+        dialog.addEventListener('close', () => {
+            dialog.remove();
+        });
+
+        document.body.appendChild(dialog);
+        dialog.showModal();
     }
 }
 

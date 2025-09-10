@@ -1,13 +1,13 @@
-import { loadCSS } from '../../../scripts/aem.js';
+import { loadCSS } from '../../../../scripts/aem.js';
 
-loadCSS('/blocks/search-results/templates/list.css');
+loadCSS('/blocks/search-results/templates/list/list.css');
 
 /**
  * List template for search results
  * Provides table-based layout for asset results
  */
 
-export function container() {
+export default function list(results = {}) {
   return `
         <div class="list-container">
             <table class="list">

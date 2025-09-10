@@ -1,10 +1,21 @@
 import getWidth from './width.js';
 import getHeight from './height.js';
+import serviceConfigurations from "../configurations.js";
 
-export default function get(asset) {
+const config = { 
+    ...serviceConfigurations.properties?.configs?.['dimensions'] || {},
+}
+
+export default function get(asset, options = {}) {
+    const width = getWidth(asset, options);
+    const height = getHeight(asset, options);
+    
+    if (!width || !height) {
+        return null;
+    }
 
     return {
-        width: getWidth(asset),
-        height: getHeight(asset)
+        width: width,
+        height: height
     }
 }
