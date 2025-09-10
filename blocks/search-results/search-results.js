@@ -67,6 +67,11 @@ async function addEventListeners(block) {
   document.addEventListener("asc:search:complete", async (event) => {
     const { results, query, formData } = event.detail;
 
+    // Handle case where results is undefined or null
+    if (!results) {
+      console.warn('Search completed but no results data received');
+      return;
+    }
   
     /* Load the results renderer */
     let display = (results && results.size > 0)
@@ -75,7 +80,7 @@ async function addEventListeners(block) {
     const { default: container, item } = await import(`./templates/${display}/${display}.js`);
 
     block.querySelector('[name="asc.search-results.more"]').value = results.more;
-    block.querySelector('[name="asc.search-results.total"]').value = results.total;
+    block.querySelector('[name="asc.search-results.total"]').value = results.total || 0;
 
     // Increment the offset
     const newOffset = Number.parseInt(block.querySelector('[name="p.offset"]').value) + (results.size || 0);

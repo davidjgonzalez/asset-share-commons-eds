@@ -12,10 +12,12 @@ class SearchService {
     this.config = config;
     this.form = this.config.form || "asc-search-form";
     this.searchUrl = config.url;
+    this.searchInProgress = false;
     this.init();
   }
 
   init() {
+    
     document.addEventListener("asc:search", (event) => {
       if (event.detail?.source === "query-params") {
         this.executeSearchFromUrl(event.detail.value || window.location.search);
@@ -51,10 +53,8 @@ class SearchService {
       ...this.collectFormData(formId),
       ...new Map(new URLSearchParams(queryParams)),
     ]);
-
-    const cleanedData = this.cleanFormData(formData);
-
-    const results = await this.search(cleanedData);
+    
+    const results = await this.search(formData);
 
     // Emit search complete event
     document.dispatchEvent(
@@ -77,15 +77,23 @@ class SearchService {
       formData.set('p.offset', '0');
     }
 
-    const cleanedData = this.cleanFormData(formData);
+    const results = await this.search(formData);
 
-    const results = await this.search(cleanedData);
+    // Ensure results is never undefined
+    const safeResults = results || {
+      more: false,
+      offset: 0,
+      size: 0,
+      total: 0,
+      success: false,
+      assets: []
+    };
 
     // Emit search complete event
     document.dispatchEvent(
       new CustomEvent("asc:search:complete", {
         detail: {
-          results: results,
+          results: safeResults,
           type: event.detail?.type || "page-load",
           formData: new Map(formData),
         },
@@ -151,7 +159,6 @@ class SearchService {
       // Handle predicate-based cleaning
       const fieldset = this.getFieldset(name);
 
-      //console.log(name, value);
       if (name.startsWith('asc.')) {
         cleaned.set(name, value);
       } else if (fieldset) {
@@ -173,7 +180,7 @@ class SearchService {
           });
           
           if (fieldsetHasValidInput) {
-            //console.log("Add to cleaned; Supporting field with valid fieldset -- name", name, "value", value);
+            //("Add to cleaned; Supporting field with valid fieldset -- name", name, "value", value);
             cleaned.set(name, value);
           } else {
             //console.log("Skip; Supporting field without valid fieldset -- name", name, "value", value);
@@ -234,32 +241,23 @@ class SearchService {
     return adjusted;
   }
 
-  // Debounced search: only one search at a time, queue the latest request if needed
-  _searchInProgress = false;
-
   async search(formData) {
     // If a search is already in progress, store the latest request and return
-    if (this._searchInProgress) {
+    if (this.searchInProgress) {
       return;
     }
 
-    this._searchInProgress = true;
+    this.searchInProgress = true;
+
+    // Only include form fields that are actually used in the search
+    formData = this.cleanFormData(formData);
 
     try {
-      // Emit search start event
-      document.dispatchEvent(
-        new CustomEvent("asc:search:start", {
-          detail: { formData: new Map(formData) },
-        })
-      );
-
       // Convert formData (Map) and base params (object) into a single object of query param names and values
       formData = new Map([
         ...Object.entries(this.getBaseParams()),
         ...formData,
       ]);
-
-      //console.log('formData', formData);
 
       const adjustedData = this.adjustFormData(formData);
 
@@ -270,11 +268,10 @@ class SearchService {
         adjustedData.set("p.nodedepth", "10");
       }
 
-      const queryParams = this.buildQueryParams(adjustedData);
-      const searchUrl = `${this.searchUrl}?${queryParams}`;
+      let queryParams = this.buildQueryParams(adjustedData);
 
       // Config Hook: Pre process the query
-      const preprocessedQuery = this.config.preprocessQuery
+      queryParams = this.config.preprocessQuery
         ? await this.config.preprocessQuery(queryParams)
         : queryParams;
 
@@ -282,9 +279,9 @@ class SearchService {
       this.updateBrowserUrl(queryParams);
 
       // Perform the search
-      const response = await fetch(searchUrl);
+      const response = await fetch(`${this.searchUrl}?${queryParams}`);
       const qbResults = await response.json();
-      const results = {
+      let results = {
         more: qbResults.more,
         offset: qbResults.offset,
         size: qbResults.results,
@@ -298,11 +295,11 @@ class SearchService {
       };
 
       // Config Hook: Post process the results
-      const processedResults = this.config.postprocessResults
+      results = this.config.postprocessResults
         ? await this.config.postprocessResults(results)
         : results;
 
-        return processedResults;
+        return results;
     } catch (error) {
       console.error("Search failed:", error);
 
@@ -312,8 +309,19 @@ class SearchService {
           detail: { error, formData: new Map(formData) },
         })
       );
+
+      // Return a proper error result instead of undefined
+      return {
+        more: false,
+        offset: 0,
+        size: 0,
+        total: 0,
+        success: false,
+        assets: [],
+        error: error.message
+      };
     } finally {
-      this._searchInProgress = false;      
+      this.searchInProgress = false;      
     }
   }
 

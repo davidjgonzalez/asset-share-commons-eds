@@ -13,6 +13,7 @@
 // limitations under the License.
 import serviceConfigurations from '../configurations.js';
 import { delegateEvent } from '../../utils/events.js';
+import { loadFragment } from '../../../../blocks/fragment/fragment.js';
 
 class AssetDetails {
     constructor(config) {
@@ -52,8 +53,10 @@ class AssetDetails {
         event.target.setAttribute('data-asc-asset-status', 'showing');
         const assetId = event.target.dataset.ascAssetId;
         const response = await fetch(`/details/default.plain.html/${assetId}`);
-        const html = await response.text();
-    
+
+        const fragment = await loadFragment(`/details/default.plain.html/${assetId}`);
+
+
         // Create a <dialog> element and inject the HTML
         const dialog = document.createElement('dialog');    
         // Dialog should be fullscreen
@@ -64,8 +67,8 @@ class AssetDetails {
         dialog.style.left = '0';
         dialog.style.zIndex = '1000';
         dialog.classList.add('asset-details-dialog');
-        dialog.innerHTML = html;
-
+        dialog.appendChild(fragment);
+        
         // Optionally add a close button if not present in html
         if (!dialog.querySelector('[data-dialog-close]')) {
             const closeBtn = document.createElement('button');
