@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { readBlockConfig } from '../../scripts/aem.js';
 import Asset from '../../scripts/asc/models/asset.js';
-import { extractConfig } from '../../scripts/asc/utils/utils.js';
 
 export default async function decorate(block) {
-    const asset = await Asset.create(window.location.pathname.split('/').pop());
-    const config = extractConfig(block);
+  //const asset = await Asset.create(block);
+  //const config = readBlockConfig(block);
         
-    block.innerHTML = `
+    block.innerHTML = `foo`;/*
       <label>${config.label}</label>
       <span>${asset.getProperty(config.property)}</span>      
-    `;
+    `;*/
 }
 

@@ -6,54 +6,37 @@ export default class Asset {
     this.metadata = data["jcr:content"]["metadata"];
   }
 
-  static async create(assetMetadata) {
-    if (typeof assetMetadata === "object") {
-      return new Asset(assetMetadata);
-    } else if (typeof assetMetadata === "string") {
-      let path;
-      let id;
+  static async create(input) {
+    let id;
 
-      const searchUrl = services.aem.getUrl("/bin/querybuilder.json");
-      const uuidPattern =
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-      if (uuidPattern.test(assetMetadata)) {
-        id = assetMetadata;
+    if (input instanceof Element) {
+      // If input is an HTMLElement, look up the DOM tree for the data-asc-asset-id attribute
+      let element = input;
+      while (element && !element.hasAttribute('data-asc-asset-id')) {
+        element = element.parentElement;
+      }
+      
+      if (element) {
+        id = element.getAttribute('data-asc-asset-id');
       } else {
-        path = assetMetadata;
+        console.warn("No data-asc-asset-id attribute found in DOM tree for element:", input);
+        return null;
       }
-
-      let params;
-
-      if (path) {
-        params = new URLSearchParams({
-          type: "dam:Asset",
-          path: path,
-          "p.limit": "1",
-          "p.hits": "full",
-          "p.nodedepth": "5",
-        });
+    } else if (typeof input === "object" && input.pathname) {
+      if (input.pathname.startsWith("/details")) {
+        id = input.pathname.split("/").pop();
       } else {
-        params = new URLSearchParams({
-          type: "dam:Asset",
-          property: "jcr:uuid",
-          "property.value": id,
-          "p.limit": "1",
-          "p.hits": "full",
-          "p.nodedepth": "5",
-        });
+        console.warn("Unable to create Asset from input: ", input);
+        return null;
       }
-
-      const response = await fetch(`${searchUrl}?${params}`);
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-
-      return data.hits?.length > 0 ? new Asset(data.hits[0]) : null;
+    } else {
+      return new Asset(input);
     }
+    
+
+
+    
+    return await services.search.getAssetById(id);
   }
 
   getPath() {
@@ -63,7 +46,7 @@ export default class Asset {
   getUuid() {
     return this.data["jcr:uuid"];
   }
-  
+
   getId() {
     return this.getUuid();
   }
@@ -138,7 +121,11 @@ export default class Asset {
     const renditions = [];
     if (resource && typeof resource === "object") {
       Object.entries(resource).forEach(([key, value]) => {
-        if (typeof value === "object" && value["jcr:primaryType"] === "nt:file" && value["jcr:content"]) {
+        if (
+          typeof value === "object" &&
+          value["jcr:primaryType"] === "nt:file" &&
+          value["jcr:content"]
+        ) {
           let renditionAttributes = {};
 
           if (value["jcr:content"]["metadata"]) {
@@ -195,20 +182,20 @@ export default class Asset {
     }
 
     // If property starts with metadata then add jcr:content to the beginning, so the next logic block can be used to follow the relative path
-    if (property.startsWith('metadata/')) {
+    if (property.startsWith("metadata/")) {
       property = `jcr:content/${property}`;
     }
 
     // If property starts with jcr:content then follow the relative path to get the value from this.data
-    if (property.startsWith('jcr:content/')) {
-      const parts = property.split('/');
+    if (property.startsWith("jcr:content/")) {
+      const parts = property.split("/");
       let value = this.data;
       for (const part of parts) {
         value = value[part];
       }
       return value;
     }
-    
+
     // Else its probably a property on the metadata, jcr:content, or dam:Asset resource
     return (
       this.metadata[property] ||

@@ -39,10 +39,14 @@ class Init {
      */
     if (this.config.preload) {
       delegateEvent(document.body, '[data-asc-preload]', 'mouseover', (event) => { 
-        if (event.target.dataset.ascPreload) {
-          fetch(event.target.dataset.ascPreload);
-        }
+        fetch(event.target.dataset.ascPreload);
       });   
+
+      delegateEvent(document.body, '[data-asc-preload-fragment]', 'mouseover', (event) => { 
+          const url = new URL(event.target.dataset.ascPreloadFragment, window.location);
+          url.pathname = `${url.pathname}.plain.html`;
+          fetch(`${url.pathname}`);
+      });  
     }
   }
 }

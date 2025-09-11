@@ -15,9 +15,11 @@
 import Asset from '../../scripts/asc/models/asset.js';
 
 export default async function decorate(block) {
+  console.log("details-preview", block);
   try {
     // Get asset from URL (UUID or path)
-    const asset = await Asset.create(window.location.pathname.split('/').pop());
+    const asset = await Asset.create(block);
+    console.log("asset", asset);
     
     // Update page title
     document.title = `${asset.getTitle()} - Asset Details`;

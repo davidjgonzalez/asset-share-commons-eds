@@ -13,7 +13,7 @@
 // limitations under the License.
 import serviceConfigurations from '../configurations.js';
 import { delegateEvent } from '../../utils/events.js';
-import { loadFragment } from '../../../../blocks/fragment/fragment.js';
+import { loadFragment } from '../../../../blocks/fragment/folder-map-fragment.js';
 
 class AssetDetails {
     constructor(config) {
@@ -30,8 +30,17 @@ class AssetDetails {
         delegateEvent(document.body, '[data-asc-asset-details]', 'click', this.config.showAssetDetails.bind(this));
     }
 
-    async getAsset(input) {       
-        if (input.contains('/')) {
+    async getAsset(input) {    
+        // check if input is a URL with a query param of id 
+        if (input === null) {
+            input = window.location;
+        }
+
+        if (input.startsWith('http')) {
+            const url = new URL(input, window.location);
+            const searchParams = new URLSearchParams(url.search);
+            input = searchParams.get('id');        
+        } else if (input.contains('/')) {
             // assume its a URL where the suffix is the UUID
             input = input.split('/').pop();
         } else if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input)) {
@@ -52,10 +61,14 @@ class AssetDetails {
         console.log('showAssetDetails', event.target);
         event.target.setAttribute('data-asc-asset-status', 'showing');
         const assetId = event.target.dataset.ascAssetId;
-        const response = await fetch(`/details/default.plain.html/${assetId}`);
 
-        const fragment = await loadFragment(`/details/default.plain.html/${assetId}`);
-
+        const fragment = await loadFragment(`/details/default/${assetId}`, {
+            main: {
+                'data-asc-asset-id': assetId,
+                'class': 'modal',
+            }
+        });
+        console.log('fragment', fragment);
 
         // Create a <dialog> element and inject the HTML
         const dialog = document.createElement('dialog');    
@@ -68,7 +81,7 @@ class AssetDetails {
         dialog.style.zIndex = '1000';
         dialog.classList.add('asset-details-dialog');
         dialog.appendChild(fragment);
-        
+
         // Optionally add a close button if not present in html
         if (!dialog.querySelector('[data-dialog-close]')) {
             const closeBtn = document.createElement('button');

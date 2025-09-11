@@ -17,7 +17,7 @@ export function item(asset, index = 0) {
            role="button" 
            aria-label="View ${title}"
            data-asc-asset-details="${asset.getUuid()}"
-           data-asc-preload="/details/default/${(asset.getId())}"
+           data-asc-preload-fragment="/details/default/${(asset.getId())}"
            data-asc-asset-id="${asset.getUuid()}">
           <div class="card-image">
             ${asset.getPictureHtml({
