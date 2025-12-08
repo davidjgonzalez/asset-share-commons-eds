@@ -2,11 +2,11 @@
  * AEM QueryBuilder documentation - Property 
  * https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/implementing/developing/full-stack/search/query-builder-predicates#property
  **/
-import { getBlockConfig, getOptions } from '../../scripts/asc/utils/search.js';
+import { readBlockConfig, getOptions } from '../../scripts/asc/utils/search.js';
 
 export default function decorate(block) {
-  const config = getBlockConfig(block, {
-        options: (content) => getOptions({content}),
+  const config = readBlockConfig(block, {
+        options: (content) => getOptions({content: String(content)}),
   }, {
     name: 'property',
     property: 'jcr:content/metadata/dc:format',

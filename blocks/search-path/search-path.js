@@ -3,12 +3,12 @@
  * https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/implementing/developing/full-stack/search/query-builder-predicates#path
  **/
 
-import { getBlockConfig, getOptions } from '../../scripts/asc/utils/search.js';
+import { readBlockConfig, getOptions } from '../../scripts/asc/utils/search.js';
 import { htmlCheckboxes, htmlRadio, htmlDropdown } from '../search-property/search-property.js';
 
 export default function decorate(block) {
-  const config = getBlockConfig(block, {
-        options: (content) => getOptions({content}),
+  const config = readBlockConfig(block, {
+        options: (content) => getOptions({content: String(content)}),
   }, {
     name: 'path',
     operation: 'equals',

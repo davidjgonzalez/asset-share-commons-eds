@@ -6,11 +6,11 @@
 
 import {
   decorateMain,
-} from '../../scripts/scripts.js';
+} from '../../scripts.js';
 
 import {
   loadSections,
-} from '../../scripts/aem.js';
+} from '../../aem.js';
 
 /**
  * Loads a fragment.
@@ -21,22 +21,20 @@ export async function loadFragment(path, attrs = {}) {
   if (path && path.startsWith('/')) {
     const resp = await fetch(`${path}.plain.html`);
     if (resp.ok) {
-
+      /* +++ Begin customization of OOTB loadFragment +++ */
       /* Loading a Folder Map Fragment includes the FULL HTML document, extract the main element */
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(`<div>${await resp.text()}</div>`, 'text/html');
-      const parent = doc.querySelector('main')?.parentElement;
+      const main = document.createElement('main');
+      main.innerHTML = await resp.text();
 
       Object.entries(attrs).forEach(([selector, attributes]) => {
-        parent.querySelectorAll(selector).forEach((el) => {
+        const els = main.matches(selector) ? [main, ...main.querySelectorAll(`:scope ${selector}`)] : main.querySelectorAll(`:scope ${selector}`);
+        els.forEach((el) => {
           Object.entries(attributes).forEach(([attr, val]) => {
             el.setAttribute(attr, val);
           });
         });
       });
-
-      console.log("main", parent);
-      const main = parent.querySelector('main');
+      /* --- End customization of OOTB loadFragment --- */
 
       // reset base path for media to fragment base
       const resetAttributeBase = (tag, attr) => {
@@ -53,17 +51,4 @@ export async function loadFragment(path, attrs = {}) {
     }
   }
   return null;
-}
-
-export default async function decorate(block) {
-  const link = block.querySelector('a');
-  const path = link ? link.getAttribute('href') : block.textContent.trim();
-  const fragment = await loadFragment(path);
-  if (fragment) {
-    const fragmentSection = fragment.querySelector(':scope .section');
-    if (fragmentSection) {
-      block.closest('.section').classList.add(...fragmentSection.classList);
-      block.closest('.fragment').replaceWith(...fragment.childNodes);
-    }
-  }
 }

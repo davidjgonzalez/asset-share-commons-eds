@@ -57,6 +57,9 @@ const serviceConfigurations = {
       }
     }
   },
+  url: {
+
+  },
   theme: {
     default: "warm",
   },

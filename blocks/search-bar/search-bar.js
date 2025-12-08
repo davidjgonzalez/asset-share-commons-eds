@@ -1,7 +1,7 @@
-import { getBlockConfig } from '../../scripts/asc/utils/search.js';
+import { readBlockConfig } from '../../scripts/asc/utils/search.js';
 
 export default function decorate(block) {
-  const config = getBlockConfig(block, {}, {
+  const config = readBlockConfig(block, {}, {
     placeholder: 'Search assets...',
     inputType: 'search',
     name: 'fulltext',

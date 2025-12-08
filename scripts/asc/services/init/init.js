@@ -1,5 +1,6 @@
 import serviceConfigurations from "../configurations.js";
-import { delegateEvent } from "../../utils/events.js";
+import actions from "../actions/actions.js";
+
 class Init {
   constructor(config) {
     this.config = config;
@@ -38,15 +39,16 @@ class Init {
      * Preload URLs on hover
      */
     if (this.config.preload) {
-      delegateEvent(document.body, '[data-asc-preload]', 'mouseover', (event) => { 
-        fetch(event.target.dataset.ascPreload);
-      });   
-
-      delegateEvent(document.body, '[data-asc-preload-fragment]', 'mouseover', (event) => { 
-          const url = new URL(event.target.dataset.ascPreloadFragment, window.location);
-          url.pathname = `${url.pathname}.plain.html`;
-          fetch(`${url.pathname}`);
-      });  
+      actions.registerAction('preload', 'mouseover', (event) => { 
+        const pathToPreload = event.target.dataset.ascPreload;
+        
+        if (pathToPreload) {
+          fetch(pathToPreload);
+          if (!pathToPreload.includes('.')) {
+            fetch(`${pathToPreload}.plain.html`);
+          }
+        }
+      });
     }
   }
 }

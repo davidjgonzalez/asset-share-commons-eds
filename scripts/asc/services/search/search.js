@@ -1,5 +1,6 @@
 import serviceConfigurations from "../configurations.js";
 import Asset from "../../models/asset.js";
+import aem from "../aem/aem.js";
 
 const Events = {
   SEARCH_START: "asc:search",
@@ -289,7 +290,7 @@ class SearchService {
         success: qbResults.success,
         assets: qbResults.hits?.map((hit) => {
           const asset = new Asset(hit);
-          window.asc.cache.assets.set(asset.getUuid(), asset);
+          window.asc.cache.assets.set(asset.uuid, asset);
           return asset;
         }) || [],
       };
@@ -359,7 +360,8 @@ class SearchService {
       return window.asc.cache.assets.get(id);
     }
 
-    const searchUrl = services.aem.getUrl("/bin/querybuilder.json");
+    const searchUrl = aem.getUrl("/bin/querybuilder.json");
+    
     const params = new URLSearchParams({
       type: "dam:Asset",
       property: "jcr:uuid",
@@ -373,7 +375,7 @@ class SearchService {
     const data = await response.json();
 
     const asset = data.hits?.length > 0 ? new Asset(data.hits[0]) : null;
-    window.asc.cache.assets.set(asset.getId(), asset);
+    window.asc.cache.assets.set(asset.id, asset);
     return asset;
   }
 }

@@ -12,8 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import serviceConfigurations from '../configurations.js';
-import { delegateEvent } from '../../utils/events.js';
-import { loadFragment } from '../../../../blocks/fragment/folder-map-fragment.js';
+import actions from '../actions/actions.js';
+import search from '../search/search.js';
+import { loadFragment } from '../../utils/fragments.js';
 
 class AssetDetails {
     constructor(config) {
@@ -25,9 +26,8 @@ class AssetDetails {
     }
 
     init() {
-        // This syntax is used to ensure that the 'showAssetDetails' method is called with the correct 'this' context (the AssetDetails instance).
-        // Without .bind(this), 'this' inside showAssetDetails would refer to the element or window, not the class instance.
-        delegateEvent(document.body, '[data-asc-asset-details]', 'click', this.config.showAssetDetails.bind(this));
+        actions.registerAction('show-asset-details', 'click', 
+            this.config.showAssetDetails.bind(this));
     }
 
     async getAsset(input) {    
@@ -50,25 +50,28 @@ class AssetDetails {
         }
 
         if (input) {
-            return services.search.getAssetById(input);
+            return search.getAssetById(input);
         }
 
         return null;
     }
 
-    async showAssetDetails(event) {
+    async showAssetDetails(event, el) {
         event.preventDefault();
-        console.log('showAssetDetails', event.target);
-        event.target.setAttribute('data-asc-asset-status', 'showing');
-        const assetId = event.target.dataset.ascAssetId;
 
-        const fragment = await loadFragment(`/details/default/${assetId}`, {
+        console.log('showAssetDetails', event, el);
+
+        event.target.setAttribute('data-asc-asset-status', 'showing');
+
+        const assetId = el.dataset.ascAssetId;
+        console.log('assetId', assetId);
+
+        const fragment = await loadFragment(`/details/default`, {
             main: {
                 'data-asc-asset-id': assetId,
                 'class': 'modal',
             }
         });
-        console.log('fragment', fragment);
 
         // Create a <dialog> element and inject the HTML
         const dialog = document.createElement('dialog');    

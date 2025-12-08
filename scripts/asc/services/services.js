@@ -13,22 +13,34 @@
 // limitations under the License.
 
 import aem from './aem/aem.js';
+import actions from './actions/actions.js';
 import assetDetails from './asset-details/asset-details.js';
 import debug from './debug/debug.js';
+import collections from './collections/collections.js';
 import fileType from './file-type/file-type.js';
 import properties from './properties/properties.js';
+import renditions from './renditions/renditions.js';
 import search from './search/search.js';
+import storage from './storage/storage.js';
+import url from './url/url.js';
+import users from './users/users.js';
 
+/* Import init last */
 import init from './init/init.js';
 
 const services = {
+    actions,
     aem,
     assetDetails,
+    collections,
     debug,
     fileType,
     init,
     properties,
+    renditions,
     search,
+    url,
+    users,
 }
 
 export default services;

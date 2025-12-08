@@ -15,30 +15,36 @@
 import Asset from '../../scripts/asc/models/asset.js';
 
 export default async function decorate(block) {
-  console.log("details-preview", block);
   try {
     // Get asset from URL (UUID or path)
+    console.log('details-preview', block);
     const asset = await Asset.create(block);
-    console.log("asset", asset);
+
+    console.log("asset.getRendition('web')", asset.getRendition('web'));
     
     // Update page title
-    document.title = `${asset.getTitle()} - Asset Details`;
+    document.title = `${asset.title} - Asset Details`;
     
     // Render asset preview
     block.innerHTML = `
-      <div class="asset-preview">
+      <section class="asset-preview">
         <figure>
-          <img src="${asset.getUrl()}" alt="${asset.getTitle()}" loading="eager">
+          <img src="${asset.getRendition('web').url}" alt="${asset.title}" loading="eager">
+          <figcaption>
+            <h1>${asset.title}</h1>
+            ${asset.description ? `<p class="description">${asset.description}</p>` : ''}
+          </figcaption>
         </figure>
-        <div class="asset-info">
-          <h1>${asset.getTitle()}</h1>
-          ${asset.getDescription() ? `<p class="description">${asset.getDescription()}</p>` : ''}
-          <div class="metadata">
-            <span class="file-type">${asset.getProperty('fileType') || 'Unknown'}</span>
-            ${asset.getSizeInBytes() ? `<span class="file-size">${formatFileSize(asset.getSizeInBytes())}</span>` : ''}
-          </div>
-        </div>
-      </div>
+        <aside class="asset-info">
+          <dl class="metadata">
+            <dt>File Type</dt>
+            <dd class="file-type">${asset.getProperty('file-type') || 'Unknown file type'}</dd>
+            ${asset.sizeInBytes ? `<dt>File Size</dt><dd class="file-size">${formatFileSize(asset.sizeInBytes)}</dd>` : ''}
+            <dt>File Path</dt>
+            <dd class="file-path">${asset.path}</dd>
+          </dl>
+        </aside>
+      </section>
     `;
     
   } catch (error) {

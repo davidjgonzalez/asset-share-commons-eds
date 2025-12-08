@@ -1,9 +1,26 @@
 import services from "../services/services.js";
+import Rendition from "./rendition.js";
 
 export default class Asset {
   constructor(data) {
+    // Store raw data
     this.data = data;
     this.metadata = data["jcr:content"]["metadata"];
+    
+    // Extract commonly used direct properties
+    this.path = data["jcr:path"];
+    this.uuid = data["jcr:uuid"];
+    this.filename = data["jcr:content"]["cq:name"] || data["jcr:path"]?.split("/")?.pop() || null;
+    this.title = data["jcr:content"]["metadata"]["dc:title"] || data["jcr:content"]["cq:name"] || "Missing title";
+    this.description = data["jcr:content"]["metadata"]["dc:description"];
+    this.mimeType = data["jcr:content"]["metadata"]["dc:format"];
+    this.sizeInBytes = data["jcr:content"]["metadata"]["dam:size"] || null;
+    this.created = new Date(data["jcr:content"]["metadata"]["jcr:created"]);
+    this.lastModified = new Date(data["jcr:content"]["metadata"]["jcr:lastModified"]);
+
+    /* Object cache */
+    this._renditions = null;
+    this._staticRenditions = null;
   }
 
   static async create(input) {
@@ -12,14 +29,19 @@ export default class Asset {
     if (input instanceof Element) {
       // If input is an HTMLElement, look up the DOM tree for the data-asc-asset-id attribute
       let element = input;
-      while (element && !element.hasAttribute('data-asc-asset-id')) {
+      while (!element?.hasAttribute("data-asc-asset-id")) {
         element = element.parentElement;
       }
-      
-      if (element) {
-        id = element.getAttribute('data-asc-asset-id');
+
+      console.log('element', element);
+
+      if (element?.hasAttribute("data-asc-asset-id")) {
+        id = element.getAttribute("data-asc-asset-id");
       } else {
-        console.warn("No data-asc-asset-id attribute found in DOM tree for element:", input);
+        console.warn(
+          "No data-asc-asset-id attribute found in DOM tree for element:",
+          input
+        );
         return null;
       }
     } else if (typeof input === "object" && input.pathname) {
@@ -32,144 +54,42 @@ export default class Asset {
     } else {
       return new Asset(input);
     }
-    
 
-
-    
     return await services.search.getAssetById(id);
   }
 
-  getPath() {
-    return this.data["jcr:path"];
+  // Computed properties with logic
+  get id() {
+    return this.uuid;
   }
 
-  getUuid() {
-    return this.data["jcr:uuid"];
+  get displaySize() {
+    if (!this.sizeInBytes) return 'Unknown size';
+    const bytes = this.sizeInBytes;
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
   }
 
-  getId() {
-    return this.getUuid();
+  get fileExtension() {
+    if (!this.filename) return null;
+    const match = this.filename.match(/\.([^.]+)$/);
+    return match ? match[1].toLowerCase() : null;
   }
 
-  getFilename() {
-    return (
-      this.data["jcr:content"]["cq:name"] ||
-      this.getPath()?.split("/")?.pop() ||
-      null
-    );
-  }
-
-  getSizeInBytes() {
-    return this.getProperty("dam:size") || null;
-  }
-
-  getCreated() {
-    return new Date(this.data["jcr:content"]["metadata"]["jcr:created"]);
-  }
-
-  getLastModified() {
-    return new Date(this.data["jcr:content"]["metadata"]["jcr:lastModified"]);
-  }
-
-  getTitle() {
-    return (
-      this.data["jcr:content"]["metadata"]["dc:title"] ||
-      this.data["jcr:content"]["cq:name"] ||
-      "Missing title"
-    );
-  }
-
-  getDescription() {
-    return this.data["jcr:content"]["metadata"]["dc:description"];
-  }
-
-  getThumbnail() {
+  get thumbnail() {
     if (!services.aem.isLocalhost()) {
       return this.getDynamicUrl({ preferwebp: true, width: 200, quality: 80 });
     } else {
-      return this.getRenditions().find((r) =>
+      return this.renditions().find((r) =>
         r.name.includes("cq5dam.thumbnail.319.319")
       )?.url;
     }
   }
 
-  getDynamicUrl(params = { preferwebp: true, width: 200, quality: 80 }) {
-    // In format /adobe/dynamicmedia/deliver/dm-aid--a38886f7-4537-4791-aa20-3f6ef0ac3fcd/adobestock_175749320.jpg?preferwebp=true&width=1000&quality=80
-
-    const path = `/adobe/dynamicmedia/deliver/dm-aid--${this.getUuid()}/${this.getFilename()}`;
-
-    const url = new URL(path, services.aem.getHost());
-
-    Object.entries(params).forEach(([key, value]) => {
-      url.searchParams.set(key, value);
-    });
-
-    return url.toString();
-  }
-
-  getUrl() {
-    return services.aem.getUrl(this.getPath());
-  }
-
-  getMimeType() {
-    return this.data["jcr:content"]["metadata"]["dc:format"];
-  }
-
-  getRenditions() {
-    const resource = this.data["jcr:content"]["renditions"];
-
-    const renditions = [];
-    if (resource && typeof resource === "object") {
-      Object.entries(resource).forEach(([key, value]) => {
-        if (
-          typeof value === "object" &&
-          value["jcr:primaryType"] === "nt:file" &&
-          value["jcr:content"]
-        ) {
-          let renditionAttributes = {};
-
-          if (value["jcr:content"]["metadata"]) {
-            renditionAttributes = {
-              mimeType: value["jcr:content"]["metadata"]["dc:format"] || null,
-              fileSize: value["jcr:content"]["metadata"]["dam:size"] || null,
-              width:
-                value["jcr:content"]["metadata"]["tiff:ImageWidth"] || null,
-              height:
-                value["jcr:content"]["metadata"]["tiff:ImageLength"] || null,
-            };
-          } else if (key === "original") {
-            // Special case for original
-            renditionAttributes = {
-              mimeType: this.getMimeType() || null,
-              fileSize: this.getSizeInBytes() || null,
-              width: this.getProperty("tiff:ImageWidth") || null,
-              height: this.getProperty("tiff:ImageLength") || null,
-            };
-          } else {
-            // given a key like cq5dam.thumbnail.319.319.png, parse the mime type and dimensions
-            const width = key.split(".")[2];
-            const height = key.split(".")[3];
-
-            renditionAttributes = {
-              mimeType: services.fileType.getMimeType(key),
-              fileSize: null,
-              width: width,
-              height: height,
-            };
-          }
-
-          renditions.push({
-            name: key,
-            path: `${this.getPath()}/jcr:content/renditions/${key}`,
-            url: services.aem.getUrl(
-              `${this.getPath()}/_jcr_content/renditions/${key}`
-            ),
-            ...renditionAttributes,
-          });
-        }
-      });
-    }
-    return renditions;
+  get url() {
+    return services.aem.getUrl(this.path);
   }
 
   getProperty(property, options = {}) {
@@ -205,13 +125,113 @@ export default class Asset {
     );
   }
 
-  getData() {
-    return this.data;
+  get renditions() {
+    if (this._renditions != null) { return this._renditions; }
+    this._renditions = services.renditions.getRenditions(this) || [];
+    return this._renditions;
   }
 
-  getMetadata() {
-    return this.data["jcr:content"]["metadata"];
+  getDynamicUrl(params = { preferwebp: true, width: 200, quality: 80 }) {
+    // In format /adobe/dynamicmedia/deliver/dm-aid--a38886f7-4537-4791-aa20-3f6ef0ac3fcd/adobestock_175749320.jpg?preferwebp=true&width=1000&quality=80
+
+    const path = `/adobe/dynamicmedia/deliver/dm-aid--${this.uuid}/${this.filename}`;
+
+    const url = new URL(path, services.aem.getHost());
+
+    Object.entries(params).forEach(([key, value]) => {
+      url.searchParams.set(key, value);
+    });
+
+    return url.toString();
   }
+
+  getRendition(name) {
+    if (!name) return null;
+
+    if (name instanceof RegExp) {
+      return this.renditions.find((r) => name.test(r.name)) || null;
+    }
+    return this.renditions.find((r) => r.name.includes(name)) || null;
+  }
+
+
+  get staticRenditions() {
+    if (this._staticRenditions != null) return this._staticRenditions;
+
+    const resource = this.data["jcr:content"]["renditions"];
+
+    const staticRenditions = [];
+    if (resource && typeof resource === "object") {
+      Object.entries(resource).forEach(([name, value]) => {
+        if (
+          typeof value === "object" &&
+          value["jcr:primaryType"] === "nt:file" &&
+          value["jcr:content"]
+        ) {
+          let staticRendition = {};
+
+          if (value["jcr:content"]["metadata"]) {
+            staticRendition = {
+              mimeType: value["jcr:content"]["metadata"]["dc:format"] || null,
+              fileSize: value["jcr:content"]["metadata"]["dam:size"] || null,
+              width:
+                Number.parseInt(
+                  value["jcr:content"]["metadata"]["tiff:ImageWidth"]
+                ) || null,
+              height:
+                Number.parseInt(
+                  value["jcr:content"]["metadata"]["tiff:ImageLength"]
+                ) || null,
+            };
+          } else if (name === "original") {
+            // Special case for original
+            staticRendition = {
+              mimeType: this.mimeType || null,
+              fileSize: this.sizeInBytes || null,
+              width: this.getProperty("tiff:ImageWidth") || null,
+              height: this.getProperty("tiff:ImageLength") || null,
+            };
+          } else {
+            // given a key like cq5dam.thumbnail.319.319.png, parse the mime type and dimensions
+            const width = name.split(".")[2];
+            const height = name.split(".")[3];
+
+            staticRendition = { 
+              id: name,
+              name: name,
+              mimeType: services.fileType.getMimeType(name),
+              fileSize: null,
+              width: width,
+              height: height,
+            };
+          }
+
+          const rendition = new Rendition({
+            asset: this,
+            id: name,
+            name: name,
+            label: name,
+            description: "AEM static rendition",
+            width: staticRendition.width,
+            height: staticRendition.height,
+            fileSize: staticRendition.fileSize,
+            mimeType: staticRendition.mimeType,
+            path: `${this.path}/jcr:content/renditions/${name}`,
+            url: services.aem.getUrl(
+              `${this.path}/_jcr_content/renditions/${name}`
+            ),
+          });
+
+          staticRenditions.push(rendition);
+        }
+      });
+    }
+    this._staticRenditions = staticRenditions;
+    return this._staticRenditions;
+  }
+
+
+
 
   /* HTML helpers */
 
@@ -229,12 +249,11 @@ export default class Asset {
       imgAttributes = {}, // Additional attributes for <img>
     } = options;
 
-    let imageRenditions = this.getRenditions()
-      .filter(
-        (r) =>
-          /cq5dam\.(thumbnail|web|zoom)\.\d+\.\d+\.(png|jpg|jpeg|gif|webp)/.test(
-            r.name
-          ) && r.mimeType?.includes("image/")
+    let imageRenditions = this.staticRenditions
+      .filter((r) =>
+        ["image/jpeg", "image/png", "image/gif", "image/webp"].includes(
+          r.mimeType
+        )
       )
       .sort((a, b) => b.width - a.width);
 
@@ -281,7 +300,7 @@ export default class Asset {
 
     // Build img attributes
     const imgAttrs = {
-      alt: alt !== null ? alt : this.getTitle(),
+      alt: alt !== null ? alt : this.title,
       loading: eager ? "eager" : "lazy",
       fetchpriority: eager ? "high" : "auto",
       src: fallbackImg.url,
@@ -304,5 +323,47 @@ export default class Asset {
       ${sources}
       <img ${imgAttrString} />
     </picture>`;
+  }
+
+
+  /**
+   * Make the asset iterable for destructuring and spreading
+   * @returns {Object} Iterator with key-value pairs
+   */
+  *[Symbol.iterator]() {
+    for (const [key, value] of Object.entries(this)) {
+      yield [key, value];
+    }
+  }
+
+  /**
+   * Convert asset to plain object for spreading
+   * @returns {Object} Plain object representation with all properties and computed values
+   */
+  toObject() {
+    return {
+      // Direct properties
+      id: this.id,
+      data: this.data,
+      metadata: this.metadata,
+      path: this.path,
+      uuid: this.uuid,
+      filename: this.filename,
+      title: this.title,
+      description: this.description,
+      mimeType: this.mimeType,
+      sizeInBytes: this.sizeInBytes,
+      created: this.created,
+      lastModified: this.lastModified,
+
+    };
+  }
+
+  /**
+   * Convert to JSON-serializable object
+   * @returns {Object} Plain object suitable for JSON.stringify
+   */
+  toJSON() {
+    return this.toObject();
   }
 }

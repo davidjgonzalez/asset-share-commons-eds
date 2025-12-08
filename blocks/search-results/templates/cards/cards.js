@@ -7,7 +7,7 @@ export default function cards(results = {}) {
 }
 
 export function item(asset, index = 0) {
-    const title = asset.getTitle();
+    const title = asset.title;
     const fileType = asset.getProperty('file-type');
     const fileSize = asset.getProperty('file-size');
     const dimensions = asset.getProperty('dimensions');
@@ -16,9 +16,9 @@ export function item(asset, index = 0) {
        <li tabindex="0" 
            role="button" 
            aria-label="View ${title}"
-           data-asc-asset-details="${asset.getUuid()}"
-           data-asc-preload-fragment="/details/default/${(asset.getId())}"
-           data-asc-asset-id="${asset.getUuid()}">
+           data-asc-action="show-asset-details preload"
+           data-asc-preload="/details/default"
+           data-asc-asset-id="${asset.uuid}">
           <div class="card-image">
             ${asset.getPictureHtml({
               breakpoints: [
@@ -38,6 +38,11 @@ export function item(asset, index = 0) {
               <span class="file-size">${fileSize}</span>
               ${dimensions ? `<span class="dimensions">${dimensions.width} x ${dimensions.height}</span>` : ''}
             </div>
+            <div>${asset.uuid}</div>
+            <button 
+                data-asc-action="add-to-collection"
+                data-asset="${asset.uuid}"
+                data-collection="asc_cart">Add to Collection</button>
           </div>
         </li>`;
 }

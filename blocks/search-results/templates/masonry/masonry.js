@@ -8,7 +8,7 @@ export default function masonry(results = {}) {
 }
 
 export function item(asset, index = 0) {
-  const title = asset.getTitle();
+  const title = asset.title;
   const fileType = asset.getProperty('fileType');
   const fileSize = asset.getProperty('fileSize');
   const assetId = asset.getProperty('id');
@@ -35,7 +35,7 @@ export function item(asset, index = 0) {
     <li tabindex="0" 
         role="button" 
         aria-label="View ${title}"
-        data-asc-uuid="${asset.getUuid()}"
+        data-asc-uuid="${asset.uuid}"
         data-asset-id="${assetId || ''}"
         data-file-type="${fileType || ''}">
       <div class="masonry-image">
@@ -50,7 +50,7 @@ export function item(asset, index = 0) {
           alt: title
         }) : `
           <figure>
-            <img src="${asset.getThumbnail()?.url || asset.getUrl()}" 
+            <img src="${asset.thumbnail || asset.url}" 
                  alt="${title}" 
                  loading="${index < 3 ? 'eager' : 'lazy'}"
                  onerror="this.classList.add('broken')">

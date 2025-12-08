@@ -5,5 +5,5 @@ const config = {
 }
 
 export default function get(asset, options = {}) {
-    return asset.getFilename().split('.').pop() || null;
+    return asset.filename?.split('.').pop() || null;
 }

@@ -1,20 +1,7 @@
-// Copyright 2025 David G.
-// 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-// 
-//     https://www.apache.org/licenses/LICENSE-2.0
-// 
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 /**
  * Attaches a delegated event listener to a root element, listening for events
  * that bubble up from descendants matching the given selector.
+ * Works like jQuery's .on() method for event delegation.
  *
  * @param {Element} root - The root element to attach the listener to.
  * @param {string} selector - The CSS selector to match descendant elements.
@@ -40,19 +27,30 @@ export function delegateEvent(root, selector, eventType, handler, options) {
     const listener = function(event) {
         // Find the closest ancestor (or self) matching the selector, within root
         let el = event.target;
-        while (el && el !== root) {
+        
+        // Check event.target and its ancestors up to (and including) root
+        while (el && el !== root.parentElement) {
             if (el.matches && el.matches(selector)) {
-                // Call handler with 'el' as both 'this' and event.target
-                Object.defineProperty(event, 'target', { value: el, configurable: true });
+                // Set currentTarget to the matched element and call handler
+                // Keep event.target as the original clicked element (like jQuery)
+                const originalCurrentTarget = event.currentTarget;
+                Object.defineProperty(event, 'currentTarget', { 
+                    value: el, 
+                    configurable: true,
+                    writable: true 
+                });
+                
                 handler.call(el, event, el);
+                
+                // Restore original currentTarget
+                Object.defineProperty(event, 'currentTarget', { 
+                    value: originalCurrentTarget, 
+                    configurable: true,
+                    writable: true 
+                });
                 break;
             }
             el = el.parentElement;
-        }
-        // If root itself matches the selector
-        if (el === root && root.matches && root.matches(selector)) {
-            Object.defineProperty(event, 'target', { value: root, configurable: true });
-            handler.call(root, event, root);
         }
     };
 

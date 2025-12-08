@@ -1,20 +1,23 @@
-import { getBlockConfig } from "../../scripts/asc/utils/search.js";
+import { readBlockConfig } from "../../scripts/asc/utils/search.js";
 
 export default async function decorate(block) {
-  const config = getBlockConfig(block, {}, {
-    'asc.search-results.display': 'cards',
+  console.log("saerch-results", block);
+
+  const config = readBlockConfig(block, {}, {
+    'asc.search-results.display': 'waterfall',
     'limit': 100,
   });
 
   block.innerHTML = `
     <!-- Results display selector -->
     <select name="asc.search-results.display" form="${config.form}">
-      <option value="cards" ${config.initial['asc.search-results.display'] === "cards" ? "selected" : ""}>Cards</option>
-      <option value="list" ${config.initial['asc.search-results.display'] === "list" ? "selected" : ""}>List</option>
-      <option value="masonry" ${config.initial['asc.search-results.display'] === "masonry" ? "selected" : ""}>Masonry</option>
+      <option value="cards" ${config.initial['display'] === "cards" ? "selected" : ""}>Cards</option>
+      <option value="list" ${config.initial['display'] === "list" ? "selected" : ""}>List</option>
+      <option value="masonry" ${config.initial['display'] === "masonry" ? "selected" : ""}>Masonry</option>
+      <option value="waterfall" ${config.initial['display'] === "waterfall" ? "selected" : ""}>Waterfall</option>
     </select>
 
-
+    <!-- Results order by selector -->
     <select name="orderby" form="${config.form}">
       <option value="@jcr:score" ${config.initial['orderby'] === "@jcr:score" ? "selected" : ""}>Relevance</option>
       <option value="@jcr:content/metadata/dc:created" ${config.initial['orderby'] === "@jcr:content/metadata/dc:created" ? "selected" : ""}>Created Date</option>
@@ -52,11 +55,11 @@ export default async function decorate(block) {
 async function addEventListeners(block) {
   block.querySelectorAll('[name="asc.search-results.display"], [name="orderby"], [name="orderby.sort"]').forEach(input => {
     input.addEventListener("change", () => {
-      document.dispatchEvent(new CustomEvent("asc:search"), {
+      document.dispatchEvent(new CustomEvent("asc:search", {
         detail: {
           type: "page-load",
         },
-      });
+      }));
     });
   });
 

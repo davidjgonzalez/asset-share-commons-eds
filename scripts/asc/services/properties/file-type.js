@@ -60,7 +60,7 @@ export default function get(asset, options = { by: 'mime-type'}) {
     };
 
     // Get the mime type from the asset
-    const mimeType = asset.getMimeType();
+    const mimeType = asset.mimeType;
     if (!mimeType || mimeType.indexOf('/') === -1) {
         return null;
     }

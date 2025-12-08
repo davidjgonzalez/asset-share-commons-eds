@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
+import { readBlockConfig as readGenericBlockConfig, getOptions as getGenericBlockOptions } from './blocks.js';
 
 export const SEARCH_FORM = 'asc-search-form';
 
@@ -24,52 +24,13 @@ export function getFieldName({group, name, parameter = ''}) {
 }
 
 export function getOptions({content = '', initialValues = {}, delimiter = ':', splitter = undefined}) {
-  const items = content
-    .split('\n')
-    .map(line => line.trim());
-  
-  if (!splitter) {
-    splitter = (s) => {
-      const delimiterIndex = s.indexOf(delimiter);
-      const option = {
-        text: delimiterIndex !== -1 ? s.slice(0, delimiterIndex).trim() : s.trim(),
-        value: delimiterIndex !== -1 ? s.slice(delimiterIndex + delimiter.length).trim() : ''
-      };
-      return option;
-    };
-  }
-
-  const options = items.map((item) => { return splitter(item) }).map((option, index) => {
-    return {
-      ...option,
-      selected: Array.isArray(initialValues) ? initialValues.some((iv) => iv.key === option.text && iv.value === option.value) : false,
-      disabled: false,
-    };
-  });
-
-  return options;
+  return getGenericBlockOptions({content, initialValues, delimiter, splitter});
 }
 
-export function getBlockConfig(block, transform = {}, defaults = {}) {
-
-    const config = {...defaults};
-
-    block.querySelectorAll(':scope > div').forEach(row => {
-        const cells = row.querySelectorAll('div');
-
-        if (cells.length === 2) {
-          const key = cells[0].textContent.trim().toLowerCase();
-          const value = cells[1].textContent.trim();
-    
-          if (transform[key]) {
-            config[key] = transform[key](value);
-          } else {
-            config[key] = value;
-          }
-        }
-    });
-
+export function readBlockConfig(block, transform = {}, defaults = {}) {
+    const config = readGenericBlockConfig(block, transform, defaults);
     const group = getGroup(block);
+
     return {
       ...defaults,
       form: SEARCH_FORM,
