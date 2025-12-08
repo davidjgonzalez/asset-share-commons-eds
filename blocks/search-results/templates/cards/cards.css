@@ -5,221 +5,89 @@
     gap: var(--spacing-lg);
     padding: 0;
     margin: 0;
+}
 
-    /* Card Item */
-    & > li {
-        background-color: var(--card-background);
-        border: 1px solid var(--card-border-color);
-        border-radius: var(--border-radius-lg);
-        box-shadow: var(--card-shadow);
-        overflow: hidden;
-        transition: all var(--transition-normal);
-        cursor: pointer;
-        position: relative;
-        display: flex;
-        flex-direction: column;
-        height: 100%;
+.block.search-results .cards > li {
+    background-color: var(--card-background);
+    border: var(--border-width) var(--border-style) var(--card-border-color);
+    overflow: hidden;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
 
-        /* Hover Effects */
-        &:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--card-shadow-hover);
-            border-color: var(--input-border-color-hover);
-        }
+.block.search-results .cards > li:focus {
+    outline: 2px solid var(--text-color);
+    outline-offset: 2px;
+}
 
-        /* Focus States for Accessibility */
-        &:focus {
-            outline: 2px solid var(--input-border-color-focus);
-            outline-offset: 2px;
-        }
+.block.search-results .cards .card-image {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    background-color: var(--light-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
 
-        &:focus:not(:focus-visible) {
-            outline: none;
-        }
+.block.search-results .cards .card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
 
-        /* Card Image Container */
-        .card-image {
-            position: relative;
-            width: 100%;
-            aspect-ratio: 4 / 3;
-            overflow: hidden;
-            background-color: var(--light-color);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-    
+.block.search-results .cards .card-content {
+    padding: var(--spacing-lg);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
 
-            img {
-                width: 100%;
-                height: 100%;
-                object-fit: cover;
-                display: block;
-                position: absolute;
-                top: 0;
-                left: 0;
-            }
+.block.search-results .cards .card-content h3 {
+    margin: 0;
+    font-size: var(--heading-font-size-s);
+    font-weight: 600;
+    color: var(--text-color);
+    line-height: 1.3;
+}
 
-            /* Hover effect on image */
-            &:hover img {
-                transform: scale(1.05);
-            }
+.block.search-results .cards .card-meta {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-top: auto;
+}
 
-            /* Broken Image States */
-            img:not([src]),
-            img[src=""],
-            img.broken {
-                background-color: var(--light-color);
-                width: 100%;
-                height: 100%;
-                object-fit: contain;
-                content: "";
-                display: block;
-                font-size: 0;
-                color: transparent;
-                border: none;
-                position: absolute;
-                top: 0;
-                left: 0;
+.block.search-results .cards .card-meta .file-type {
+    background-color: var(--light-color);
+    color: var(--text-color);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--body-font-size-xs);
+    font-weight: 500;
+    text-transform: uppercase;
+    border: var(--border-width) var(--border-style) var(--border-color);
+}
 
-                /* Add a placeholder icon for broken images */
-                &::before {
-                    content: "📷";
-                    position: absolute;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                    font-size: 2rem;
-                    color: var(--input-placeholder-color);
-                    opacity: 0.5;
-                }
-            }
-        }
+.block.search-results .cards .card-meta .file-size {
+    color: var(--dark-color);
+    font-size: var(--body-font-size-xs);
+}
 
-        /* Card Content */
-        .card-content {
-            padding: var(--spacing-lg);
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: var(--spacing-sm);
-
-            h3 {
-                margin: 0;
-                font-size: var(--heading-font-size-s);
-                font-weight: 600;
-                color: var(--text-color);
-                line-height: 1.3;
-                text-overflow: ellipsis;
-                overflow: hidden;
-                white-space: nowrap;
-                flex: 1;
-            }
-
-            .card-meta {
-                display: flex;
-                align-items: center;
-                gap: var(--spacing-sm);
-                margin-top: auto;
-
-                .file-type {
-                    background-color: var(--light-color);
-                    color: var(--text-color);
-                    padding: var(--spacing-xs) var(--spacing-sm);
-                    border-radius: var(--border-radius-sm);
-                    font-size: var(--body-font-size-xs);
-                    font-weight: 500;
-                    text-transform: uppercase;
-                    letter-spacing: 0.025em;
-                }
-
-                .file-size {
-                    color: var(--input-placeholder-color);
-                    font-size: var(--body-font-size-xs);
-                }
-            }
-        }
-
-        /* Card Actions (if needed in future) */
-        .card-actions {
-            padding: 0 var(--spacing-lg) var(--spacing-lg);
-            display: flex;
-            gap: var(--spacing-sm);
-            opacity: 0;
-            transition: opacity var(--transition-normal);
-
-            button {
-                flex: 1;
-                padding: var(--spacing-sm);
-                border: 1px solid var(--input-border-color);
-                background-color: var(--background-color);
-                color: var(--text-color);
-                border-radius: var(--border-radius-sm);
-                font-size: var(--body-font-size-xs);
-                cursor: pointer;
-                transition: all var(--transition-fast);
-
-                &:hover {
-                    background-color: var(--light-color);
-                    border-color: var(--input-border-color-hover);
-                }
-            }
-        }
-
-        /* Show actions on hover */
-        &:hover .card-actions {
-            opacity: 1;
-        }
-    }
-
-    /* Responsive Design */
-    @media (max-width: 768px) {
+@media (max-width: 768px) {
+    .block.search-results .cards {
         grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
         gap: var(--spacing-md);
     }
+}
 
-    @media (max-width: 480px) {
+@media (max-width: 480px) {
+    .block.search-results .cards {
         grid-template-columns: 1fr;
         gap: var(--spacing-md);
-    }
-
-    /* High Contrast Mode */
-    @media (prefers-contrast: high) {
-        & > li {
-            border-width: 2px;
-        }
-    }
-
-    /* Reduced Motion */
-    @media (prefers-reduced-motion: reduce) {
-        & > li {
-            transition: none;
-
-            &:hover {
-                transform: none;
-            }
-
-            .card-image img {
-                transition: none;
-
-                &:hover {
-                    transform: none;
-                }
-            }
-        }
-    }
-
-    /* Print Styles */
-    @media print {
-        & > li {
-            break-inside: avoid;
-            box-shadow: none;
-            border: 1px solid var(--text-color);
-            margin-bottom: var(--spacing-md);
-
-            .card-image {
-                aspect-ratio: 3 / 2;
-            }
-        }
     }
 }

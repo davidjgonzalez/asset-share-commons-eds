@@ -43,6 +43,7 @@ export default async function decorate(block) {
             <dt>File Path</dt>
             <dd class="file-path">${asset.path}</dd>
           </dl>
+          <button data-asc-action="add-to-collection" data-asc-asset-id="${asset.uuid}" data-asc-collection="cart">Add to Cart</button>
         </aside>
       </section>
     `;

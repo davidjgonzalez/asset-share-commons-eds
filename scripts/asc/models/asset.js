@@ -33,8 +33,6 @@ export default class Asset {
         element = element.parentElement;
       }
 
-      console.log('element', element);
-
       if (element?.hasAttribute("data-asc-asset-id")) {
         id = element.getAttribute("data-asc-asset-id");
       } else {
@@ -51,6 +49,8 @@ export default class Asset {
         console.warn("Unable to create Asset from input: ", input);
         return null;
       }
+    } else if (typeof input === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input)) {
+      id = input;
     } else {
       return new Asset(input);
     }

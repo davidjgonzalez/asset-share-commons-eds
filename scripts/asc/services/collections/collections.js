@@ -18,9 +18,12 @@ class Collections {
             event.preventDefault();
             event.stopPropagation();
 
-            const { asset, collection } = el.dataset;
+            const { ascAssetId, ascCollection } = el.dataset;
+            console.log('add-to-collection', el.dataset);
 
-            storage.get('collections')[collection].add(asset);
+            console.log('add-to-collection', storage.get('collections'));
+
+            this.addToCollection(ascAssetId, ascCollection);
         });
 
         /** Remove from collection */
@@ -40,7 +43,29 @@ class Collections {
     }
 
     getCollection(collection) {
-        return storage.get('collections')[collection];
+        return (storage.get('collections') || {})[collection] || [];
+    }
+
+    addToCollection(assetId, collectionName) {
+        const collection = this.getCollection(collectionName);
+        if (!collection.includes(assetId)) {
+            collection.push(assetId);
+            storage.set('collections', { ...storage.get('collections'), [collectionName]: collection });
+
+            // Emit event to update collection
+            document.dispatchEvent(new CustomEvent('asc:collection:updated', { detail: { collectionName, collection } }));
+        }
+    }
+
+    removeFromCollection(assetId, collectionName) {
+        const collection = this.getCollection(collectionName);
+        if (collection.includes(assetId)) {
+            collection = collection.filter(item => item !== assetId);
+            storage.set('collections', { ...storage.get('collections'), [collectionName]: collection });
+
+            // Emit event to update collection
+            document.dispatchEvent(new CustomEvent('asc:collection:updated', { detail: { collectionName, collection } }));
+        }
     }
 }
 

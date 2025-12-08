@@ -1,6 +1,94 @@
 .block.details-preview {
-    img {
-        max-width: 100%;
-        height: auto;
+    padding: var(--spacing-lg);
+}
+
+.block.details-preview .asset-preview {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+}
+
+.block.details-preview figure {
+    margin: 0;
+    padding: 0;
+}
+
+.block.details-preview img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    border: var(--border-width) var(--border-style) var(--border-color);
+}
+
+.block.details-preview figcaption {
+    margin-top: var(--spacing-md);
+}
+
+.block.details-preview h1 {
+    margin: 0 0 var(--spacing-sm) 0;
+    font-size: var(--heading-font-size-l);
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.block.details-preview .description {
+    margin: 0;
+    color: var(--dark-color);
+    font-size: var(--body-font-size-s);
+}
+
+.block.details-preview .asset-info {
+    padding: var(--spacing-md);
+    background-color: var(--light-color);
+    border: var(--border-width) var(--border-style) var(--border-color);
+}
+
+.block.details-preview .metadata {
+    margin: 0;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: var(--spacing-sm) var(--spacing-md);
+}
+
+.block.details-preview .metadata dt {
+    font-weight: 600;
+    color: var(--text-color);
+    font-size: var(--body-font-size-s);
+}
+
+.block.details-preview .metadata dd {
+    margin: 0;
+    color: var(--dark-color);
+    font-size: var(--body-font-size-s);
+}
+
+.block.details-preview .error {
+    padding: var(--spacing-lg);
+    text-align: center;
+    color: var(--dark-color);
+}
+
+.block.details-preview .error h2 {
+    margin: 0 0 var(--spacing-sm) 0;
+    color: var(--text-color);
+}
+
+.block.details-preview .error p {
+    margin: 0;
+    font-size: var(--body-font-size-s);
+}
+
+@media (min-width: 768px) {
+    .block.details-preview .asset-preview {
+        flex-direction: row;
+        gap: var(--spacing-xl);
+    }
+
+    .block.details-preview figure {
+        flex: 1;
+    }
+
+    .block.details-preview .asset-info {
+        flex: 0 0 300px;
     }
 }

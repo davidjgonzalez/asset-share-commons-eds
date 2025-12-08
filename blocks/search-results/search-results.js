@@ -29,11 +29,11 @@ export default async function decorate(block) {
       <option value="desc" ${config.initial['orderby.sort'] === "desc" ? "selected" : ""}>Descending</option>
       <option value="asc" ${config.initial['orderby.sort'] === "asc" ? "selected" : ""}>Ascending</option>
     </select>
-    
-    <input type="text" name="p.limit" value="${config['limit'] || 24}" form="${config.form}"/>
-    <input type="text" name="p.offset" value="0" form="${config.form}"/>
-    <input type="text" name="asc.search-results.more" value="true"/>
-    <input type="text" name="asc.search-results.total" value="0"/>
+
+    <input type="hidden" name="p.limit" value="${config['limit'] || 24}" form="${config.form}"/>
+    <input type="hidden" name="p.offset" value="0" form="${config.form}"/>
+    <input type="hidden" name="asc.search-results.more" value="true"/>
+    <input type="hidden" name="asc.search-results.total" value="0"/>
 
     <div data-asc-results-wrapper>
       <!-- Inject point for results here based on asc.search-results.display -->

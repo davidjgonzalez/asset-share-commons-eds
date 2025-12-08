@@ -18,8 +18,13 @@ class SearchService {
   }
 
   init() {
+    // TODO: Better way to check if is search page.
+    if (window.location.pathname !== '/') {
+      console.log('Search service not initialized because no search results block found');
+      return;
+    }
     
-    document.addEventListener("asc:search", (event) => {
+    document.addEventListener(Events.SEARCH_START, (event) => {
       if (event.detail?.source === "query-params") {
         this.executeSearchFromUrl(event.detail.value || window.location.search);
       } else {

@@ -7,21 +7,21 @@ export default async function decorate(block) {
 
     const collections = services.collections.getCollections();
 
-    const assetsQueryParameterValue = await services.url.compressArray(assets);
+    const assetsQueryParameterValue = await services.url.compressArray(collections.cart);
     const renditionsQueryParameterValue = await services.url.compressArray(renditions);
 
     block.innerHTML = `
 
     <h4>SHEET</h4>
-    <a href="/sheets/download?assets=${assetsQueryParameterValue}&rendtions=${renditionsQueryParameterValue}">Goto sheet</a>
+    <a href="/sheets/download?assets=${assetsQueryParameterValue}&renditions=${renditionsQueryParameterValue}">Goto sheet</a>
 
 
     <h4>Collections</h4>
 
     <ul>
-        ${collections.map((collection) => `
-            <li>${collection}</li>
-        `).join('')}
+    ${Object.entries(collections).map(([collectionName, collection]) => `
+        <li>${collectionName} - ${collection.join(', ')}</li>
+    `).join('')}
     </ul>
 
     `;

@@ -85,19 +85,20 @@ class Renditions {
       this.config.renditionDefinitions || DEFAULT_RENDITION_DEFINITIONS;
   }
 
+  getRenditionDefinition(id) {
+    return this.renditionDefinitions.find((renditionDefinition) => renditionDefinition.id === id);
+  }
+
   getRenditions(asset) {
     return this.renditionDefinitions
       .filter((renditionDefinition) => renditionDefinition.accepts(asset))
       .map((renditionDefinition) => {
-        console.log("renditionDefinition", renditionDefinition.id);
         const rendition = renditionDefinition.get(asset);
 
         if (!rendition) {
-          console.log("rendition is undefined or null for", renditionDefinition.id);
+          console.debug(`Rendition missing for rendition name [ ${renditionDefinition.id} ]`);
           return null;
         }
-
-        console.log("rendition", rendition.id);
 
         return new Rendition({
           asset,

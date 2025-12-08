@@ -71,7 +71,9 @@ class Storage {
                 user: {
                     userId: userId
                 },
-                collections: {}
+                collections: {
+                    cart:[]
+                }
             });
         }
     }
@@ -142,7 +144,9 @@ class Storage {
                 user: {
                     userId: userId
                 },
-                collections: {}
+                collections: {
+                    cart: []
+                }
             });
         }
     }

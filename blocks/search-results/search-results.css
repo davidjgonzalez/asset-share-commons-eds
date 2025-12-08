@@ -1,4 +1,9 @@
 .block.search-results {
     min-height: calc(50vh);
-   
+    
+    padding-bottom: var(--spacing-md);
+
+    select {
+        padding: 0.5rem 1rem;
+    }
 }
