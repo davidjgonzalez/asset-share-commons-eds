@@ -13,7 +13,8 @@ import {
   loadCSS,
 } from './aem.js';
 
-import { default as services } from  './asc/services/services.js';
+import './asc/services/services.js';
+import configurations from './configurations.js';
 
 /**
  * Builds hero block and prepends to main in a new section.
@@ -22,7 +23,6 @@ import { default as services } from  './asc/services/services.js';
 function buildHeroBlock(main) {
   const h1 = main.querySelector('h1');
   const picture = main.querySelector('picture');
-  // eslint-disable-next-line no-bitwise
   if (h1 && picture && (h1.compareDocumentPosition(picture) & Node.DOCUMENT_POSITION_PRECEDING)) {
     const section = document.createElement('div');
     section.append(buildBlock('hero', { elems: [picture, h1] }));
@@ -37,7 +37,7 @@ async function loadFonts() {
   await loadCSS(`${window.hlx.codeBasePath}/styles/fonts.css`);
   try {
     if (!window.location.hostname.includes('localhost')) sessionStorage.setItem('fonts-loaded', 'true');
-  } catch (e) {
+  } catch {
     // do nothing
   }
 }
@@ -50,7 +50,6 @@ function buildAutoBlocks(main) {
   try {
     buildHeroBlock(main);
   } catch (error) {
-    // eslint-disable-next-line no-console
     console.error('Auto Blocking failed', error);
   }
 }
@@ -59,7 +58,6 @@ function buildAutoBlocks(main) {
  * Decorates the main element.
  * @param {Element} main The main element
  */
-// eslint-disable-next-line import/prefer-default-export
 export function decorateMain(main) {
   // hopefully forward compatible button decoration
   decorateButtons(main);
@@ -76,6 +74,13 @@ export function decorateMain(main) {
 async function loadEager(doc) {
   document.documentElement.lang = 'en';
   decorateTemplateAndTheme();
+
+  // Apply ASC theme class and load its CSS
+  const themeName = configurations.theme?.default;
+  if (themeName) {
+    document.body.classList.add(`theme-${themeName}`);
+    loadCSS(`${window.hlx.codeBasePath}/styles/themes/${themeName}.css`);
+  }
   const main = doc.querySelector('main');
   if (main) {
     decorateMain(main);
@@ -88,7 +93,7 @@ async function loadEager(doc) {
     if (window.innerWidth >= 900 || sessionStorage.getItem('fonts-loaded')) {
       loadFonts();
     }
-  } catch (e) {
+  } catch {
     // do nothing
   }
 }
@@ -117,7 +122,6 @@ async function loadLazy(doc) {
  * without impacting the user experience.
  */
 function loadDelayed() {
-  // eslint-disable-next-line import/no-cycle
   window.setTimeout(() => import('./delayed.js'), 3000);
   // load anything that can be postponed to the latest here
 }

@@ -3,7 +3,7 @@
  * https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/implementing/developing/full-stack/search/query-builder-predicates#path
  **/
 
-import { readBlockConfig, getOptions } from '../../scripts/asc/utils/search.js';
+import { readBlockConfig, getOptions, addSearchEventListeners } from '../../scripts/asc/utils/search.js';
 import { htmlCheckboxes, htmlRadio, htmlDropdown } from '../search-property/search-property.js';
 
 export default function decorate(block) {
@@ -21,9 +21,7 @@ export default function decorate(block) {
 
   block.innerHTML = html(config);
 
-  addEventListeners(block, config);
-
-  //services.debug.formFields(block);
+  addSearchEventListeners(block, config);
 }
 
 function html(config) {  
@@ -61,37 +59,3 @@ function html(config) {
 `
 }
 
-/**
- * Add event listeners to the block
- * 
- * @param {*} block the block element
- * @param {*} config the block configuration
- */
-function addEventListeners(block, config) {
-    // Add event listeners for all interactive elements
-    const inputs = block.querySelectorAll('input[type="checkbox"], input[type="radio"], select');
-    
-    inputs.forEach(input => {
-        if (input.type === 'checkbox' || input.type === 'radio') {
-            input.addEventListener('change', (e) => {
-                document.dispatchEvent(new CustomEvent('asc:search', { 
-                    detail: { 
-                        value: e.target.checked ? e.target.value : '',
-                        formId: config.form,
-                        source: 'metadata-filter'
-                    }
-                }));
-            });
-        } else if (input.tagName === 'SELECT') {
-            input.addEventListener('change', (e) => {
-                document.dispatchEvent(new CustomEvent('asc:search', { 
-                    detail: { 
-                        value: e.target.value,
-                        formId: config.form,
-                        source: 'metadata-filter'
-                    }
-                }));
-            });
-        }
-    });
-}

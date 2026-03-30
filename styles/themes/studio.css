@@ -1,0 +1,228 @@
+/*
+ * Studio Theme
+ * Inspired by Webflow's product UI — clean, airy, modern SaaS aesthetic.
+ *
+ * Palette:
+ *   Background  #ffffff / #f5f7ff (near-white with a cool tint)
+ *   Text        #0e1424 (very dark navy, softer than pure black)
+ *   Primary     #146ef5 (Webflow blue)
+ *   Accent      #7c3aed (violet, used for gradients & highlights)
+ *   Surface     #f0f3ff (blue-tinted light surface)
+ *   Border      #e4e8f5 (cool-toned dividers)
+ *
+ * Activate: set `theme: { default: 'studio' }` in scripts/configurations.js
+ */
+
+.theme-studio {
+
+  /* ── Base ───────────────────────────────────────────────────────── */
+  --background-color: #ffffff;
+  --light-color: #f0f3ff;
+  --dark-color: #5a6582;
+  --text-color: #0e1424;
+  --link-color: #146ef5;
+  --link-hover-color: #0d5edc;
+  --border-color: #e4e8f5;
+
+  /* ── Typography ─────────────────────────────────────────────────── */
+  --body-font-family: 'Inter', 'SF Pro Text', system-ui, -apple-system, sans-serif;
+  --heading-font-family: 'Inter', 'SF Pro Display', system-ui, -apple-system, sans-serif;
+
+  /* ── Borders & radius ────────────────────────────────────────────── */
+  --border-radius-sm: 6px;
+  --border-radius-md: 10px;
+  --border-radius-lg: 14px;
+  --border-radius-xl: 18px;
+  --border-radius-full: 9999px;
+
+  /* ── Shadows ─────────────────────────────────────────────────────── */
+  --shadow-sm: 0 1px 3px 0 rgb(20 60 180 / 0.06), 0 1px 2px -1px rgb(20 60 180 / 0.04);
+  --shadow-md: 0 4px 12px -2px rgb(20 60 180 / 0.10), 0 2px 6px -2px rgb(20 60 180 / 0.06);
+  --shadow-lg: 0 12px 32px -4px rgb(20 60 180 / 0.14), 0 4px 10px -4px rgb(20 60 180 / 0.08);
+
+  /* ── Asset teaser card ──────────────────────────────────────────── */
+  --asset-teaser-bg: #ffffff;
+  --asset-teaser-border: 1px solid #e4e8f5;
+  --asset-teaser-border-radius: var(--border-radius-md);
+  --asset-teaser-shadow: var(--shadow-sm);
+  --asset-teaser-shadow-hover: var(--shadow-md);
+  --asset-teaser-padding: var(--spacing-md);
+  --asset-teaser-title-color: #0e1424;
+  --asset-teaser-meta-color: #5a6582;
+  --asset-teaser-gap: var(--spacing-md);
+
+  /* ── Search bar ─────────────────────────────────────────────────── */
+  --search-border-color: #e4e8f5;
+  --search-background: #ffffff;
+  --search-text-color: #0e1424;
+  --search-placeholder-color: #9ba4bd;
+  --search-primary-color: #146ef5;
+  --search-primary-hover: #0d5edc;
+  --search-primary-focus: rgb(20 110 245 / 0.12);
+  --search-input-border: 1.5px solid #e4e8f5;
+  --search-input-border-radius: var(--border-radius-full);
+  --search-input-bg: #ffffff;
+  --search-input-color: #0e1424;
+  --search-input-placeholder-color: #9ba4bd;
+  --search-input-focus-border: #146ef5;
+  --search-input-focus-ring: 0 0 0 4px rgb(20 110 245 / 0.12);
+
+  /* ── Search results grid ─────────────────────────────────────────── */
+  --search-results-gap: var(--spacing-md);
+  --search-results-cols-mobile: 1;
+  --search-results-cols-tablet: 2;
+  --search-results-cols-desktop: 4;
+
+  /* ── Filters ─────────────────────────────────────────────────────── */
+  --filter-label-color: #0e1424;
+  --filter-input-border: 1.5px solid #e4e8f5;
+  --filter-input-border-radius: var(--border-radius-sm);
+  --filter-input-accent: #146ef5;
+
+  /* ── Modal ───────────────────────────────────────────────────────── */
+  --modal-bg: #ffffff;
+  --modal-border-radius: var(--border-radius-xl);
+  --modal-shadow: 0 24px 64px -12px rgb(20 60 180 / 0.22), 0 0 0 1px rgb(20 60 180 / 0.06);
+  --modal-max-width: 920px;
+  --modal-padding: var(--spacing-xl);
+  --modal-backdrop: rgb(8 14 38 / 0.45);
+
+  /* ── Buttons ─────────────────────────────────────────────────────── */
+  --button-primary-bg: #146ef5;
+  --button-primary-text: #ffffff;
+  --button-primary-color: #ffffff;
+  --button-primary-hover: #0d5edc;
+  --button-primary-hover-bg: #0d5edc;
+  --button-primary-border-radius: var(--border-radius-full);
+  --button-padding: 10px 20px;
+  --button-secondary-bg: transparent;
+  --button-secondary-border: #e4e8f5;
+  --button-secondary-text: #0e1424;
+
+  /* ── Form inputs ─────────────────────────────────────────────────── */
+  --input-border-color: #e4e8f5;
+  --input-border-focus: #146ef5;
+  --input-border-radius: var(--border-radius-md);
+  --input-background: #ffffff;
+  --input-text-color: #0e1424;
+  --input-placeholder-color: #9ba4bd;
+  --input-border-color-hover: #c4cadf;
+  --input-border-color-error: #e5484d;
+  --input-border-color-success: #30a46c;
+  --input-border-color-disabled: #f0f3ff;
+  --input-focus-ring-color: rgb(20 110 245 / 0.12);
+  --input-transition: border-color 150ms ease, box-shadow 150ms ease;
+
+  /* ── Checkboxes & Radio ──────────────────────────────────────────── */
+  --checkbox-border-color: #c4cadf;
+  --checkbox-border-color-checked: #146ef5;
+  --checkbox-background-checked: #146ef5;
+  --checkbox-color: #ffffff;
+
+  /* ── Select/Dropdown ─────────────────────────────────────────────── */
+  --select-arrow-color: #5a6582;
+  --select-option-background: #ffffff;
+  --select-option-background-hover: #f0f3ff;
+  --select-option-text-color: #0e1424;
+
+  /* ── Labels ──────────────────────────────────────────────────────── */
+  --label-color: #0e1424;
+  --label-font-weight: 500;
+
+  /* ── Validation ──────────────────────────────────────────────────── */
+  --validation-error-color: #e5484d;
+  --validation-success-color: #30a46c;
+  --validation-warning-color: #f76b15;
+  --validation-info-color: #146ef5;
+
+  /* ── Transitions ─────────────────────────────────────────────────── */
+  --transition-fast: 120ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --transition-normal: 220ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --transition-slow: 360ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* ── Studio: Gradient accent on headings ──────────────────────────── */
+.theme-studio h1,
+.theme-studio h2 {
+  background: linear-gradient(135deg, #146ef5 0%, #7c3aed 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Studio: Subtle blue tint on search page background ──────────── */
+.theme-studio main > .section:first-child {
+  background: linear-gradient(180deg, #f0f3ff 0%, #ffffff 100%);
+}
+
+/* ── Studio: Active filter chips ─────────────────────────────────── */
+.theme-studio .asc-search-facet-chip {
+  background: rgb(20 110 245 / 0.08);
+  color: #146ef5;
+  border: 1px solid rgb(20 110 245 / 0.2);
+  border-radius: var(--border-radius-full);
+}
+
+/* ── Studio: Card hover — lift with blue glow ────────────────────── */
+.theme-studio .asc-asset-teaser:hover,
+.theme-studio .asc-asset-teaser:focus-within {
+  box-shadow: var(--shadow-md), 0 0 0 1px rgb(20 110 245 / 0.15);
+  border-color: rgb(20 110 245 / 0.25);
+  transform: translateY(-2px);
+  transition: box-shadow var(--transition-normal), border-color var(--transition-normal), transform var(--transition-normal);
+}
+
+/* ── Studio: Add to cart button — pill style ─────────────────────── */
+.theme-studio .asc-asset-teaser__add-to-cart {
+  background: #146ef5;
+  color: #ffffff;
+  border: none;
+  border-radius: var(--border-radius-full);
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: background var(--transition-fast), transform var(--transition-fast);
+}
+
+.theme-studio .asc-asset-teaser__add-to-cart:hover {
+  background: #0d5edc;
+  transform: scale(1.02);
+}
+
+/* ── Studio: Search input — pill shape ───────────────────────────── */
+.theme-studio .block.search-bar input {
+  border-radius: var(--border-radius-full);
+  border: 1.5px solid #e4e8f5;
+  padding: 12px 20px;
+  font-size: 15px;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.theme-studio .block.search-bar input:focus {
+  border-color: #146ef5;
+  box-shadow: 0 0 0 4px rgb(20 110 245 / 0.12);
+  outline: none;
+}
+
+/* ── Studio: Dialog/modal ─────────────────────────────────────────── */
+.theme-studio dialog {
+  border: none;
+  border-radius: var(--border-radius-xl);
+  box-shadow: var(--modal-shadow);
+  padding: var(--modal-padding);
+}
+
+.theme-studio dialog::backdrop {
+  background: var(--modal-backdrop);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* ── Reduced motion ───────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .theme-studio .asc-asset-teaser:hover {
+    transform: none;
+  }
+}

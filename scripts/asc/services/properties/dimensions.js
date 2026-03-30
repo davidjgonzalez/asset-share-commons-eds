@@ -1,3 +1,4 @@
+// ASC Core — do not edit. Customize via scripts/configurations.js
 import getWidth from './width.js';
 import getHeight from './height.js';
 import serviceConfigurations from "../configurations.js";

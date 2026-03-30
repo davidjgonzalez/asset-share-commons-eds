@@ -1,3 +1,4 @@
+// ASC Core — do not edit. Customize via scripts/configurations.js
 // Copyright 2025 David G.
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,18 +30,19 @@ import users from './users/users.js';
 import init from './init/init.js';
 
 const services = {
-    actions,
-    aem,
-    assetDetails,
-    collections,
-    debug,
-    fileType,
-    init,
-    properties,
-    renditions,
-    search,
-    url,
-    users,
-}
+  actions,
+  aem,
+  assetDetails,
+  collections,
+  debug,
+  fileType,
+  init,
+  properties,
+  renditions,
+  search,
+  storage,
+  url,
+  users,
+};
 
 export default services;

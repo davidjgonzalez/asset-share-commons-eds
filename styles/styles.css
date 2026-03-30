@@ -10,6 +10,9 @@
  * governing permissions and limitations under the License.
  */
 
+/* ASC component design tokens — loaded before theme overrides */
+@import url('./tokens.css');
+
 :root {
   /* colors */
   --background-color: white;

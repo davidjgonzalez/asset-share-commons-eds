@@ -1,29 +1,73 @@
+// ASC Core — do not edit. Customize via scripts/configurations.js
 import serviceConfigurations from "../configurations.js";
-import { delegateEvent } from "../../utils/events.js";
 
 class Actions {
-    constructor(config) {
-        this.config = config = {};
-        this.actions = [];
-        this.init();
+  constructor(config) {
+    this.config = config = {};
+    this.actions = [];
+    this.init();
+  }
+
+  init() {
+    this.initActionHandler();
+  }
+
+  initActionHandler() {
+    const ASC_EVENT_PREFIX = "asc";
+    const DEFAULT_EVENT = "click";
+    const EVENTS = ["click", "submit", "change", "input", "mouseover", "mouseout", "keydown", "mouseenter", "mouseleave", "load", "DOMContentLoaded"];
+
+    function collectData(el) {
+      const data = {};
+      let node = el;
+      while (node && node !== document) {
+        if (node.dataset) Object.assign(data, node.dataset);
+        node = node.parentElement;
+      }
+      return data;
     }
 
-    init() {
+    function parseActions(attr) {
+      return attr.split(/\s+/).map((token) => {
+        const [name, event = DEFAULT_EVENT] = token.split("@");
+        return { name, event };
+      });
     }
 
-    registerAction(actionName, eventType, handler) {
-        const removeListener = delegateEvent(document.body, `[data-asc-action~="${actionName}"]`, eventType, handler);
-        this.actions.push({ actionName, eventType, handler, removeListener });
-    }
-    
-    unregisterAction(actionName, eventType) {
-        const action = this.actions.find(a => a.actionName === actionName && a.eventType === eventType);
-        if (action && action.removeListener) {
-            action.removeListener();
+    function handleEvent(event) {
+      let node = event.target;
+
+      while (node && node !== document) {
+        const attr = node.dataset?.ascAction;
+        if (attr) {
+          const actions = parseActions(attr);
+          const ctx = {
+            el: node,
+            event,
+            data: collectData(node),
+            stop: false,
+          };
+
+          for (const action of actions) {
+            if (action.event !== event.type) continue;
+
+            const customEvent = new CustomEvent(`${ASC_EVENT_PREFIX}:${action.name}`, {
+              bubbles: true,
+              detail: ctx,
+            });
+
+            node.dispatchEvent(customEvent);
+
+            if (ctx.stop) return;
+          }
         }
-        this.actions = this.actions.filter(action => action.actionName !== actionName || action.eventType !== eventType);
+
+        node = node.parentElement;
+      }
     }
+
+    EVENTS.forEach((type) => document.addEventListener(type, handleEvent));
+  }
 }
 
 export default new Actions(serviceConfigurations.actions);
-

@@ -1,22 +1,46 @@
+// ASC Core — do not edit. Customize via scripts/configurations.js
 import services from "../services/services.js";
 import Rendition from "./rendition.js";
 
 export default class Asset {
+  /**
+   * Common picture html configurations.
+   */
+  pictureHtmlConfigurations = {
+    card: {
+      breakpoints: [
+        { renditionWidth: 319, width: 0 },
+        { renditionWidth: 560, width: 768 },
+        { renditionWidth: 840, width: 1024 },
+      ],
+      sizes: "(max-width: 768px) 250px, (max-width: 1024px) 280px, 280px",
+      loading: "eager",
+    },
+  };
+
   constructor(data) {
     // Store raw data
     this.data = data;
     this.metadata = data["jcr:content"]["metadata"];
-    
+
     // Extract commonly used direct properties
     this.path = data["jcr:path"];
     this.uuid = data["jcr:uuid"];
-    this.filename = data["jcr:content"]["cq:name"] || data["jcr:path"]?.split("/")?.pop() || null;
-    this.title = data["jcr:content"]["metadata"]["dc:title"] || data["jcr:content"]["cq:name"] || "Missing title";
+    this.filename =
+      data["jcr:content"]["cq:name"] ||
+      data["jcr:path"]?.split("/")?.pop() ||
+      null;
+    this.title =
+      data["jcr:content"]["metadata"]["dc:title"] ||
+      data["jcr:content"]["cq:name"] ||
+      "Missing title";
     this.description = data["jcr:content"]["metadata"]["dc:description"];
     this.mimeType = data["jcr:content"]["metadata"]["dc:format"];
     this.sizeInBytes = data["jcr:content"]["metadata"]["dam:size"] || null;
     this.created = new Date(data["jcr:content"]["metadata"]["jcr:created"]);
-    this.lastModified = new Date(data["jcr:content"]["metadata"]["jcr:lastModified"]);
+    this.lastModified = new Date(
+      data["jcr:content"]["metadata"]["jcr:lastModified"]
+    );
 
     /* Object cache */
     this._renditions = null;
@@ -27,17 +51,17 @@ export default class Asset {
     let id;
 
     if (input instanceof Element) {
-      // If input is an HTMLElement, look up the DOM tree for the data-asc-asset-id attribute
+      // If input is an HTMLElement, look up the DOM tree for the data-asc-asset attribute
       let element = input;
-      while (!element?.hasAttribute("data-asc-asset-id")) {
+      while (!element?.hasAttribute("data-asc-asset")) {
         element = element.parentElement;
       }
 
-      if (element?.hasAttribute("data-asc-asset-id")) {
-        id = element.getAttribute("data-asc-asset-id");
+      if (element?.hasAttribute("data-asc-asset")) {
+        id = element.getAttribute("data-asc-asset");
       } else {
         console.warn(
-          "No data-asc-asset-id attribute found in DOM tree for element:",
+          "No `data-asc-asset` attribute found in DOM tree for element:",
           input
         );
         return null;
@@ -49,7 +73,12 @@ export default class Asset {
         console.warn("Unable to create Asset from input: ", input);
         return null;
       }
-    } else if (typeof input === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input)) {
+    } else if (
+      typeof input === "string" &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        input
+      )
+    ) {
       id = input;
     } else {
       return new Asset(input);
@@ -64,7 +93,7 @@ export default class Asset {
   }
 
   get displaySize() {
-    if (!this.sizeInBytes) return 'Unknown size';
+    if (!this.sizeInBytes) return "Unknown size";
     const bytes = this.sizeInBytes;
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -79,13 +108,7 @@ export default class Asset {
   }
 
   get thumbnail() {
-    if (!services.aem.isLocalhost()) {
-      return this.getDynamicUrl({ preferwebp: true, width: 200, quality: 80 });
-    } else {
-      return this.renditions().find((r) =>
-        r.name.includes("cq5dam.thumbnail.319.319")
-      )?.url;
-    }
+    return services.renditions.getThumbnailUrl(this);
   }
 
   get url() {
@@ -126,23 +149,9 @@ export default class Asset {
   }
 
   get renditions() {
-    if (this._renditions != null) { return this._renditions; }
+    if (this._renditions != null) return this._renditions;
     this._renditions = services.renditions.getRenditions(this) || [];
     return this._renditions;
-  }
-
-  getDynamicUrl(params = { preferwebp: true, width: 200, quality: 80 }) {
-    // In format /adobe/dynamicmedia/deliver/dm-aid--a38886f7-4537-4791-aa20-3f6ef0ac3fcd/adobestock_175749320.jpg?preferwebp=true&width=1000&quality=80
-
-    const path = `/adobe/dynamicmedia/deliver/dm-aid--${this.uuid}/${this.filename}`;
-
-    const url = new URL(path, services.aem.getHost());
-
-    Object.entries(params).forEach(([key, value]) => {
-      url.searchParams.set(key, value);
-    });
-
-    return url.toString();
   }
 
   getRendition(name) {
@@ -153,7 +162,6 @@ export default class Asset {
     }
     return this.renditions.find((r) => r.name.includes(name)) || null;
   }
-
 
   get staticRenditions() {
     if (this._staticRenditions != null) return this._staticRenditions;
@@ -196,7 +204,7 @@ export default class Asset {
             const width = name.split(".")[2];
             const height = name.split(".")[3];
 
-            staticRendition = { 
+            staticRendition = {
               id: name,
               name: name,
               mimeType: services.fileType.getMimeType(name),
@@ -230,101 +238,95 @@ export default class Asset {
     return this._staticRenditions;
   }
 
-
-
-
   /* HTML helpers */
 
+  /**
+   * Returns a <picture> element HTML string for this asset.
+   *
+   * If the asset has multiple image renditions (e.g. cq5dam.web.* nodes from DAM
+   * processing profiles), a responsive <picture> with <source> breakpoints is built.
+   * If only one rendition is available, a plain <img> is returned.
+   *
+   * Options:
+   *   alt           {string}   Alt text override (defaults to asset title)
+   *   eager         {boolean}  loading="eager" + fetchpriority="high" (for LCP images)
+   *   breakpoints   {Array}    Custom breakpoints: [{ media: '(min-width: 768px)', renditionWidth: 800 }, ...]
+   *   imgAttributes {Object}   Additional attributes merged onto <img>
+   */
   getPictureHtml(options = {}) {
-    if (!services.aem.isLocalhost()) {
-      return `<div>NOT IMPLEMENTED; USE DYNAMIC URLS</div>`;
-    }
-
-    // Refactored options: allow passing alt, eager, breakpoints, sizes, imgAttributes
     const {
-      alt = null, // Optional alt override
-      eager = false, // If true, loading="eager"
-      breakpoints = null, // Custom breakpoints: [{ width: 768, renditionWidth: 400 }, ...]
-      sizes = null, // Optional sizes attribute for <img>
-      imgAttributes = {}, // Additional attributes for <img>
+      alt = null,
+      eager = false,
+      breakpoints = null,
+      imgAttributes = {},
     } = options;
 
-    let imageRenditions = this.staticRenditions
-      .filter((r) =>
-        ["image/jpeg", "image/png", "image/gif", "image/webp"].includes(
-          r.mimeType
-        )
-      )
-      .sort((a, b) => b.width - a.width);
+    const altText = alt !== null ? alt : this.title;
+    const loading = eager ? 'eager' : 'lazy';
+    const fetchpriority = eager ? 'high' : 'auto';
 
-    if (!imageRenditions.length)
-      return "<div>No suitable image renditions found</div>";
+    // Collect image renditions — prefer explicit rendition nodes when available,
+    // fall back to the thumbnail URL (works for search results without rendition data).
+    const imageRenditions = this.staticRenditions
+      .filter((r) => ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(r.mimeType))
+      .sort((a, b) => (b.width || 0) - (a.width || 0));
 
-    let sources;
+    const thumbnailUrl = services.renditions.getThumbnailUrl(this);
+
+    if (!imageRenditions.length) {
+      // No JCR rendition data — render a simple img using the thumbnail URL.
+      const attrStr = this._buildImgAttrString({
+        src: thumbnailUrl,
+        alt: altText,
+        loading,
+        fetchpriority,
+        ...imgAttributes,
+      });
+      return `<img ${attrStr} />`;
+    }
+
+    // Build responsive <picture> from available renditions.
+    let sources = '';
     if (breakpoints) {
-      // Use custom breakpoints
-      sources = breakpoints
-        .map((bp) => {
-          const rendition =
-            imageRenditions.find((r) => r.width <= bp.renditionWidth) ||
-            imageRenditions[imageRenditions.length - 1];
-          return `<source srcset="${rendition.url}" type="${rendition.mimeType}" media="(min-width: ${bp.width}px)" />`;
-        })
-        .join("\n");
+      sources = breakpoints.map((bp) => {
+        const rendition = imageRenditions.find((r) => r.width >= bp.renditionWidth)
+          || imageRenditions[imageRenditions.length - 1];
+        return `<source srcset="${rendition.url}" type="${rendition.mimeType}" media="${bp.media}" />`;
+      }).join('\n');
     } else {
-      // Use automatic breakpoints based on rendition widths
-      sources = imageRenditions
-        .map((r, index) => {
-          const nextRendition = imageRenditions[index + 1];
-          const minWidth = nextRendition ? nextRendition.width : 0;
-          const maxWidth = r.width;
-
-          let mediaQuery;
-          if (index === 0) {
-            mediaQuery = `(min-width: ${minWidth + 1}px)`;
-          } else if (index === imageRenditions.length - 1) {
-            mediaQuery = `(max-width: ${maxWidth}px)`;
-          } else {
-            mediaQuery = `(min-width: ${
-              minWidth + 1
-            }px) and (max-width: ${maxWidth}px)`;
-          }
-
-          return `<source srcset="${r.url}" type="${r.mimeType}" media="${mediaQuery}" />`;
-        })
-        .join("\n");
+      // Auto breakpoints: one <source> per rendition, largest first.
+      sources = imageRenditions.map((r, i) => {
+        const next = imageRenditions[i + 1];
+        const media = next ? `(min-width: ${next.width + 1}px)` : '';
+        return media
+          ? `<source srcset="${r.url}" type="${r.mimeType}" media="${media}" />`
+          : `<source srcset="${r.url}" type="${r.mimeType}" />`;
+      }).join('\n');
     }
 
-    // Fallback image: use the smallest (last) rendition
-    const fallbackImg = imageRenditions[imageRenditions.length - 1];
+    const fallback = imageRenditions[imageRenditions.length - 1];
+    const style = fallback.width && fallback.height
+      ? `aspect-ratio: ${fallback.width}/${fallback.height}; width: 100%; object-fit: cover;`
+      : 'width: 100%; object-fit: cover;';
 
-    // Build img attributes
-    const imgAttrs = {
-      alt: alt !== null ? alt : this.title,
-      loading: eager ? "eager" : "lazy",
-      fetchpriority: eager ? "high" : "auto",
-      src: fallbackImg.url,
-      style:
-        fallbackImg.width && fallbackImg.height
-          ? `aspect-ratio: ${fallbackImg.width}/${fallbackImg.height}; width: 100%; object-fit: cover;`
-          : "width: 100%; object-fit: cover;",
+    const attrStr = this._buildImgAttrString({
+      src: fallback.url,
+      alt: altText,
+      loading,
+      fetchpriority,
+      style,
       ...imgAttributes,
-    };
+    });
 
-    if (sizes) {
-      imgAttrs.sizes = sizes;
-    }
-
-    const imgAttrString = Object.entries(imgAttrs)
-      .map(([key, value]) => `${key}="${value}"`)
-      .join(" ");
-
-    return `<picture>
-      ${sources}
-      <img ${imgAttrString} />
-    </picture>`;
+    return `<picture>\n${sources}\n<img ${attrStr} />\n</picture>`;
   }
 
+  _buildImgAttrString(attrs) {
+    return Object.entries(attrs)
+      .filter(([, v]) => v != null && v !== '')
+      .map(([k, v]) => `${k}="${v}"`)
+      .join(' ');
+  }
 
   /**
    * Make the asset iterable for destructuring and spreading
@@ -355,7 +357,6 @@ export default class Asset {
       sizeInBytes: this.sizeInBytes,
       created: this.created,
       lastModified: this.lastModified,
-
     };
   }
 

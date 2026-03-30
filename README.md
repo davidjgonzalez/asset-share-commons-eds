@@ -1,34 +1,72 @@
-# Your Project's Title...
-Your project's description...
+# Asset Share Commons — Edge Delivery Services
+
+An AEM Edge Delivery Services front-end for sharing, searching, and downloading assets from AEM DAM.
 
 ## Environments
-- Preview: https://main--{repo}--{owner}.aem.page/
-- Live: https://main--{repo}--{owner}.aem.live/
+
+- Preview: `https://main--{repo}--{owner}.aem.page/`
+- Live: `https://main--{repo}--{owner}.aem.live/`
+
+## Getting Started
+
+See **[QUICKSTART.md](QUICKSTART.md)** for the full setup guide.
+
+**TL;DR:**
+```bash
+npm install
+aem up       # opens http://localhost:3000
+```
 
 ## Documentation
 
-Before using the aem-boilerplate, we recommand you to go through the documentation on https://www.aem.live/docs/ and more specifically:
-1. [Developer Tutorial](https://www.aem.live/developer/tutorial)
-2. [The Anatomy of a Project](https://www.aem.live/developer/anatomy-of-a-project)
-3. [Web Performance](https://www.aem.live/developer/keeping-it-100)
-4. [Markup, Sections, Blocks, and Auto Blocking](https://www.aem.live/developer/markup-sections-blocks)
+| File | Purpose |
+|------|---------|
+| [QUICKSTART.md](QUICKSTART.md) | First-time setup — AEM, da.live, local dev, deploy |
+| [AGENTS.md](AGENTS.md) | Developer reference — events, data attributes, blocks, extension points |
+| [CSS_CONVENTION.md](CSS_CONVENTION.md) | CSS coding standards for blocks and themes |
+| [THEMING_README.md](THEMING_README.md) | How to create and switch themes |
+| [docs/starter-kit/](docs/starter-kit/) | Content starter kit — HTML pages to import into da.live |
 
-## Installation
+## Configuring
 
-```sh
-npm i
+All configuration lives in **`scripts/configurations.js`** — the only file you ever need to edit. Everything in `scripts/asc/` is ASC core and should not be modified.
+
+Minimum configuration:
+```js
+// scripts/configurations.js
+export default {
+  aem: {
+    host: 'https://author-pXXX-eYYY.adobeaemcloud.com',
+  },
+  search: {
+    provider: 'querybuilder',  // or 'openapi'
+  },
+};
 ```
 
-## Linting
+## Blocks
 
-```sh
-npm run lint
+**Search:** `search-bar` `search-property` `search-path` `search-date-range` `search-tags` `search-hidden` `search-statistics` `search-results`
+
+**Asset Details:** `details-modal` `details-preview` `details-property` `details-download` `details-actions`
+
+**Collections:** `stub` `sheet` `collections` `collection`
+
+## Theming
+
+Five built-in themes: `default`, `dark`, `warm`, `studio`, `vault`.
+
+```js
+// scripts/configurations.js
+theme: { default: 'vault' }
 ```
 
-## Local development
+Add your own in `styles/themes/custom.css`.
 
-1. Create a new repository based on the `aem-boilerplate` template and add a mountpoint in the `fstab.yaml`
-1. Add the [AEM Code Sync GitHub App](https://github.com/apps/aem-code-sync) to the repository
-1. Install the [AEM CLI](https://github.com/adobe/helix-cli): `npm install -g @adobe/aem-cli`
-1. Start AEM Proxy: `aem up` (opens your browser at `http://localhost:3000`)
-1. Open the `{repo}` directory in your favorite IDE and start coding :)
+## Development
+
+```bash
+npm run lint        # ESLint + Stylelint
+npm run lint:fix    # auto-fix
+aem up              # local dev proxy
+```

@@ -1,14 +1,16 @@
+// ASC Core — do not edit. Customize via scripts/configurations.js
 import serviceConfigurations from "../configurations.js";
-import actions from "../actions/actions.js";
+import { delegateEvent } from "../../utils/events.js";
 
 class Init {
   constructor(config) {
     this.config = config;
+    this.preloads = new Map();
 
     window.asc = {
       cache: {
         assets: new Map(),
-      }
+      },
     };
 
     /**
@@ -39,16 +41,22 @@ class Init {
      * Preload URLs on hover
      */
     if (this.config.preload) {
-      actions.registerAction('preload', 'mouseover', (event) => { 
-        const pathToPreload = event.target.dataset.ascPreload;
-        
-        if (pathToPreload) {
-          fetch(pathToPreload);
-          if (!pathToPreload.includes('.')) {
-            fetch(`${pathToPreload}.plain.html`);
+
+        document.body.addEventListener("asc:asset:preload", (event) => {
+          const { ascPreload } = event.target.dataset;
+
+          if (!ascPreload || this.preloads[ascPreload]) {
+            // Already preloaded; don't bother doing it again
+            return;
           }
-        }
-      });
+
+          this.preloads[ascPreload] = true;
+
+          fetch(ascPreload);
+          if (!ascPreload.includes('.')) {
+            fetch(`${ascPreload}.plain.html`);
+          }
+        });
     }
   }
 }

@@ -1,0 +1,11 @@
+.block.collections {
+
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(257px, 1fr));
+    gap: var(--spacing-lg);
+
+    .collection {
+        border: solid 1px red;
+    }
+
+}

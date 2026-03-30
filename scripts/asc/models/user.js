@@ -1,3 +1,4 @@
+// ASC Core — do not edit. Customize via scripts/configurations.js
 class User {
     constructor(data) {
         this.data = data;

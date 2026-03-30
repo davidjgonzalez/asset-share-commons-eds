@@ -1,3 +1,4 @@
+// ASC Core — do not edit. Customize via scripts/configurations.js
 // Copyright 2025 David G.
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,6 +26,26 @@ export function getFieldName({group, name, parameter = ''}) {
 
 export function getOptions({content = '', initialValues = {}, delimiter = ':', splitter = undefined}) {
   return getGenericBlockOptions({content, initialValues, delimiter, splitter});
+}
+
+/**
+ * Wire filter inputs (checkboxes, radios, date inputs, selects) inside a search filter
+ * block to dispatch `asc:search:execute` when they change.
+ *
+ * All search filter blocks (search-property, search-path, search-date-range, search-tags)
+ * should call this instead of writing their own change listeners.
+ *
+ * @param {HTMLElement} block  - The block element containing the filter inputs
+ * @param {object}      config - Block config (must have a `form` property)
+ */
+export function addSearchEventListeners(block, config) {
+  block.querySelectorAll('input[type="checkbox"], input[type="radio"], input[type="date"], select').forEach((input) => {
+    input.addEventListener('change', () => {
+      document.dispatchEvent(new CustomEvent('asc:search:execute', {
+        detail: { formId: config.form, source: 'filter' },
+      }));
+    });
+  });
 }
 
 export function readBlockConfig(block, transform = {}, defaults = {}) {

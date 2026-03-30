@@ -1,29 +1,66 @@
 import services from '../../scripts/asc/services/services.js';
 
+/**
+ * Collection-bar (stub) block — shows the current cart state and a link
+ * to the download sheet page.
+ *
+ * Renders:
+ *   - A "Go to sheet" link with the current cart's assets and selected renditions
+ *     compressed into URL params.
+ *   - A list of all collections with their asset counts.
+ *
+ * Re-renders when any collection changes via the asc:collection:update event.
+ */
 export default async function decorate(block) {
+  block.innerHTML = await buildHtml();
 
-    const assets = ['3e683243-7bee-40b4-8569-ba6652873f73', '5f905042-497f-42a2-91c1-09e12388ddcd', 'd63041dc-c557-49a3-986f-93a2c7f0a657'];
-    const renditions = ['web', 'original'];
+  document.addEventListener('asc:collection:update', async () => {
+    block.innerHTML = await buildHtml();
+  });
 
-    const collections = services.collections.getCollections();
+  return block;
+}
 
-    const assetsQueryParameterValue = await services.url.compressArray(collections.cart);
-    const renditionsQueryParameterValue = await services.url.compressArray(renditions);
+async function buildHtml() {
+  return `
+    <div class="stub__sheet">
+      ${await htmlSheet()}
+    </div>
+    <div class="stub__collections">
+      ${await htmlCollections()}
+    </div>`;
+}
 
-    block.innerHTML = `
+async function htmlSheet() {
+  const cart = await services.collections.getCollection('cart', false);
+  const assetIds = cart?.assetIds || [];
 
-    <h4>SHEET</h4>
-    <a href="/sheets/download?assets=${assetsQueryParameterValue}&renditions=${renditionsQueryParameterValue}">Goto sheet</a>
+  if (!assetIds.length) {
+    return '<p class="stub__sheet-empty">Your cart is empty.</p>';
+  }
 
+  const renditions = ['web', 'original'];
+  const assetsParam = await services.url.compressArray(assetIds);
+  const renditionsParam = await services.url.compressArray(renditions);
 
+  return `
+    <h4>Download Sheet</h4>
+    <p>${assetIds.length} asset${assetIds.length !== 1 ? 's' : ''} in cart</p>
+    <a href="/sheet?assets=${assetsParam}&renditions=${renditionsParam}" class="stub__sheet-link">
+      Go to download sheet
+    </a>`;
+}
+
+async function htmlCollections() {
+  const collections = await services.collections.getCollections(false);
+
+  return `
     <h4>Collections</h4>
-
-    <ul>
-    ${Object.entries(collections).map(([collectionName, collection]) => `
-        <li>${collectionName} - ${collection.join(', ')}</li>
-    `).join('')}
-    </ul>
-
-    `;
-    return block;
+    <ul class="stub__collection-list">
+      ${collections.map((c) => `
+        <li class="stub__collection-item">
+          ${c.name || c.id}
+          <span class="stub__collection-count">(${c.assetIds?.length ?? 0})</span>
+        </li>`).join('')}
+    </ul>`;
 }

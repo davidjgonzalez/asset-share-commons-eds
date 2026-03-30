@@ -1,3 +1,4 @@
+// ASC Core — do not edit. Customize via scripts/configurations.js
 /*
  * Fragment Block
  * Include content on a page as a fragment.

@@ -1,3 +1,4 @@
+// ASC Core — do not edit. Customize via scripts/configurations.js
 // Copyright 2025 David G.
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");

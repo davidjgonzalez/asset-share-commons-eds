@@ -1,115 +1,136 @@
+// ASC Core — do not edit. Customize via scripts/configurations.js
+
 // Copyright 2025 David G.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     https://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+import { decorateBlock, loadBlock } from '../../../aem.js';
 import serviceConfigurations from '../configurations.js';
-import actions from '../actions/actions.js';
-import search from '../search/search.js';
 import { loadFragment } from '../../utils/fragments.js';
 
+// URL parameter used for deep-linking to a specific asset's details
+const ASSET_URL_PARAM = 'asset';
+
 class AssetDetails {
-    constructor(config) {
-        this.config = {
-            showAssetDetails: this.showAssetDetails,
-            ...config
-        }
-        this.init();
+  constructor(config) {
+    this.config = config || {};
+    this.templates = this.config.templates || { default: '/details/default' };
+    this.modal = null;
+    this.init();
+  }
+
+  init() {
+    // Inject the details-modal block if not already on the page
+    if (!document.querySelector('.block.details-modal')) {
+      const block = document.createElement('div');
+      block.classList.add('details-modal');
+      document.body.appendChild(block);
+      decorateBlock(block);
+      loadBlock(block).then(() => this._attachListeners(block));
+    } else {
+      this._attachListeners(document.querySelector('.block.details-modal'));
+    }
+  }
+
+  _attachListeners(block) {
+    this.modal = block;
+
+    // Open modal when asc:asset:details:open fires (from data-asc-action or programmatically)
+    document.body.addEventListener('asc:asset:details:open', async (event) => {
+      const { ascAsset } = event.detail?.data || event.target?.dataset || {};
+      if (!ascAsset) return;
+      await this.open(ascAsset);
+    });
+
+    // Close modal — fired by the close button action or programmatically
+    document.body.addEventListener('asc:asset:details:close', () => {
+      this.close();
+    });
+
+    // Auto-open if URL already contains an asset param on page load
+    const urlAsset = new URLSearchParams(window.location.search).get(ASSET_URL_PARAM);
+    if (urlAsset) {
+      this.open(urlAsset);
+    }
+  }
+
+  /**
+   * Resolve which fragment template to load for a given MIME type.
+   * Uses the templates map from configurations.assetDetails.templates.
+   * Supports exact matches ('application/pdf') and wildcard prefixes ('image/*').
+   * Falls back to 'default'.
+   */
+  resolveTemplate(mimeType) {
+    if (!mimeType) return this.templates.default || '/details/default';
+
+    for (const [pattern, path] of Object.entries(this.templates)) {
+      if (pattern === 'default') continue;
+      if (pattern.endsWith('/*')) {
+        const prefix = pattern.slice(0, -2);
+        if (mimeType.startsWith(prefix)) return path;
+      } else if (mimeType === pattern) {
+        return path;
+      }
     }
 
-    init() {
-        actions.registerAction('show-asset-details', 'click', 
-            this.config.showAssetDetails.bind(this));
+    return this.templates.default || '/details/default';
+  }
+
+  async open(assetId) {
+    if (!this.modal) return;
+
+    // Fetch the asset to determine its MIME type for template resolution
+    // Import lazily to avoid circular dependencies
+    const { default: search } = await import('../search/search.js');
+    const asset = await search.getAssetById(assetId);
+
+    if (!asset) {
+      console.warn(`[AssetDetails] Asset not found: ${assetId}`);
+      return;
     }
 
-    async getAsset(input) {    
-        // check if input is a URL with a query param of id 
-        if (input === null) {
-            input = window.location;
-        }
+    const templatePath = this.resolveTemplate(asset.mimeType);
 
-        if (input.startsWith('http')) {
-            const url = new URL(input, window.location);
-            const searchParams = new URLSearchParams(url.search);
-            input = searchParams.get('id');        
-        } else if (input.contains('/')) {
-            // assume its a URL where the suffix is the UUID
-            input = input.split('/').pop();
-        } else if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input)) {
-            input = input;
-        } else {
-            input = null;
-        }
+    const fragment = await loadFragment(templatePath, {
+      main: {
+        'data-asc-asset': assetId,
+        class: 'modal',
+      },
+    });
 
-        if (input) {
-            return search.getAssetById(input);
-        }
-
-        return null;
+    if (!fragment) {
+      console.warn(`[AssetDetails] Could not load fragment: ${templatePath}`);
+      return;
     }
 
-    async showAssetDetails(event, el) {
-        event.preventDefault();
+    this.modal.querySelector('dialog .content').replaceChildren(fragment);
+    this.modal.querySelector('dialog').showModal();
 
-        console.log('showAssetDetails', event, el);
+    // Update URL to make this view deep-linkable
+    const url = new URL(window.location);
+    url.searchParams.set(ASSET_URL_PARAM, assetId);
+    window.history.replaceState({ assetId }, '', url);
+  }
 
-        event.target.setAttribute('data-asc-asset-status', 'showing');
+  close() {
+    if (!this.modal) return;
+    this.modal.querySelector('dialog')?.close();
 
-        const assetId = el.dataset.ascAssetId;
-        console.log('assetId', assetId);
-
-        const fragment = await loadFragment(`/details/default`, {
-            main: {
-                'data-asc-asset-id': assetId,
-                'class': 'modal',
-            }
-        });
-
-        // Create a <dialog> element and inject the HTML
-        const dialog = document.createElement('dialog');    
-        // Dialog should be fullscreen
-        dialog.style.width = '90vw';
-        dialog.style.height = '90vh';
-        dialog.style.position = 'fixed';
-        dialog.style.top = '0';
-        dialog.style.left = '0';
-        dialog.style.zIndex = '1000';
-        dialog.classList.add('asset-details-dialog');
-        dialog.appendChild(fragment);
-
-        // Optionally add a close button if not present in html
-        if (!dialog.querySelector('[data-dialog-close]')) {
-            const closeBtn = document.createElement('button');
-            closeBtn.textContent = 'Close';
-            closeBtn.type = 'button';
-            closeBtn.setAttribute('data-dialog-close', '');
-            closeBtn.style.position = 'absolute';
-            closeBtn.style.top = '1em';
-            closeBtn.style.right = '1em';
-            dialog.appendChild(closeBtn);
-        }
-
-        // Close dialog on close button click or when dialog is canceled (ESC)
-        dialog.addEventListener('click', (e) => {
-            if (e.target.matches('[data-dialog-close]')) {
-                dialog.close();
-            }
-        });
-        dialog.addEventListener('close', () => {
-            dialog.remove();
-        });
-
-        document.body.appendChild(dialog);
-        dialog.showModal();
-    }
+    // Remove asset param from URL
+    const url = new URL(window.location);
+    url.searchParams.delete(ASSET_URL_PARAM);
+    window.history.replaceState({}, '', url);
+  }
 }
 
 export default new AssetDetails(serviceConfigurations.assetDetails);

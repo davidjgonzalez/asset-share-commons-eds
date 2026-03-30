@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Search — Asset Share</title>
+  <meta name="template" content="index">
+</head>
+<body>
+  <header></header>
+  <main>
+    <!--
+      Section 1: Filter sidebar
+      In da.live, each block below is a separate table.
+    -->
+    <div>
+
+      <!-- stub block (zero-config — renders the cart bar) -->
+      <div class="stub"></div>
+
+      <!-- search-statistics block (zero-config — shows result count) -->
+      <div class="search-statistics"></div>
+
+      <!-- search-bar block -->
+      <div class="search-bar">
+        <div>
+          <div>placeholder</div>
+          <div>Search assets...</div>
+        </div>
+      </div>
+
+      <!-- search-property block: File Type filter -->
+      <div class="search-property">
+        <div>
+          <div>title</div>
+          <div>File Type</div>
+        </div>
+        <div>
+          <div>property</div>
+          <div>jcr:content/metadata/dc:format</div>
+        </div>
+        <div>
+          <div>type</div>
+          <div>checkbox</div>
+        </div>
+        <div>
+          <div>options</div>
+          <div>
+            Images: image/jpeg<br>
+            Images (PNG): image/png<br>
+            Video: video/mp4<br>
+            Documents: application/pdf
+          </div>
+        </div>
+      </div>
+
+      <!-- search-property block: Status filter -->
+      <div class="search-property">
+        <div>
+          <div>title</div>
+          <div>Status</div>
+        </div>
+        <div>
+          <div>property</div>
+          <div>jcr:content/metadata/dam:status</div>
+        </div>
+        <div>
+          <div>type</div>
+          <div>checkbox</div>
+        </div>
+        <div>
+          <div>options</div>
+          <div>
+            Approved: approved<br>
+            In Review: review<br>
+            Rejected: rejected
+          </div>
+        </div>
+      </div>
+
+      <!-- search-path block: Folders filter -->
+      <div class="search-path">
+        <div>
+          <div>title</div>
+          <div>Folders</div>
+        </div>
+        <div>
+          <div>type</div>
+          <div>checkbox</div>
+        </div>
+        <div>
+          <div>options</div>
+          <div>
+            Marketing: /content/dam/marketing<br>
+            Products: /content/dam/products<br>
+            Campaigns: /content/dam/campaigns
+          </div>
+        </div>
+      </div>
+
+      <!-- search-date-range block: Modified Date filter -->
+      <div class="search-date-range">
+        <div>
+          <div>title</div>
+          <div>Modified Date</div>
+        </div>
+        <div>
+          <div>property</div>
+          <div>jcr:content/metadata/dam:assetLastModified</div>
+        </div>
+      </div>
+
+      <!-- search-tags block: Tags filter -->
+      <div class="search-tags">
+        <div>
+          <div>title</div>
+          <div>Tags</div>
+        </div>
+        <div>
+          <div>type</div>
+          <div>checkbox</div>
+        </div>
+        <div>
+          <div>options</div>
+          <div>
+            Featured: dam:featured<br>
+            Approved: dam:status/approved
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!--
+      Section 2: Results area
+    -->
+    <div>
+
+      <!-- search-results block -->
+      <div class="search-results">
+        <div>
+          <div>limit</div>
+          <div>24</div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+  <footer></footer>
+</body>
+</html>

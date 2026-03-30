@@ -1,3 +1,4 @@
+// ASC Core — do not edit. Customize via scripts/configurations.js
 class Rendition {
   constructor({ asset, id, label, description, visible, mimeType, format, usecase, url, fileSize, width, height, type, path }) {
     // Simple data as direct properties
@@ -18,14 +19,21 @@ class Rendition {
     this.path = path;
   }
 
-  /**
-   * Make the rendition iterable for destructuring and spreading
-   * @returns {Object} Iterator with key-value pairs
-   */
-  *[Symbol.iterator]() {
-    for (const [key, value] of Object.entries(this)) {
-      yield [key, value];
+  static async create(asset, renditionId) {
+    if(typeof asset === 'string') {
+      asset = await Asset.create(asset);
+    } else if (asset instanceof Asset) {
+      asset = asset;
+    } else {
+      throw new Error('Invalid asset');
     }
+
+    const rendition = asset.getRendition(renditionId);
+    if(!rendition) {
+      throw new Error('Rendition not found');
+    }
+
+    return new Rendition(rendition);
   }
 
   /**

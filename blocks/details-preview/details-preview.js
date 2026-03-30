@@ -13,14 +13,12 @@
 // limitations under the License.
 
 import Asset from '../../scripts/asc/models/asset.js';
+import services from '../../scripts/asc/services/services.js';
 
 export default async function decorate(block) {
   try {
     // Get asset from URL (UUID or path)
-    console.log('details-preview', block);
     const asset = await Asset.create(block);
-
-    console.log("asset.getRendition('web')", asset.getRendition('web'));
     
     // Update page title
     document.title = `${asset.title} - Asset Details`;
@@ -43,7 +41,11 @@ export default async function decorate(block) {
             <dt>File Path</dt>
             <dd class="file-path">${asset.path}</dd>
           </dl>
-          <button data-asc-action="add-to-collection" data-asc-asset-id="${asset.uuid}" data-asc-collection="cart">Add to Cart</button>
+          ${services.collections.contains('cart', asset.uuid) ? 
+            `<button data-asc-action="collection.remove@click" data-asc-asset="${asset.uuid}" data-asc-collection="cart">Remove from Cart</button>` 
+            : 
+            `<button data-asc-action="collection.add@click" data-asc-asset="${asset.uuid}" data-asc-collection="cart">Add to Cart</button>`
+          }
         </aside>
       </section>
     `;

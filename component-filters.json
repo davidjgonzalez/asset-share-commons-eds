@@ -1,0 +1,59 @@
+[
+  {
+    "id": "main",
+    "components": [
+      "section"
+    ]
+  },
+  {
+    "id": "section",
+    "components": [
+      "text",
+      "image",
+      "button",
+      "columns",
+      "hero",
+      "fragment",
+      "search-bar",
+      "search-property",
+      "search-path",
+      "search-date-range",
+      "search-tags",
+      "search-hidden",
+      "search-statistics",
+      "search-results",
+      "details-modal",
+      "details-preview",
+      "details-property",
+      "details-download",
+      "details-actions",
+      "stub",
+      "sheet",
+      "collections",
+      "collection"
+    ]
+  },
+  {
+    "id": "asc-search-page",
+    "components": [
+      "search-bar",
+      "search-property",
+      "search-path",
+      "search-date-range",
+      "search-tags",
+      "search-hidden",
+      "search-statistics",
+      "search-results",
+      "stub"
+    ]
+  },
+  {
+    "id": "asc-details-page",
+    "components": [
+      "details-preview",
+      "details-property",
+      "details-download",
+      "details-actions"
+    ]
+  }
+]

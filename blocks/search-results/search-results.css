@@ -6,4 +6,10 @@
     select {
         padding: 0.5rem 1rem;
     }
+
+    [data-asc-results] {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: var(--spacing-md);
+    }
 }

@@ -1,0 +1,356 @@
+[
+  {
+    "id": "search-bar",
+    "fields": [
+      {
+        "component": "text",
+        "name": "placeholder",
+        "label": "Placeholder Text",
+        "value": "Search assets...",
+        "valueType": "string",
+        "description": "Ghost text shown inside the search input when it is empty."
+      },
+      {
+        "component": "text",
+        "name": "name",
+        "label": "Query Parameter Name",
+        "value": "fulltext",
+        "valueType": "string",
+        "description": "The QueryBuilder predicate name / URL parameter. Rarely changed (default: fulltext)."
+      }
+    ]
+  },
+
+  {
+    "id": "search-property",
+    "fields": [
+      {
+        "component": "text",
+        "name": "title",
+        "label": "Label",
+        "value": "",
+        "valueType": "string",
+        "description": "Heading displayed above the filter options."
+      },
+      {
+        "component": "text",
+        "name": "property",
+        "label": "JCR Property Path",
+        "value": "jcr:content/metadata/dc:format",
+        "valueType": "string",
+        "description": "The JCR metadata property to filter on (e.g. jcr:content/metadata/dc:format)."
+      },
+      {
+        "component": "select",
+        "name": "type",
+        "label": "Input Type",
+        "value": "checkbox",
+        "valueType": "string",
+        "options": [
+          { "name": "Checkboxes", "value": "checkbox" },
+          { "name": "Radio Buttons", "value": "radio" },
+          { "name": "Dropdown", "value": "dropdown" }
+        ]
+      },
+      {
+        "component": "checkbox",
+        "name": "and",
+        "label": "AND Logic",
+        "value": false,
+        "valueType": "boolean",
+        "description": "When checked, all selected values must match (AND). Default is OR."
+      },
+      {
+        "component": "richtext",
+        "name": "options",
+        "label": "Options",
+        "value": "",
+        "valueType": "string",
+        "description": "One option per line in the format: Display Label: property-value  (e.g.  JPEG: image/jpeg)"
+      },
+      {
+        "component": "text",
+        "name": "name",
+        "label": "Predicate Name",
+        "value": "property",
+        "valueType": "string",
+        "description": "QueryBuilder predicate name. Rarely changed — use only when placing multiple search-property blocks on the same page."
+      }
+    ]
+  },
+
+  {
+    "id": "search-path",
+    "fields": [
+      {
+        "component": "text",
+        "name": "title",
+        "label": "Label",
+        "value": "",
+        "valueType": "string",
+        "description": "Heading displayed above the filter options."
+      },
+      {
+        "component": "select",
+        "name": "type",
+        "label": "Input Type",
+        "value": "checkbox",
+        "valueType": "string",
+        "options": [
+          { "name": "Checkboxes", "value": "checkbox" },
+          { "name": "Radio Buttons", "value": "radio" },
+          { "name": "Dropdown", "value": "dropdown" }
+        ]
+      },
+      {
+        "component": "richtext",
+        "name": "options",
+        "label": "Paths",
+        "value": "",
+        "valueType": "string",
+        "description": "One path per line in the format: Display Label: /content/dam/path  (e.g.  Marketing: /content/dam/marketing)"
+      },
+      {
+        "component": "checkbox",
+        "name": "exact",
+        "label": "Exact Path Match",
+        "value": false,
+        "valueType": "boolean",
+        "description": "When checked, only assets at exactly this path match (not descendants)."
+      },
+      {
+        "component": "checkbox",
+        "name": "flat",
+        "label": "Flat (non-recursive)",
+        "value": false,
+        "valueType": "boolean",
+        "description": "When checked, only direct children of the path are searched."
+      },
+      {
+        "component": "checkbox",
+        "name": "self",
+        "label": "Include Self",
+        "value": true,
+        "valueType": "boolean",
+        "description": "When checked, the path node itself is included in results."
+      },
+      {
+        "component": "text",
+        "name": "name",
+        "label": "Predicate Name",
+        "value": "path",
+        "valueType": "string",
+        "description": "QueryBuilder predicate name. Rarely changed."
+      }
+    ]
+  },
+
+  {
+    "id": "search-date-range",
+    "fields": [
+      {
+        "component": "text",
+        "name": "title",
+        "label": "Label",
+        "value": "",
+        "valueType": "string",
+        "description": "Heading displayed above the date inputs."
+      },
+      {
+        "component": "text",
+        "name": "property",
+        "label": "JCR Date Property",
+        "value": "jcr:content/metadata/dam:assetLastModified",
+        "valueType": "string",
+        "description": "The JCR date property to filter on. Common values: jcr:content/metadata/dam:assetLastModified (modified date), jcr:content/metadata/jcr:created (created date)."
+      },
+      {
+        "component": "text",
+        "name": "name",
+        "label": "Predicate Name",
+        "value": "daterange",
+        "valueType": "string",
+        "description": "QueryBuilder predicate name. Rarely changed — only set when placing multiple date-range blocks on the same page."
+      }
+    ]
+  },
+
+  {
+    "id": "search-tags",
+    "fields": [
+      {
+        "component": "text",
+        "name": "title",
+        "label": "Label",
+        "value": "",
+        "valueType": "string",
+        "description": "Heading displayed above the tag filter options."
+      },
+      {
+        "component": "text",
+        "name": "property",
+        "label": "JCR Tag Property",
+        "value": "jcr:content/metadata/cq:tags",
+        "valueType": "string",
+        "description": "The JCR property that stores tag values (default: jcr:content/metadata/cq:tags)."
+      },
+      {
+        "component": "select",
+        "name": "type",
+        "label": "Input Type",
+        "value": "checkbox",
+        "valueType": "string",
+        "options": [
+          { "name": "Checkboxes", "value": "checkbox" },
+          { "name": "Radio Buttons", "value": "radio" },
+          { "name": "Dropdown", "value": "dropdown" }
+        ]
+      },
+      {
+        "component": "checkbox",
+        "name": "and",
+        "label": "AND Logic",
+        "value": false,
+        "valueType": "boolean",
+        "description": "When checked, assets must have ALL selected tags (AND). Default is OR."
+      },
+      {
+        "component": "richtext",
+        "name": "options",
+        "label": "Tags",
+        "value": "",
+        "valueType": "string",
+        "description": "One tag per line in the format: Display Label: namespace:tag/path  (e.g.  Approved: dam:status/approved)"
+      },
+      {
+        "component": "text",
+        "name": "name",
+        "label": "Predicate Name",
+        "value": "tagid",
+        "valueType": "string",
+        "description": "QueryBuilder predicate name. Rarely changed."
+      }
+    ]
+  },
+
+  {
+    "id": "search-hidden",
+    "fields": [
+      {
+        "component": "richtext",
+        "name": "note",
+        "label": "Hidden Fields",
+        "value": "",
+        "valueType": "string",
+        "description": "Each row in this block is a hidden search parameter. Add rows in the document using the format: predicate-name | value  (e.g. type | dam:Asset). These are passed directly to QueryBuilder or the active search provider."
+      }
+    ]
+  },
+
+  {
+    "id": "search-results",
+    "fields": [
+      {
+        "component": "number",
+        "name": "limit",
+        "label": "Results Per Page",
+        "value": 24,
+        "valueType": "number",
+        "description": "Number of results to load per page / infinite-scroll batch."
+      }
+    ]
+  },
+
+  {
+    "id": "search-statistics",
+    "fields": []
+  },
+
+  {
+    "id": "details-preview",
+    "fields": []
+  },
+
+  {
+    "id": "details-property",
+    "fields": [
+      {
+        "component": "text",
+        "name": "label",
+        "label": "Display Label",
+        "value": "",
+        "valueType": "string",
+        "description": "The label shown next to the property value (e.g. File Type, Author)."
+      },
+      {
+        "component": "text",
+        "name": "property",
+        "label": "Property",
+        "value": "",
+        "valueType": "string",
+        "description": "The property to display. Use a JCR path (e.g. jcr:content/metadata/dc:creator) or a built-in handler name (file-type, file-size, dimensions, file-extension)."
+      },
+      {
+        "component": "text",
+        "name": "default",
+        "label": "Fallback Value",
+        "value": "",
+        "valueType": "string",
+        "description": "Value shown when the property is empty or missing."
+      }
+    ]
+  },
+
+  {
+    "id": "details-download",
+    "fields": [
+      {
+        "component": "text",
+        "name": "label",
+        "label": "Section Label",
+        "value": "Download",
+        "valueType": "string",
+        "description": "Heading shown above the rendition list."
+      }
+    ]
+  },
+
+  {
+    "id": "details-actions",
+    "fields": [
+      {
+        "component": "text",
+        "name": "actions",
+        "label": "Actions",
+        "value": "add-to-cart download",
+        "valueType": "string",
+        "description": "Space-separated list of actions to display. Supported values: add-to-cart, download, share. Order controls button order."
+      }
+    ]
+  },
+
+  {
+    "id": "details-modal",
+    "fields": []
+  },
+
+  {
+    "id": "stub",
+    "fields": []
+  },
+
+  {
+    "id": "sheet",
+    "fields": []
+  },
+
+  {
+    "id": "collections",
+    "fields": []
+  },
+
+  {
+    "id": "collection",
+    "fields": []
+  }
+]

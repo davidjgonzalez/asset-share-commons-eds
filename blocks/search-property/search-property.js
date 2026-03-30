@@ -2,7 +2,7 @@
  * AEM QueryBuilder documentation - Property 
  * https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/implementing/developing/full-stack/search/query-builder-predicates#property
  **/
-import { readBlockConfig, getOptions } from '../../scripts/asc/utils/search.js';
+import { readBlockConfig, getOptions, addSearchEventListeners } from '../../scripts/asc/utils/search.js';
 
 export default function decorate(block) {
   const config = readBlockConfig(block, {
@@ -18,7 +18,7 @@ export default function decorate(block) {
 
   block.innerHTML = html(config);
 
-  addEventListeners(block, config);
+  addSearchEventListeners(block, config);
 }
 
 function html(config) {  
@@ -112,7 +112,6 @@ export function htmlRadio(config) {
  */
 export function htmlDropdown(config, initialValues = {}) {
   const selectName = `${config.group}.${config.name}.value`;
-  const id = `${config.group}_${config.name}_value`;
   const selectedValue = initialValues.find(v => v.key === selectName)?.value || '';
   
   return `<select
@@ -130,37 +129,3 @@ export function htmlDropdown(config, initialValues = {}) {
     </select>`;
 }
 
-/**
- * Add event listeners to the block
- * 
- * @param {*} block the block element
- * @param {*} config the block configuration
- */
-function addEventListeners(block, config) {
-    // Add event listeners for all interactive elements
-    const inputs = block.querySelectorAll('input[type="checkbox"], input[type="radio"], select');
-    
-    inputs.forEach(input => {
-        if (input.type === 'checkbox' || input.type === 'radio') {
-            input.addEventListener('change', (e) => {
-                document.dispatchEvent(new CustomEvent('asc:search', { 
-                    detail: { 
-                        value: e.target.checked ? e.target.value : '',
-                        formId: config.form,
-                        source: 'metadata-filter'
-                    }
-                }));
-            });
-        } else if (input.tagName === 'SELECT') {
-            input.addEventListener('change', (e) => {
-                document.dispatchEvent(new CustomEvent('asc:search', { 
-                    detail: { 
-                        value: e.target.value,
-                        formId: config.form,
-                        source: 'metadata-filter'
-                    }
-                }));
-            });
-        }
-    });
-}

@@ -1,3 +1,7 @@
+// ASC Core — do not edit. Customize via scripts/configurations.js
+// WeakMap to track registered listeners per element
+const registeredListeners = new WeakMap();
+
 /**
  * Attaches a delegated event listener to a root element, listening for events
  * that bubble up from descendants matching the given selector.
@@ -7,10 +11,15 @@
  * @param {string} selector - The CSS selector to match descendant elements.
  * @param {string} eventType - The event type to listen for (e.g., 'click').
  * @param {Function} handler - The event handler function. Receives (event, matchedElement).
- * @param {Object} [options] - Optional event listener options.
+ * @param {Object} [options] - Optional configuration options.
+ * @param {boolean} [options.stopPropagation=true] - Whether to stop event propagation after handling.
+ * @param {boolean} [options.capture] - Whether to use event capturing phase.
+ * @param {boolean} [options.once] - Whether the listener should be invoked at most once.
+ * @param {boolean} [options.passive] - Whether the listener will never call preventDefault().
+ * @param {boolean} [options.allowDuplicates=false] - Whether to allow duplicate listeners.
  * @returns {Function} - A function to remove the event listener.
  */
-export function delegateEvent(root, selector, eventType, handler, options) {
+export function delegateEvent(root, selector, eventType, handler, options = {}) {
     if (!root || typeof root.addEventListener !== 'function') {
         throw new Error('Root element must be a valid DOM element');
     }
@@ -22,6 +31,27 @@ export function delegateEvent(root, selector, eventType, handler, options) {
     }
     if (typeof handler !== 'function') {
         throw new Error('Handler must be a function');
+    }
+
+    // Extract custom options and event listener options
+    const { stopPropagation = true, allowDuplicates = false, ...listenerOptions } = options;
+
+    
+    // Check for duplicate listeners unless allowDuplicates is true
+    if (!allowDuplicates) {
+        // Initialize listener tracking for this root element if needed
+        if (!registeredListeners.has(root)) {
+            registeredListeners.set(root, new Map());
+        }
+        
+        const elementListeners = registeredListeners.get(root);
+        const listenerKey = `${eventType}::${selector}::${handler.toString()}`;
+        
+        // If this exact listener already exists, return the existing cleanup function
+        if (elementListeners.has(listenerKey)) {
+            //console.debug('Duplicate delegated event listener prevented:', { root, selector, eventType });
+            return elementListeners.get(listenerKey).cleanup;
+        }
     }
 
     const listener = function(event) {
@@ -48,16 +78,43 @@ export function delegateEvent(root, selector, eventType, handler, options) {
                     configurable: true,
                     writable: true 
                 });
+                
+                // Stop propagation if enabled (default behavior)
+                if (stopPropagation) {
+                    event.stopPropagation();
+                }
+                
                 break;
             }
             el = el.parentElement;
         }
     };
 
-    root.addEventListener(eventType, listener, options);
+    root.addEventListener(eventType, listener, listenerOptions);
 
     // Return a function to remove the event listener
-    return function removeDelegatedEvent() {
-        root.removeEventListener(eventType, listener, options);
+    const cleanup = function removeDelegatedEvent() {
+        root.removeEventListener(eventType, listener, listenerOptions);
+        
+        // Remove from tracking map
+        if (!allowDuplicates && registeredListeners.has(root)) {
+            const elementListeners = registeredListeners.get(root);
+            const listenerKey = `${eventType}::${selector}::${handler.toString()}`;
+            elementListeners.delete(listenerKey);
+            
+            // Clean up the WeakMap entry if no more listeners exist
+            if (elementListeners.size === 0) {
+                registeredListeners.delete(root);
+            }
+        }
     };
+
+    // Store the listener info for duplicate detection
+    if (!allowDuplicates) {
+        const elementListeners = registeredListeners.get(root);
+        const listenerKey = `${eventType}::${selector}::${handler.toString()}`;
+        elementListeners.set(listenerKey, { handler, listener, cleanup });
+    }
+
+    return cleanup;
 }

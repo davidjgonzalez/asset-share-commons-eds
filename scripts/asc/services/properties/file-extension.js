@@ -1,3 +1,4 @@
+// ASC Core — do not edit. Customize via scripts/configurations.js
 import serviceConfigurations from "../configurations.js";
 
 const config = { 

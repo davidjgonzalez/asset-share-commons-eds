@@ -1,0 +1,294 @@
+{
+  "groups": [
+    {
+      "title": "Asset Share Commons - Search",
+      "id": "asc-search",
+      "components": [
+        {
+          "title": "Search Bar",
+          "id": "search-bar",
+          "plugins": {
+            "xwalk": {
+              "page": {
+                "resourceType": "core/franklin/components/block/v1/block",
+                "template": {
+                  "name": "Search Bar",
+                  "model": "search-bar"
+                }
+              }
+            }
+          }
+        },
+        {
+          "title": "Search Property Filter",
+          "id": "search-property",
+          "plugins": {
+            "xwalk": {
+              "page": {
+                "resourceType": "core/franklin/components/block/v1/block",
+                "template": {
+                  "name": "Search Property",
+                  "model": "search-property",
+                  "property": "jcr:content/metadata/dc:format",
+                  "title": "",
+                  "type": "checkbox"
+                }
+              }
+            }
+          }
+        },
+        {
+          "title": "Search Path Filter",
+          "id": "search-path",
+          "plugins": {
+            "xwalk": {
+              "page": {
+                "resourceType": "core/franklin/components/block/v1/block",
+                "template": {
+                  "name": "Search Path",
+                  "model": "search-path",
+                  "title": "",
+                  "type": "checkbox"
+                }
+              }
+            }
+          }
+        },
+        {
+          "title": "Search Date Range Filter",
+          "id": "search-date-range",
+          "plugins": {
+            "xwalk": {
+              "page": {
+                "resourceType": "core/franklin/components/block/v1/block",
+                "template": {
+                  "name": "Search Date Range",
+                  "model": "search-date-range",
+                  "property": "jcr:content/metadata/dam:assetLastModified",
+                  "title": ""
+                }
+              }
+            }
+          }
+        },
+        {
+          "title": "Search Tags Filter",
+          "id": "search-tags",
+          "plugins": {
+            "xwalk": {
+              "page": {
+                "resourceType": "core/franklin/components/block/v1/block",
+                "template": {
+                  "name": "Search Tags",
+                  "model": "search-tags",
+                  "property": "jcr:content/metadata/cq:tags",
+                  "title": "",
+                  "type": "checkbox"
+                }
+              }
+            }
+          }
+        },
+        {
+          "title": "Search Statistics",
+          "id": "search-statistics",
+          "plugins": {
+            "xwalk": {
+              "page": {
+                "resourceType": "core/franklin/components/block/v1/block",
+                "template": {
+                  "name": "Search Statistics",
+                  "model": "search-statistics"
+                }
+              }
+            }
+          }
+        },
+        {
+          "title": "Search Results",
+          "id": "search-results",
+          "plugins": {
+            "xwalk": {
+              "page": {
+                "resourceType": "core/franklin/components/block/v1/block",
+                "template": {
+                  "name": "Search Results",
+                  "model": "search-results",
+                  "limit": "24"
+                }
+              }
+            }
+          }
+        },
+        {
+          "title": "Search Hidden Fields",
+          "id": "search-hidden",
+          "plugins": {
+            "xwalk": {
+              "page": {
+                "resourceType": "core/franklin/components/block/v1/block",
+                "template": {
+                  "name": "Search Hidden",
+                  "model": "search-hidden"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "title": "Asset Share Commons - Asset Details",
+      "id": "asc-details",
+      "components": [
+        {
+          "title": "Details Modal",
+          "id": "details-modal",
+          "plugins": {
+            "xwalk": {
+              "page": {
+                "resourceType": "core/franklin/components/block/v1/block",
+                "template": {
+                  "name": "Details Modal",
+                  "model": "details-modal"
+                }
+              }
+            }
+          }
+        },
+        {
+          "title": "Asset Preview",
+          "id": "details-preview",
+          "plugins": {
+            "xwalk": {
+              "page": {
+                "resourceType": "core/franklin/components/block/v1/block",
+                "template": {
+                  "name": "Details Preview",
+                  "model": "details-preview"
+                }
+              }
+            }
+          }
+        },
+        {
+          "title": "Asset Property",
+          "id": "details-property",
+          "plugins": {
+            "xwalk": {
+              "page": {
+                "resourceType": "core/franklin/components/block/v1/block",
+                "template": {
+                  "name": "Details Property",
+                  "model": "details-property",
+                  "label": "",
+                  "property": ""
+                }
+              }
+            }
+          }
+        },
+        {
+          "title": "Asset Download",
+          "id": "details-download",
+          "plugins": {
+            "xwalk": {
+              "page": {
+                "resourceType": "core/franklin/components/block/v1/block",
+                "template": {
+                  "name": "Details Download",
+                  "model": "details-download",
+                  "label": "Download"
+                }
+              }
+            }
+          }
+        },
+        {
+          "title": "Asset Actions",
+          "id": "details-actions",
+          "plugins": {
+            "xwalk": {
+              "page": {
+                "resourceType": "core/franklin/components/block/v1/block",
+                "template": {
+                  "name": "Details Actions",
+                  "model": "details-actions",
+                  "actions": "add-to-cart download"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "title": "Asset Share Commons - Collections",
+      "id": "asc-collections",
+      "components": [
+        {
+          "title": "Collection Bar (Cart)",
+          "id": "stub",
+          "plugins": {
+            "xwalk": {
+              "page": {
+                "resourceType": "core/franklin/components/block/v1/block",
+                "template": {
+                  "name": "Stub",
+                  "model": "stub"
+                }
+              }
+            }
+          }
+        },
+        {
+          "title": "Download Sheet",
+          "id": "sheet",
+          "plugins": {
+            "xwalk": {
+              "page": {
+                "resourceType": "core/franklin/components/block/v1/block",
+                "template": {
+                  "name": "Sheet",
+                  "model": "sheet"
+                }
+              }
+            }
+          }
+        },
+        {
+          "title": "Collections List",
+          "id": "collections",
+          "plugins": {
+            "xwalk": {
+              "page": {
+                "resourceType": "core/franklin/components/block/v1/block",
+                "template": {
+                  "name": "Collections",
+                  "model": "collections"
+                }
+              }
+            }
+          }
+        },
+        {
+          "title": "Collection",
+          "id": "collection",
+          "plugins": {
+            "xwalk": {
+              "page": {
+                "resourceType": "core/franklin/components/block/v1/block",
+                "template": {
+                  "name": "Collection",
+                  "model": "collection"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

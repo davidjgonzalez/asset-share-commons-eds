@@ -12,7 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// ASC Core — do not edit. Customize via scripts/configurations.js
+
 import serviceConfigurations from '../configurations.js';
+import users from '../users/users.js';
 
 class AEM {
   constructor(config) {
@@ -37,6 +40,16 @@ class AEM {
 
   isLocalhost() {
     return this.config.host?.includes('localhost');
+  }
+
+  /**
+   * Returns headers for AEM API requests, including auth if the user is signed in.
+   * Use this for all fetch() calls to AEM endpoints.
+   *
+   * @returns {Promise<Record<string, string>>}
+   */
+  async getHeaders() {
+    return users.getAuthHeaders();
   }
 }
 
