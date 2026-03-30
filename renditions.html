@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Renditions — ASC EDS</title>
+  <link rel="stylesheet" href="styles/site.css">
+</head>
+<body class="page-body">
+
+  <nav class="site-nav">
+    <a href="index.html" class="site-nav__brand">
+      <div class="site-nav__brand-icon">A</div>
+      ASC EDS
+    </a>
+    <ul class="site-nav__links">
+      <li><a href="quickstart.html">Quick Start</a></li>
+      <li><a href="blocks.html">Blocks</a></li>
+      <li><a href="theming.html">Theming</a></li>
+      <li><a href="renditions.html">Renditions</a></li>
+      <li><a href="developer.html">Developer</a></li>
+    </ul>
+    <div class="site-nav__actions">
+      <a href="https://github.com/davidjgonzalez/asset-share-commons-eds" class="site-nav__github" target="_blank">⭐ GitHub</a>
+    </div>
+  </nav>
+
+  <div class="page-with-sidebar">
+
+    <nav class="sidebar">
+      <span class="sidebar__label">Renditions</span>
+      <ul class="sidebar__nav">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#static">type: static</a></li>
+        <li><a href="#url">type: url (Legacy DM)</a></li>
+        <li><a href="#asset-delivery">type: asset-delivery</a></li>
+        <li><a href="#accepts">accepts filter</a></li>
+        <li><a href="#visible">visible flag</a></li>
+        <li><a href="#variables">Template variables</a></li>
+        <li><a href="#defaults">Default definitions</a></li>
+        <li><a href="#full-example">Full example</a></li>
+      </ul>
+    </nav>
+
+    <main class="content">
+      <div class="content-inner">
+
+        <h1>Renditions</h1>
+        <p>
+          The renditions system is the client-side equivalent of ASC v1's
+          <code>AssetRenditionDispatcher</code>. It resolves download URLs for each asset
+          based on definitions in <code>configurations.js</code> — no server-side code required.
+        </p>
+
+        <h2 id="overview">Overview</h2>
+
+        <p>Three rendition types map to the three AEM delivery patterns:</p>
+
+        <table>
+          <thead>
+            <tr><th>Type</th><th>AEM v1 equivalent</th><th>When to use</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="badge badge--blue">static</span></td>
+              <td><code>StaticRenditionDispatcher</code></td>
+              <td>JCR rendition nodes in <code>jcr:content/renditions/*</code>. Works on any AEM.</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge--orange">url</span></td>
+              <td><code>ExternalRedirectRenderer</code></td>
+              <td>Legacy Dynamic Media / Scene7 IS/IR protocol (<code>is/image/</code> URLs). AEM 6.5 or classic DM.</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge--purple">asset-delivery</span></td>
+              <td><code>AssetDeliveryRenditionDispatcher</code></td>
+              <td>DM with OpenAPI — plain transforms, smart crops, named presets. AEMaaCS only.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="callout callout--info">
+          <strong>Two different Dynamic Media systems</strong>
+          Legacy DM (Scene7 / IS-IR) uses <code>type: 'url'</code> with <code>${dm.*}</code> metadata variables.
+          DM with OpenAPI (Next Gen DM, AEMaaCS) uses <code>type: 'asset-delivery'</code> with query params —
+          smart crops and named presets are just different <code>params</code> values on the same URL.
+        </div>
+
+        <h2 id="static">type: 'static'</h2>
+
+        <p>
+          Matches a named node from the asset's <code>jcr:content/renditions/*</code> tree.
+          The URL is constructed from the known JCR path — no external API needed.
+        </p>
+
+        <pre><code class="language-js">{
+  id: 'web',
+  label: 'Web',
+  type: 'static',
+  name: /^cq5dam\.web\./,   // RegExp — matches cq5dam.web.1280.1280.jpeg etc.
+  accepts: 'image/*',       // only applies to image assets
+},
+{
+  id: 'original',
+  label: 'Original',
+  type: 'static',
+  name: 'original',         // exact string match
+},</code></pre>
+
+        <p>
+          The <code>name</code> property is either an exact string or a RegExp tested
+          against the rendition node name. The resolved URL is:
+          <code>{aem.host}{asset.path}/_jcr_content/renditions/{nodeName}</code>
+        </p>
+
+        <h2 id="url">type: 'url' — Legacy Dynamic Media</h2>
+
+        <p>
+          Constructs a URL by interpolating <code>${variable}</code> placeholders.
+          Use for AEM 6.5 or AEMaaCS instances with classic Scene7 Dynamic Media enabled.
+          Variable values are read from <code>dam:scene7*</code> metadata properties
+          written to the asset by the DM sync process.
+        </p>
+
+        <pre><code class="language-js">// Named preset
+{
+  id: 'dm-web',
+  label: 'Web',
+  type: 'url',
+  url: '${dm.apiServer}is/image/${dm.file}?$web$',
+  accepts: (asset) => !!asset.getProperty('dam:scene7File'),
+},
+
+// Smart Crop (IS/IR ":CropName" syntax)
+{
+  id: 'dm-smart-crop-small',
+  label: 'Smart Crop — Small',
+  type: 'url',
+  url: '${dm.apiServer}is/image/${dm.file}:Small',
+  accepts: (asset) => !!asset.getProperty('dam:scene7File'),
+},
+
+// Image preset
+{
+  id: 'dm-grayscale',
+  label: 'Grayscale',
+  type: 'url',
+  url: '${dm.apiServer}is/image/${dm.file}?$grayscale$',
+},</code></pre>
+
+        <h2 id="asset-delivery">type: 'asset-delivery' — DM with OpenAPI</h2>
+
+        <p>
+          Constructs an AEM Asset Delivery URL using the asset's UUID. AEM as a Cloud Service only.
+          Requires <code>aem.deliveryHost</code> in <code>configurations.js</code>.
+        </p>
+
+        <p>Generated URL format:</p>
+        <pre><code class="language-text">{deliveryHost}/adobe/dynamicmedia/deliver/{uuid}/{filename}.{ext}?{params}</code></pre>
+
+        <p>
+          Smart crops, named presets, and plain image transforms all use this same URL base —
+          they're just different <code>params</code> values:
+        </p>
+
+        <pre><code class="language-js">// Requires: aem.deliveryHost set in configurations.js
+
+// Plain image transform (no DM license needed)
+{
+  id: 'web-optimized',
+  label: 'Web Optimized',
+  type: 'asset-delivery',
+  params: 'format=webp&preferwebp=true&width=1200&quality=85',
+  accepts: 'image/*',
+},
+
+// DM OpenAPI Smart Crop
+{
+  id: 'smart-crop-small',
+  label: 'Smart Crop — Small',
+  type: 'asset-delivery',
+  params: 'smartcrop=Small',   // crop name must match your DM preset
+  accepts: 'image/*',
+},
+
+// DM OpenAPI Named Image Preset
+{
+  id: 'dm-preset-web',
+  label: 'Web Preset',
+  type: 'asset-delivery',
+  params: 'imagePreset=web',
+  accepts: 'image/*',
+},</code></pre>
+
+        <div class="callout callout--tip">
+          <strong>Enable deliveryHost</strong>
+          Add <code>deliveryHost: 'https://delivery-pXXXX-eYYYY.adobeaemcloud.com'</code>
+          to the <code>aem</code> section in <code>configurations.js</code>. Without it,
+          <code>type: 'asset-delivery'</code> renditions silently resolve to <code>null</code>.
+        </div>
+
+        <h2 id="accepts">The accepts filter</h2>
+
+        <p>Controls which asset types a rendition definition applies to:</p>
+
+        <pre><code class="language-js">// Apply to all assets (default — omit accepts)
+{ id: 'original', type: 'static', name: 'original' }
+
+// MIME type glob string
+{ ..., accepts: 'image/*' }      // images only
+{ ..., accepts: 'video/*' }      // videos only
+{ ..., accepts: 'application/pdf' }  // PDFs only
+
+// Function — full asset access
+{
+  ...,
+  accepts: (asset) => !!asset.getProperty('dam:scene7File'),
+}</code></pre>
+
+        <h2 id="visible">The visible flag</h2>
+
+        <p>
+          Set <code>visible: false</code> to hide a rendition from the download list while
+          keeping it available internally via <code>services.renditions.getRendition(asset, id)</code>.
+          Used for the <code>thumbnail</code> rendition, which powers teaser images.
+        </p>
+
+        <pre><code class="language-js">{
+  id: 'thumbnail',
+  label: 'Thumbnail',
+  type: 'static',
+  name: /^cq5dam\.thumbnail\./,
+  visible: false,  // shown to teasers, hidden from download list
+}</code></pre>
+
+        <h2 id="variables">Template variables (type: 'url')</h2>
+
+        <table>
+          <thead><tr><th>Variable</th><th>Resolves to</th><th>JCR metadata property</th></tr></thead>
+          <tbody>
+            <tr><td><code>${asset.path}</code></td><td>JCR path</td><td>—</td></tr>
+            <tr><td><code>${asset.name}</code></td><td>Node name (filename)</td><td>—</td></tr>
+            <tr><td><code>${asset.id}</code></td><td>UUID</td><td>—</td></tr>
+            <tr><td><code>${asset.extension}</code></td><td>File extension</td><td>—</td></tr>
+            <tr><td><code>${asset.title}</code></td><td>Display title</td><td><code>dc:title</code></td></tr>
+            <tr><td><code>${dm.name}</code></td><td>Scene7 asset name</td><td><code>dam:scene7Name</code></td></tr>
+            <tr><td><code>${dm.id}</code></td><td>Scene7 asset ID</td><td><code>dam:scene7ID</code></td></tr>
+            <tr><td><code>${dm.file}</code></td><td>Scene7 file path (e.g. <code>company/image</code>)</td><td><code>dam:scene7File</code></td></tr>
+            <tr><td><code>${dm.folder}</code></td><td>Scene7 folder</td><td><code>dam:scene7Folder</code></td></tr>
+            <tr><td><code>${dm.domain}</code></td><td>Scene7 domain</td><td><code>dam:scene7Domain</code></td></tr>
+            <tr><td><code>${dm.apiServer}</code></td><td>Scene7 API server URL</td><td><code>dam:scene7APIServer</code></td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="defaults">Default definitions</h2>
+
+        <p>
+          If <code>renditions.definitions</code> is not set in <code>configurations.js</code>,
+          ASC uses these defaults — suitable for any AEM instance with standard DAM processing profiles:
+        </p>
+
+        <pre><code class="language-js">// Default definitions (built into scripts/asc/services/renditions/renditions.js)
+[
+  {
+    id: 'thumbnail',
+    label: 'Thumbnail',
+    type: 'static',
+    name: /^cq5dam\.thumbnail\./,
+    visible: false,
+  },
+  {
+    id: 'web',
+    label: 'Web',
+    type: 'static',
+    name: /^cq5dam\.web\./,
+    accepts: 'image/*',
+  },
+  {
+    id: 'original',
+    label: 'Original',
+    type: 'static',
+    name: 'original',
+  },
+]</code></pre>
+
+        <h2 id="full-example">Full configuration example</h2>
+
+        <pre><code class="language-js">// scripts/configurations.js
+export default {
+  aem: {
+    host: 'https://publish-pXXXX-eYYYY.adobeaemcloud.com',
+    deliveryHost: 'https://delivery-pXXXX-eYYYY.adobeaemcloud.com',
+  },
+
+  renditions: {
+    definitions: [
+      // ── Static (any AEM) ────────────────────────────────────────────────
+      { id: 'thumbnail', label: 'Thumbnail', type: 'static',
+        name: /^cq5dam\.thumbnail\./, visible: false },
+      { id: 'web',       label: 'Web',       type: 'static',
+        name: /^cq5dam\.web\./,       accepts: 'image/*' },
+      { id: 'original',  label: 'Original',  type: 'static',
+        name: 'original' },
+
+      // ── Legacy DM / Scene7 (AEM 6.5 or classic DM) ──────────────────────
+      { id: 'dm-web',   label: 'Web (DM)',   type: 'url',
+        url: '${dm.apiServer}is/image/${dm.file}?$web$',
+        accepts: (asset) => !!asset.getProperty('dam:scene7File') },
+      { id: 'dm-crop',  label: 'Smart Crop — Small', type: 'url',
+        url: '${dm.apiServer}is/image/${dm.file}:Small',
+        accepts: (asset) => !!asset.getProperty('dam:scene7File') },
+
+      // ── DM with OpenAPI / Asset Delivery (AEMaaCS only) ─────────────────
+      { id: 'web-opt',  label: 'Web Optimized', type: 'asset-delivery',
+        params: 'format=webp&preferwebp=true&width=1200&quality=85',
+        accepts: 'image/*' },
+      { id: 'sc-small', label: 'Smart Crop — Small', type: 'asset-delivery',
+        params: 'smartcrop=Small', accepts: 'image/*' },
+      { id: 'preset-web', label: 'Web Preset', type: 'asset-delivery',
+        params: 'imagePreset=web', accepts: 'image/*' },
+    ],
+  },
+};</code></pre>
+
+      </div>
+    </main>
+  </div>
+
+  <footer class="site-footer">
+    <p>Asset Share Commons EDS — <a href="https://github.com/davidjgonzalez/asset-share-commons-eds" target="_blank">GitHub</a></p>
+  </footer>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+  <script src="scripts/site.js"></script>
+</body>
+</html>

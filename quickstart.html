@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quick Start — ASC EDS</title>
+  <link rel="stylesheet" href="styles/site.css">
+</head>
+<body class="page-body">
+
+  <nav class="site-nav">
+    <a href="index.html" class="site-nav__brand">
+      <div class="site-nav__brand-icon">A</div>
+      ASC EDS
+    </a>
+    <ul class="site-nav__links">
+      <li><a href="quickstart.html">Quick Start</a></li>
+      <li><a href="blocks.html">Blocks</a></li>
+      <li><a href="theming.html">Theming</a></li>
+      <li><a href="renditions.html">Renditions</a></li>
+      <li><a href="developer.html">Developer</a></li>
+    </ul>
+    <div class="site-nav__actions">
+      <a href="https://github.com/davidjgonzalez/asset-share-commons-eds" class="site-nav__github" target="_blank">⭐ GitHub</a>
+    </div>
+  </nav>
+
+  <div class="page-with-sidebar">
+
+    <nav class="sidebar">
+      <span class="sidebar__label">Setup</span>
+      <ul class="sidebar__nav">
+        <li><a href="#prerequisites">Prerequisites</a></li>
+        <li><a href="#step-1">1. Fork &amp; Connect</a></li>
+        <li><a href="#step-2">2. Create Workspace</a></li>
+        <li><a href="#step-3">3. Mount Content</a></li>
+        <li><a href="#step-4">4. Author Content</a></li>
+        <li><a href="#step-5">5. Configure AEM</a></li>
+        <li><a href="#step-6">6. Run Locally</a></li>
+        <li><a href="#step-7">7. Verify</a></li>
+        <li><a href="#step-8">8. Deploy</a></li>
+      </ul>
+      <span class="sidebar__label">Next Steps</span>
+      <ul class="sidebar__nav">
+        <li><a href="#themes">Apply a Theme</a></li>
+        <li><a href="#renditions-config">Configure Renditions</a></li>
+        <li><a href="#custom-properties">Custom Properties</a></li>
+      </ul>
+    </nav>
+
+    <main class="content">
+      <div class="content-inner">
+
+        <h1>Quick Start</h1>
+        <p>Get Asset Share Commons running locally in about 15 minutes. You need an AEM instance (author or publish) with accessible DAM assets.</p>
+
+        <div class="callout callout--info">
+          <strong>TL;DR</strong>
+          Fork the repo → connect AEM Code Sync → create da.live workspace → author pages →
+          set <code>aem.host</code> in configurations.js → run <code>aem up</code>.
+        </div>
+
+        <h2 id="prerequisites">Prerequisites</h2>
+
+        <ul>
+          <li>Node.js 18+</li>
+          <li>An AEM instance (AEM 6.5 SP15+, AEM SDK, or AEM as a Cloud Service) with assets in DAM</li>
+          <li>A GitHub account (for the code repository)</li>
+          <li>A <a href="https://da.live" target="_blank">da.live</a> account (for content authoring)</li>
+          <li>The <a href="https://github.com/apps/aem-code-sync" target="_blank">AEM Code Sync GitHub App</a></li>
+        </ul>
+
+        <h2 id="step-1">Step 1 — Fork &amp; Install AEM Code Sync</h2>
+
+        <ol>
+          <li>Fork <a href="https://github.com/davidjgonzalez/asset-share-commons-eds" target="_blank"><strong>davidjgonzalez/asset-share-commons-eds</strong></a> to your GitHub account.</li>
+          <li>Install the <a href="https://github.com/apps/aem-code-sync" target="_blank">AEM Code Sync GitHub App</a> and grant it access to your forked repository.</li>
+          <li>Clone the fork locally:</li>
+        </ol>
+
+        <pre><code class="language-bash">git clone https://github.com/YOUR-USERNAME/asset-share-commons-eds.git
+cd asset-share-commons-eds
+npm install</code></pre>
+
+        <h2 id="step-2">Step 2 — Create a da.live Workspace</h2>
+
+        <ol>
+          <li>Go to <a href="https://da.live" target="_blank">da.live</a> and sign in with your Adobe ID.</li>
+          <li>Click <strong>New Organization</strong> → link it to your GitHub account.</li>
+          <li>Create a new site pointing to your forked repository.</li>
+        </ol>
+
+        <h2 id="step-3">Step 3 — Mount Content (fstab.yaml)</h2>
+
+        <p>EDS content lives in Google Drive or SharePoint and is mounted via <code>fstab.yaml</code> in the repository root.</p>
+
+        <pre><code class="language-yaml"># fstab.yaml
+mountpoints:
+  /:
+    url: https://drive.google.com/drive/folders/YOUR-FOLDER-ID
+    type: google</code></pre>
+
+        <p>Create the folder in Google Drive, share it with the AEM Code Sync service account, then commit <code>fstab.yaml</code>.</p>
+
+        <h2 id="step-4">Step 4 — Author Content in da.live</h2>
+
+        <p>
+          Each page is a document in your content folder. Blocks are authored as tables —
+          the first row is the block name, subsequent rows are configuration key/value pairs.
+        </p>
+
+        <p>
+          The <strong><a href="https://github.com/davidjgonzalez/asset-share-commons-eds/tree/main/docs/starter-kit" target="_blank">starter kit</a></strong>
+          in <code>docs/starter-kit/</code> contains ready-to-import HTML files for every page type.
+          Import them into da.live to get going immediately.
+        </p>
+
+        <h4>Starter kit pages</h4>
+        <table>
+          <thead><tr><th>File</th><th>Purpose</th><th>URL path</th></tr></thead>
+          <tbody>
+            <tr><td><code>index.html</code></td><td>Search page (main entry)</td><td><code>/</code></td></tr>
+            <tr><td><code>details/default.html</code></td><td>Default asset details template</td><td><code>/details/default</code></td></tr>
+            <tr><td><code>details/image.html</code></td><td>Image-specific details template</td><td><code>/details/image</code></td></tr>
+            <tr><td><code>sheet.html</code></td><td>Download sheet (cart checkout)</td><td><code>/sheet</code></td></tr>
+            <tr><td><code>collections.html</code></td><td>Collections index page</td><td><code>/collections</code></td></tr>
+            <tr><td><code>nav.html</code></td><td>Site navigation</td><td><code>/nav</code></td></tr>
+            <tr><td><code>footer.html</code></td><td>Site footer</td><td><code>/footer</code></td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="step-5">Step 5 — Configure AEM Connection</h2>
+
+        <p>Open <code>scripts/configurations.js</code> and set your AEM host:</p>
+
+        <pre><code class="language-js">// scripts/configurations.js — the only file you need to edit
+
+export default {
+  aem: {
+    // Your AEM publish host (or author for internal tools)
+    host: 'https://publish-pXXXX-eYYYY.adobeaemcloud.com',
+
+    // AEM as a Cloud Service Asset Delivery host (optional — for DM OpenAPI renditions)
+    // deliveryHost: 'https://delivery-pXXXX-eYYYY.adobeaemcloud.com',
+  },
+
+  search: {
+    provider: 'querybuilder',   // 'querybuilder' (default) or 'openapi'
+  },
+
+  assetDetails: {
+    templates: {
+      'image/*': '/details/image',
+      default:   '/details/default',
+    },
+  },
+
+  theme: {
+    default: 'default',  // 'default' | 'dark' | 'warm' | 'studio' | 'vault'
+  },
+};</code></pre>
+
+        <h2 id="step-6">Step 6 — Run Locally</h2>
+
+        <pre><code class="language-bash">aem up    # starts the local dev proxy at http://localhost:3000</code></pre>
+
+        <p>
+          The AEM CLI proxy fetches content from your da.live workspace and serves
+          JS/CSS from your local filesystem — so code changes are instant.
+        </p>
+
+        <div class="callout callout--warn">
+          <strong>CORS on localhost</strong>
+          AEM may block requests from <code>localhost:3000</code>. Add it to the
+          AEM Dispatcher or Publish CORS configuration, or use an AEM author instance
+          which typically has more permissive CORS settings.
+        </div>
+
+        <h2 id="step-7">Step 7 — Verify</h2>
+
+        <p>Open <code>http://localhost:3000</code> and check:</p>
+
+        <ul>
+          <li>Search bar renders and accepts input</li>
+          <li>Typing a query returns assets from your AEM DAM</li>
+          <li>Clicking an asset opens the details modal</li>
+          <li>URL updates to <code>?asset={uuid}</code></li>
+          <li>Download block lists renditions</li>
+          <li>Add to Cart updates the stub counter</li>
+        </ul>
+
+        <h2 id="step-8">Step 8 — Deploy</h2>
+
+        <pre><code class="language-bash">git push origin main</code></pre>
+
+        <p>
+          AEM Code Sync picks up the push automatically and deploys to your
+          preview (<code>main--{repo}--{owner}.aem.page</code>) and
+          live (<code>main--{repo}--{owner}.aem.live</code>) environments within seconds.
+        </p>
+
+        <hr style="margin: var(--space-2xl) 0; border: none; border-top: 1px solid var(--border);">
+
+        <h2 id="themes">Apply a Theme</h2>
+
+        <p>Change the <code>theme.default</code> value in <code>configurations.js</code>:</p>
+
+        <pre><code class="language-js">theme: {
+  default: 'vault',   // default | dark | warm | studio | vault
+}</code></pre>
+
+        <p>To create your own theme, copy <code>styles/themes/custom.css</code> and override any CSS variable. See the <a href="theming.html">Theming guide</a> for the full variable reference.</p>
+
+        <h2 id="renditions-config">Configure Renditions</h2>
+
+        <p>
+          By default ASC resolves <code>thumbnail</code>, <code>web</code>, and <code>original</code>
+          static renditions from the asset's JCR rendition nodes. To add Dynamic Media or
+          AEM Asset Delivery renditions, configure them in <code>configurations.js</code>.
+          See the <a href="renditions.html">Renditions guide</a>.
+        </p>
+
+        <h2 id="custom-properties">Custom Metadata Properties</h2>
+
+        <p>Add computed or remapped properties for use in <code>details-property</code> blocks:</p>
+
+        <pre><code class="language-js">// configurations.js
+properties: {
+  custom: {
+    'brand': (asset) => asset.getProperty('jcr:content/metadata/myco:brand'),
+    'approval-status': (asset) => {
+      const status = asset.getProperty('jcr:content/metadata/dam:status');
+      return status ? status.charAt(0).toUpperCase() + status.slice(1) : null;
+    },
+  },
+},</code></pre>
+
+        <p>Then add a <code>details-property</code> block with <code>property = brand</code>.</p>
+
+      </div>
+    </main>
+  </div>
+
+  <footer class="site-footer">
+    <p>Asset Share Commons EDS — <a href="https://github.com/davidjgonzalez/asset-share-commons-eds" target="_blank">GitHub</a></p>
+  </footer>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+  <script src="scripts/site.js"></script>
+</body>
+</html>

@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blocks — ASC EDS</title>
+  <link rel="stylesheet" href="styles/site.css">
+</head>
+<body class="page-body">
+
+  <nav class="site-nav">
+    <a href="index.html" class="site-nav__brand">
+      <div class="site-nav__brand-icon">A</div>
+      ASC EDS
+    </a>
+    <ul class="site-nav__links">
+      <li><a href="quickstart.html">Quick Start</a></li>
+      <li><a href="blocks.html">Blocks</a></li>
+      <li><a href="theming.html">Theming</a></li>
+      <li><a href="renditions.html">Renditions</a></li>
+      <li><a href="developer.html">Developer</a></li>
+    </ul>
+    <div class="site-nav__actions">
+      <a href="https://github.com/davidjgonzalez/asset-share-commons-eds" class="site-nav__github" target="_blank">⭐ GitHub</a>
+    </div>
+  </nav>
+
+  <div class="page-with-sidebar">
+
+    <nav class="sidebar">
+      <span class="sidebar__label">Search</span>
+      <ul class="sidebar__nav">
+        <li><a href="#search-bar">search-bar</a></li>
+        <li><a href="#search-property">search-property</a></li>
+        <li><a href="#search-path">search-path</a></li>
+        <li><a href="#search-date-range">search-date-range</a></li>
+        <li><a href="#search-tags">search-tags</a></li>
+        <li><a href="#search-hidden">search-hidden</a></li>
+        <li><a href="#search-statistics">search-statistics</a></li>
+        <li><a href="#search-results">search-results</a></li>
+      </ul>
+      <span class="sidebar__label">Asset Details</span>
+      <ul class="sidebar__nav">
+        <li><a href="#details-modal">details-modal</a></li>
+        <li><a href="#details-preview">details-preview</a></li>
+        <li><a href="#details-property">details-property</a></li>
+        <li><a href="#details-download">details-download</a></li>
+        <li><a href="#details-actions">details-actions</a></li>
+      </ul>
+      <span class="sidebar__label">Collections</span>
+      <ul class="sidebar__nav">
+        <li><a href="#stub">stub</a></li>
+        <li><a href="#sheet">sheet</a></li>
+        <li><a href="#collections">collections</a></li>
+        <li><a href="#collection">collection</a></li>
+      </ul>
+    </nav>
+
+    <main class="content">
+      <div class="content-inner">
+
+        <h1>Block Reference</h1>
+        <p>
+          Every block is authored as a table in da.live. The first row is the block name;
+          subsequent rows are key/value configuration pairs. EDS converts each table into
+          a <code>.block.{name}</code> div and calls its <code>decorate(block)</code> function.
+        </p>
+        <div class="callout callout--info">
+          <strong>Provider-agnostic search blocks</strong>
+          All search filter blocks emit QueryBuilder-style field names. The active search
+          provider translates them to its API format transparently — no block changes needed
+          when switching providers.
+        </div>
+
+        <!-- ── SEARCH BLOCKS ─────────────────────────────────────────────── -->
+        <h2 id="search-bar">search-bar</h2>
+
+        <div class="block-entry">
+          <div class="block-entry__header">
+            <span class="block-entry__name">search-bar</span>
+            <span class="badge badge--blue">Search</span>
+            <span class="block-entry__desc">Keyword full-text search input. Dispatches <code>asc:search:execute</code> on input.</span>
+          </div>
+          <div class="block-entry__body">
+            <div class="block-entry__demo">
+              <div class="block-entry__demo-label">Demo</div>
+              <div class="demo-search-bar">
+                <input type="search" placeholder="Search assets…">
+              </div>
+            </div>
+            <div class="block-entry__code">
+              <div class="block-entry__code-label" style="color:#6b7280; font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:8px;">da.live authoring</div>
+              <pre><code class="language-html">&lt;!-- Authored as a table in da.live --&gt;
+| search-bar        |              |
+|-------------------|--------------|
+| placeholder       | Search DAM…  |</code></pre>
+            </div>
+          </div>
+          <div class="block-entry__config">
+            <div class="block-entry__config-title">Configuration</div>
+            <table class="config-table">
+              <thead><tr><th>Key</th><th>Default</th><th>Description</th></tr></thead>
+              <tbody>
+                <tr><td>placeholder</td><td>Search assets…</td><td>Input placeholder text</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <h2 id="search-property">search-property</h2>
+
+        <div class="block-entry">
+          <div class="block-entry__header">
+            <span class="block-entry__name">search-property</span>
+            <span class="badge badge--blue">Search</span>
+            <span class="block-entry__desc">Filter by any JCR metadata property. Supports checkbox, radio, and dropdown.</span>
+          </div>
+          <div class="block-entry__body">
+            <div class="block-entry__demo">
+              <div class="block-entry__demo-label">Demo</div>
+              <div class="demo-filter">
+                <div class="demo-filter__label">Asset Type</div>
+                <div class="demo-filter__options">
+                  <label class="demo-filter__option"><input type="checkbox"> Image</label>
+                  <label class="demo-filter__option"><input type="checkbox"> Video</label>
+                  <label class="demo-filter__option"><input type="checkbox"> Document</label>
+                </div>
+              </div>
+            </div>
+            <div class="block-entry__code">
+              <pre><code class="language-html">| search-property        |                              |
+|------------------------|------------------------------|
+| label                  | Asset Type                   |
+| property               | jcr:content/metadata/dc:format|
+| type                   | checkbox                     |
+| options                | Image: image/jpeg            |
+|                        | Video: video/mp4             |
+|                        | Document: application/pdf    |</code></pre>
+            </div>
+          </div>
+          <div class="block-entry__config">
+            <div class="block-entry__config-title">Configuration</div>
+            <table class="config-table">
+              <thead><tr><th>Key</th><th>Default</th><th>Description</th></tr></thead>
+              <tbody>
+                <tr><td>label</td><td>—</td><td>Filter heading</td></tr>
+                <tr><td>property</td><td>—</td><td>JCR metadata property path</td></tr>
+                <tr><td>type</td><td>checkbox</td><td><code>checkbox</code> | <code>radio</code> | <code>dropdown</code></td></tr>
+                <tr><td>options</td><td>—</td><td>One per line: <code>Label: value</code></td></tr>
+                <tr><td>and</td><td>false</td><td>AND vs OR multi-select logic</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <h2 id="search-path">search-path</h2>
+
+        <div class="block-entry">
+          <div class="block-entry__header">
+            <span class="block-entry__name">search-path</span>
+            <span class="badge badge--blue">Search</span>
+            <span class="block-entry__desc">Filter by DAM folder path. Uses QB <code>path</code> predicate / OpenAPI <code>filter[assetAncestorPath]</code>.</span>
+          </div>
+          <div class="block-entry__body">
+            <div class="block-entry__demo">
+              <div class="block-entry__demo-label">Demo</div>
+              <div class="demo-filter">
+                <div class="demo-filter__label">Folder</div>
+                <div class="demo-filter__options">
+                  <label class="demo-filter__option"><input type="radio" name="path"> /content/dam/brand</label>
+                  <label class="demo-filter__option"><input type="radio" name="path"> /content/dam/products</label>
+                  <label class="demo-filter__option"><input type="radio" name="path"> /content/dam/campaigns</label>
+                </div>
+              </div>
+            </div>
+            <div class="block-entry__code">
+              <pre><code class="language-html">| search-path            |                       |
+|------------------------|-----------------------|
+| label                  | Folder                |
+| type                   | radio                 |
+| options                | Brand: /content/dam/brand |
+|                        | Products: /content/dam/products |</code></pre>
+            </div>
+          </div>
+          <div class="block-entry__config">
+            <div class="block-entry__config-title">Configuration</div>
+            <table class="config-table">
+              <thead><tr><th>Key</th><th>Default</th><th>Description</th></tr></thead>
+              <tbody>
+                <tr><td>label</td><td>—</td><td>Filter heading</td></tr>
+                <tr><td>type</td><td>checkbox</td><td><code>checkbox</code> | <code>radio</code> | <code>dropdown</code></td></tr>
+                <tr><td>options</td><td>—</td><td>One per line: <code>Label: /dam/path</code></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <h2 id="search-date-range">search-date-range</h2>
+
+        <div class="block-entry">
+          <div class="block-entry__header">
+            <span class="block-entry__name">search-date-range</span>
+            <span class="badge badge--blue">Search</span>
+            <span class="block-entry__desc">Date range filter with from/to date inputs. Maps to QB <code>daterange</code> predicate.</span>
+          </div>
+          <div class="block-entry__body">
+            <div class="block-entry__demo">
+              <div class="block-entry__demo-label">Demo</div>
+              <div class="demo-filter">
+                <div class="demo-filter__label">Modified Date</div>
+                <div class="demo-filter__options" style="gap:8px;">
+                  <label style="font-size:0.8rem;color:var(--text-muted);">From</label>
+                  <input type="date" style="padding:6px 10px;border:1px solid var(--border);border-radius:4px;font-size:0.875rem;width:100%;">
+                  <label style="font-size:0.8rem;color:var(--text-muted);">To</label>
+                  <input type="date" style="padding:6px 10px;border:1px solid var(--border);border-radius:4px;font-size:0.875rem;width:100%;">
+                </div>
+              </div>
+            </div>
+            <div class="block-entry__code">
+              <pre><code class="language-html">| search-date-range  |                                          |
+|--------------------|------------------------------------------|
+| label              | Modified Date                            |
+| property           | jcr:content/metadata/jcr:lastModified    |</code></pre>
+            </div>
+          </div>
+          <div class="block-entry__config">
+            <div class="block-entry__config-title">Configuration</div>
+            <table class="config-table">
+              <thead><tr><th>Key</th><th>Default</th><th>Description</th></tr></thead>
+              <tbody>
+                <tr><td>label</td><td>—</td><td>Filter heading</td></tr>
+                <tr><td>property</td><td>jcr:content/metadata/jcr:lastModified</td><td>Date JCR property to filter on</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <h2 id="search-tags">search-tags</h2>
+
+        <div class="block-entry">
+          <div class="block-entry__header">
+            <span class="block-entry__name">search-tags</span>
+            <span class="badge badge--blue">Search</span>
+            <span class="block-entry__desc">Filter by CQ tags. Maps to QB <code>tagid</code> predicate / OpenAPI <code>filter[assetTagIds][]</code>.</span>
+          </div>
+          <div class="block-entry__body">
+            <div class="block-entry__demo">
+              <div class="block-entry__demo-label">Demo</div>
+              <div class="demo-filter">
+                <div class="demo-filter__label">Tags</div>
+                <div class="demo-filter__options">
+                  <label class="demo-filter__option"><input type="checkbox"> Approved</label>
+                  <label class="demo-filter__option"><input type="checkbox"> Q1 Campaign</label>
+                  <label class="demo-filter__option"><input type="checkbox"> Product Launch</label>
+                </div>
+              </div>
+            </div>
+            <div class="block-entry__code">
+              <pre><code class="language-html">| search-tags        |                            |
+|--------------------|----------------------------|
+| label              | Tags                       |
+| type               | checkbox                   |
+| options            | Approved: we:approval/approved |
+|                    | Campaign: campaign/q1      |</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <h2 id="search-hidden">search-hidden</h2>
+
+        <div class="block-entry">
+          <div class="block-entry__header">
+            <span class="block-entry__name">search-hidden</span>
+            <span class="badge badge--blue">Search</span>
+            <span class="block-entry__desc">Invisible fixed search parameter — always included in every query. Used to scope searches to a path or add fixed filters.</span>
+          </div>
+          <div class="block-entry__body">
+            <div class="block-entry__demo">
+              <div class="block-entry__demo-label">Demo</div>
+              <div style="font-size:0.85rem; color:var(--text-muted); font-style:italic;">
+                No visible output — this block renders nothing.
+              </div>
+            </div>
+            <div class="block-entry__code">
+              <pre><code class="language-html">| search-hidden      |                      |
+|--------------------|----------------------|
+| name               | path                 |
+| value              | /content/dam/brand   |</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <h2 id="search-statistics">search-statistics</h2>
+
+        <div class="block-entry">
+          <div class="block-entry__header">
+            <span class="block-entry__name">search-statistics</span>
+            <span class="badge badge--blue">Search</span>
+            <span class="block-entry__desc">Displays "Showing N of M assets" — listens to <code>asc:search:complete</code>. Tracks cumulative count across load-more pages.</span>
+          </div>
+          <div class="block-entry__body">
+            <div class="block-entry__demo">
+              <div class="block-entry__demo-label">Demo</div>
+              <p role="status" style="font-size:0.875rem; color:var(--text-muted);">Showing 24 of 147 assets</p>
+            </div>
+            <div class="block-entry__code">
+              <pre><code class="language-html">| search-statistics |
+|-------------------|
+(no configuration needed)</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <h2 id="search-results">search-results</h2>
+
+        <div class="block-entry">
+          <div class="block-entry__header">
+            <span class="block-entry__name">search-results</span>
+            <span class="badge badge--blue">Search</span>
+            <span class="block-entry__desc">Infinite-scroll results grid. Sort and layout (cards/list) controls built in. Listens to <code>asc:search:complete</code>.</span>
+          </div>
+          <div class="block-entry__body">
+            <div class="block-entry__demo">
+              <div class="block-entry__demo-label">Demo</div>
+              <div class="demo-asset-grid">
+                <div class="demo-asset-card">
+                  <div class="demo-asset-card__thumb">🖼️</div>
+                  <div class="demo-asset-card__body">
+                    <div class="demo-asset-card__title">hero-banner.jpg</div>
+                    <div class="demo-asset-card__meta">JPEG · 2.4 MB</div>
+                  </div>
+                </div>
+                <div class="demo-asset-card">
+                  <div class="demo-asset-card__thumb">🎬</div>
+                  <div class="demo-asset-card__body">
+                    <div class="demo-asset-card__title">product-demo.mp4</div>
+                    <div class="demo-asset-card__meta">MP4 · 18 MB</div>
+                  </div>
+                </div>
+                <div class="demo-asset-card">
+                  <div class="demo-asset-card__thumb">📄</div>
+                  <div class="demo-asset-card__body">
+                    <div class="demo-asset-card__title">brand-guide.pdf</div>
+                    <div class="demo-asset-card__meta">PDF · 5.1 MB</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="block-entry__code">
+              <pre><code class="language-html">| search-results |          |
+|----------------|----------|
+| page-size      | 24       |
+| display        | cards    |</code></pre>
+            </div>
+          </div>
+          <div class="block-entry__config">
+            <div class="block-entry__config-title">Configuration</div>
+            <table class="config-table">
+              <thead><tr><th>Key</th><th>Default</th><th>Description</th></tr></thead>
+              <tbody>
+                <tr><td>page-size</td><td>24</td><td>Assets loaded per batch (load more)</td></tr>
+                <tr><td>display</td><td>cards</td><td>Initial layout: <code>cards</code> | <code>list</code></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ── DETAILS BLOCKS ─────────────────────────────────────────────── -->
+        <h2 id="details-modal">details-modal</h2>
+
+        <div class="block-entry">
+          <div class="block-entry__header">
+            <span class="block-entry__name">details-modal</span>
+            <span class="badge badge--purple">Details</span>
+            <span class="block-entry__desc">Modal shell for asset details. Auto-injected by the AssetDetails service. Supports deep-linking via <code>?asset={uuid}</code> URL param.</span>
+          </div>
+          <div class="block-entry__body">
+            <div class="block-entry__demo">
+              <div class="block-entry__demo-label">Demo</div>
+              <div style="border:1px solid var(--border); border-radius:8px; padding:16px; background:#00000005; text-align:center;">
+                <p style="font-size:0.85rem; color:var(--text-muted); margin:0;">Opens as an overlay when an asset is clicked.<br>URL updates to <code>?asset={uuid}</code> for sharing.</p>
+              </div>
+            </div>
+            <div class="block-entry__code">
+              <pre><code class="language-html">| details-modal |
+|---------------|
+(no configuration needed — auto-managed by AssetDetails service)</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <h2 id="details-preview">details-preview</h2>
+
+        <div class="block-entry">
+          <div class="block-entry__header">
+            <span class="block-entry__name">details-preview</span>
+            <span class="badge badge--purple">Details</span>
+            <span class="block-entry__desc">Asset preview inside the details modal. Renders <code>&lt;img&gt;</code>, <code>&lt;video&gt;</code>, or <code>&lt;iframe&gt;</code> based on MIME type.</span>
+          </div>
+          <div class="block-entry__body">
+            <div class="block-entry__demo">
+              <div class="block-entry__demo-label">Demo</div>
+              <div style="background:linear-gradient(135deg,#e0e7ff,#c7d2fe); aspect-ratio:16/9; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:2rem;">🖼️</div>
+            </div>
+            <div class="block-entry__code">
+              <pre><code class="language-html">| details-preview |
+|-----------------|
+(no configuration — reads asset from URL param)</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <h2 id="details-property">details-property</h2>
+
+        <div class="block-entry">
+          <div class="block-entry__header">
+            <span class="block-entry__name">details-property</span>
+            <span class="badge badge--purple">Details</span>
+            <span class="block-entry__desc">Displays a single asset metadata field. One block per property. Supports built-in and custom property handlers.</span>
+          </div>
+          <div class="block-entry__body">
+            <div class="block-entry__demo">
+              <div class="block-entry__demo-label">Demo</div>
+              <div style="display:grid; gap:8px;">
+                <div style="display:flex; justify-content:space-between; font-size:0.875rem; padding:6px 0; border-bottom:1px solid var(--border);">
+                  <span style="color:var(--text-muted); font-weight:500;">File Type</span>
+                  <span>JPEG Image</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; font-size:0.875rem; padding:6px 0; border-bottom:1px solid var(--border);">
+                  <span style="color:var(--text-muted); font-weight:500;">Dimensions</span>
+                  <span>3840 × 2160</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; font-size:0.875rem; padding:6px 0;">
+                  <span style="color:var(--text-muted); font-weight:500;">File Size</span>
+                  <span>4.2 MB</span>
+                </div>
+              </div>
+            </div>
+            <div class="block-entry__code">
+              <pre><code class="language-html">| details-property |                  |
+|------------------|------------------|
+| property         | file-type        |
+| label            | File Type        |
+
+| details-property |                  |
+|------------------|------------------|
+| property         | dimensions       |</code></pre>
+            </div>
+          </div>
+          <div class="block-entry__config">
+            <div class="block-entry__config-title">Built-in property handlers</div>
+            <table class="config-table">
+              <thead><tr><th>property</th><th>Returns</th></tr></thead>
+              <tbody>
+                <tr><td>file-type</td><td>Human-readable MIME type label (e.g. "JPEG Image")</td></tr>
+                <tr><td>file-size</td><td>Human-readable file size (e.g. "4.2 MB")</td></tr>
+                <tr><td>dimensions</td><td>Width × Height (e.g. "3840 × 2160")</td></tr>
+                <tr><td>width</td><td>Pixel width</td></tr>
+                <tr><td>height</td><td>Pixel height</td></tr>
+                <tr><td>file-extension</td><td>Lowercase extension (e.g. "jpg")</td></tr>
+                <tr><td><em>any JCR path</em></td><td>Raw value from asset metadata</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <h2 id="details-download">details-download</h2>
+
+        <div class="block-entry">
+          <div class="block-entry__header">
+            <span class="block-entry__name">details-download</span>
+            <span class="badge badge--purple">Details</span>
+            <span class="block-entry__desc">Download links for all visible renditions. Reads from the renditions definitions in <code>configurations.js</code>.</span>
+          </div>
+          <div class="block-entry__body">
+            <div class="block-entry__demo">
+              <div class="block-entry__demo-label">Demo</div>
+              <ul class="demo-download-list">
+                <li class="demo-download-item">
+                  <a href="#">Web</a>
+                  <span>JPEG · 1280×960 · 420 KB</span>
+                </li>
+                <li class="demo-download-item">
+                  <a href="#">Original</a>
+                  <span>JPEG · 3840×2160 · 4.2 MB</span>
+                </li>
+              </ul>
+            </div>
+            <div class="block-entry__code">
+              <pre><code class="language-html">| details-download |          |
+|------------------|----------|
+| label            | Download |</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <h2 id="details-actions">details-actions</h2>
+
+        <div class="block-entry">
+          <div class="block-entry__header">
+            <span class="block-entry__name">details-actions</span>
+            <span class="badge badge--purple">Details</span>
+            <span class="block-entry__desc">Action buttons for an asset. Supports add-to-cart, download, and share actions.</span>
+          </div>
+          <div class="block-entry__body">
+            <div class="block-entry__demo">
+              <div class="block-entry__demo-label">Demo</div>
+              <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button class="btn btn--primary" style="font-size:0.875rem; padding:8px 16px;">Add to Cart</button>
+                <button class="btn btn--outline" style="font-size:0.875rem; padding:8px 16px; color:var(--text); border-color:var(--border);">⬇ Download</button>
+                <button class="btn btn--outline" style="font-size:0.875rem; padding:8px 16px; color:var(--text); border-color:var(--border);">Share</button>
+              </div>
+            </div>
+            <div class="block-entry__code">
+              <pre><code class="language-html">| details-actions  |                           |
+|------------------|---------------------------|
+| actions          | add-to-cart download share|</code></pre>
+            </div>
+          </div>
+          <div class="block-entry__config">
+            <div class="block-entry__config-title">Available actions</div>
+            <table class="config-table">
+              <thead><tr><th>Action</th><th>Description</th></tr></thead>
+              <tbody>
+                <tr><td>add-to-cart</td><td>Adds asset to the <code>cart</code> collection. Fires <code>asc:collection:add</code>.</td></tr>
+                <tr><td>download</td><td>Direct download link for the original rendition.</td></tr>
+                <tr><td>share</td><td>Fires <code>asc:asset:share</code> for custom share handling.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ── COLLECTIONS BLOCKS ─────────────────────────────────────────── -->
+        <h2 id="stub">stub</h2>
+
+        <div class="block-entry">
+          <div class="block-entry__header">
+            <span class="block-entry__name">stub</span>
+            <span class="badge badge--green">Collections</span>
+            <span class="block-entry__desc">Cart bar — shows current cart asset count with a link to the download sheet. Updates live via <code>asc:collection:update</code>.</span>
+          </div>
+          <div class="block-entry__body">
+            <div class="block-entry__demo">
+              <div class="block-entry__demo-label">Demo</div>
+              <div class="demo-stub">
+                <span>3 assets selected</span>
+                <span class="demo-stub__count">3</span>
+              </div>
+            </div>
+            <div class="block-entry__code">
+              <pre><code class="language-html">| stub           |                |
+|----------------|----------------|
+| sheet-path     | /sheet         |
+| label          | {count} assets |</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <h2 id="sheet">sheet</h2>
+
+        <div class="block-entry">
+          <div class="block-entry__header">
+            <span class="block-entry__name">sheet</span>
+            <span class="badge badge--green">Collections</span>
+            <span class="block-entry__desc">Full download sheet. Reads asset UUIDs from URL params and renders each asset with rendition download options.</span>
+          </div>
+          <div class="block-entry__body">
+            <div class="block-entry__demo">
+              <div class="block-entry__demo-label">Demo</div>
+              <div style="display:flex; flex-direction:column; gap:8px;">
+                <div style="display:flex; gap:12px; align-items:center; padding:8px; border:1px solid var(--border); border-radius:6px; font-size:0.85rem;">
+                  <div style="width:40px; height:40px; background:linear-gradient(135deg,#e0e7ff,#c7d2fe); border-radius:4px; display:flex; align-items:center; justify-content:center;">🖼️</div>
+                  <span style="flex:1; font-weight:500;">hero-banner.jpg</span>
+                  <a href="#" style="font-size:0.8rem;">Web ↓</a>
+                  <a href="#" style="font-size:0.8rem;">Original ↓</a>
+                </div>
+                <div style="display:flex; gap:12px; align-items:center; padding:8px; border:1px solid var(--border); border-radius:6px; font-size:0.85rem;">
+                  <div style="width:40px; height:40px; background:linear-gradient(135deg,#fef3c7,#fde68a); border-radius:4px; display:flex; align-items:center; justify-content:center;">📄</div>
+                  <span style="flex:1; font-weight:500;">brand-guide.pdf</span>
+                  <a href="#" style="font-size:0.8rem;">Original ↓</a>
+                </div>
+              </div>
+            </div>
+            <div class="block-entry__code">
+              <pre><code class="language-html">| sheet |
+|-------|
+(no configuration — reads ?assets= URL params)</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <h2 id="collections">collections</h2>
+
+        <div class="block-entry">
+          <div class="block-entry__header">
+            <span class="block-entry__name">collections</span>
+            <span class="badge badge--green">Collections</span>
+            <span class="block-entry__desc">Lists all saved collections as summary cards with asset count and thumbnail grid.</span>
+          </div>
+          <div class="block-entry__body">
+            <div class="block-entry__demo">
+              <div class="block-entry__demo-label">Demo</div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                <div style="border:1px solid var(--border); border-radius:8px; overflow:hidden;">
+                  <div style="height:60px; background:linear-gradient(135deg,#e0e7ff,#c7d2fe); display:flex; align-items:center; justify-content:center; font-size:1.5rem;">🖼️🎬📄</div>
+                  <div style="padding:8px; font-size:0.8rem;"><strong>Brand Assets</strong><br><span style="color:var(--text-muted);">12 assets</span></div>
+                </div>
+                <div style="border:1px solid var(--border); border-radius:8px; overflow:hidden;">
+                  <div style="height:60px; background:linear-gradient(135deg,#d1fae5,#a7f3d0); display:flex; align-items:center; justify-content:center; font-size:1.5rem;">📸</div>
+                  <div style="padding:8px; font-size:0.8rem;"><strong>Campaign Q1</strong><br><span style="color:var(--text-muted);">7 assets</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="block-entry__code">
+              <pre><code class="language-html">| collections |
+|-------------|
+(no configuration)</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <h2 id="collection">collection</h2>
+
+        <div class="block-entry">
+          <div class="block-entry__header">
+            <span class="block-entry__name">collection</span>
+            <span class="badge badge--green">Collections</span>
+            <span class="block-entry__desc">Single collection view. Shows all assets in a collection with remove and download actions.</span>
+          </div>
+          <div class="block-entry__body">
+            <div class="block-entry__demo">
+              <div class="block-entry__demo-label">Demo</div>
+              <div class="demo-asset-grid">
+                <div class="demo-asset-card">
+                  <div class="demo-asset-card__thumb">🖼️</div>
+                  <div class="demo-asset-card__body">
+                    <div class="demo-asset-card__title">hero-banner.jpg</div>
+                    <div class="demo-asset-card__meta">JPEG · 2.4 MB</div>
+                  </div>
+                </div>
+                <div class="demo-asset-card">
+                  <div class="demo-asset-card__thumb">🎬</div>
+                  <div class="demo-asset-card__body">
+                    <div class="demo-asset-card__title">product-demo.mp4</div>
+                    <div class="demo-asset-card__meta">MP4 · 18 MB</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="block-entry__code">
+              <pre><code class="language-html">| collection |               |
+|------------|---------------|
+| id         | my-collection |</code></pre>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <footer class="site-footer">
+    <p>Asset Share Commons EDS — <a href="https://github.com/davidjgonzalez/asset-share-commons-eds" target="_blank">GitHub</a></p>
+  </footer>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+  <script src="scripts/site.js"></script>
+</body>
+</html>

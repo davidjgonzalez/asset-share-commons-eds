@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Theming — ASC EDS</title>
+  <link rel="stylesheet" href="styles/site.css">
+  <style>
+    /* Theme swatch colors */
+    .swatch-default .theme-swatch__preview { background: #f5f5f5; }
+    .swatch-default .theme-swatch__bar     { background: #0066cc; }
+    .swatch-default .theme-swatch__card    { background: #ffffff; border: 1px solid #e2e4e8; }
+
+    .swatch-dark .theme-swatch__preview    { background: #1a1a2e; }
+    .swatch-dark .theme-swatch__bar        { background: #60a5fa; }
+    .swatch-dark .theme-swatch__card       { background: #0f1117; border: 1px solid #2a2a3e; }
+
+    .swatch-warm .theme-swatch__preview    { background: #fdf6ec; }
+    .swatch-warm .theme-swatch__bar        { background: #c44b0a; }
+    .swatch-warm .theme-swatch__card       { background: #ffffff; border: 1px solid #e8e0d8; }
+
+    .swatch-studio .theme-swatch__preview  { background: #f0f4ff; }
+    .swatch-studio .theme-swatch__bar      { background: #4f46e5; }
+    .swatch-studio .theme-swatch__card     { background: #ffffff; border: 1px solid #e0e7ff; border-radius: 12px; }
+
+    .swatch-vault .theme-swatch__preview   { background: #0d0d14; }
+    .swatch-vault .theme-swatch__bar       { background: #3b82f6; }
+    .swatch-vault .theme-swatch__card      { background: #16161f; border: 1px solid #2a2a3a; }
+  </style>
+</head>
+<body class="page-body">
+
+  <nav class="site-nav">
+    <a href="index.html" class="site-nav__brand">
+      <div class="site-nav__brand-icon">A</div>
+      ASC EDS
+    </a>
+    <ul class="site-nav__links">
+      <li><a href="quickstart.html">Quick Start</a></li>
+      <li><a href="blocks.html">Blocks</a></li>
+      <li><a href="theming.html">Theming</a></li>
+      <li><a href="renditions.html">Renditions</a></li>
+      <li><a href="developer.html">Developer</a></li>
+    </ul>
+    <div class="site-nav__actions">
+      <a href="https://github.com/davidjgonzalez/asset-share-commons-eds" class="site-nav__github" target="_blank">⭐ GitHub</a>
+    </div>
+  </nav>
+
+  <div class="page-with-sidebar">
+
+    <nav class="sidebar">
+      <span class="sidebar__label">Theming</span>
+      <ul class="sidebar__nav">
+        <li><a href="#built-in">Built-in Themes</a></li>
+        <li><a href="#activate">Activating a Theme</a></li>
+        <li><a href="#custom">Creating a Theme</a></li>
+        <li><a href="#variables">CSS Variable Reference</a></li>
+        <li><a href="#block-overrides">Per-Block Overrides</a></li>
+      </ul>
+    </nav>
+
+    <main class="content">
+      <div class="content-inner">
+
+        <h1>Theming</h1>
+        <p>
+          A theme is a CSS file that overrides CSS custom properties. No JavaScript involved.
+          All visual customization — colors, spacing, typography, radius, shadows — flows through
+          variables defined in <code>styles/tokens.css</code>.
+        </p>
+
+        <h2 id="built-in">Built-in Themes</h2>
+
+        <div class="theme-grid">
+          <div class="theme-swatch swatch-default active" data-theme="default">
+            <div class="theme-swatch__preview">
+              <div class="theme-swatch__bar"></div>
+              <div class="theme-swatch__bar theme-swatch__bar--sm"></div>
+              <div class="theme-swatch__card"></div>
+            </div>
+            <div class="theme-swatch__label">default</div>
+          </div>
+          <div class="theme-swatch swatch-dark" data-theme="dark">
+            <div class="theme-swatch__preview">
+              <div class="theme-swatch__bar"></div>
+              <div class="theme-swatch__bar theme-swatch__bar--sm"></div>
+              <div class="theme-swatch__card"></div>
+            </div>
+            <div class="theme-swatch__label">dark</div>
+          </div>
+          <div class="theme-swatch swatch-warm" data-theme="warm">
+            <div class="theme-swatch__preview">
+              <div class="theme-swatch__bar"></div>
+              <div class="theme-swatch__bar theme-swatch__bar--sm"></div>
+              <div class="theme-swatch__card"></div>
+            </div>
+            <div class="theme-swatch__label">warm</div>
+          </div>
+          <div class="theme-swatch swatch-studio" data-theme="studio">
+            <div class="theme-swatch__preview">
+              <div class="theme-swatch__bar"></div>
+              <div class="theme-swatch__bar theme-swatch__bar--sm"></div>
+              <div class="theme-swatch__card"></div>
+            </div>
+            <div class="theme-swatch__label">studio</div>
+          </div>
+          <div class="theme-swatch swatch-vault" data-theme="vault">
+            <div class="theme-swatch__preview">
+              <div class="theme-swatch__bar"></div>
+              <div class="theme-swatch__bar theme-swatch__bar--sm"></div>
+              <div class="theme-swatch__card"></div>
+            </div>
+            <div class="theme-swatch__label">vault</div>
+          </div>
+        </div>
+
+        <table>
+          <thead><tr><th>Theme</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>default</code></td><td>Clean neutral light theme — EDS boilerplate defaults</td></tr>
+            <tr><td><code>dark</code></td><td>Dark mode with blue accents</td></tr>
+            <tr><td><code>warm</code></td><td>Warm earthy tones, orange accents</td></tr>
+            <tr><td><code>studio</code></td><td>Webflow-inspired SaaS aesthetic — indigo/violet, pill buttons, card lift on hover</td></tr>
+            <tr><td><code>vault</code></td><td>Dark professional DAM UI — near-black surfaces, blue accent, ghost buttons</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="activate">Activating a Theme</h2>
+
+        <p>Set <code>theme.default</code> in <code>scripts/configurations.js</code>:</p>
+
+        <pre><code class="language-js">// scripts/configurations.js
+theme: {
+  default: 'vault',  // 'default' | 'dark' | 'warm' | 'studio' | 'vault'
+}</code></pre>
+
+        <p>
+          On page load, <code>scripts/scripts.js</code> reads this value, adds
+          <code>theme-{name}</code> to <code>&lt;body&gt;</code>, and loads
+          <code>styles/themes/{name}.css</code>. The theme CSS overrides variables
+          under the <code>.theme-{name}</code> selector.
+        </p>
+
+        <h2 id="custom">Creating a Custom Theme</h2>
+
+        <p>Copy <code>styles/themes/custom.css</code> as your starting point:</p>
+
+        <pre><code class="language-css">/* styles/themes/my-theme.css */
+.theme-my-theme {
+
+  /* ── Base ─── */
+  --background-color: #f5f5f0;
+  --light-color: #ebe9e2;
+  --dark-color: #6b6560;
+  --text-color: #1a1a1a;
+  --link-color: #c44b0a;
+  --link-hover-color: #a33c07;
+  --border-color: #dddad4;
+
+  /* ── Asset teaser card ─── */
+  --asset-teaser-bg: #ffffff;
+  --asset-teaser-border: 1px solid #dddad4;
+  --asset-teaser-border-radius: var(--border-radius-md);
+
+  /* ── Search ─── */
+  --search-primary-color: #c44b0a;
+  --search-input-focus-border: #c44b0a;
+
+  /* ── Buttons ─── */
+  --button-primary-bg: #c44b0a;
+  --button-primary-color: #ffffff;
+  --button-primary-hover-bg: #a33c07;
+}</code></pre>
+
+        <p>Then activate it:</p>
+
+        <pre><code class="language-js">// scripts/configurations.js
+theme: { default: 'my-theme' }</code></pre>
+
+        <h2 id="variables">CSS Variable Reference</h2>
+
+        <p>All variables are defined in <code>styles/tokens.css</code>. Override any of these in your theme file.</p>
+
+        <h3>Base</h3>
+        <table>
+          <thead><tr><th>Variable</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr><td><code>--background-color</code></td><td>Page background</td></tr>
+            <tr><td><code>--light-color</code></td><td>Subtle surface (cards, sidebars)</td></tr>
+            <tr><td><code>--dark-color</code></td><td>Muted text, meta information</td></tr>
+            <tr><td><code>--text-color</code></td><td>Primary body text</td></tr>
+            <tr><td><code>--link-color</code></td><td>Links, primary interactive color</td></tr>
+            <tr><td><code>--link-hover-color</code></td><td>Link hover state</td></tr>
+            <tr><td><code>--border-color</code></td><td>Borders, dividers</td></tr>
+          </tbody>
+        </table>
+
+        <h3>Spacing</h3>
+        <table>
+          <thead><tr><th>Variable</th><th>Default</th></tr></thead>
+          <tbody>
+            <tr><td><code>--spacing-xs</code></td><td>4px</td></tr>
+            <tr><td><code>--spacing-sm</code></td><td>8px</td></tr>
+            <tr><td><code>--spacing-md</code></td><td>16px</td></tr>
+            <tr><td><code>--spacing-lg</code></td><td>24px</td></tr>
+            <tr><td><code>--spacing-xl</code></td><td>40px</td></tr>
+          </tbody>
+        </table>
+
+        <h3>Border Radius</h3>
+        <table>
+          <thead><tr><th>Variable</th><th>Default</th></tr></thead>
+          <tbody>
+            <tr><td><code>--border-radius-sm</code></td><td>4px</td></tr>
+            <tr><td><code>--border-radius-md</code></td><td>8px</td></tr>
+            <tr><td><code>--border-radius-lg</code></td><td>12px</td></tr>
+            <tr><td><code>--border-radius-xl</code></td><td>16px</td></tr>
+            <tr><td><code>--border-radius-full</code></td><td>9999px</td></tr>
+          </tbody>
+        </table>
+
+        <h3>Asset Teaser</h3>
+        <table>
+          <thead><tr><th>Variable</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr><td><code>--asset-teaser-bg</code></td><td>Card background</td></tr>
+            <tr><td><code>--asset-teaser-border</code></td><td>Card border</td></tr>
+            <tr><td><code>--asset-teaser-border-radius</code></td><td>Card corner radius</td></tr>
+            <tr><td><code>--asset-teaser-shadow</code></td><td>Card resting shadow</td></tr>
+            <tr><td><code>--asset-teaser-shadow-hover</code></td><td>Card hover shadow</td></tr>
+            <tr><td><code>--asset-teaser-title-color</code></td><td>Asset title color</td></tr>
+            <tr><td><code>--asset-teaser-meta-color</code></td><td>File type / size color</td></tr>
+          </tbody>
+        </table>
+
+        <h3>Search &amp; Filters</h3>
+        <table>
+          <thead><tr><th>Variable</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr><td><code>--search-input-bg</code></td><td>Search input background</td></tr>
+            <tr><td><code>--search-input-color</code></td><td>Search input text color</td></tr>
+            <tr><td><code>--search-input-focus-border</code></td><td>Search input focus border</td></tr>
+            <tr><td><code>--search-input-focus-ring</code></td><td>Search input focus ring shadow</td></tr>
+            <tr><td><code>--search-results-gap</code></td><td>Gap between result cards</td></tr>
+            <tr><td><code>--search-results-cols-mobile</code></td><td>Grid columns on mobile</td></tr>
+            <tr><td><code>--search-results-cols-tablet</code></td><td>Grid columns on tablet</td></tr>
+            <tr><td><code>--search-results-cols-desktop</code></td><td>Grid columns on desktop</td></tr>
+            <tr><td><code>--filter-input-accent</code></td><td>Checkbox/radio accent color</td></tr>
+          </tbody>
+        </table>
+
+        <h3>Modal</h3>
+        <table>
+          <thead><tr><th>Variable</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr><td><code>--modal-bg</code></td><td>Modal background</td></tr>
+            <tr><td><code>--modal-border-radius</code></td><td>Modal corner radius</td></tr>
+            <tr><td><code>--modal-shadow</code></td><td>Modal drop shadow</td></tr>
+            <tr><td><code>--modal-backdrop</code></td><td>Backdrop overlay color</td></tr>
+            <tr><td><code>--modal-max-width</code></td><td>Maximum modal width</td></tr>
+            <tr><td><code>--modal-padding</code></td><td>Modal inner padding</td></tr>
+          </tbody>
+        </table>
+
+        <h3>Buttons</h3>
+        <table>
+          <thead><tr><th>Variable</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr><td><code>--button-primary-bg</code></td><td>Primary button background</td></tr>
+            <tr><td><code>--button-primary-color</code></td><td>Primary button text</td></tr>
+            <tr><td><code>--button-primary-hover-bg</code></td><td>Primary button hover background</td></tr>
+            <tr><td><code>--button-primary-border-radius</code></td><td>Primary button radius</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="block-overrides">Per-Block Theme Overrides</h2>
+
+        <p>Themes can also override block-level styles directly, not just variables:</p>
+
+        <pre><code class="language-css">/* styles/themes/my-theme.css */
+
+/* Lift cards on hover */
+.theme-my-theme .asc-asset-teaser:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Pill-shaped search bar */
+.theme-my-theme .block.search-bar input {
+  border-radius: var(--border-radius-full);
+}
+
+/* Ghost-style primary button */
+.theme-my-theme .block.details-actions [data-action="download"] {
+  background: transparent;
+  border: 1px solid var(--link-color);
+  color: var(--link-color);
+}</code></pre>
+
+        <p>See <code>styles/themes/studio.css</code> and <code>styles/themes/vault.css</code> for examples.</p>
+
+      </div>
+    </main>
+  </div>
+
+  <footer class="site-footer">
+    <p>Asset Share Commons EDS — <a href="https://github.com/davidjgonzalez/asset-share-commons-eds" target="_blank">GitHub</a></p>
+  </footer>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+  <script src="scripts/site.js"></script>
+</body>
+</html>
