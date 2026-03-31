@@ -1,0 +1,20 @@
+/* grid section — each block wrapper becomes a grid cell */
+main .section.grid {
+    display: grid;
+    gap: var(--grid-gap, var(--spacing-md, 1rem));
+    align-items: start;
+    /* grid-template-columns is set inline by decorateGridSections() */
+
+    > * {
+        margin: 0;
+        padding: 0;
+        max-width: 100%;
+    }
+}
+
+/* colspan / rowspan helpers — add 'colspan-N' or 'rowspan-N' to a block's style */
+main .section.grid > .colspan-2 { grid-column: span 2; }
+main .section.grid > .colspan-3 { grid-column: span 3; }
+main .section.grid > .colspan-4 { grid-column: span 4; }
+main .section.grid > .rowspan-2 { grid-row: span 2; }
+main .section.grid > .rowspan-3 { grid-row: span 3; }
