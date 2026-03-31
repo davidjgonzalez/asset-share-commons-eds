@@ -1,7 +1,7 @@
 title: Asset Share Commons EDS
 description: A production-ready AEM Edge Delivery Services front-end for digital asset search, preview, download, and sharing.
-baseurl: ""
-url: "https://davidjgonzalez.github.io/asset-share-commons-eds"
+baseurl: "/asset-share-commons-eds"
+url: "https://davidjgonzalez.github.io"
 github_repo: "https://github.com/davidjgonzalez/asset-share-commons-eds"
 
 theme: null
@@ -25,5 +25,4 @@ defaults:
       layout: "home"
 
 sass:
-  sass_dir: assets/css
   style: compressed
