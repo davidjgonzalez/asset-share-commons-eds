@@ -132,6 +132,17 @@ export default class OpenApiProvider extends SearchProvider {
       }
     });
 
+    // Pass through any filter[*] params injected verbatim (e.g. from search-hidden).
+    // Already-set params are not overwritten — explicit mapping above takes precedence.
+    formData.forEach((value, name) => {
+      if (!name.startsWith('filter[') || params.has(name)) return;
+      if (Array.isArray(value)) {
+        value.forEach((v) => params.append(name, v));
+      } else {
+        params.set(name, value);
+      }
+    });
+
     return params;
   }
 
