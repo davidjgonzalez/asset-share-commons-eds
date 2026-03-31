@@ -159,7 +159,6 @@ The `gap` between cells defaults to `var(--grid-gap, var(--spacing-md, 1rem))`. 
 | section-metadata |            |
 |-----------------|------------|
 | style           | aside, right |
-| sidebar-width   | 320px       |
 ```
 
 ```
@@ -192,9 +191,16 @@ On viewports narrower than 768px, the columns stack vertically — the sidebar m
 | Key | Values | Default | Description |
 |-----|--------|---------|-------------|
 | `style` | `aside, left` \| `aside, right` | `aside, right` | Required. `left`/`right` sets sidebar position. Omitting both defaults to `right`. |
-| `sidebar-width` | Any CSS length | `300px` | Width of the sidebar column — `px`, `%`, `rem`, or `clamp(…)` all work. |
 
-The `gap` between columns defaults to `var(--aside-gap, var(--spacing-md, 1rem))`.
+The sidebar width defaults to `300px` via `--aside-sidebar-width`. Override it in your theme:
+
+```css
+:root {
+  --aside-sidebar-width: 320px;
+}
+```
+
+The gap between columns defaults to `var(--aside-gap, var(--spacing-md, 1rem))`.
 
 ---
 
@@ -229,10 +235,9 @@ Useful for hero sections, image strips, full-bleed banners, or any block that ne
 Style values are comma-separated — multiple classes apply simultaneously:
 
 ```
-| section-metadata |                    |
-|-----------------|--------------------|
+| section-metadata |                          |
+|-----------------|--------------------------|
 | style           | full-width, aside, right |
-| sidebar-width   | 280px               |
 ```
 
 → Full-viewport-width aside layout with an `aside right` column structure.
