@@ -21,6 +21,8 @@ sidebar:
         url: "#search-results"
       - title: search-pagination
         url: "#search-pagination"
+      - title: search-hidden
+        url: "#search-hidden"
   - label: Asset Details
     items:
       - title: details-modal
@@ -218,6 +220,26 @@ Every block is authored as a table in da.live. The first row is the block name; 
 ```
 
 No configuration required.
+
+---
+
+## search-hidden {#search-hidden}
+
+**Search** · Injects hidden QueryBuilder predicates as hidden form inputs. Use this block to enforce content-authorable, always-on filters on a specific search page — without editing `configurations.js`.
+
+Each row in the block table is a predicate `name → value` pair. The name is passed verbatim to the QueryBuilder API, so use the exact predicate name from the [QueryBuilder reference](/querybuilder).
+
+```
+| search-hidden  |                        |
+|----------------|------------------------|
+| path           | /content/dam/brand     |
+| excludepaths   | .*subassets.*          |
+| mainasset      | true                   |
+```
+
+> **search-hidden vs basePredicates** — Both inject always-on filters. Use `basePredicates` in `configurations.js` for site-wide defaults; use `search-hidden` for page-specific overrides authored in da.live.
+
+No visible UI is rendered — the block sets `display: none`.
 
 ---
 
