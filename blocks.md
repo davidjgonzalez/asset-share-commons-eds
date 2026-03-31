@@ -178,24 +178,34 @@ Every block is authored as a table in da.live. The first row is the block name; 
 
 ## search-results {#search-results}
 
-<span class="badge badge--pink">Search</span> Renders the asset grid/list. Listens to `asc:search:results` and renders `AssetTeaser` parts.
+<span class="badge badge--pink">Search</span> Renders the asset grid/list. Listens to `asc:search:results` and renders asset teasers. Supports four layout modes.
 
 ```html
-| search-results  |        |
-|-----------------|--------|
-| limit           | 20     |
-| view            | grid   |
+| search-results  |           |
+|-----------------|-----------|
+| display         | waterfall |
+| limit           | 24        |
 ```
 
 | Key | Default | Description |
 |-----|---------|-------------|
-| `limit` | `20` | Results per page |
-| `view` | `grid` | `grid` \| `list` |
-| `actions` | `details,add-to-cart` | Comma-separated teaser actions |
+| `display` | `waterfall` | `cards` \| `list` \| `masonry` \| `waterfall` |
+| `limit` | `24` | Results per page (also controls infinite-scroll page size) |
+
+**Display modes:**
+
+| Mode | Layout | Thumbnail shape |
+|------|--------|-----------------|
+| `cards` | Uniform grid | Square crop |
+| `list` | Single-column rows with metadata | Thumbnail |
+| `masonry` | CSS columns, uniform square crops | Square crop |
+| `waterfall` | CSS columns, natural proportions | Natural |
+
+**Drag and drop:** Every asset teaser has `draggable="true"`. Users can drag any result card directly into Finder, Photoshop, Slack, or any OS-level file target. The dragged file is the asset's `original` rendition (falls back to `web`). Requires Chrome or Edge — gracefully degrades to URI copy in Firefox/Safari.
 
 <figure class="screenshot">
-  <img src="https://placehold.co/860x420/111111/e91e8c?text=search-results+block+%E2%80%94+Grid+View&font=inter" alt="search-results grid view" loading="lazy" />
-  <figcaption>search-results block — grid view with asset teasers</figcaption>
+  <img src="https://placehold.co/860x420/111111/e91e8c?text=search-results+%E2%80%94+Four+Layout+Modes&font=inter" alt="search-results four layout modes" loading="lazy" />
+  <figcaption>search-results block — cards, list, masonry, and waterfall modes</figcaption>
 </figure>
 
 ---
@@ -304,16 +314,24 @@ Preview type is determined by the asset's MIME type automatically.
 
 ## sheet {#sheet}
 
-<span class="badge badge--green">Collections</span> Full-page download sheet. Renders all collected assets with rendition download buttons.
+<span class="badge badge--green">Collections</span> Full-page download sheet. Renders all collected assets as rows — each with a thumbnail, metadata, per-asset rendition switcher, and a download button.
 
 ```html
 | sheet  |   |
 |--------|---|
 ```
 
+No configuration required. Assets and renditions are passed via URL query parameters (set by the `stub` block).
+
+**Per-asset rendition switcher:** Each row shows pill buttons for every rendition in the selection. Clicking a pill updates the download link for that asset without affecting other rows.
+
+**Drag and drop:** Rows are draggable. Dragging a row to Finder, Photoshop, or any OS app copies the currently-selected rendition for that asset. Chrome/Edge only — degrades to URI copy in Firefox/Safari.
+
+**Thumbnail fallback:** If AEM hasn't generated a thumbnail (or the asset is still processing), a file-type emoji icon is shown instead.
+
 <figure class="screenshot">
-  <img src="https://placehold.co/860x420/111111/22c55e?text=sheet+block+%E2%80%94+Download+Sheet&font=inter" alt="sheet block — download sheet" loading="lazy" />
-  <figcaption>sheet block — collected assets with rendition download options</figcaption>
+  <img src="https://placehold.co/860x480/111111/22c55e?text=Sheet+%E2%80%94+Thumbnails+%2B+Rendition+Switcher+%2B+Drag&font=inter" alt="Sheet block — per-asset rendition switcher" loading="lazy" />
+  <figcaption>Sheet block — thumbnail, per-asset rendition pills, download button, and drag-to-app</figcaption>
 </figure>
 
 ---

@@ -108,8 +108,7 @@ permalink: /
       <div class="feature-card__icon">📦</div>
       <div class="feature-card__title">Collections & Downloads</div>
       <p class="feature-card__text">
-        Cart-style collection management with persistent localStorage state.
-        Download sheets for bulk asset selection and rendition downloads.
+        Cart-style collection management. The download sheet shows per-asset thumbnails, a per-asset rendition switcher, and drag-and-drop to Finder, Photoshop, or any OS app.
       </p>
       <div class="feature-card__blocks">
         <span class="badge badge--green">stub</span>

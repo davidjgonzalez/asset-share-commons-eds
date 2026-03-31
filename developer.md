@@ -108,6 +108,9 @@ All events follow the `asc:{noun}:{verb}` pattern with colon separators.
 | `asc:collection:remove` | `document.body` | `{ uuid }` | Remove asset from collection |
 | `asc:collection:change` | `document.body` | `{ collection }` | Collection state updated |
 | `asc:rendition:download` | block element | `{ uuid, rendition }` | User triggered download |
+| `asc:asset:drag:start` | block element | `{ uuid, renditionId, url }` | User started dragging an asset (fired by search-results and sheet blocks) |
+
+> **Drag and drop** — Asset teasers and sheet rows are `draggable="true"`. The `dragstart` handler sets `dataTransfer` with `DownloadURL` (Chrome/Edge drag-to-Finder), `text/uri-list`, and `text/plain` fallbacks. The dragged URL is the `original` rendition in search results, and the currently-selected rendition in the sheet.
 
 ### Event Scoping {#event-scoping}
 
