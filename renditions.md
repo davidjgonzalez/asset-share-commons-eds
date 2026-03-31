@@ -11,137 +11,193 @@ sidebar:
         url: "#default-renditions"
       - title: Configuration
         url: "#configuration"
+      - title: accepts — Asset Filtering
+        url: "#accepts"
       - title: Excluding Renditions
         url: "#exclude"
-      - title: Rendition Types
-        url: "#types"
   - label: Types
     items:
       - title: Static (JCR)
         url: "#static"
-      - title: Web Optimized
-        url: "#web-optimized"
-      - title: Dynamic Media
-        url: "#dynamic-media"
+      - title: URL (Dynamic Media)
+        url: "#url"
       - title: Asset Delivery
         url: "#asset-delivery"
-      - title: Custom
-        url: "#custom"
 ---
 
 # Renditions
 
-Renditions are downloadable representations of an asset. Asset Share Commons resolves renditions from AEM based on declarative configuration in `scripts/configurations.js`.
+Renditions are downloadable representations of an asset. Asset Share Commons resolves renditions from AEM based on a declarative array configured in `scripts/configurations.js`.
 
 ## Overview {#overview}
 
-When a user clicks **Download** in the details modal or the download sheet, Asset Share Commons looks up the rendition definitions for that asset's MIME type and renders a list of download links.
+When a user clicks **Download** in the details modal or the download sheet, Asset Share Commons walks the `renditions.definitions` array, finds every definition that accepts the current asset, and renders a list of download links.
 
 ![Renditions — download options panel](https://placehold.co/860x380/111111/e91e8c?text=Renditions+%E2%80%94+Download+Options+Panel&font=inter)
 
 *details-download block — renders configured renditions for the open asset*
 
-Rendition resolution is done by the `renditions` service (`scripts/asc/services/renditions.js`). It takes:
+Resolution is done by the `renditions` service (`scripts/asc/services/renditions/renditions.js`). For each definition it:
 
-1. A `Rendition` definition from `configurations.renditions`
-2. An `Asset` model instance
+1. Evaluates `accepts` against the asset — skips if it returns false
+2. Resolves the URL using the definition's `type`
+3. Returns a `Rendition` model with the resolved URL
 
-And returns a resolved URL the browser can download directly.
+**Same-id fallback:** Multiple definitions may share the same `id`. When resolving by id (e.g. `getRendition(asset, 'thumbnail')`), the service returns the first definition whose `accepts` check passes. This lets you define a DM rendition first and fall back to a static one without any extra configuration.
 
 ## Default Renditions {#default-renditions}
 
-Out of the box, Asset Share Commons resolves three renditions for all asset types:
+Out of the box, Asset Share Commons includes three definitions that work with any standard AEM DAM processing profile:
 
-| Name | Type | Description |
-|------|------|-------------|
-| `thumbnail` | Static (JCR) | `cq5dam.thumbnail.48.48.png` |
-| `web` | Static (JCR) | `cq5dam.web.1280.1280.jpeg` |
-| `original` | Static (JCR) | The original uploaded binary |
+| ID | Type | Matches | Visible |
+|----|------|---------|---------|
+| `thumbnail` | Static (JCR) | `/^cq5dam\.thumbnail\./` | No (internal) |
+| `web` | Static (JCR) | `/^cq5dam\.web\./` | Yes — images only |
+| `original` | Static (JCR) | `original` (exact) | Yes — all types |
 
 ## Configuration {#configuration}
 
-Renditions are configured per MIME type pattern in `configurations.js`:
+`renditions.definitions` is a flat ordered array. Each entry is evaluated top to bottom for each asset.
 
 ```js
 renditions: {
-  definitions: {
-    'image/*': [
-      {
-        name: 'thumbnail',
-        label: 'Thumbnail (48×48)',
-        type: 'static',
-        renditionName: 'cq5dam.thumbnail.48.48.png',
-      },
-      {
-        name: 'web',
-        label: 'Web (1280px)',
-        type: 'static',
-        renditionName: 'cq5dam.web.1280.1280.jpeg',
-      },
-      {
-        name: 'original',
-        label: 'Original',
-        type: 'original',
-      },
-    ],
-    'video/*': [
-      {
-        name: 'original',
-        label: 'Original Video',
-        type: 'original',
-      },
-    ],
-    default: [
-      {
-        name: 'original',
-        label: 'Original',
-        type: 'original',
-      },
-    ],
-  },
-},
-```
+  definitions: [
+    // Thumbnail — internal, used by teasers and the sheet block
+    {
+      id: 'thumbnail',
+      label: 'Thumbnail',
+      type: 'static',
+      name: /^cq5dam\.thumbnail\./,
+      visible: false,
+    },
 
-MIME type keys support wildcards (`image/*`) and exact types (`application/pdf`). Asset Share Commons picks the most specific match — if none is found, `default` is used.
+    // Web rendition — images only
+    {
+      id: 'web',
+      label: 'Web',
+      type: 'static',
+      name: /^cq5dam\.web\./,
+      accepts: 'image/*',
+    },
 
-## Excluding Renditions {#exclude}
-
-Use `renditions.exclude` to suppress specific AEM rendition node names globally — without needing to add `visible: false` to every definition. Accepts exact strings or RegExps matched against the JCR rendition node name.
-
-```js
-renditions: {
-  exclude: [
-    'cq5dam.thumbnail.48.48.png',
-    'cq5dam.thumbnail.140.100.png',
-    /^cq5dam\.thumbnail\.(?:48|96|140)\./,
+    // Original — all asset types
+    {
+      id: 'original',
+      label: 'Original',
+      type: 'static',
+      name: 'original',
+    },
   ],
-  definitions: [ ... ],
 },
 ```
 
-> Exclusions only apply to `type: 'static'` renditions matched by JCR node name. `url` and `asset-delivery` renditions are unaffected.
+### Definition properties
 
-**Dynamic Media priority over static:** List Dynamic Media (`type: 'url'`) definitions before static ones in the `definitions` array. The first matching definition wins. Combine with `exclude` to suppress the static fallback entirely:
+| Property | Type | Description |
+|----------|------|-------------|
+| `id` | `string` | Unique key within the array. Multiple definitions may share an id — first match wins per asset. |
+| `label` | `string` | Display name shown in the download list |
+| `type` | `string` | `'static'` \| `'url'` \| `'asset-delivery'` |
+| `accepts` | `string \| Function` | MIME glob or `(asset) => boolean`. Omit to match all assets. See [accepts](#accepts). |
+| `visible` | `boolean` | Show in the download list (default: `true`). Set `false` for internal renditions like thumbnails. |
+| `description` | `string` | Optional sub-label or tooltip |
+| `mimeType` | `string` | Override MIME type hint for the downloaded file |
+
+## accepts — Asset Filtering {#accepts}
+
+`accepts` controls which assets a rendition definition applies to. It can be:
+
+**A MIME glob string** — shorthand for type/subtype matching:
+
+```js
+accepts: 'image/*'           // any image
+accepts: 'video/*'           // any video
+accepts: 'application/pdf'   // exact type
+```
+
+**A function** — full access to the asset model and its metadata:
+
+```js
+// Only apply if the asset has been synced to Dynamic Media
+accepts: (asset) => !!asset.getProperty('dam:scene7File'),
+
+// Images wider than 2000px
+accepts: (asset) => (asset.getProperty('jcr:content/metadata/tiff:ImageWidth') ?? 0) > 2000,
+
+// A specific DAM folder
+accepts: (asset) => asset.path?.startsWith('/content/dam/brand/'),
+```
+
+**Same id, different accepts — per-type renditions:**
+
+Because the service returns the first definition per id that accepts the asset, you can give image and video assets different implementations of the same logical rendition:
 
 ```js
 definitions: [
+  // Larger thumbnail crop for images
   {
-    id: 'web',
-    label: 'Web (DM)',
-    type: 'url',
-    url: '${dm.apiServer}is/image/${dm.file}?$web_crop$',
+    id: 'thumbnail',
+    type: 'static',
+    name: /^cq5dam\.thumbnail\.319\./,
+    visible: false,
     accepts: 'image/*',
   },
+  // Smaller thumbnail for video (different node generated by processing profile)
   {
-    id: 'web-static',
+    id: 'thumbnail',
+    type: 'static',
+    name: /^cq5dam\.thumbnail\.48\./,
+    visible: false,
+    accepts: 'video/*',
+  },
+  // Fallback thumbnail for everything else
+  {
+    id: 'thumbnail',
+    type: 'static',
+    name: /^cq5dam\.thumbnail\./,
+    visible: false,
+  },
+],
+```
+
+**DM-over-static fallback** works the same way — put the DM definition first:
+
+```js
+definitions: [
+  // Prefer DM if the asset has a Scene7 file reference
+  {
+    id: 'web',
+    label: 'Web',
+    type: 'url',
+    url: '${dm.apiServer}is/image/${dm.file}?$web$',
+    accepts: (asset) => !!asset.getProperty('dam:scene7File'),
+  },
+  // Fall back to static web rendition for non-DM assets
+  {
+    id: 'web',
     label: 'Web',
     type: 'static',
     name: /^cq5dam\.web\./,
     accepts: 'image/*',
   },
 ],
-exclude: [/^cq5dam\.thumbnail\./],
 ```
+
+## Excluding Renditions {#exclude}
+
+Use `renditions.exclude` to suppress JCR rendition node names globally — useful for suppressing thumbnail sizes generated by processing profiles that you never want in the download list.
+
+```js
+renditions: {
+  exclude: [
+    'cq5dam.thumbnail.48.48.png',
+    /^cq5dam\.thumbnail\.(?:48|96|140)\./,
+  ],
+  definitions: [ ... ],
+},
+```
+
+> Exclusions only apply to `type: 'static'` renditions. `url` and `asset-delivery` renditions are unaffected.
 
 ---
 
@@ -149,95 +205,92 @@ exclude: [/^cq5dam\.thumbnail\./],
 
 ### Static (JCR) {#static}
 
-Resolves a named rendition from the asset's JCR `jcr:content/renditions/` node.
+Resolves a rendition node from the asset's `jcr:content/renditions/` tree by matching `name` against the node name.
 
 ```js
 {
-  name: 'web',
+  id: 'web',
   label: 'Web (1280px)',
   type: 'static',
-  renditionName: 'cq5dam.web.1280.1280.jpeg',
+  name: /^cq5dam\.web\./,   // RegExp or exact string
+  accepts: 'image/*',
 }
 ```
 
 | Property | Description |
 |----------|-------------|
-| `renditionName` | Exact name of the JCR rendition child node |
+| `name` | `string` for exact match, `RegExp` to match by pattern |
 
-### Web Optimized {#web-optimized}
+### URL (Dynamic Media) {#url}
 
-Uses AEM's Web Optimized Image Delivery API to serve a resized/formatted rendition on the fly.
-
-```js
-{
-  name: 'web-optimized-2x',
-  label: 'Retina (2560px)',
-  type: 'web-optimized',
-  width: 2560,
-  format: 'webp',
-  quality: 85,
-}
-```
-
-| Property | Default | Description |
-|----------|---------|-------------|
-| `width` | — | Output width in pixels |
-| `format` | `webp` | `webp` \| `jpeg` \| `png` |
-| `quality` | `85` | Compression quality (1–100) |
-
-### Dynamic Media {#dynamic-media}
-
-Generates a Dynamic Media rendition URL using a named preset or raw parameters.
+Constructs a URL by interpolating `${variable}` placeholders from the asset's metadata. Use for legacy Dynamic Media / Scene7 IS/IR protocol URLs.
 
 ```js
 {
-  name: 'dm-medium',
-  label: 'DM Medium (800px)',
-  type: 'dynamic-media',
-  preset: 'Medium_Size_Asset',
+  id: 'dm-web',
+  label: 'Web (DM)',
+  type: 'url',
+  url: '${dm.apiServer}is/image/${dm.file}?$web$',
+  accepts: (asset) => !!asset.getProperty('dam:scene7File'),
 }
 ```
 
 | Property | Description |
 |----------|-------------|
-| `preset` | DM Image Preset name |
-| `params` | Raw DM URL parameters string (alternative to preset) |
+| `url` | Template string with `${variable}` placeholders |
+
+**Available variables:**
+
+| Variable | Resolves to |
+|----------|-------------|
+| `${asset.path}` | JCR path (`/content/dam/...`) |
+| `${asset.name}` | Node name (filename) |
+| `${asset.id}` | Asset UUID |
+| `${asset.extension}` | File extension |
+| `${asset.title}` | `dc:title` |
+| `${dm.name}` | `dam:scene7Name` |
+| `${dm.id}` | `dam:scene7ID` |
+| `${dm.file}` | `dam:scene7File` (e.g. `my-company/my-image`) |
+| `${dm.folder}` | `dam:scene7Folder` |
+| `${dm.domain}` | `dam:scene7Domain` |
+| `${dm.apiServer}` | `dam:scene7APIServer` (e.g. `https://s7d1.scene7.com/`) |
 
 ### Asset Delivery {#asset-delivery}
 
-Uses the AEM as a Cloud Service Asset Delivery API (requires `aem.deliveryHost` in config).
+Constructs an AEM Asset Delivery API URL. Covers plain image transforms, smart crops, and named presets — they're all just different `params` values on the same URL format.
+
+Requires `aem.deliveryHost` in `configurations.js`. AEM as a Cloud Service only.
 
 ```js
+// Plain transform
 {
-  name: 'delivery-original',
-  label: 'Asset Delivery (Original)',
+  id: 'web-optimized',
+  label: 'Web Optimized',
   type: 'asset-delivery',
-  format: 'original',
-}
-```
+  params: 'format=webp&width=1200&quality=85',
+  accepts: 'image/*',
+},
 
-| Property | Description |
-|----------|-------------|
-| `format` | `original` \| `webp` \| `jpeg` \| `png` |
-| `width` | Output width |
-| `quality` | Quality (1–100) |
-
-### Custom {#custom}
-
-Full control — provide a function that takes an `Asset` and returns a URL string.
-
-```js
+// Smart crop (crop name must match a DM preset)
 {
-  name: 'cdn-optimized',
-  label: 'CDN Optimized',
-  type: 'custom',
-  resolve: (asset) => {
-    const uuid = asset.getProperty('jcr:uuid');
-    return `https://cdn.example.com/assets/${uuid}/web.jpg`;
-  },
-}
+  id: 'smart-crop-small',
+  label: 'Smart Crop — Small',
+  type: 'asset-delivery',
+  params: 'smartcrop=Small',
+  accepts: 'image/*',
+},
+
+// Named image preset
+{
+  id: 'dm-preset-web',
+  label: 'Web Preset',
+  type: 'asset-delivery',
+  params: 'imagePreset=web',
+  accepts: 'image/*',
+},
 ```
 
 | Property | Description |
 |----------|-------------|
-| `resolve` | `(asset: Asset) => string` — returns the download URL |
+| `params` | Query string appended to the delivery URL |
+| `format` | File extension override (default: asset's own extension) |
