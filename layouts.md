@@ -3,18 +3,30 @@ layout: page
 title: Section Layouts
 permalink: /layouts
 sidebar:
-  - label: Grid Layout
+  - label: Grid
     items:
       - title: Overview
         url: "#grid"
       - title: Options
-        url: "#options"
-      - title: Authoring
-        url: "#authoring"
+        url: "#grid-options"
       - title: Cell spanning
         url: "#spanning"
+  - label: Aside
+    items:
+      - title: Overview
+        url: "#aside"
+      - title: Options
+        url: "#aside-options"
+  - label: Full-width
+    items:
+      - title: Overview
+        url: "#full-width"
+  - label: General
+    items:
       - title: Responsive
         url: "#responsive"
+      - title: Combining layouts
+        url: "#combining"
 ---
 
 # Section Layouts
@@ -23,7 +35,7 @@ Structural layout helpers applied via section-metadata — no custom blocks need
 
 ---
 
-## Grid layout {#grid}
+## Grid {#grid}
 
 Adding `style: grid` to a section's section-metadata turns that section into a CSS Grid container. Every block wrapper inside the section becomes a grid cell.
 
@@ -39,7 +51,7 @@ The section gets `display: grid` with equal-width columns. Use any block inside 
 
 ---
 
-## Options {#options}
+## Options {#grid-options}
 
 | Key | Values | Default | Description |
 |-----|--------|---------|-------------|
@@ -136,3 +148,91 @@ The `gap` between cells defaults to `var(--grid-gap, var(--spacing-md, 1rem))`. 
   --grid-gap: 2rem;
 }
 ```
+
+---
+
+## Aside {#aside}
+
+`aside` creates an asymmetric two-column layout: a wide main content area and a narrower sidebar. The `left` or `right` modifier controls which column is the sidebar.
+
+```
+| section-metadata |            |
+|-----------------|------------|
+| style           | aside, right |
+| sidebar-width   | 320px       |
+```
+
+```
+style: aside, right    content (1fr) | sidebar (sidebar-width)
+style: aside, left     sidebar       | content (1fr)
+```
+
+**`aside, right` — content left, sidebar right:**
+```
+┌───────────────────────┐ ┌──────────┐
+│                       │ │          │
+│      main content     │ │ sidebar  │
+│                       │ │          │
+└───────────────────────┘ └──────────┘
+```
+
+**`aside, left` — sidebar left, content right:**
+```
+┌──────────┐ ┌───────────────────────┐
+│          │ │                       │
+│ sidebar  │ │      main content     │
+│          │ │                       │
+└──────────┘ └───────────────────────┘
+```
+
+On viewports narrower than 768px, the columns stack vertically — the sidebar moves below (or above) the main content depending on its DOM order.
+
+## Options {#aside-options}
+
+| Key | Values | Default | Description |
+|-----|--------|---------|-------------|
+| `style` | `aside, left` \| `aside, right` | `aside, right` | Required. `left`/`right` sets sidebar position. Omitting both defaults to `right`. |
+| `sidebar-width` | Any CSS length | `300px` | Width of the sidebar column — `px`, `%`, `rem`, or `clamp(…)` all work. |
+
+The `gap` between columns defaults to `var(--aside-gap, var(--spacing-md, 1rem))`.
+
+---
+
+## Full-width {#full-width}
+
+`full-width` removes the default 1200px max-width constraint and horizontal padding from all blocks in the section. Each block fills the entire viewport width and controls its own internal layout.
+
+```
+| section-metadata |            |
+|-----------------|------------|
+| style           | full-width  |
+```
+
+Useful for hero sections, image strips, full-bleed banners, or any block that needs edge-to-edge control.
+
+> **Combining:** `full-width` can be combined with other styles. `style: grid, full-width` gives you a full-width grid section.
+
+---
+
+## Responsive {#responsive}
+
+| Layout | Mobile behaviour |
+|--------|-----------------|
+| `grid` | Columns stay fixed — add a custom CSS override for mobile |
+| `aside` | Stacks to single column below 768px automatically |
+| `full-width` | No change — always full viewport width |
+
+---
+
+## Combining layouts {#combining}
+
+Style values are comma-separated — multiple classes apply simultaneously:
+
+```
+| section-metadata |                    |
+|-----------------|--------------------|
+| style           | full-width, aside, right |
+| sidebar-width   | 280px               |
+```
+
+→ Full-viewport-width aside layout with an `aside right` column structure.
