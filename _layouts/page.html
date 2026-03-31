@@ -1,0 +1,25 @@
+---
+layout: default
+---
+<div class="page-with-sidebar">
+
+  <nav class="sidebar">
+    {% if page.sidebar %}
+    {% for section in page.sidebar %}
+    <span class="sidebar__label">{{ section.label }}</span>
+    <ul class="sidebar__nav">
+      {% for item in section.items %}
+      <li><a href="{{ item.url }}">{{ item.title }}</a></li>
+      {% endfor %}
+    </ul>
+    {% endfor %}
+    {% endif %}
+  </nav>
+
+  <main class="content">
+    <div class="content-inner">
+      {{ content }}
+    </div>
+  </main>
+
+</div>
