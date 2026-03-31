@@ -178,6 +178,15 @@ button {
   font: inherit;
 }
 
+select {
+  appearance: none;
+  padding-right: var(--spacing-xl, 2rem);
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3e%3ctext x='0' y='9' font-size='11' fill='%23333'%3e%u25BE%3c/text%3e%3c/svg%3e");
+  background-position: right var(--spacing-sm, 0.5rem) center;
+  background-repeat: no-repeat;
+  background-size: 10px;
+}
+
 /* links */
 a:any-link {
   color: var(--link-color);
@@ -266,6 +275,27 @@ main .section.highlight {
   padding: 40px 0;
 }
 
+/* grid section — each block wrapper becomes a grid cell */
+main .section.grid {
+    display: grid;
+    gap: var(--grid-gap, var(--spacing-md, 1rem));
+    align-items: start;
+    /* grid-template-columns is set inline by decorateGridSections() */
+
+    > * {
+        margin: 0;
+        padding: 0;
+        max-width: 100%;
+    }
+}
+
+/* colspan / rowspan helpers — add 'colspan-N' or 'rowspan-N' to a block's style */
+main .section.grid > .colspan-2 { grid-column: span 2; }
+main .section.grid > .colspan-3 { grid-column: span 3; }
+main .section.grid > .colspan-4 { grid-column: span 4; }
+main .section.grid > .rowspan-2 { grid-row: span 2; }
+main .section.grid > .rowspan-3 { grid-row: span 3; }
+
 /* form styles */
 .form-group {
   margin-bottom: var(--spacing-lg);
@@ -325,14 +355,6 @@ main .section.highlight {
   height: auto;
 }
 
-.form-group select {
-  appearance: none;
-  padding-right: var(--spacing-xl);
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='%23333' d='M8 11L3 6h10z'/%3e%3c/svg%3e");
-  background-position: right var(--spacing-sm) center;
-  background-repeat: no-repeat;
-  background-size: 12px;
-}
 
 .form-group .checkbox-group,
 .form-group .radio-group {
