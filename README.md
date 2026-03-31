@@ -9,7 +9,7 @@ An AEM Edge Delivery Services front-end for sharing, searching, and downloading 
 
 ## Getting Started
 
-See **[QUICKSTART.md](QUICKSTART.md)** for the full setup guide.
+See **[docs/QUICKSTART.md](docs/QUICKSTART.md)** for the full setup guide.
 
 **TL;DR:**
 ```bash
@@ -21,10 +21,10 @@ aem up       # opens http://localhost:3000
 
 | File | Purpose |
 |------|---------|
-| [QUICKSTART.md](QUICKSTART.md) | First-time setup — AEM, da.live, local dev, deploy |
+| [docs/QUICKSTART.md](docs/QUICKSTART.md) | First-time setup — AEM, da.live, local dev, deploy |
 | [AGENTS.md](AGENTS.md) | Developer reference — events, data attributes, blocks, extension points |
-| [CSS_CONVENTION.md](CSS_CONVENTION.md) | CSS coding standards for blocks and themes |
-| [THEMING_README.md](THEMING_README.md) | How to create and switch themes |
+| [docs/CSS_CONVENTION.md](docs/CSS_CONVENTION.md) | CSS coding standards for blocks and themes |
+| [docs/THEMING_README.md](docs/THEMING_README.md) | How to create and switch themes |
 | [docs/starter-kit/](docs/starter-kit/) | Content starter kit — HTML pages to import into da.live |
 
 ## Configuring

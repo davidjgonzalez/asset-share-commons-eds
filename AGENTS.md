@@ -433,7 +433,7 @@ To activate page-level filters (e.g. `asc-details-page`), add `data-aue-filter="
 
 ---
 
-## CSS Conventions (see `CSS_CONVENTION.md` for full guide)
+## CSS Conventions (see `docs/CSS_CONVENTION.md` for full guide)
 
 - Root selector: `.block.<block-name> { ... }` — never a bare class
 - CSS nesting for children and modifiers

@@ -122,7 +122,7 @@ window.asc = { cache: { assets: new Map() } }
 
 Asset instances are cached by UUID here to avoid redundant fetches.
 
-## CSS Conventions (see CSS_CONVENTION.md)
+## CSS Conventions (see docs/CSS_CONVENTION.md)
 
 - Root selector: `.block.<block-name> { ... }` — never a bare class
 - Use CSS nesting for child elements and modifiers
@@ -144,4 +144,4 @@ Asset instances are cached by UUID here to avoid redundant fetches.
 | `scripts/asc/services/services.js` | All service singletons exported together |
 | `scripts/asc/utils/events.js` | `delegateEvent()` — use for all event binding |
 | `AGENTS.md` | Full event/attribute/parts/provider reference for AI assistants |
-| `CSS_CONVENTION.md` | Full CSS coding standards |
+| `docs/CSS_CONVENTION.md` | Full CSS coding standards |
