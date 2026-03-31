@@ -10,7 +10,7 @@ permalink: /
     Asset sharing,<br><span>done right. A WIP.</span>
   </h1>
   <p class="hero__subtitle">
-    A production-ready EDS front-end for AEM DAM. Search, preview, download,
+    A production-ready Edge Delivery Services front-end for AEM DAM. Search, preview, download,
     and share assets — without writing backend code.
   </p>
   <div class="hero__actions">
@@ -19,8 +19,8 @@ permalink: /
   </div>
   <div class="hero__screenshot">
     <img
-      src="https://placehold.co/1000x560/111111/e91e8c?text=ASC+EDS+%E2%80%94+Search+%26+Browse+Interface&font=inter"
-      alt="ASC EDS search and browse interface screenshot"
+      src="https://placehold.co/1000x560/111111/e91e8c?text=Asset+Share+Commons+%E2%80%94+Search+%26+Browse&font=inter"
+      alt="Asset Share Commons search and browse interface"
       loading="lazy"
     />
   </div>
@@ -174,7 +174,7 @@ permalink: /
         just to ship a CSS change. Edit → push → live.
       </p>
       <div class="feature-card__blocks">
-        <span class="badge badge--blue">EDS</span>
+        <span class="badge badge--blue">Edge Delivery</span>
         <span class="badge badge--blue">CDN</span>
         <span class="badge badge--blue">ES modules</span>
       </div>
@@ -229,7 +229,7 @@ permalink: /
 <section class="cta-section">
   <h2 class="cta-section__title">Ready to ship?</h2>
   <p class="cta-section__subtitle">
-    Fork the repo, connect to your AEM environment, and you're live in minutes.
+    Fork the repo, connect your AEM environment, and Asset Share Commons is live in minutes.
   </p>
   <div class="cta-section__actions">
     <a href="/quickstart" class="btn btn--primary btn--lg">Get Started →</a>

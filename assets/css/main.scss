@@ -813,15 +813,30 @@ img { max-width: 100%; display: block; }
     color: var(--text-muted);
   }
 
+  /* Markdown images (p > img) and legacy .screenshot figures */
+  p > img,
+  .screenshot img {
+    width: 100%;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+    margin: var(--space-md) 0;
+  }
+
+  /* Italic text immediately after an image acts as a caption */
+  p > img + em,
+  p:has(> img) + p > em:only-child {
+    display: block;
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--text-dimmed);
+    margin-top: calc(-1 * var(--space-sm));
+    margin-bottom: var(--space-lg);
+    font-style: italic;
+  }
+
   .screenshot {
     margin: var(--space-lg) 0;
-
-    img {
-      width: 100%;
-      border-radius: var(--radius-lg);
-      border: 1px solid var(--border);
-      box-shadow: 0 16px 48px rgba(0,0,0,0.5);
-    }
 
     figcaption {
       text-align: center;

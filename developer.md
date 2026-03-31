@@ -37,24 +37,22 @@ sidebar:
 
 # Developer Reference
 
-Architecture, events, data attributes, and extension points for building on top of ASC EDS.
+Architecture, events, data attributes, and extension points for building on top of Asset Share Commons.
 
 ## Ownership Boundary {#ownership}
 
 | Path | Owner | Rule |
 |------|-------|------|
 | `scripts/configurations.js` | You | Edit freely — the single customization entry point |
-| `scripts/asc/` | ASC Core | Do not edit — replace on upgrades. All files begin with `// ASC Core` |
+| `scripts/asc/` | Asset Share Commons Core | Do not edit — replace on upgrades. All files begin with `// ASC Core` |
 | `blocks/` | You | Copy and modify blocks freely |
 | `styles/` | You | Add themes, override CSS variables |
 
-<div class="callout">
-Every file in <code>scripts/asc/</code> starts with <code>// ASC Core — do not edit.</code> as a signal. You customize exclusively via <code>scripts/configurations.js</code>.
-</div>
+> Every file in `scripts/asc/` starts with `// ASC Core — do not edit.` as a signal. You customize exclusively via `scripts/configurations.js`.
 
 ## Page Lifecycle {#lifecycle}
 
-EDS runs three phases on every page load:
+Edge Delivery Services runs three phases on every page load:
 
 ```js
 // scripts/scripts.js
@@ -63,12 +61,11 @@ loadLazy()     // Remaining sections, header/footer, lazy styles
 loadDelayed()  // Runs after 3s: analytics, non-critical work
 ```
 
-ASC services are imported in `scripts/scripts.js` and initialize themselves as singletons on module import. The search service auto-executes on pages with search blocks.
+Asset Share Commons services are imported in `scripts/scripts.js` and initialize themselves as singletons on module import. The search service auto-executes on pages with search blocks.
 
-<figure class="screenshot">
-  <img src="https://placehold.co/860x340/111111/e91e8c?text=Page+Lifecycle+Diagram&font=inter" alt="Page lifecycle diagram" loading="lazy" />
-  <figcaption>EDS three-phase page lifecycle — eager → lazy → delayed</figcaption>
-</figure>
+![Page lifecycle diagram](https://placehold.co/860x340/111111/e91e8c?text=Page+Lifecycle+Diagram&font=inter)
+
+*Edge Delivery Services three-phase page lifecycle — eager → lazy → delayed*
 
 ## Core Layers {#layers}
 
@@ -154,7 +151,7 @@ Blocks wire up behavior via `data-asc-action` — no direct JS coupling between 
 </div>
 ```
 
-Multiple actions can be space-separated. The action system in `scripts/asc/utils/actions.js` parses `noun:verb@event` tuples and dispatches the matching ASC event.
+Multiple actions can be space-separated. The action system in `scripts/asc/utils/actions.js` parses `noun:verb@event` tuples and dispatches the matching Asset Share Commons event.
 
 ---
 
@@ -175,10 +172,9 @@ search: {
 }
 ```
 
-<figure class="screenshot">
-  <img src="https://placehold.co/860x340/111111/9333ea?text=Search+Provider+Abstraction+Diagram&font=inter" alt="Search provider abstraction" loading="lazy" />
-  <figcaption>SearchService delegates to a provider — swap without touching blocks</figcaption>
-</figure>
+![Search provider abstraction](https://placehold.co/860x340/111111/9333ea?text=Search+Provider+Abstraction+Diagram&font=inter)
+
+*SearchService delegates to a provider — swap without touching blocks*
 
 ### Custom Provider
 
@@ -261,7 +257,7 @@ To add a new block:
 
 1. Create `blocks/my-block/my-block.js` exporting `default decorate(block)`
 2. Create `blocks/my-block/my-block.css` — root selector: `.block.my-block { ... }`
-3. Author a table named `my-block` in da.live — EDS will load it automatically
+3. Author a table named `my-block` in da.live — Edge Delivery Services will load it automatically
 
 ```js
 // blocks/my-block/my-block.js
@@ -278,4 +274,4 @@ export default function decorate(block) {
 }
 ```
 
-EDS auto-discovers blocks — no registration required.
+Edge Delivery Services auto-discovers blocks — no registration required.

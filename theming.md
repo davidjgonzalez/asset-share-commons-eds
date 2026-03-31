@@ -27,7 +27,7 @@ sidebar:
 
 # Theming
 
-ASC EDS uses a CSS variable-based theming system. A theme is just a CSS file that overrides variables — no JavaScript, no build step.
+Asset Share Commons uses a CSS variable-based theming system. A theme is a CSS file that overrides variables — no JavaScript, no build step.
 
 ## Overview {#overview}
 
@@ -44,10 +44,9 @@ styles/
     high-contrast.css  ← accessibility theme
 ```
 
-<figure class="screenshot">
-  <img src="https://placehold.co/860x400/111111/e91e8c?text=Theme+Switcher+Preview&font=inter" alt="Theme switcher preview" loading="lazy" />
-  <figcaption>Five built-in themes — default, dark, warm, studio, vault</figcaption>
-</figure>
+![Theme switcher preview](https://placehold.co/860x400/111111/e91e8c?text=Theme+Switcher+Preview&font=inter)
+
+*Five built-in themes — default, dark, warm, studio, vault*
 
 ## Built-in Themes {#built-in-themes}
 
@@ -70,9 +69,9 @@ theme: {
 }
 ```
 
-EDS sets `data-theme="{name}"` on the `<body>` element, and the matching theme CSS is loaded from `styles/themes/{name}.css`.
+Edge Delivery Services sets `data-theme="{name}"` on the `<body>` element, and the matching theme CSS is loaded from `styles/themes/{name}.css`.
 
-You can also switch themes at runtime by calling:
+You can also switch themes at runtime:
 
 ```js
 import { setTheme } from '/scripts/asc/utils/theme.js';

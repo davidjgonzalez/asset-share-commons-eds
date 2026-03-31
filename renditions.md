@@ -11,6 +11,8 @@ sidebar:
         url: "#default-renditions"
       - title: Configuration
         url: "#configuration"
+      - title: Excluding Renditions
+        url: "#exclude"
       - title: Rendition Types
         url: "#types"
   - label: Types
@@ -29,16 +31,15 @@ sidebar:
 
 # Renditions
 
-Renditions are downloadable representations of an asset. ASC EDS resolves renditions from AEM based on declarative configuration in `scripts/configurations.js`.
+Renditions are downloadable representations of an asset. Asset Share Commons resolves renditions from AEM based on declarative configuration in `scripts/configurations.js`.
 
 ## Overview {#overview}
 
-When a user clicks **Download** in the details modal or the download sheet, ASC looks up the rendition definitions for that asset's MIME type and renders a list of download links.
+When a user clicks **Download** in the details modal or the download sheet, Asset Share Commons looks up the rendition definitions for that asset's MIME type and renders a list of download links.
 
-<figure class="screenshot">
-  <img src="https://placehold.co/860x380/111111/e91e8c?text=Renditions+%E2%80%94+Download+Options+Panel&font=inter" alt="Renditions download panel screenshot" loading="lazy" />
-  <figcaption>details-download block — renders configured renditions for the open asset</figcaption>
-</figure>
+![Renditions — download options panel](https://placehold.co/860x380/111111/e91e8c?text=Renditions+%E2%80%94+Download+Options+Panel&font=inter)
+
+*details-download block — renders configured renditions for the open asset*
 
 Rendition resolution is done by the `renditions` service (`scripts/asc/services/renditions.js`). It takes:
 
@@ -49,7 +50,7 @@ And returns a resolved URL the browser can download directly.
 
 ## Default Renditions {#default-renditions}
 
-Out of the box, ASC resolves three renditions for all asset types:
+Out of the box, Asset Share Commons resolves three renditions for all asset types:
 
 | Name | Type | Description |
 |------|------|-------------|
@@ -101,17 +102,14 @@ renditions: {
 },
 ```
 
-MIME type keys support wildcards (`image/*`) and exact types (`application/pdf`). ASC picks the most specific match. If no match is found, `default` is used.
+MIME type keys support wildcards (`image/*`) and exact types (`application/pdf`). Asset Share Commons picks the most specific match — if none is found, `default` is used.
 
-### Excluding renditions {#exclude}
+## Excluding Renditions {#exclude}
 
-Use `renditions.exclude` to suppress specific AEM rendition node names globally — without needing to add `visible: false` to every definition.
-
-Accepts an array of exact strings or RegExps matched against the JCR rendition node name (e.g. `cq5dam.thumbnail.48.48.png`).
+Use `renditions.exclude` to suppress specific AEM rendition node names globally — without needing to add `visible: false` to every definition. Accepts exact strings or RegExps matched against the JCR rendition node name.
 
 ```js
 renditions: {
-  // Exclude small/template thumbnails that shouldn't appear in download lists
   exclude: [
     'cq5dam.thumbnail.48.48.png',
     'cq5dam.thumbnail.140.100.png',
@@ -121,13 +119,12 @@ renditions: {
 },
 ```
 
-Excluded renditions are filtered out of `getRenditions()` results for all asset types. The exclusion only applies to `type: 'static'` renditions (matched by JCR node name). `url` and `asset-delivery` renditions are unaffected.
+> Exclusions only apply to `type: 'static'` renditions matched by JCR node name. `url` and `asset-delivery` renditions are unaffected.
 
-**DM priority over static:** When both a Dynamic Media (`type: 'url'`) and a static rendition exist for the same logical slot, list the DM definition first in the `definitions` array. The first matching definition wins. Combined with `exclude`, you can suppress the static fallback entirely:
+**Dynamic Media priority over static:** List Dynamic Media (`type: 'url'`) definitions before static ones in the `definitions` array. The first matching definition wins. Combine with `exclude` to suppress the static fallback entirely:
 
 ```js
 definitions: [
-  // DM web rendition — used when DM metadata is present
   {
     id: 'web',
     label: 'Web (DM)',
@@ -135,7 +132,6 @@ definitions: [
     url: '${dm.apiServer}is/image/${dm.file}?$web_crop$',
     accepts: 'image/*',
   },
-  // Static fallback — used when DM is not configured
   {
     id: 'web-static',
     label: 'Web',
@@ -144,7 +140,6 @@ definitions: [
     accepts: 'image/*',
   },
 ],
-// Suppress raw thumbnail nodes from the download list
 exclude: [/^cq5dam\.thumbnail\./],
 ```
 
