@@ -305,15 +305,26 @@ Preview type is determined automatically from the asset's MIME type.
 > **QueryBuilder only** — This block makes a direct QueryBuilder API call. It is not available when using the OpenAPI search provider.
 
 ```
-| details-similar  |   |
-|------------------|---|
+| details-similar  |                                     |
+|------------------|-------------------------------------|
+| title            | You may also like                   |
+| description      | Assets with similar tags and format |
+| max              | 8                                   |
+| show-empty       | false                               |
 ```
 
-No configuration required. Add the block to your details template page (e.g. `details/index`) and it will appear automatically. The block removes itself from the DOM if no similar assets are found.
+| Key | Default | Description |
+|-----|---------|-------------|
+| `title` | — | Heading rendered above the strip |
+| `description` | — | Subtext rendered below the heading |
+| `max` | `8` | Maximum number of similar assets to show |
+| `show-empty` | `false` | When `true`, the block stays visible even when no similar assets are found; when `false` the block removes itself from the page |
+
+All keys are optional — a bare `details-similar` table with no rows works fine.
 
 **Behaviour:**
 - Compares `dc:tags` and `dc:format` metadata between assets
-- Renders up to 8 similar assets as square image-only thumbnails in a horizontally scrollable strip
+- Renders up to `max` similar assets as square image-only thumbnails in a horizontally scrollable strip
 - Clicking a thumbnail opens that asset in the details modal and pushes a new browser history entry — the back button returns to the previous asset
 
 **Browser history navigation:** Opening an asset from the similar strip (or from any search result) pushes a history entry (`?asset={uuid}`). The browser back and forward buttons navigate between previously-viewed assets, and back past the first asset closes the modal.
