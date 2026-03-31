@@ -232,6 +232,14 @@ No configuration required.
 
 The template to render is determined by `configurations.assetDetails.templates`. The default path is `/details` (authored as `details/index` in da.live).
 
+**Browser history navigation:** Every asset open pushes a history entry so the URL stays shareable and back/forward navigation works naturally:
+
+- Opening an asset → `pushState` adds an entry with `?asset={uuid}`
+- Browser back → reopens the previous asset, or closes the modal if there is none
+- Browser forward → reopens the next asset
+- Close button → `replaceState` removes `?asset` without adding a history entry
+- Page loaded with `?asset=uuid` already in the URL (shared link) → `replaceState` marks the current entry; back navigates out of the page rather than closing the modal
+
 ---
 
 ## details-preview {#details-preview}

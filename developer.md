@@ -205,25 +205,69 @@ class MyProvider {
 
 ## Parts {#parts}
 
-Parts are reusable UI components in `scripts/asc/parts/`. The only shipping part is `AssetTeaser`.
+Parts are reusable UI components in `scripts/asc/parts/`. Each is a pure function `(asset, options?) => string` — no classes, no event binding.
 
-### AssetTeaser
+### assetTeaser
 
-Renders a single asset card in search results or the stub.
+Renders a single asset card or list row for use in search results, collections, and similar strips.
 
 ```js
-import AssetTeaser from '/scripts/asc/parts/AssetTeaser.js';
+import assetTeaser from '/scripts/asc/parts/asset-teaser/asset-teaser.js';
 
-const teaser = new AssetTeaser({ block: this.block });
-teaser.asset = asset;                 // set Asset model
-container.innerHTML = teaser.html();  // render HTML string
+// card mode (default)
+container.insertAdjacentHTML('beforeend', assetTeaser(asset));
+
+// list mode
+container.insertAdjacentHTML('beforeend', assetTeaser(asset, { mode: 'list' }));
 ```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `mode` | `'card'` | `'card'` \| `'list'` |
+
+The teaser renders with `data-asc-action="asset:details:open@click asset:preload@mouseover"` and `data-asc-asset="{uuid}"` wired automatically — no extra event binding needed.
+
+> Use `insertAdjacentHTML('beforeend', ...)` when appending teasers to an existing container. Never use `innerHTML +=` — it re-serialises the entire DOM, causing all loaded images to flicker.
+
+---
+
+### picture
+
+Renders a responsive `<picture>` element (or plain `<img>` when no web renditions are available) for a given asset. Used on detail pages where full rendition data is loaded.
+
+```js
+import picture from '/scripts/asc/parts/picture/picture.js';
+
+block.innerHTML = picture(asset);
+
+// LCP image — load eagerly
+block.innerHTML = picture(asset, { eager: true });
+
+// Custom breakpoints
+block.innerHTML = picture(asset, {
+  breakpoints: [
+    { media: '(min-width: 1024px)', renditionWidth: 840 },
+    { media: '(min-width: 768px)',  renditionWidth: 560 },
+  ],
+});
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `alt` | asset title | Alt text for the `<img>` |
+| `eager` | `false` | Sets `loading="eager"` and `fetchpriority="high"` for LCP images |
+| `breakpoints` | auto | Array of `{ media, renditionWidth }` — auto-generates `<source>` elements if omitted |
+| `imgAttributes` | `{}` | Extra attributes merged onto the `<img>` element |
+
+When no JCR web renditions are present (e.g. search result assets), falls back to a plain `<img>` pointing at the thumbnail URL.
+
+---
 
 #### Rules for Parts
 
-- Constructor receives `{ block }` — the parent block element
-- Never bind events directly; always use `delegateEvent(this.block, ...)`
-- `html()` returns an HTML string; the block owns DOM insertion
+- Pure functions — `(asset, options?) => string`
+- No event binding — blocks own event wiring via `data-asc-action` and `delegateEvent()`
+- Return HTML strings — blocks own DOM insertion
 
 ---
 
