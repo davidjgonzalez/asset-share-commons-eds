@@ -55,24 +55,6 @@ function buildAutoBlocks(main) {
 }
 
 /**
- * Decorates sections that have `style: aside, left|right` in their section-metadata.
- *
- * Section metadata keys:
- *   style          aside, right   Required — 'aside' activates layout; 'left' or 'right'
- *                  aside, left    positions the sidebar. Defaults to 'right' if neither given.
- *   sidebar-width  300px          Any CSS length for the sidebar column. Default: 300px.
- */
-function decorateAsideSections(main) {
-  main.querySelectorAll('.section.aside').forEach((section) => {
-    if (!section.classList.contains('left') && !section.classList.contains('right')) {
-      section.classList.add('right');
-    }
-    const width = section.dataset.sidebarWidth;
-    if (width) section.style.setProperty('--aside-sidebar-width', width);
-  });
-}
-
-/**
  * Decorates sections that have `style: grid` in their section-metadata.
  *
  * Section metadata keys (set in the section-metadata block):
@@ -107,7 +89,6 @@ export function decorateMain(main) {
   decorateSections(main);
   decorateBlocks(main);
   decorateGridSections(main);
-  decorateAsideSections(main);
 }
 
 /**

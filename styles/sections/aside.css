@@ -1,11 +1,10 @@
 /* aside section — wide main content + narrow sidebar
  *
- * style: aside, right   →  content left  | sidebar right
+ * style: aside, right   →  content left  | sidebar right  (also the default)
  * style: aside, left    →  sidebar left  | content right
  *
- * sidebar-width: 300px  →  data-sidebar-width read by JS, sets --aside-sidebar-width
- *                          accepts any CSS length (px, %, rem, clamp(…))
- *                          default: 300px
+ * Override sidebar width via CSS variable in your theme:
+ *   --aside-sidebar-width: 320px;
  */
 main .section.aside {
     display: grid;
@@ -13,7 +12,8 @@ main .section.aside {
     align-items: start;
 }
 
-main .section.aside.right {
+/* right is default: no .left class present, or explicit .right */
+main .section.aside:not(.left) {
     grid-template-columns: 1fr var(--aside-sidebar-width, 300px);
 }
 
@@ -28,11 +28,9 @@ main .section.aside > div {
     padding: 0;
 }
 
-/* on narrow viewports, stack vertically — sidebar moves below (or above) content */
+/* on narrow viewports, stack vertically */
 @media (width < 768px) {
-    main .section.aside,
-    main .section.aside.right,
-    main .section.aside.left {
+    main .section.aside {
         grid-template-columns: 1fr;
     }
 }
