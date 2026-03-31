@@ -17,30 +17,6 @@ import serviceConfigurations from '../configurations.js';
 import Rendition from '../../models/rendition.js';
 
 /**
- * Variable resolvers for URL template interpolation (type: 'url').
- *
- * Template syntax: ${variable.name}
- * Example: '${dm.apiServer}is/image/${dm.file}?$web$'
- *
- * All Dynamic Media variables map to dam:scene7* metadata properties written
- * to the asset by the DM sync process.
- */
-const VARIABLE_RESOLVERS = {
-  'asset.path': (asset) => asset.path,
-  'asset.name': (asset) => asset.path?.split('/').pop() ?? null,
-  'asset.id': (asset) => asset.uuid,
-  'asset.extension': (asset) => asset.fileExtension,
-  'asset.title': (asset) => asset.title,
-  // Dynamic Media / Scene7 metadata (written by AEM DM sync)
-  'dm.name': (asset) => asset.getProperty('dam:scene7Name'),
-  'dm.id': (asset) => asset.getProperty('dam:scene7ID'),
-  'dm.file': (asset) => asset.getProperty('dam:scene7File'),
-  'dm.folder': (asset) => asset.getProperty('dam:scene7Folder'),
-  'dm.domain': (asset) => asset.getProperty('dam:scene7Domain'),
-  'dm.apiServer': (asset) => asset.getProperty('dam:scene7APIServer'),
-};
-
-/**
  * Default rendition definitions — usable for any AEM instance that runs standard
  * DAM processing profiles (which generate cq5dam.web.* and cq5dam.thumbnail.* nodes).
  *
@@ -51,21 +27,21 @@ const DEFAULT_DEFINITIONS = [
     id: 'thumbnail',
     label: 'Thumbnail',
     type: 'static',
-    name: /^cq5dam\.thumbnail\./,  // matches any cq5dam thumbnail rendition
-    visible: false,                 // used internally by teasers; hidden from download list
+    name: /^cq5dam\.thumbnail\./,
+    visible: false,
   },
   {
     id: 'web',
     label: 'Web',
     type: 'static',
-    name: /^cq5dam\.web\./,        // matches cq5dam.web.1280.1280.jpeg etc.
-    accepts: 'image/*',
+    name: /^cq5dam\.web\./,
+    accepts: (asset) => asset.mimeType?.startsWith('image/'),
   },
   {
     id: 'original',
     label: 'Original',
     type: 'static',
-    name: 'original',              // exact match
+    name: 'original',
   },
 ];
 
@@ -78,15 +54,13 @@ const DEFAULT_DEFINITIONS = [
  *
  * ### `type: 'static'`
  * Matches a rendition node from the asset's jcr:content/renditions/* tree.
- * The `name` property is a string (exact match) or RegExp (pattern match) against
- * the node name. URL is constructed from the asset path.
+ * `name` is a string (exact match), RegExp (pattern match), or
+ * (asset) => string (dynamic exact match).
  *
  * ### `type: 'url'`
- * Constructs a URL by interpolating ${variable} placeholders from asset metadata.
- * Use for Dynamic Media / Scene7 presets and smart crops.
- * Available variables: ${asset.path}, ${asset.name}, ${asset.id}, ${asset.extension},
- * ${asset.title}, ${dm.name}, ${dm.id}, ${dm.file}, ${dm.folder}, ${dm.domain},
- * ${dm.apiServer}
+ * `url` is a function (asset) => string that returns the full URL.
+ * Use for Dynamic Media / Scene7 presets and smart crops — call
+ * asset.getProperty('dam:scene7APIServer') etc. directly.
  *
  * ### `type: 'asset-delivery'`
  * Constructs an AEM Asset Delivery API URL (AEM as a Cloud Service only).
@@ -113,15 +87,20 @@ class RenditionsService {
 
   /**
    * Get a single rendition by definition ID.
-   * Returns null if not applicable to this asset or cannot be resolved.
+   * If multiple definitions share the same ID (e.g. 'thumbnail' for image vs video),
+   * returns the first one whose accepts() check passes for this asset.
+   * Returns null if no matching definition accepts this asset or can be resolved.
    * @param {Asset} asset
    * @param {string} id
    * @returns {Rendition|null}
    */
   getRendition(asset, id) {
-    const def = this.definitions.find((d) => d.id === id);
-    if (!def) return null;
-    return this._resolve(def, asset);
+    for (const def of this.definitions) {
+      if (def.id !== id) continue;
+      const resolved = this._resolve(def, asset);
+      if (resolved) return resolved;
+    }
+    return null;
   }
 
   /**
@@ -171,29 +150,27 @@ class RenditionsService {
 
   /**
    * Check whether a rendition definition applies to the given asset.
-   * `accepts` can be:
-   *   - omitted / undefined → applies to all assets
-   *   - a function (asset) => boolean
-   *   - a MIME glob string: 'image/*', 'video/*', 'application/pdf'
+   * `accepts` must be a function (asset) => boolean, or omitted to match all assets.
    */
   _accepts(def, asset) {
     if (!def.accepts) return true;
-    if (typeof def.accepts === 'function') return def.accepts(asset);
-    const [defType, defSubtype] = def.accepts.split('/');
-    const [assetType, assetSubtype] = (asset.mimeType || '').split('/');
-    if (defType !== assetType) return false;
-    return defSubtype === '*' || defSubtype === assetSubtype;
+    return def.accepts(asset);
   }
 
   /**
-   * Resolve a static rendition by matching the definition's `name` pattern
-   * against the asset's JCR rendition nodes.
+   * Resolve a static rendition by matching the definition's `name` against
+   * the asset's JCR rendition nodes.
+   * `name` may be:
+   *   - string  → exact match against node id
+   *   - RegExp  → pattern match against node id
+   *   - (asset) => string → called with the asset, result used as exact match
    */
   _resolveStatic(def, asset) {
     const nodes = asset.staticRenditions;
-    const match = def.name instanceof RegExp
-      ? nodes.find((r) => def.name.test(r.id))
-      : nodes.find((r) => r.id === def.name);
+    const nameValue = typeof def.name === 'function' ? def.name(asset) : def.name;
+    const match = nameValue instanceof RegExp
+      ? nodes.find((r) => nameValue.test(r.id))
+      : nodes.find((r) => r.id === nameValue);
 
     if (!match) return null;
     if (this._isExcluded(match.id)) return null;
@@ -213,19 +190,18 @@ class RenditionsService {
   }
 
   /**
-   * Resolve a URL-template rendition by interpolating ${variable} placeholders.
-   * Used for Dynamic Media presets and smart crops.
+   * Resolve a URL rendition by calling def.url(asset).
+   * Used for Dynamic Media / Scene7 presets and smart crops.
+   * The function receives the full Asset model — call asset.getProperty() for metadata.
    */
   _resolveUrl(def, asset) {
-    if (!def.url) {
-      console.warn(`[ASC] Rendition "${def.id}" has type "url" but no url template.`);
+    if (typeof def.url !== 'function') {
+      console.warn(`[ASC] Rendition "${def.id}" has type "url" but url is not a function.`);
       return null;
     }
 
-    const url = this._interpolate(def.url, asset);
-    // If any required variable resolved to empty string, the URL may be malformed.
-    // Return null if the template produced an obviously incomplete URL.
-    if (!url || url.includes('undefined')) return null;
+    const url = def.url(asset);
+    if (!url) return null;
 
     return new Rendition({
       id: def.id,
@@ -276,19 +252,6 @@ class RenditionsService {
     );
   }
 
-  /**
-   * Replace ${variable} placeholders in a URL template using VARIABLE_RESOLVERS.
-   */
-  _interpolate(template, asset) {
-    return template.replace(/\$\{([^}]+)\}/g, (_match, key) => {
-      const resolver = VARIABLE_RESOLVERS[key];
-      if (!resolver) {
-        console.warn(`[ASC] Unknown rendition template variable: "\${${key}}". Available: ${Object.keys(VARIABLE_RESOLVERS).join(', ')}`);
-        return '';
-      }
-      return resolver(asset) ?? '';
-    });
-  }
 }
 
 export default new RenditionsService(

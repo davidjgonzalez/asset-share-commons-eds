@@ -101,37 +101,30 @@ const configurations = {
   // URLs are constructed. This is the client-side equivalent of ASC v1's
   // AssetRenditionDispatcher OSGi configurations.
   //
+  // `definitions` is an ordered flat array. Each definition is evaluated top-to-bottom
+  // for each asset. Multiple definitions may share the same `id` — the first one whose
+  // `accepts` check passes is used (first-match-per-id wins).
+  //
   // Each definition has:
-  //   id          {string}            Unique key. Used by getRendition(asset, id).
-  //   label       {string}            Display name in the download list.
-  //   type        {string}            'static' | 'url' | 'asset-delivery'
-  //   accepts     {string|Function}   MIME glob ('image/*', 'video/*') or (asset) => boolean.
-  //                                   Omit to apply to all asset types.
-  //   visible     {boolean}           Show in download list (default: true).
-  //                                   Set false for internal-only renditions (e.g. thumbnail).
-  //   description {string}            Optional. Shown as tooltip or sub-label.
-  //   mimeType    {string}            Override MIME type for download filename hint.
+  //   id          {string}    Unique key. Used by getRendition(asset, id).
+  //   label       {string}    Display name in the download list.
+  //   type        {string}    'static' | 'url' | 'asset-delivery'
+  //   accepts     {Function}  (asset) => boolean. Omit to apply to all asset types.
+  //   visible     {boolean}   Show in download list (default: true).
+  //                           Set false for internal-only renditions (e.g. thumbnail).
+  //   description {string}    Optional. Shown as tooltip or sub-label.
+  //   mimeType    {string}    Override MIME type for download filename hint.
   //
   // ── type: 'static' ───────────────────────────────────────────────────────────
   // Matches a rendition node from the asset's jcr:content/renditions/* tree.
   //   name: 'original'               Exact node name match
   //   name: /^cq5dam\.web\./         RegExp pattern match
+  //   name: (asset) => string        Dynamic exact match
   //
   // ── type: 'url' ──────────────────────────────────────────────────────────────
   // Legacy Dynamic Media / Scene7 (IS/IR protocol — "is/image/" URLs).
-  // Constructs a URL by interpolating ${variable} placeholders.
-  // Variables resolve from dam:scene7* metadata written by the DM sync process.
-  //
-  //   ${asset.path}     JCR path (/content/dam/...)
-  //   ${asset.name}     Node name (filename)
-  //   ${asset.id}       UUID
-  //   ${asset.extension} File extension
-  //   ${dm.name}        dam:scene7Name
-  //   ${dm.id}          dam:scene7ID
-  //   ${dm.file}        dam:scene7File  (e.g. "my-company/my-image")
-  //   ${dm.folder}      dam:scene7Folder
-  //   ${dm.domain}      dam:scene7Domain
-  //   ${dm.apiServer}   dam:scene7APIServer  (e.g. "https://s7d1.scene7.com/")
+  //   url: (asset) => string         Function that returns the full URL.
+  //                                  Use asset.getProperty('dam:scene7APIServer') etc.
   //
   // ── type: 'asset-delivery' ───────────────────────────────────────────────────
   // Dynamic Media with OpenAPI / AEM Asset Delivery (AEM as a Cloud Service only).
@@ -173,7 +166,7 @@ const configurations = {
   //       label: 'Web',
   //       type: 'static',
   //       name: /^cq5dam\.web\./,
-  //       accepts: 'image/*',
+  //       accepts: (asset) => asset.mimeType?.startsWith('image/'),
   //     },
   //     {
   //       id: 'original',
@@ -186,25 +179,25 @@ const configurations = {
   //     // For AEM 6.5 or AEMaaCS with classic DM enabled.
   //     // Requires dam:scene7* metadata on assets (written by DM sync process).
   //     {
-  //       id: 'dm-web-preset',
+  //       id: 'dm-web',
   //       label: 'Web',
   //       type: 'url',
-  //       url: '${dm.apiServer}is/image/${dm.file}?$web$',
+  //       url: (asset) => {
+  //         const server = asset.getProperty('dam:scene7APIServer');
+  //         const file = asset.getProperty('dam:scene7File');
+  //         return server && file ? `${server}is/image/${file}?$web$` : null;
+  //       },
   //       accepts: (asset) => !!asset.getProperty('dam:scene7File'),
   //     },
   //     {
-  //       // Legacy DM smart crop — uses IS/IR ":CropName" syntax
   //       id: 'dm-smart-crop-small',
   //       label: 'Smart Crop — Small',
   //       type: 'url',
-  //       url: '${dm.apiServer}is/image/${dm.file}:Small',
-  //       accepts: (asset) => !!asset.getProperty('dam:scene7File'),
-  //     },
-  //     {
-  //       id: 'dm-grayscale',
-  //       label: 'Grayscale',
-  //       type: 'url',
-  //       url: '${dm.apiServer}is/image/${dm.file}?$grayscale$',
+  //       url: (asset) => {
+  //         const server = asset.getProperty('dam:scene7APIServer');
+  //         const file = asset.getProperty('dam:scene7File');
+  //         return server && file ? `${server}is/image/${file}:Small` : null;
+  //       },
   //       accepts: (asset) => !!asset.getProperty('dam:scene7File'),
   //     },
   //
@@ -216,31 +209,21 @@ const configurations = {
   //       label: 'Web Optimized',
   //       type: 'asset-delivery',
   //       params: 'format=webp&preferwebp=true&width=1200&quality=85',
-  //       accepts: 'image/*',
+  //       accepts: (asset) => asset.mimeType?.startsWith('image/'),
   //     },
   //     {
-  //       // DM OpenAPI smart crop — uses ?smartcrop= param (crop name matches DM preset)
   //       id: 'smart-crop-small',
   //       label: 'Smart Crop — Small',
   //       type: 'asset-delivery',
   //       params: 'smartcrop=Small',
-  //       accepts: 'image/*',
+  //       accepts: (asset) => asset.mimeType?.startsWith('image/'),
   //     },
   //     {
-  //       // DM OpenAPI named image preset
   //       id: 'dm-preset-web',
   //       label: 'Web Preset',
   //       type: 'asset-delivery',
   //       params: 'imagePreset=web',
-  //       accepts: 'image/*',
-  //     },
-  //     {
-  //       id: 'thumbnail-delivery',
-  //       label: 'Thumbnail',
-  //       type: 'asset-delivery',
-  //       params: 'format=webp&width=400',
-  //       visible: false,   // internal use by teasers
-  //       accepts: 'image/*',
+  //       accepts: (asset) => asset.mimeType?.startsWith('image/'),
   //     },
   //   ],
   // },
