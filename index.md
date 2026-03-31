@@ -7,7 +7,7 @@ permalink: /
 <div class="hero">
   <div class="hero__eyebrow">AEM Edge Delivery Services</div>
   <h1 class="hero__title">
-    Asset sharing,<br><span>done right.</span>
+    Asset sharing,<br><span>done right. A WIP.</span>
   </h1>
   <p class="hero__subtitle">
     A production-ready EDS front-end for AEM DAM. Search, preview, download,
