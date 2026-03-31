@@ -17,126 +17,104 @@ import { readBlockConfig, getOptions, addSearchEventListeners } from '../../scri
 
 export default function decorate(block) {
   const config = readBlockConfig(block, {
-        options: (content) => getOptions({content: String(content)}),
+    // readBlockConfig may return an array when a cell has multiple lines — join with \n
+    // so getOptions can split correctly (it splits on \n, not commas)
+    options: (content) => getOptions({ content: Array.isArray(content) ? content.join('\n') : String(content) }),
   }, {
     name: 'property',
     property: 'jcr:content/metadata/dc:format',
     operation: 'equals',
     and: false,
-    options: []
+    options: [],
   });
 
-
   block.innerHTML = html(config);
-
   addSearchEventListeners(block, config);
 }
 
-function html(config) {  
+function html(config) {
+  const type = config.type || 'checkbox';
   return `
-    <!-- Sets the metadata property to search over -->
     <input type="hidden"
            name="${config.group}_group.${config.name}.property"
            value="${config.property}"
            form="${config.form}"
            for="${config.fieldset}"/>
 
-    <!-- Overrides the default AND/OR behavior (default is OR) -->
-    ${config.and ? 
-    `<input
-           type="hidden"
+    ${config.and ? `
+    <input type="hidden"
            name="${config.group}_group.${config.name}.and"
-           value="${config.and}"
+           value="true"
            form="${config.form}"
            for="${config.fieldset}"/>` : ''}
 
-    <!-- Overrides the default operation (default is equals) -->
-    ${config.operation ? 
-    `<input type="hidden"
+    ${config.operation ? `
+    <input type="hidden"
            name="${config.group}_group.${config.name}.operation"
            value="${config.operation}"
            form="${config.form}"
            for="${config.fieldset}"/>` : ''}
 
-    <!-- Renders the title -->
-    ${config.title ? `<label for="${config.group}_${config.name}_fieldset">${config.title}</label>` : ''}
+    ${config.title ? `<label class="search-property__title">${config.title}</label>` : ''}
 
-    <div class="expand-collapse">
-      ${!config.type || config.type.includes('checkbox') ? htmlCheckboxes(config, config.initial) : ''}
-      ${config.type.includes('radio')  ? htmlRadio(config, config.initial) : ''}
-      ${config.type.includes('dropdown') || config.type.includes('select') ? htmlDropdown(config, config.initial) : ''}
-    </div>
-`
+    ${type === 'radio' ? htmlRadio(config) : ''}
+    ${type === 'dropdown' || type === 'select' ? htmlDropdown(config) : ''}
+    ${type === 'checkbox' ? htmlCheckboxes(config) : ''}
+  `;
 }
 
-
-/**
- * Render HTML checkboxes
- * 
- * @param {*} config the block configuration
- * @returns HTML to render checkbox-based search filters
- */
 export function htmlCheckboxes(config) {
-  return config.options.map((option, index) => {
-    const name = `${config.group}_group.${config.name}.${index}_value`;
-    const id = `${config.group}_group-${config.name}_filter_${config.name}_${index}_value`;
-    const selected = config.initial[name] === option.value;
-
-    return `<li><input type="checkbox"
-              data-asc-fieldset="${config.fieldset}"
-              form="${config.form}"
-              name="${name}"
-              ${selected ? 'checked' : ''}
-              value="${option.value}"/>
-            <label for="${id}">${option.text}</label></li>`
-  }).join('');
+  return `<ul class="search-property__options">
+    ${config.options.filter((o) => o.value).map((option, index) => {
+      const name = `${config.group}_group.${config.name}.${index}_value`;
+      const id = `${config.fieldset}-option-${index}`;
+      const checked = config.initial[name] === option.value;
+      return `
+        <li class="search-property__option">
+          <input type="checkbox"
+                 id="${id}"
+                 name="${name}"
+                 value="${option.value}"
+                 ${checked ? 'checked' : ''}
+                 data-asc-fieldset="${config.fieldset}"
+                 form="${config.form}"/>
+          <label for="${id}">${option.text}</label>
+        </li>`;
+    }).join('')}
+  </ul>`;
 }
 
-/**
- * Render HTML radio buttons
- * 
- * @param {*} config the block configuration
- * @returns HTML to render radio-based search filters
- */
 export function htmlRadio(config) {
-  return config.options.map((option, index) => {
-    const inputName = `${config.group}_group.${config.name}.value`; // All radio buttons share the same name
-    const id = `${config.group}_${config.name}_${index}_value`;
-    const selected = config.initial[inputName] === option.value;
-    
-    return `<input type="radio"
-              data-asc-fieldset="${config.fieldset}"
-              form="${config.form}"
-              name="${inputName}"
-              ${selected ? 'checked' : ''}
-              value="${option.value}"/>
-            <label for="${id}">${option.text}</label>`
-  }).join('');
+  const sharedName = `${config.group}_group.${config.name}.value`;
+  return `<ul class="search-property__options">
+    ${config.options.filter((o) => o.value).map((option, index) => {
+      const id = `${config.fieldset}-option-${index}`;
+      const checked = config.initial[sharedName] === option.value;
+      return `
+        <li class="search-property__option">
+          <input type="radio"
+                 id="${id}"
+                 name="${sharedName}"
+                 value="${option.value}"
+                 ${checked ? 'checked' : ''}
+                 data-asc-fieldset="${config.fieldset}"
+                 form="${config.form}"/>
+          <label for="${id}">${option.text}</label>
+        </li>`;
+    }).join('')}
+  </ul>`;
 }
 
-
-/**
- * Render HTML dropdown
- * 
- * @param {*} config the block configuration
- * @returns HTML to render dropdown-based search filters
- */
-export function htmlDropdown(config, initialValues = {}) {
-  const selectName = `${config.group}.${config.name}.value`;
-  const selectedValue = initialValues.find(v => v.key === selectName)?.value || '';
-  
-  return `<select
-            name="${selectName}"
+export function htmlDropdown(config) {
+  const name = `${config.group}_group.${config.name}.value`;
+  const selected = config.initial[name] || '';
+  return `
+    <select name="${name}"
             data-asc-fieldset="${config.fieldset}"
             form="${config.form}">
-            
-        <option value="">${config.label || 'Select...'}</option>
-        ${config.options.map(option => `
-          <option value="${option.value}"
-                  ${option.value === selectedValue ? 'selected' : ''}>
-                  ${option.label}
-          </option>
-        `).join('')}
+      <option value="">${config.title || 'Select…'}</option>
+      ${config.options.filter((o) => o.value).map((option) => `
+        <option value="${option.value}" ${option.value === selected ? 'selected' : ''}>${option.text}</option>
+      `).join('')}
     </select>`;
 }
-

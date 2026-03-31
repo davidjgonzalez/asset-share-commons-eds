@@ -14,54 +14,48 @@ import { htmlCheckboxes, htmlRadio, htmlDropdown } from '../search-property/sear
 
 export default function decorate(block) {
   const config = readBlockConfig(block, {
-        options: (content) => getOptions({content: String(content)}),
+    options: (content) => getOptions({ content: Array.isArray(content) ? content.join('\n') : String(content) }),
   }, {
     name: 'path',
     operation: 'equals',
     exact: false,
     flat: false,
     self: true,
-    options: []
+    options: [],
   });
 
-
   block.innerHTML = html(config);
-
   addSearchEventListeners(block, config);
 }
 
-function html(config) {  
+function html(config) {
+  const type = config.type || 'checkbox';
   return `
-    <!-- Overrides the default exact behavior (default is OR) -->
-    ${config.exact ? 
-    `<input type="hidden"
+    ${config.exact ? `
+    <input type="hidden"
            for="${config.fieldset}"
            name="${config.parameter('exact')}"
            value="${config.exact}"
            form="${config.form}"/>` : ''}
 
-    <!-- Overrides the default flat behavior (default is false) -->
-    ${config.flat ? 
-    `<input type="hidden"
+    ${config.flat ? `
+    <input type="hidden"
            for="${config.fieldset}"
            name="${config.parameter('flat')}"
            value="${config.flat}"
            form="${config.form}"/>` : ''}
 
-    <!-- Overrides the default self behavior (default is false) -->
-    ${config.self ? 
-    `<input type="hidden"
+    ${config.self ? `
+    <input type="hidden"
            for="${config.fieldset}"
            name="${config.parameter('self')}"
            value="${config.self}"
            form="${config.form}"/>` : ''}
 
-    <!-- Renders the title -->
-    ${config.title ? `<label>${config.title}</label>` : ''}
+    ${config.title ? `<label class="search-path__title">${config.title}</label>` : ''}
 
-      ${!config.type || config.type.includes('checkbox') ? htmlCheckboxes(config, config.initial) : ''}
-      ${config.type.includes('radio')  ? htmlRadio(config, config.initial) : ''}
-      ${config.type.includes('dropdown') || config.type.includes('select') ? htmlDropdown(config, config.initial) : ''}
-`
+    ${type === 'radio' ? htmlRadio(config) : ''}
+    ${type === 'dropdown' || type === 'select' ? htmlDropdown(config) : ''}
+    ${type === 'checkbox' ? htmlCheckboxes(config) : ''}
+  `;
 }
-
