@@ -96,6 +96,7 @@ const DEFAULT_DEFINITIONS = [
 class RenditionsService {
   constructor(config, aemConfig) {
     this.definitions = config.definitions || DEFAULT_DEFINITIONS;
+    this._excludePatterns = config.exclude || [];  // NEW
     this._aemConfig = aemConfig || {};
   }
 
@@ -121,6 +122,17 @@ class RenditionsService {
     const def = this.definitions.find((d) => d.id === id);
     if (!def) return null;
     return this._resolve(def, asset);
+  }
+
+  /**
+   * Get a raw rendition definition by ID (not resolved — no asset needed).
+   * Returns null if no definition with that ID exists.
+   * Used by the sheet block to read label/description without a specific asset.
+   * @param {string} id
+   * @returns {object|null}
+   */
+  getRenditionDefinition(id) {
+    return this.definitions.find((d) => d.id === id) ?? null;
   }
 
   /**
@@ -184,6 +196,7 @@ class RenditionsService {
       : nodes.find((r) => r.id === def.name);
 
     if (!match) return null;
+    if (this._isExcluded(match.id)) return null;
 
     return new Rendition({
       id: def.id,
@@ -249,6 +262,18 @@ class RenditionsService {
       mimeType: def.mimeType ?? null,
       url,
     });
+  }
+
+  /**
+   * Check whether a static rendition node name matches any exclude pattern.
+   * @param {string} nodeName  Raw JCR rendition node name (e.g. 'cq5dam.thumbnail.48.48.png')
+   * @returns {boolean}
+   */
+  _isExcluded(nodeName) {
+    if (!nodeName || !this._excludePatterns.length) return false;
+    return this._excludePatterns.some((pattern) =>
+      pattern instanceof RegExp ? pattern.test(nodeName) : pattern === nodeName,
+    );
   }
 
   /**

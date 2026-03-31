@@ -37,8 +37,11 @@ export default function assetTeaser(asset, { mode = 'card' } = {}) {
     <article class="asc-asset-teaser asc-asset-teaser--${mode}"
              role="button"
              tabindex="0"
+             draggable="true"
              data-asc-action="asset:details:open@click asset:preload@mouseover"
-             data-asc-asset="${assetId}">
+             data-asc-asset="${assetId}"
+             data-asc-mime-type="${asset.mimeType || ''}"
+             data-asc-file-type="${fileType || ''}">
       <div class="asc-asset-teaser__preview">
         ${pictureHtml}
       </div>

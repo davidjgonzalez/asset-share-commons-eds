@@ -148,6 +148,15 @@ const configurations = {
   //   format   {string}  File extension override (default: asset's extension)
   //
   // renditions: {
+  //   // Exclude AEM rendition node names from all resolved renditions.
+  //   // Accepts exact strings or RegExps matched against the JCR node name.
+  //   // Use case: suppress thumbnail/template nodes you never want in the download list.
+  //   //
+  //   // Examples:
+  //   //   exclude: ['cq5dam.thumbnail.48.48.png', 'cq5dam.thumbnail.140.100.png']
+  //   //   exclude: [/^cq5dam\.thumbnail\.(?:48|96|140)\./]
+  //   //
+  //   exclude: [],
   //   definitions: [
   //
   //     // ── Static renditions ─────────────────────────────────────────────────
