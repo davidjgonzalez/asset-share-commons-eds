@@ -68,7 +68,10 @@ All ASC custom events follow `asc:{noun}:{verb}`. Dispatched on `document` unles
 | `asc:asset:share` | Actions service | (custom handler) | `{ data: { ascAsset } }` |
 | `asc:collection:add` | Actions service | Collections service | `{ data: { ascAsset, ascCollection } }` |
 | `asc:collection:remove` | Actions service | Collections service | `{ data: { ascAsset, ascCollection } }` |
-| `asc:collection:update` | Collections service | collections, stub blocks | `{ collectionId, assetId, action }` |
+| `asc:collection:change` | Collections service | collections, stub blocks | `{ action, id?, collectionId?, assetId?, userId?, source? }` |
+| `asc:collection:created` | Collections service | (UI handlers) | `{ collection }` |
+| `asc:collection:deleted` | Collections service | (UI handlers) | `{ id }` |
+| `asc:collection:activated` | Collections service | (UI handlers) | `{ id, previous }` |
 | `asc:blocks:loaded` | Init service | SearchService | `{ blocks }` |
 
 `asc:search:complete` `results` shape:
@@ -91,7 +94,7 @@ All ASC custom events follow `asc:{noun}:{verb}`. Dispatched on `document` unles
 |-----------|-------|---------|
 | `data-asc-action` | `noun:verb@eventType [...]` | Declarative event binding via Actions service. Space-separated for multiple. |
 | `data-asc-asset` | UUID string | Asset identity — propagated through the DOM tree for event handlers |
-| `data-asc-collection` | collection ID string | Collection reference (e.g. `"cart"`) |
+| `data-asc-collection` | collection ID string | Collection reference — UUID of the target collection, or omit to use the active collection |
 | `data-asc-preload` | URL path | Path prefetched on hover when `init.preload` is true |
 | `data-asc-fieldset` | fieldset ID string | Groups a search input with its supporting inputs (for `cleanFormData` dependency logic) |
 
@@ -100,10 +103,14 @@ All ASC custom events follow `asc:{noun}:{verb}`. Dispatched on `document` unles
 The Actions service listens to DOM events globally, parses `data-asc-action`, fires a matching `CustomEvent` on `document.body`, and passes all `data-*` attributes collected up the DOM tree as `event.detail.data`:
 
 ```html
-<!-- fires asc:collection:add on click, passing ascAsset and ascCollection -->
+<!-- fires asc:collection:add on click, passing ascAsset (collection defaults to active) -->
+<button data-asc-action="collection:add@click"
+        data-asc-asset="uuid-here">Add to Collection</button>
+
+<!-- fires asc:collection:add targeting a specific collection by ID -->
 <button data-asc-action="collection:add@click"
         data-asc-asset="uuid-here"
-        data-asc-collection="cart">Add to Cart</button>
+        data-asc-collection="collection-uuid-here">Add to Named Collection</button>
 
 <!-- fires two events from one element -->
 <article data-asc-action="asset:details:open@click asset:preload@mouseover"
@@ -420,6 +427,144 @@ The project ships three JSON files at the project root for Universal Editor supp
 | `component-filters.json` | Containment rules — what blocks can go in which sections |
 
 To activate page-level filters (e.g. `asc-details-page`), add `data-aue-filter="asc-details-page"` to the `<main>` element of the page template.
+
+---
+
+## Collections Service
+
+`scripts/asc/services/collections/collections.js` — singleton exported from `services.js` as `services.collections`.
+
+### Storage schema
+
+Stored under `storage.get('collections')` (user-scoped):
+
+```js
+{
+  defaultId: "uuid",     // permanent default collection — never deleted
+  items: {
+    "uuid": {
+      id:         string,  // crypto.randomUUID()
+      name:       string,
+      createdAt:  ISO string,
+      modifiedAt: ISO string,
+      assetIds:   string[]
+    }
+  }
+}
+```
+
+The **active collection** ID is stored separately under `storage.get(storage.ACTIVE_COLLECTION_ID)`. `null` means use `defaultId`.
+
+### API
+
+```js
+import services from '../../scripts/asc/services/services.js';
+const { collections } = services;
+
+// CRUD
+collections.create(name)           // → Collection (not hydrated)
+collections.delete(id)             // default collection is protected
+collections.rename(id, name)
+
+// Getters  (hydrateAssets=true adds an `assets: Asset[]` array)
+await collections.getAll(hydrateAssets?)          // → Collection[]
+await collections.get(id, hydrateAssets?)         // → Collection | null
+await collections.getDefault(hydrateAssets?)      // → Collection
+await collections.getActive(hydrateAssets?)       // → Collection
+      collections.getActiveId()                   // → string (UUID)
+      collections.setActive(id)
+
+// Asset management (collectionId defaults to active collection)
+await collections.addAsset(assetId, collectionId?)
+await collections.removeAsset(assetId, collectionId?)
+await collections.hasAsset(assetId, collectionId?)   // → boolean
+
+// Login / merge
+await collections.loginAs(userId)  // merges anonymous → user, switches context
+```
+
+### Events dispatched on `document`
+
+| Event | When | `detail` shape |
+|-------|------|----------------|
+| `asc:collection:change` | Any mutation or cross-tab sync | `{ action, id?, collectionId?, assetId?, userId?, source? }` |
+| `asc:collection:created` | New collection created | `{ collection }` |
+| `asc:collection:deleted` | Collection deleted | `{ id }` |
+| `asc:collection:activated` | Active collection changed | `{ id, previous }` |
+
+`action` values in `asc:collection:change`: `"created"`, `"deleted"`, `"renamed"`, `"activated"`, `"assetAdded"`, `"assetRemoved"`, `"login"`, or `"external"` (cross-tab).
+
+---
+
+## Storage Service
+
+`scripts/asc/services/storage/storage.js` — singleton. Provides user-scoped and global localStorage management.
+
+### Key constants (available as `storage.KEY_NAME`)
+
+| Constant | Key | Scope |
+|----------|-----|-------|
+| `COLLECTIONS` | `"collections"` | user |
+| `ACTIVE_COLLECTION_ID` | `"activeCollectionId"` | user |
+| `RECENTLY_VIEWED` | `"recentlyViewed"` | user |
+| `THEME` | `"theme"` | global |
+| `SHARED_LINKS` | `"sharedLinks"` | global |
+
+### API
+
+```js
+import storage from '../../scripts/asc/services/storage/storage.js';
+
+// User-scoped
+storage.get(key)          // → value | null
+storage.set(key, value)
+storage.remove(key)
+
+// Global (shared across users)
+storage.getGlobal(key)
+storage.setGlobal(key, value)
+storage.removeGlobal(key)
+
+// Domain helpers
+storage.addRecentlyViewed(uuid)      // prepends, deduplicates, caps at 50
+storage.getRecentlyViewed()          // → string[]
+storage.getTheme()                   // → string | null
+storage.setTheme(name)
+storage.addSharedLink(url, label?)   // prepends, deduplicates by URL
+storage.getSharedLinks()             // → { url, label, receivedAt }[]
+
+// Cross-tab sync
+storage.onExternalChange(callback)   // fires callback on StorageEvent for asc:* keys
+storage.mergeUserData(fromId, toId)  // merges recentlyViewed (used by loginAs)
+```
+
+### localStorage structure
+
+```
+asc        → { currentUserId, theme, sharedLinks }
+asc:anonymous → { user, collections, activeCollectionId, recentlyViewed }
+asc:user123   → { user, collections, activeCollectionId, recentlyViewed }
+```
+
+---
+
+## URL Service
+
+`scripts/asc/services/url/url.js` — singleton. URL helpers for asset lists.
+
+```js
+import url from '../../scripts/asc/services/url/url.js';
+
+// Build a shareable URL encoding a list of asset UUIDs
+const shareUrl = await url.toCollectionUrl(assetIds, { param: 'assets', base?: string });
+
+// Decode asset UUIDs from a URL
+const assetIds = await url.fromCollectionUrl(window.location.search, 'assets');
+
+// Low-level compression
+const encoded = await url.compressArray(['uuid1', 'uuid2']);
+const values  = await url.decompressToArray(encoded);
+```
 
 ---
 

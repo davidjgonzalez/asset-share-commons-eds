@@ -61,6 +61,40 @@ class Url {
     const text = new TextDecoder().decode(decompressed);
     return text.split(","); // Split back into array
   }
+
+  // 3. Build a collection URL from an array of asset IDs
+  async toCollectionUrl(assetIds, options = {}) {
+    const param = options.param || "assets";
+
+    // Build base URL: strip any existing instance of the param
+    let base;
+    if (options.base) {
+      base = options.base;
+    } else {
+      const u = new URL(window.location.href);
+      u.searchParams.delete(param);
+      base = u.toString();
+    }
+
+    if (!assetIds || assetIds.length === 0) {
+      return base;
+    }
+
+    const compressed = await this.compressArray(assetIds);
+    const u = new URL(base);
+    u.searchParams.set(param, compressed);
+    return u.toString();
+  }
+
+  // 4. Read asset IDs from a collection URL search string
+  async fromCollectionUrl(searchString = window.location.search, param = "assets") {
+    const params = new URLSearchParams(searchString);
+    const value = params.get(param);
+    if (!value) {
+      return [];
+    }
+    return this.decompressToArray(value);
+  }
 }
 
-export default new Url(serviceConfigurations.url);
+export default new Url(serviceConfigurations.url || {});
