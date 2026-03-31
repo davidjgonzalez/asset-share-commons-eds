@@ -55,29 +55,6 @@ function buildAutoBlocks(main) {
 }
 
 /**
- * Decorates sections that have `style: grid` in their section-metadata.
- *
- * Section metadata keys (set in the section-metadata block):
- *   style     grid                 Required — activates grid layout
- *   columns   2                    Number of equal-width columns (default: 2)
- *   direction row | column         row = fills left-to-right then wraps (default)
- *                                  column = fills top-to-bottom then right
- *
- * Each block wrapper inside the section becomes a grid cell.
- * Blocks can span multiple cells using the 'colspan-N' or 'rowspan-N' styles
- * added to the block's own section-metadata (not the grid section's metadata).
- */
-function decorateGridSections(main) {
-  main.querySelectorAll('.section.grid').forEach((section) => {
-    const cols = parseInt(section.dataset.columns, 10) || 2;
-    const direction = section.dataset.direction || 'row';
-
-    section.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
-    if (direction === 'column') section.style.gridAutoFlow = 'column';
-  });
-}
-
-/**
  * Decorates the main element.
  * @param {Element} main The main element
  */
@@ -88,7 +65,6 @@ export function decorateMain(main) {
   buildAutoBlocks(main);
   decorateSections(main);
   decorateBlocks(main);
-  decorateGridSections(main);
 }
 
 /**

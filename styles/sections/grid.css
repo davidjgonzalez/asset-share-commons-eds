@@ -1,9 +1,19 @@
-/* grid section — each block wrapper becomes a grid cell */
+/* grid section — each block wrapper becomes a grid cell
+ *
+ * style: grid        activates grid layout
+ * columns: N         1–6 equal-width columns (default: 2)
+ * direction: row     fills left-to-right then wraps (default)
+ * direction: column  fills top-to-bottom then right
+ *
+ * EDS decorateSections() maps section-metadata keys to data-* attributes:
+ *   columns: 3   →  data-columns="3"
+ *   direction: column  →  data-direction="column"
+ */
 main .section.grid {
     display: grid;
     gap: var(--grid-gap, var(--spacing-md, 1rem));
     align-items: start;
-    /* grid-template-columns is set inline by decorateGridSections() */
+    grid-template-columns: repeat(2, 1fr); /* default */
 
     > * {
         margin: 0;
@@ -11,6 +21,15 @@ main .section.grid {
         max-width: 100%;
     }
 }
+
+main .section.grid[data-columns="1"] { grid-template-columns: repeat(1, 1fr); }
+main .section.grid[data-columns="2"] { grid-template-columns: repeat(2, 1fr); }
+main .section.grid[data-columns="3"] { grid-template-columns: repeat(3, 1fr); }
+main .section.grid[data-columns="4"] { grid-template-columns: repeat(4, 1fr); }
+main .section.grid[data-columns="5"] { grid-template-columns: repeat(5, 1fr); }
+main .section.grid[data-columns="6"] { grid-template-columns: repeat(6, 1fr); }
+
+main .section.grid[data-direction="column"] { grid-auto-flow: column; }
 
 /* colspan / rowspan helpers — add 'colspan-N' or 'rowspan-N' to a block's style */
 main .section.grid > .colspan-2 { grid-column: span 2; }
