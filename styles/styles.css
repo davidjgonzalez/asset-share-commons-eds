@@ -13,6 +13,8 @@
 /* ASC component design tokens — loaded before theme overrides */
 @import url('./tokens.css');
 @import './sections/grid.css';
+@import './sections/aside.css';
+@import './sections/full-width.css';
 
 :root {
   /* colors */

@@ -1,0 +1,38 @@
+/* aside section — wide main content + narrow sidebar
+ *
+ * style: aside, right   →  content left  | sidebar right
+ * style: aside, left    →  sidebar left  | content right
+ *
+ * sidebar-width: 300px  →  data-sidebar-width read by JS, sets --aside-sidebar-width
+ *                          accepts any CSS length (px, %, rem, clamp(…))
+ *                          default: 300px
+ */
+main .section.aside {
+    display: grid;
+    gap: var(--aside-gap, var(--spacing-md, 1rem));
+    align-items: start;
+}
+
+main .section.aside.right {
+    grid-template-columns: 1fr var(--aside-sidebar-width, 300px);
+}
+
+main .section.aside.left {
+    grid-template-columns: var(--aside-sidebar-width, 300px) 1fr;
+}
+
+/* let each cell fill its column — override the default wrapper max-width/padding */
+main .section.aside > div {
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+/* on narrow viewports, stack vertically — sidebar moves below (or above) content */
+@media (width < 768px) {
+    main .section.aside,
+    main .section.aside.right,
+    main .section.aside.left {
+        grid-template-columns: 1fr;
+    }
+}
