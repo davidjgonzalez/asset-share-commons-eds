@@ -94,7 +94,7 @@ The **[starter kit](https://github.com/davidjgonzalez/asset-share-commons-eds/tr
 | File | Purpose | URL path |
 |------|---------|----------|
 | `index.html` | Search page (main entry) | `/` |
-| `details/default.html` | Default asset details template | `/details/default` |
+| `details/index.html` | Default asset details template | `/details` |
 | `details/image.html` | Image-specific details template | `/details/image` |
 | `sheet.html` | Download sheet | `/sheet` |
 | `collections.html` | Collections index page | `/collections` |
@@ -122,9 +122,11 @@ export default {
   },
 
   assetDetails: {
+    // Default template: details/index in da.live → served at /details
+    // Custom per-MIME templates are siblings: /details/image, /details/video, etc.
     templates: {
       'image/*': '/details/image',
-      default:   '/details/default',
+      default:   '/details',
     },
   },
 

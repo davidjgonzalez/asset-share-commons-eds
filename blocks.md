@@ -228,7 +228,7 @@ No configuration required.
 |----------------|---|
 ```
 
-The template to render is determined by `configurations.assetDetails.templates`. The default path is `/details/default`.
+The template to render is determined by `configurations.assetDetails.templates`. The default path is `/details` (authored as `details/index` in da.live).
 
 ---
 
