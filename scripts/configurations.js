@@ -38,6 +38,29 @@ const configurations = {
     //   'jcr:content/metadata/dc:description',
     //   'jcr:content/metadata/dc:format',
     // ],
+    //
+    // Static QueryBuilder predicates always merged into every query.
+    // These are overridden by form data (user search inputs), so they are
+    // safe to use for baseline filters (approved assets, specific folder, etc.).
+    //
+    // Any predicate from the QueryBuilder API is supported:
+    // https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/implementing/developing/full-stack/search/query-builder-predicates
+    //
+    // basePredicates: {
+    //   // Only show approved assets
+    //   'property': 'jcr:content/metadata/dam:status',
+    //   'property.value': 'approved',
+    //
+    //   // Restrict to a specific folder (overrides basePath for this filter)
+    //   'path': '/content/dam/brand',
+    //
+    //   // Exclude a sub-folder
+    //   'excludepaths': '.*subassets.*',
+    //
+    //   // Only assets modified in the last 30 days
+    //   'relativedaterange.property': 'jcr:content/jcr:lastModified',
+    //   'relativedaterange.lowerBound': '-30d',
+    // },
 
     // ── OpenAPI options (used when provider = 'openapi') ──
     // url: '/adobe/assets/search',
@@ -55,11 +78,13 @@ const configurations = {
     // Maps MIME type patterns to the fragment page used for asset details.
     // First match wins. Supports exact types ('application/pdf') and wildcards ('image/*').
     // The 'default' key is the fallback for unmatched types.
+    // Page naming convention: default templates live at /details/index (served as /details).
+    // Custom MIME-type templates are siblings: /details/image, /details/video, etc.
     templates: {
       // 'image/*':           '/details/image',
       // 'video/*':           '/details/video',
       // 'application/pdf':   '/details/pdf',
-      default: '/details/default',
+      default: '/details',
     },
   },
 
@@ -70,7 +95,7 @@ const configurations = {
     //   studio — clean, airy SaaS aesthetic (light, blue + violet accents)
     //   vault  — professional dark asset manager (near-black, blue accents)
     // Custom: add your own in styles/themes/custom.css and set the name here.
-    default: 'default',
+    default: 'studio',
   },
 
   // ─── Asset Properties ────────────────────────────────────────────────────────
