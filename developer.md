@@ -33,6 +33,10 @@ sidebar:
         url: "#custom-property"
       - title: Custom Block
         url: "#custom-block"
+  - label: Reference
+    items:
+      - title: QueryBuilder Predicates
+        url: "/querybuilder"
 ---
 
 # Developer Reference
@@ -175,6 +179,8 @@ search: {
 ![Search provider abstraction](https://placehold.co/860x340/111111/9333ea?text=Search+Provider+Abstraction+Diagram&font=inter)
 
 *SearchService delegates to a provider — swap without touching blocks*
+
+> **QueryBuilder predicates reference** — see [QueryBuilder Predicates](/querybuilder) for the full predicate reference, `basePredicates` configuration, and how search block inputs map to API parameters.
 
 ### Custom Provider
 
