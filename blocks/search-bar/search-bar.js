@@ -1,3 +1,10 @@
+/**
+ * search-bar — full-text search input.
+ *
+ * Provider compatibility:
+ *   QueryBuilder → fulltext predicate
+ *   OpenAPI      → q parameter (mapped in openapi.js)
+ */
 import { readBlockConfig } from '../../scripts/asc/utils/search.js';
 
 export default function decorate(block) {

@@ -1,5 +1,16 @@
 /**
- * AEM QueryBuilder documentation - Property 
+ * search-property — metadata property filter.
+ *
+ * Provider compatibility:
+ *   QueryBuilder → property predicate (any JCR property path supported)
+ *   OpenAPI      → Partial support. Only the following properties are mapped to
+ *                  OpenAPI filter params (see openapi.js PROPERTY_MAP):
+ *                    jcr:content/metadata/dc:format  → filter[assetFormat][]
+ *                    jcr:content/metadata/cq:tags    → filter[assetTagIds][]
+ *                  All other property paths are silently ignored by OpenAPI.
+ *                  Use search-tags for tag filtering — it has full OpenAPI support.
+ *
+ * AEM QueryBuilder documentation - Property:
  * https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/implementing/developing/full-stack/search/query-builder-predicates#property
  **/
 import { readBlockConfig, getOptions, addSearchEventListeners } from '../../scripts/asc/utils/search.js';

@@ -69,11 +69,14 @@ export default class OpenApiProvider extends SearchProvider {
     const params = new URLSearchParams();
 
     // ── Top-level, non-group params ─────────────────────────────────────────
-    if (formData.has('fulltext')) {
-      params.set('q', formData.get('fulltext'));
-    }
+    // fulltext can be bare ('fulltext') or group-prefixed ('N_group.fulltext') from search-bar.
+    const fulltextValue = formData.get('fulltext')
+      || [...formData.entries()].find(([k]) => /^\d+_group\.fulltext$/.test(k))?.[1];
+    if (fulltextValue) params.set('q', fulltextValue);
 
-    const path = formData.get('path') || formData.get('0_group.path');
+    // path can be bare ('path'), from search-hidden, or will be handled in pass 2
+    // via N_group.path.K_value entries emitted by search-path checkboxes/selects.
+    const path = formData.get('path');
     if (path) params.set('filter[assetAncestorPath]', path);
 
     params.set('p.offset', formData.get('p.offset') || '0');
@@ -122,7 +125,15 @@ export default class OpenApiProvider extends SearchProvider {
         group.tagid.values.forEach((tag) => params.append('filter[assetTagIds][]', tag));
       }
 
-      // property predicate — map known JCR property paths to OpenAPI equivalents
+      // path predicate → filter[assetAncestorPath] (first selected value)
+      // search-path emits N_group.path.K_value entries for each checkbox/radio/select option.
+      if (group.path?.values?.length && !params.has('filter[assetAncestorPath]')) {
+        params.set('filter[assetAncestorPath]', group.path.values[0]);
+      }
+
+      // property predicate — map known JCR property paths to OpenAPI equivalents.
+      // Only dc:format and cq:tags are mapped; other properties are silently ignored
+      // because the OpenAPI Search API has no generic property filter.
       if (group.property?.property && group.property?.values?.length) {
         const { property: jcrProp, values } = group.property;
         const filterKey = OpenApiProvider.PROPERTY_MAP[jcrProp];

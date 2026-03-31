@@ -1,5 +1,11 @@
 /**
- * AEM QueryBuilder documentation - Path 
+ * search-path — DAM folder path filter.
+ *
+ * Provider compatibility:
+ *   QueryBuilder → path predicate (path, path.exact, path.flat, path.self)
+ *   OpenAPI      → filter[assetAncestorPath] (first selected value; exact/flat/self flags ignored)
+ *
+ * AEM QueryBuilder documentation - Path:
  * https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/implementing/developing/full-stack/search/query-builder-predicates#path
  **/
 
