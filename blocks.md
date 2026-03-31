@@ -33,6 +33,8 @@ sidebar:
         url: "#details-download"
       - title: details-actions
         url: "#details-actions"
+      - title: details-similar
+        url: "#details-similar"
   - label: Collections
     items:
       - title: stub
@@ -293,6 +295,32 @@ Preview type is determined automatically from the asset's MIME type.
 | Key | Default | Description |
 |-----|---------|-------------|
 | `actions` | `add-to-cart` | Comma-separated action names |
+
+---
+
+## details-similar {#details-similar}
+
+**Asset Details** · Horizontal strip of assets similar to the currently-open asset. Uses the QueryBuilder `similar` predicate to find related assets by shared tags and MIME type.
+
+> **QueryBuilder only** — This block makes a direct QueryBuilder API call. It is not available when using the OpenAPI search provider.
+
+```
+| details-similar  |   |
+|------------------|---|
+```
+
+No configuration required. Add the block to your details template page (e.g. `details/index`) and it will appear automatically. The block removes itself from the DOM if no similar assets are found.
+
+**Behaviour:**
+- Compares `dc:tags` and `dc:format` metadata between assets
+- Renders up to 8 similar assets as square image-only thumbnails in a horizontally scrollable strip
+- Clicking a thumbnail opens that asset in the details modal and pushes a new browser history entry — the back button returns to the previous asset
+
+**Browser history navigation:** Opening an asset from the similar strip (or from any search result) pushes a history entry (`?asset={uuid}`). The browser back and forward buttons navigate between previously-viewed assets, and back past the first asset closes the modal.
+
+![details-similar — horizontal similar assets strip](https://placehold.co/860x240/111111/9333ea?text=details-similar+%E2%80%94+Similar+Assets+Strip&font=inter)
+
+*details-similar — scrollable strip of visually related assets*
 
 ---
 
