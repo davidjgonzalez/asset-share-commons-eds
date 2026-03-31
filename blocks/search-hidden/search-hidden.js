@@ -1,48 +1,31 @@
+import { SEARCH_FORM } from '../../scripts/asc/utils/search.js';
+
 /**
- * AEM QueryBuilder documentation - Path
- * https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/implementing/developing/full-stack/search/query-builder-predicates#path
- **/
-
-import {
-  SEARCH_FORM,
-  getGroup,
-  getFieldName,
-} from "../../scripts/asc/utils/search.js";
-
+ * Injects hidden QueryBuilder predicates as hidden form inputs.
+ *
+ * Author each predicate as a two-column row in the block table:
+ *   | predicate name           | value                  |
+ *   |--------------------------|------------------------|
+ *   | path                     | /content/dam/brand     |
+ *   | excludepaths             | .*subassets.*          |
+ *   | mainasset                | true                   |
+ *
+ * The predicate name is used verbatim — do NOT add a group prefix.
+ * Use basePredicates in configurations.js for programmatic static filters;
+ * use this block for content-authorable static filters on a specific page.
+ */
 export default function decorate(block) {
-  const config = {
-    form: SEARCH_FORM,
-    group: getGroup(block),
-    fields: [],
-  };
-
-  // Search - Hidden is a special case and does not share the typical block config
-  config.fields = [...block.querySelectorAll(":scope > div")].map((row) => {
-    const cells = row.querySelectorAll("div");
-
-    if (cells.length === 2) {
-      const key = getFieldName({
-        group: config.group,
-        name: cells[0].textContent.trim().toLowerCase(),
-      });
+  const fields = [...block.querySelectorAll(':scope > div')]
+    .map((row) => {
+      const cells = row.querySelectorAll('div');
+      if (cells.length < 2) return null;
+      const name = cells[0].textContent.trim();
       const value = cells[1].textContent.trim();
-
-      return {
-        [key]: value,
-      };
-    }
-  });
-
-  block.innerHTML = html(config);
-}
-
-function html(config) {
-  return config.fields
-    .map((field) => {
-      return `<input type="hidden"
-                    name="${Object.keys(field)[0]}" 
-                    value="${Object.values(field)[0]}" 
-                    form="${config.form}"/>`;
+      return name && value ? { name, value } : null;
     })
-    .join("\n");
+    .filter(Boolean);
+
+  block.innerHTML = fields
+    .map(({ name, value }) => `<input type="hidden" name="${name}" value="${value}" form="${SEARCH_FORM}">`)
+    .join('\n');
 }
