@@ -227,7 +227,9 @@ No configuration required.
 
 **Search** · Injects hidden QueryBuilder predicates as hidden form inputs. Use this block to enforce content-authorable, always-on filters on a specific search page — without editing `configurations.js`.
 
-Each row in the block table is a predicate `name → value` pair. The name is passed verbatim to the QueryBuilder API, so use the exact predicate name from the [QueryBuilder reference](/querybuilder).
+Each row in the block table is a predicate `name → value` pair.
+
+**QueryBuilder provider** — use exact QB predicate names from the [QueryBuilder reference](/querybuilder):
 
 ```
 | search-hidden  |                        |
@@ -235,6 +237,15 @@ Each row in the block table is a predicate `name → value` pair. The name is pa
 | path           | /content/dam/brand     |
 | excludepaths   | .*subassets.*          |
 | mainasset      | true                   |
+```
+
+**OpenAPI provider** — use `filter[*]` param names from the OpenAPI Search API:
+
+```
+| search-hidden                  |                        |
+|--------------------------------|------------------------|
+| filter[assetAncestorPath]      | /content/dam/brand     |
+| filter[assetTagIds][]          | my-namespace:my/tag    |
 ```
 
 > **search-hidden vs basePredicates** — Both inject always-on filters. Use `basePredicates` in `configurations.js` for site-wide defaults; use `search-hidden` for page-specific overrides authored in da.live.
