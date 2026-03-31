@@ -65,6 +65,11 @@ Every block is authored as a table in da.live. The first row is the block name; 
 
 **Search** · Keyword full-text search input. Dispatches `asc:search:execute` on input.
 
+| Provider | Support |
+|----------|---------|
+| QueryBuilder | `fulltext` predicate |
+| OpenAPI | `q` parameter |
+
 ```
 | search-bar   |              |
 |--------------|--------------|
@@ -80,6 +85,11 @@ Every block is authored as a table in da.live. The first row is the block name; 
 ## search-property {#search-property}
 
 **Search** · Filter by any JCR metadata property. Supports `checkbox`, `radio`, and `dropdown`.
+
+| Provider | Support |
+|----------|---------|
+| QueryBuilder | `property` predicate — any JCR property path |
+| OpenAPI | Partial — only `jcr:content/metadata/dc:format` → `filter[assetFormat][]` and `jcr:content/metadata/cq:tags` → `filter[assetTagIds][]` are mapped. All other property paths are silently ignored. Use `search-tags` for tag filtering with OpenAPI. |
 
 ```
 | search-property  |                                |
@@ -104,7 +114,12 @@ Every block is authored as a table in da.live. The first row is the block name; 
 
 ## search-path {#search-path}
 
-**Search** · Filter by DAM folder path. Maps to QueryBuilder `path` predicate / OpenAPI `filter[assetAncestorPath]`.
+**Search** · Filter by DAM folder path.
+
+| Provider | Support |
+|----------|---------|
+| QueryBuilder | `path` predicate with `exact`, `flat`, `self` modifiers |
+| OpenAPI | `filter[assetAncestorPath]` — first selected path value; `exact`/`flat`/`self` flags are ignored |
 
 ```
 | search-path   |                           |
@@ -125,7 +140,21 @@ Every block is authored as a table in da.live. The first row is the block name; 
 
 ## search-date-range {#search-date-range}
 
-**Search** · Date range filter with from/to date inputs. Maps to QueryBuilder `daterange` predicate.
+**Search** · Date range filter with from/to date inputs.
+
+| Provider | Support |
+|----------|---------|
+| QueryBuilder | `daterange` predicate |
+| OpenAPI | `filter[createdAt][from/to]` or `filter[modifiedAt][from/to]` depending on `property` |
+
+Supported `property` values for OpenAPI:
+
+| JCR property | OpenAPI filter key |
+|---|---|
+| `jcr:content/metadata/jcr:created` | `createdAt` |
+| `jcr:content/metadata/dam:assetCreated` | `createdAt` |
+| `jcr:content/metadata/jcr:lastModified` | `modifiedAt` |
+| `jcr:content/metadata/dam:assetLastModified` | `modifiedAt` |
 
 ```
 | search-date-range  |                                  |
@@ -143,7 +172,12 @@ Every block is authored as a table in da.live. The first row is the block name; 
 
 ## search-tags {#search-tags}
 
-**Search** · Filter by AEM tag. Supports tag path prefix filtering.
+**Search** · Filter by AEM tag.
+
+| Provider | Support |
+|----------|---------|
+| QueryBuilder | `tagid` predicate |
+| OpenAPI | `filter[assetTagIds][]` |
 
 ```
 | search-tags  |                   |
@@ -225,7 +259,12 @@ No configuration required.
 
 ## search-hidden {#search-hidden}
 
-**Search** · Injects hidden QueryBuilder predicates as hidden form inputs. Use this block to enforce content-authorable, always-on filters on a specific search page — without editing `configurations.js`.
+**Search** · Injects hidden search predicates as hidden form inputs. Use this block to enforce content-authorable, always-on filters on a specific search page — without editing `configurations.js`.
+
+| Provider | Support |
+|----------|---------|
+| QueryBuilder | Any predicate name — passed verbatim |
+| OpenAPI | Use `filter[*]` param names — passed verbatim |
 
 Each row in the block table is a predicate `name → value` pair.
 
