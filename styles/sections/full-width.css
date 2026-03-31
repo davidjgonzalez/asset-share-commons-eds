@@ -1,10 +1,17 @@
-/* full-width section — breaks blocks out of the default 1200px max-width constraint
+/* full-width section — breaks blocks out of the default max-width constraint
  *
  * style: full-width
  *
- * Blocks fill the entire viewport width. Each block is responsible for
- * its own internal padding and layout.
+ * Overrides both the layout-section constraint (applied at section level for
+ * grid/aside) and the regular-section constraint (applied at > div level).
+ * Blocks fill the entire viewport width and control their own internal layout.
  */
+main .section.full-width {
+    max-width: 100%;
+    padding-left: 0;
+    padding-right: 0;
+}
+
 main .section.full-width > div {
     max-width: 100%;
     padding: 0;

@@ -254,10 +254,23 @@ main > .section {
   margin: 40px 0;
 }
 
+/* Regular sections: constrain the inner wrapper div */
 main > .section > div {
-  max-width: 1200px;
-  margin: auto;
-  padding: 0 24px;
+  max-width: var(--section-max-width, 1200px);
+  margin: 0 auto;
+  padding: 0 var(--section-padding, 24px);
+}
+
+/* Layout sections are their own containers — apply the same constraint at section level.
+   Add any new layout section types here. */
+main .section.grid,
+main .section.aside {
+  max-width: var(--section-max-width, 1200px);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--section-padding, 24px);
+  padding-right: var(--section-padding, 24px);
+  box-sizing: border-box;
 }
 
 main > .section:first-of-type {
@@ -265,8 +278,11 @@ main > .section:first-of-type {
 }
 
 @media (width >= 900px) {
-  main > .section > div {
-    padding: 0 32px;
+  main > .section > div,
+  main .section.grid,
+  main .section.aside {
+    padding-left: var(--section-padding-wide, 32px);
+    padding-right: var(--section-padding-wide, 32px);
   }
 }
 
