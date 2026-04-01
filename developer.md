@@ -37,6 +37,8 @@ sidebar:
     items:
       - title: QueryBuilder Predicates
         url: "/querybuilder"
+      - title: Collections & State
+        url: "/collections"
 ---
 
 # Developer Reference
@@ -100,18 +102,27 @@ All events follow the `asc:{noun}:{verb}` pattern with colon separators.
 | Event | Dispatched on | Payload | Description |
 |-------|--------------|---------|-------------|
 | `asc:search:execute` | `document` | `{ query, filters }` | Trigger a search run |
-| `asc:search:results` | `document` | `{ assets, total, page }` | Search results available |
-| `asc:search:loading` | `document` | `{ loading }` | Search in-flight state |
-| `asc:asset:details:open` | `document.body` | `{ uuid }` | Open asset details modal |
-| `asc:asset:details:close` | `document.body` | — | Close asset details modal |
-| `asc:asset:preload` | `document.body` | `{ uuid }` | Preload asset data (hover) |
-| `asc:collection:add` | `document.body` | `{ uuid }` | Add asset to collection |
-| `asc:collection:remove` | `document.body` | `{ uuid }` | Remove asset from collection |
-| `asc:collection:change` | `document.body` | `{ collection }` | Collection state updated |
+| `asc:search:complete` | `document` | `{ assets, total, size, offset, more, success }` | Search results available |
+| `asc:search:error` | `document` | `{ error, formData }` | Search failed |
+| `asc:asset:details:open` | `document` | `{ data: { ascAsset } }` | Open asset details modal |
+| `asc:asset:details:close` | `document` | — | Close asset details modal |
+| `asc:asset:preload` | `document` | `{ data: { ascPreload } }` | Preload asset data (hover) |
+| `asc:collection:add` | `document` | `{ data: { ascAsset, ascCollection? } }` | Add asset to collection |
+| `asc:collection:remove` | `document` | `{ data: { ascAsset, ascCollection? } }` | Remove asset from collection |
+| `asc:collection:change` | `document` | `{ action, id?, collectionId?, assetId?, source? }` | Any collection mutation |
+| `asc:collection:created` | `document` | `{ collection }` | New collection created |
+| `asc:collection:deleted` | `document` | `{ id }` | Collection deleted |
+| `asc:collection:activated` | `document` | `{ id, previous }` | Active collection changed |
+| `asc:download:started` | `document` | `{ jobId }` | Bulk download job submitted to AEM |
+| `asc:download:complete` | `document` | `{ jobId, downloadUrl }` | AEM job finished; browser download triggered |
+| `asc:download:failed` | `document` | `{ jobId, error }` | AEM job or network error |
+| `asc:download:change` | `document` | `{ jobId, status }` | Any download job status update |
 | `asc:rendition:download` | block element | `{ uuid, rendition }` | User triggered download |
-| `asc:asset:drag:start` | block element | `{ uuid, renditionId, url }` | User started dragging an asset (fired by search-results and sheet blocks) |
+| `asc:asset:drag:start` | block element | `{ uuid, renditionId, url }` | User started dragging an asset |
 
 > **Drag and drop** — Asset teasers and sheet rows are `draggable="true"`. The `dragstart` handler sets `dataTransfer` with `DownloadURL` (Chrome/Edge drag-to-Finder), `text/uri-list`, and `text/plain` fallbacks. The dragged URL is the `original` rendition in search results, and the currently-selected rendition in the sheet.
+
+> **Collections** — `asc:collection:add` and `asc:collection:remove` are triggered via `data-asc-action` (Actions service). The Collections service listens to both and handles the actual mutation. See [Collections & State](/collections) for the full API.
 
 ### Event Scoping {#event-scoping}
 

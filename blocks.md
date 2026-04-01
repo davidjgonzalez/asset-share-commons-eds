@@ -39,14 +39,16 @@ sidebar:
         url: "#details-similar"
   - label: Collections
     items:
-      - title: stub
-        url: "#stub"
-      - title: sheet
-        url: "#sheet"
+      - title: collection-switcher
+        url: "#collection-switcher"
       - title: collections
         url: "#collections"
       - title: collection
         url: "#collection"
+      - title: stub
+        url: "#stub"
+      - title: sheet
+        url: "#sheet"
 ---
 
 # Block Reference
@@ -415,56 +417,106 @@ All keys are optional — a bare `details-similar` table with no rows works fine
 
 ---
 
-## stub {#stub}
+## collection-switcher {#collection-switcher}
 
-**Collections** · Mini cart icon + count in the site navigation. Listens to `asc:collection:change`.
-
-```
-| stub  |   |
-|-------|---|
-```
-
----
-
-## sheet {#sheet}
-
-**Collections** · Full-page download sheet. Renders all collected assets as rows — each with a thumbnail, metadata, per-asset rendition switcher, and a download button.
+**Collections** · Persistent header widget. Shows the active collection name and asset count as a compact button. Clicking opens a dropdown to switch the active collection, create a new collection inline, or navigate to the collections management page.
 
 ```
-| sheet  |   |
-|--------|---|
+| collection-switcher  |   |
+|----------------------|---|
 ```
 
-No configuration required. Assets and renditions are passed via URL query parameters set by the `stub` block.
+No configuration required. The "Manage collections" link targets `configurations.collections.managePath` (default `/collections`).
 
-**Per-asset rendition switcher:** Each row shows pill buttons for every rendition in the selection. Clicking a pill updates the download link for that asset without affecting other rows.
-
-**Drag and drop:** Rows are draggable. Dragging a row to Finder, Photoshop, or any OS app copies the currently-selected rendition for that asset. Chrome/Edge only — degrades to URI copy in Firefox/Safari.
-
-**Thumbnail fallback:** If AEM hasn't generated a thumbnail yet, a file-type emoji icon is shown instead.
-
-![Sheet block — thumbnails, rendition switcher, drag](https://placehold.co/860x480/111111/22c55e?text=Sheet+%E2%80%94+Thumbnails+%2B+Rendition+Switcher+%2B+Drag&font=inter)
-
-*Sheet block — thumbnail, per-asset rendition pills, download button, and drag-to-app*
+**Reactivity:** Re-renders automatically on any `asc:collection:change` event — collection switches, creates, renames, and asset adds/removes all update the badge count and list.
 
 ---
 
 ## collections {#collections}
 
-**Collections** · Index page listing all saved collections.
+**Collections** · Index and management page for all user collections. Place this block on `/collections/index`.
 
 ```
 | collections  |   |
 |--------------|---|
 ```
 
+No configuration required.
+
+**Features:**
+- Grid of collection cards showing name, asset count, and Active / Default badges
+- Inline "New Collection" form — no page navigation required
+- Per-card actions: **Open** (navigates to the collection detail page), **Set Active**, **Delete**
+- The default collection cannot be deleted
+- Re-renders on any `asc:collection:change` event
+
+The **Open** link navigates to `configurations.collections.collectionPath?id=<uuid>` (default `/collections/collection?id=<uuid>`).
+
 ---
 
 ## collection {#collection}
 
-**Collections** · Single collection page showing saved assets.
+**Collections** · Detail and edit page for a single collection. Place this block on `/collections/collection`. The UUID is read from the `?id=` query parameter — e.g. `/collections/collection?id=abc123`.
 
 ```
 | collection  |   |
 |-------------|---|
 ```
+
+No configuration required.
+
+**Features:**
+- Click-to-edit collection name (inline, no modal)
+- Asset list with drag-to-reorder (persisted to localStorage)
+- Per-asset remove button
+- **Share** — opens a dialog to enter a sheet title and description, then generates a compressed share URL pointing at `configurations.collections.sheetPath` (default `/sheets/index`)
+- **Download** — opens a rendition picker; submits an async AEM bulk-download job via the Downloads service; auto-triggers the browser download if the job finishes within ~15 s; otherwise surfaces a resumable pending state
+- **Delete** — protected: the default "My Collection" cannot be deleted; navigates to `configurations.collections.managePath` on success
+- Active download jobs for the collection are shown in a live status panel
+
+**Share URL format:**
+
+```
+/sheets/index?assets=<compressed>&title=<encoded>&description=<encoded>
+```
+
+---
+
+## stub {#stub}
+
+**Collections** · Compact summary bar — shows the active collection name, asset count, and a link to the download sheet. Suitable for sidebars or persistent footer areas.
+
+```
+| stub  |   |
+|-------|---|
+```
+
+No configuration required. Listens to `asc:collection:change` and re-renders on any collection mutation.
+
+---
+
+## sheet {#sheet}
+
+**Collections** · Full-page download sheet. Renders collected assets as rows — each with a thumbnail, metadata, per-asset rendition switcher, and a download button.
+
+```
+| sheet  |   |
+|--------|---|
+```
+
+No configuration required. Reads from URL query parameters:
+
+| Parameter | Description |
+|-----------|-------------|
+| `assets` | Compressed array of asset UUIDs (set by the `collection` share dialog or `stub` block) |
+| `renditions` | Compressed array of rendition IDs to pre-select |
+| `title` | URL-encoded sheet title (replaces the default "Download Sheet" heading) |
+| `description` | URL-encoded description shown below the title |
+
+**Per-asset rendition switcher:** Each row shows pill buttons for every rendition in the selection. Clicking a pill updates the download link for that row without affecting others.
+
+**Drag and drop:** Rows are draggable. Dragging to Finder, Photoshop, or any app copies the currently-selected rendition URL. Chrome/Edge only — degrades to URI copy in Firefox/Safari.
+
+![Sheet block — thumbnails, rendition switcher, drag](https://placehold.co/860x480/111111/22c55e?text=Sheet+%E2%80%94+Thumbnails+%2B+Rendition+Switcher+%2B+Drag&font=inter)
+
+*Sheet block — thumbnail, per-asset rendition pills, download button, and drag-to-app*
