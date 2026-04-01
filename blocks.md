@@ -430,6 +430,38 @@ No configuration required. The "Manage collections" link targets `configurations
 
 **Reactivity:** Re-renders automatically on any `asc:collection:change` event — collection switches, creates, renames, and asset adds/removes all update the badge count and list.
 
+### Adding the collection-switcher to the site header
+
+The header block loads `/nav` as a fragment. The nav document has **three sections** separated by horizontal rules (`---`), which map to `nav-brand`, `nav-sections`, and `nav-tools`:
+
+```
+Section 1 — nav-brand   → logo / site name
+---
+Section 2 — nav-sections → main navigation links
+---
+Section 3 — nav-tools   → utility area (search, account, cart, etc.)
+```
+
+Add the `collection-switcher` block to **section 3** of your `/nav` document in da.live:
+
+| | |
+|---|---|
+| Your Logo | |
+
+---
+
+| Home | Products | About |
+|------|----------|-------|
+
+---
+
+| collection-switcher | |
+|---------------------|--|
+
+EDS processes the nav document as a fragment, so the block is decorated normally — the switcher renders in the tools area on every page without any per-page authoring.
+
+> **Custom nav path** — if your site uses a nav document at a path other than `/nav`, set `nav: /path/to/nav` in the page metadata (or globally in a metadata sheet).
+
 ---
 
 ## collections {#collections}
