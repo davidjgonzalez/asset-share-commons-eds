@@ -29,6 +29,12 @@ sidebar:
         url: "#search-provider"
       - title: Parts
         url: "#parts"
+      - title: assetTeaser
+        url: "#assetteaser"
+      - title: picture
+        url: "#picture"
+      - title: collectionToggle
+        url: "#collectiontoggle"
       - title: Custom Property
         url: "#custom-property"
       - title: Custom Block
@@ -277,6 +283,42 @@ block.innerHTML = picture(asset, {
 | `imgAttributes` | `{}` | Extra attributes merged onto the `<img>` element |
 
 When no JCR web renditions are present (e.g. search result assets), falls back to a plain `<img>` pointing at the thumbnail URL.
+
+---
+
+---
+
+### collectionToggle
+
+Renders an add/remove collection toggle button. Both button states are present in the DOM simultaneously; CSS hides the inactive one based on a `data-in-collection` attribute. State is resolved asynchronously on load and updated automatically whenever the active collection changes — including when the user switches collections via the `collection-switcher`.
+
+```js
+import collectionToggle from '/scripts/asc/parts/collection-toggle/collection-toggle.js';
+
+// Default labels — {name} is replaced with the active collection name
+container.insertAdjacentHTML('beforeend', collectionToggle(asset));
+
+// Custom labels
+container.insertAdjacentHTML('beforeend', collectionToggle(asset, {
+  addLabel: 'Save to {name}',
+  removeLabel: 'Saved ✓',
+}));
+
+// Target a specific collection instead of the active one
+container.insertAdjacentHTML('beforeend', collectionToggle(asset, {
+  collectionId: 'uuid',
+}));
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `addLabel` | `'Add to {name}'` | Add button label; `{name}` replaced with active collection name |
+| `removeLabel` | `'Remove from {name}'` | Remove button label |
+| `collectionId` | active collection | Target a specific collection |
+
+**Reactivity:** The Part registers a single `asc:collection:change` listener at module import — one listener covers all instances on the page regardless of how many blocks use it. No per-block wiring needed.
+
+**Already used in:** `assetTeaser` (built in).
 
 ---
 
