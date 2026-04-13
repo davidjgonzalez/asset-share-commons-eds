@@ -21,7 +21,12 @@ class Actions {
       const data = {};
       let node = el;
       while (node && node !== document) {
-        if (node.dataset) Object.assign(data, node.dataset);
+        if (node.dataset) {
+          // Closer elements take precedence — only set a key if not already present
+          Object.entries(node.dataset).forEach(([key, value]) => {
+            if (!(key in data)) data[key] = value;
+          });
+        }
         node = node.parentElement;
       }
       return data;
@@ -60,6 +65,13 @@ class Actions {
 
             if (ctx.stop) return;
           }
+
+          // data-asc-stop stops the walk after this node's actions are dispatched
+          // (use hasAttribute: bare data-asc-stop yields dataset.ascStop === "" which is falsy)
+          if (node.hasAttribute("data-asc-stop")) {
+            event.stopPropagation();
+            return;
+          }
         }
 
         node = node.parentElement;
@@ -70,4 +82,4 @@ class Actions {
   }
 }
 
-export default new Actions(serviceConfigurations.actions);
+export default new Actions(serviceConfigurations.actions || {});

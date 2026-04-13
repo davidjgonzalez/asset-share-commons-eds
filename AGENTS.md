@@ -46,10 +46,11 @@ Every file inside `scripts/asc/` starts with `// ASC Core — do not edit.` as a
 ### Collections / cart blocks
 | Block | Purpose |
 |-------|---------|
-| `stub` | Cart bar — shows cart count and link to download sheet |
-| `sheet` | Full download sheet page (reads assets + renditions from URL params) |
-| `collections` | Lists all named collections |
-| `collection` | Single collection view |
+| `stub` | Cart bar — shows active collection count and link to download sheet |
+| `sheet` | Full download sheet page (reads assets + renditions from URL params; also accepts `title` and `description` params) |
+| `collections` | Collections index/management page — list, create, delete, activate |
+| `collection` | Collection detail/edit page — rename, reorder assets, remove assets, share URL, download |
+| `collection-switcher` | Persistent header widget — active collection dropdown, inline create, navigate to /collections |
 
 ---
 
@@ -68,10 +69,14 @@ All ASC custom events follow `asc:{noun}:{verb}`. Dispatched on `document` unles
 | `asc:asset:share` | Actions service | (custom handler) | `{ data: { ascAsset } }` |
 | `asc:collection:add` | Actions service | Collections service | `{ data: { ascAsset, ascCollection } }` |
 | `asc:collection:remove` | Actions service | Collections service | `{ data: { ascAsset, ascCollection } }` |
-| `asc:collection:change` | Collections service | collections, stub blocks | `{ action, id?, collectionId?, assetId?, userId?, source? }` |
+| `asc:collection:change` | Collections service | collections, stub, collection-switcher blocks | `{ action, id?, collectionId?, assetId?, userId?, source? }` |
 | `asc:collection:created` | Collections service | (UI handlers) | `{ collection }` |
 | `asc:collection:deleted` | Collections service | (UI handlers) | `{ id }` |
 | `asc:collection:activated` | Collections service | (UI handlers) | `{ id, previous }` |
+| `asc:download:started` | Downloads service | (UI handlers) | `{ jobId }` |
+| `asc:download:complete` | Downloads service | collection block | `{ jobId, downloadUrl }` |
+| `asc:download:failed` | Downloads service | collection block | `{ jobId, error }` |
+| `asc:download:change` | Downloads service | (UI handlers) | `{ jobId, status }` |
 | `asc:blocks:loaded` | Init service | SearchService | `{ blocks }` |
 
 `asc:search:complete` `results` shape:
@@ -216,6 +221,36 @@ Rules:
 - **CSS class prefix**: `.asc-{part-name}` (not `.block.*`).
 - Each Part loads its own CSS via `loadCSS()` at import time.
 
+### `collectionToggle(asset, options?)`
+
+Renders an add/remove collection toggle button. Both states are rendered simultaneously; CSS hides the inactive one based on `data-in-collection`. State is hydrated asynchronously after render and updated on every `asc:collection:change` event — including active collection switches.
+
+```js
+import collectionToggle from '../../scripts/asc/parts/collection-toggle/collection-toggle.js';
+
+// Default — labels use {name} token replaced with the active collection name
+container.insertAdjacentHTML('beforeend', collectionToggle(asset));
+
+// Custom labels
+container.insertAdjacentHTML('beforeend', collectionToggle(asset, {
+  addLabel: 'Save to {name}',
+  removeLabel: 'Saved to {name} ✓',
+}));
+
+// Target a specific collection
+container.insertAdjacentHTML('beforeend', collectionToggle(asset, { collectionId: 'uuid' }));
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `addLabel` | `'Add to {name}'` | Add button label; `{name}` is replaced with the active collection name |
+| `removeLabel` | `'Remove from {name}'` | Remove button label |
+| `collectionId` | active collection | Target a specific collection instead of the active one |
+
+The Part registers a single global `asc:collection:change` listener at import time that keeps all `.asc-collection-toggle` instances on the page in sync — no per-block wiring needed.
+
+---
+
 Usage in a block:
 ```js
 import assetTeaser from '../../scripts/asc/parts/asset-teaser/asset-teaser.js';
@@ -259,24 +294,79 @@ export default function decorate(block) {
 
 ---
 
-## How To: Add a Custom Property
+## Property System
 
-Custom properties extend what `asset.getProperty('name')` returns. Used in `details-property` blocks.
+`asset.getProperty(name)` dispatches through the properties service. Built-in properties:
 
-In `scripts/configurations.js`:
+| Name | Returns |
+|------|---------|
+| `title` | `dc:title` |
+| `thumbnail` | Thumbnail URL string |
+| `file-type` | Human label: "JPEG", "PDF", etc. |
+| `file-size` | Formatted: "1.2 MB" |
+| `file-extension` | Extension string |
+| `dimensions` | `{ width, height }` object |
+| `width` / `height` | Individual pixel values |
+| `mime-type` | Raw MIME type string |
+| `modified` | `lastModified.toLocaleDateString()` |
+| `created` | `created.toLocaleDateString()` |
+| `description` | `dc:description` |
+| `filename` | Node filename |
+
+All built-in names are also valid in `searchResults.views` (see below).
+
+### Adding a custom property
+
 ```js
+// scripts/configurations.js
 properties: {
   custom: {
     'brand': (asset) => asset.getProperty('jcr:content/metadata/myco:brand'),
-    'approval-status': (asset, options) => {
-      const status = asset.getProperty('jcr:content/metadata/dam:status');
-      return status ? status.charAt(0).toUpperCase() + status.slice(1) : null;
+    'approval-status': (asset) => {
+      const s = asset.getProperty('jcr:content/metadata/dam:status');
+      return s ? s.charAt(0).toUpperCase() + s.slice(1) : null;
     },
   }
 }
 ```
 
-Then in a `details-property` block, set `property = brand`.
+Custom property names can then be used in `details-property` blocks and in `searchResults.views`.
+
+---
+
+## Search Result Views — `searchResults.views`
+
+Controls which properties are displayed in each view mode. Configured in `scripts/configurations.js`.
+
+```js
+searchResults: {
+  views: {
+    // Cards view: ordered array of property names
+    cards: ['thumbnail', 'title', 'file-type', 'file-size'],
+
+    // Masonry view: keep minimal — meta overlays on hover
+    masonry: ['thumbnail', 'title'],
+
+    // List view: columns with label and width
+    list: [
+      { property: 'thumbnail',  width: '48px'  },
+      { property: 'title',      width: '1fr'   },
+      { property: 'file-type',  label: 'Type',  width: '120px' },
+      { property: 'file-size',  label: 'Size',  width: '90px'  },
+      { property: 'modified',   label: 'Date',  width: '120px' },
+      // Any registered custom property:
+      { property: 'brand',      label: 'Brand', width: '120px' },
+      // Escape hatch for complex rendering:
+      { label: 'Status', width: '80px', render: (asset) => asset.getProperty('dam:status') || '—' },
+    ],
+  },
+},
+```
+
+**Rules:**
+- `thumbnail` always renders as `<img>` in the preview area; all other properties go in the meta section
+- For `list`, `label` defaults to a sensible built-in name if omitted
+- The `render` function on a list column receives `(asset, services)` and should return an HTML string; it bypasses the property system entirely
 
 ---
 
@@ -395,24 +485,129 @@ services.renditions.getThumbnailUrl(asset);        // best thumbnail URL (with f
 
 ---
 
+## Button Utilities (`.btn`)
+
+Global utility classes defined in `styles/styles.css`. Use these for all component buttons — not EDS editorial `a.button:any-link`.
+
+```html
+<!-- Variants -->
+<button class="btn btn--primary">Save</button>
+<button class="btn btn--secondary">Cancel</button>
+<button class="btn btn--ghost">Dismiss</button>
+<button class="btn btn--danger">Delete</button>
+
+<!-- Size modifier -->
+<button class="btn btn--primary btn--sm">Small</button>
+
+<!-- Icon button (square, circular) -->
+<button class="btn btn--ghost btn--icon" aria-label="Close">✕</button>
+```
+
+| Class | Appearance |
+|-------|-----------|
+| `.btn` | Base: `inline-flex`, padded, border-radius, transitions |
+| `.btn--primary` | `--color-primary` background, `--color-primary-fg` text |
+| `.btn--secondary` | Transparent + `--color-border` border |
+| `.btn--ghost` | Transparent, no border |
+| `.btn--danger` | `--color-destructive` background |
+| `.btn--sm` | Smaller padding and `--body-font-size-xs` |
+| `.btn--icon` | Fixed 36×36px square, `--border-radius-full` |
+
+Focus: automatic `outline` using `--color-ring` via `:focus-visible`.
+
+---
+
+## Modal Pattern (native `<dialog>`)
+
+Use the native `<dialog>` element for all modals. Add `class="asc-dialog"` for the shared base styles.
+
+```js
+// Open
+const dialog = document.createElement('dialog');
+dialog.className = 'asc-dialog my-block__dialog';
+dialog.setAttribute('aria-labelledby', 'my-dialog-title');
+dialog.innerHTML = `
+  <h2 id="my-dialog-title" class="asc-dialog__title">Dialog Title</h2>
+  <div class="asc-dialog__body">...</div>
+  <footer class="asc-dialog__footer">
+    <button class="btn btn--secondary" data-close-dialog>Cancel</button>
+    <button class="btn btn--primary">Confirm</button>
+  </footer>`;
+document.body.append(dialog);
+
+// Show
+dialog.showModal();
+
+// Close on backdrop click
+dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
+
+// Close on [data-close-dialog]
+dialog.addEventListener('click', (e) => { if (e.target.closest('[data-close-dialog]')) dialog.close(); });
+```
+
+`::backdrop` is styled globally in `styles/styles.css` with a semi-transparent overlay.
+
+---
+
 ## How To: Add a Custom Theme
+
+Themes override only the `--color-*` semantic tokens (and optionally `--body-font-family`). **Never** override structural tokens like spacing, border-radius, or shadow in a theme file.
+
+Built-in themes: `default` (Violet Studio), `dark` (Deep Ocean), `studio` (Unsplash). `warm` and `vault` are removed.
 
 1. Create `styles/themes/my-theme.css`:
 ```css
 .theme-my-theme {
-  --background-color: #f5f5f0;
-  --text-color: #1a1a1a;
-  --link-color: #c44b0a;
-  /* Override any CSS variable from styles/tokens.css */
+  /* ── Required color roles ─────────────────────────────────────────── */
+  --color-bg:             #f5f5f0;
+  --color-fg:             #1a1a1a;
+  --color-card:           #ffffff;
+  --color-card-fg:        #1a1a1a;
+  --color-primary:        #c44b0a;   /* Action color */
+  --color-primary-fg:     #ffffff;   /* Text ON primary */
+  --color-secondary:      #eeece8;
+  --color-secondary-fg:   #1a1a1a;
+  --color-muted:          #f0ede8;   /* Subtle backgrounds */
+  --color-muted-fg:       #6b6560;   /* Secondary text */
+  --color-accent:         #fce8dd;   /* Hover tints */
+  --color-accent-fg:      #c44b0a;
+  --color-destructive:    #dc2626;
+  --color-destructive-fg: #ffffff;
+  --color-border:         #ddd8d0;
+  --color-input:          #ffffff;
+  --color-ring:           #c44b0a;   /* Focus outline */
+
+  /* ── Optional overrides ──────────────────────────────────────────── */
+  --body-font-family: Georgia, serif;
+
+  /* For dark themes, override the select chevron to a light color: */
+  /* --select-arrow: url("data:image/svg+xml,..."); */
 }
 ```
+
+### Semantic token reference
+
+| Token | Role |
+|-------|------|
+| `--color-bg` | Page background |
+| `--color-fg` | Default text |
+| `--color-card` / `--color-card-fg` | Card surface / text |
+| `--color-popover` / `--color-popover-fg` | Dropdown/tooltip surface / text |
+| `--color-primary` / `--color-primary-fg` | Primary action (buttons, links, badges) / text on primary |
+| `--color-secondary` / `--color-secondary-fg` | Secondary surface / text |
+| `--color-muted` / `--color-muted-fg` | Subtle background / secondary text |
+| `--color-accent` / `--color-accent-fg` | Hover tint backgrounds / text |
+| `--color-destructive` / `--color-destructive-fg` | Danger/delete actions / text |
+| `--color-border` | All borders and dividers |
+| `--color-input` | Form input backgrounds |
+| `--color-ring` | Focus outline color |
 
 2. In `scripts/configurations.js`:
 ```js
 theme: { default: 'my-theme' }
 ```
 
-The `scripts/scripts.js` `loadEager()` function reads this value, adds `theme-{name}` to `<body>`, and loads `styles/themes/{name}.css`. Built-in themes: `default`, `dark`, `warm`, `studio`, `vault`.
+The `scripts/scripts.js` `loadEager()` function reads this value, adds `theme-{name}` to `<body>`, and loads `styles/themes/{name}.css`.
 
 ---
 
@@ -479,8 +674,12 @@ await collections.addAsset(assetId, collectionId?)
 await collections.removeAsset(assetId, collectionId?)
 await collections.hasAsset(assetId, collectionId?)   // → boolean
 
-// Login / merge
+// Asset reordering
+      collections.reorderAssets(collectionId, newAssetIds) // replace full ordered array
+
+// Login / merge / logout
 await collections.loginAs(userId)  // merges anonymous → user, switches context
+      collections.logout()         // switches back to anonymous scope
 ```
 
 ### Events dispatched on `document`
@@ -492,7 +691,75 @@ await collections.loginAs(userId)  // merges anonymous → user, switches contex
 | `asc:collection:deleted` | Collection deleted | `{ id }` |
 | `asc:collection:activated` | Active collection changed | `{ id, previous }` |
 
-`action` values in `asc:collection:change`: `"created"`, `"deleted"`, `"renamed"`, `"activated"`, `"assetAdded"`, `"assetRemoved"`, `"login"`, or `"external"` (cross-tab).
+`action` values in `asc:collection:change`: `"created"`, `"deleted"`, `"renamed"`, `"activated"`, `"assetAdded"`, `"assetRemoved"`, `"reordered"`, `"login"`, `"logout"`, or `"external"` (cross-tab).
+
+---
+
+## Downloads Service
+
+`scripts/asc/services/downloads/downloads.js` — singleton. Manages asynchronous AEM bulk-download jobs with localStorage persistence.
+
+### Storage schema
+
+Stored under `storage.get(storage.DOWNLOAD_JOBS)` (user-scoped):
+
+```js
+{
+  jobs: {
+    "local-uuid": {
+      id:           string,    // local UUID
+      collectionId: string,    // source collection ID
+      assetPaths:   string[],  // JCR asset paths
+      renditionIds: string[],  // rendition IDs to download
+      status:       string,    // 'pending' | 'running' | 'complete' | 'failed'
+      aemJobId:     string,    // job ID returned by AEM download framework
+      downloadUrl:  string,    // URL to trigger on completion
+      error:        string,    // error message (if failed)
+      createdAt:    ISO,
+      updatedAt:    ISO,
+      expiresAt:    ISO,       // auto-cleaned after jobExpiry ms (default 7 days)
+    }
+  }
+}
+```
+
+### API
+
+```js
+import services from '../../scripts/asc/services/services.js';
+const { downloads } = services;
+
+// Initiate an async AEM download job (returns immediately; polling runs in background)
+await downloads.create(assetPaths, renditionIds, { collectionId?, autoDownload?: true });
+
+// Retrieve jobs
+downloads.getAll()         // → job[]  (sorted newest first)
+downloads.get(jobId)       // → job | null
+
+// Resume polling for a job that didn't finish within the quick-poll window
+await downloads.resume(jobId, autoDownload?)
+
+// Trigger a browser download for a completed job
+downloads.triggerDownload(jobId)
+```
+
+### Events dispatched on `document`
+
+| Event | When | `detail` shape |
+|-------|------|----------------|
+| `asc:download:started` | Job created locally | `{ jobId }` |
+| `asc:download:complete` | AEM job finished, URL available | `{ jobId, downloadUrl }` |
+| `asc:download:failed` | AEM job failed or fetch error | `{ jobId, error }` |
+| `asc:download:change` | Any job status update | `{ jobId, status }` |
+
+### Configuration (`configurations.downloads`)
+
+| Key | Default | Description |
+|-----|---------|-------------|
+| `initiateUrl` | `/content/dam.downloads.initiateDownload.json` | AEM download servlet path |
+| `quickPollTimeout` | `15000` | Fast-poll window in ms before leaving job as 'running' |
+| `pollInterval` | `2000` | Poll interval in ms |
+| `jobExpiry` | `604800000` (7 days) | Job TTL in ms — older jobs are auto-removed |
 
 ---
 
@@ -582,6 +849,9 @@ const values  = await url.decompressToArray(encoded);
 
 - Root selector: `.block.<block-name> { ... }` — never a bare class
 - CSS nesting for children and modifiers
-- All colors, spacing, radius, shadow via CSS variables from `styles/tokens.css`
+- **Colors**: use `--color-*` semantic tokens from `styles/styles.css` `:root` (e.g. `--color-primary`, `--color-muted-fg`, `--color-border`). Do not use `--background-color`, `--text-color`, etc. — those are backward-compat aliases for EDS boilerplate only.
+- **Spacing, radius, shadow, transitions**: `--spacing-*`, `--border-radius-*`, `--shadow-*`, `--transition-*` from `styles/tokens.css`
+- **Typography**: `--body-font-size-s/xs`, `--heading-font-size-s/m/l/xl` — do not use `--font-size-sm` or `--radius-md` (old names, removed)
 - Mobile-first: `@media (width >= 768px)` syntax
 - Part CSS scoped to `.asc-{part-name}` prefix
+- Themes in `styles/themes/` override `--color-*` tokens only — never structural tokens

@@ -62,6 +62,21 @@ transition: background 120ms ease;
 
 See `styles/tokens.css` for the complete variable list. See `THEMING_README.md` for grouped reference.
 
+## Theme Boundaries
+
+Themes should primarily set CSS custom property values and avoid styling specific
+blocks or parts directly.
+
+- Theme files in `styles/themes/*.css` should define token values (`--color-*`,
+  typography, motion/shape, and component-specific custom variables).
+- Block/part selectors belong in the owning stylesheet (`blocks/*/*.css`,
+  `scripts/asc/parts/*/*.css`), where those selectors should consume variables.
+- Avoid selectors like `.theme-pro .block.search-results ...` or
+  `.theme-pro .asc-asset-teaser__title` unless there is no viable variable-based
+  alternative.
+- Acceptable exceptions are global shell/layout concerns (for example nav or
+  page-level wrappers) when those cannot be expressed with variables alone.
+
 ## Responsive Design
 
 Mobile-first. Use the `width >=` syntax:

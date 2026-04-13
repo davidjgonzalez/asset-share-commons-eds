@@ -27,7 +27,7 @@ const DEFAULT_DEFINITIONS = [
     id: 'thumbnail',
     label: 'Thumbnail',
     type: 'static',
-    name: /^cq5dam\.thumbnail\./,
+    name: /^cq5dam\.thumbnail\.319\.319\./,
     visible: false,
   },
   {
@@ -126,9 +126,11 @@ class RenditionsService {
     const resolved = this.getRendition(asset, 'thumbnail');
     if (resolved?.url) return resolved.url;
 
-    // Fallback: construct the standard thumbnail URL directly.
-    // This works when the asset's rendition nodes weren't fetched (e.g. search results).
-    // AEM standard processing profiles always generate this node name.
+    // Fallback: construct the thumbnail URL directly when rendition nodes weren't fetched.
+    // Assumes .png — the most common output from AEM processing profiles.
+    // If your profiles generate .jpeg thumbnails, override the 'thumbnail' definition
+    // in configurations.js; this fallback only fires for search-result assets that
+    // haven't had their full renditions tree loaded yet.
     const aemHost = this._aemConfig.host || '';
     return `${aemHost}${asset.path}/_jcr_content/renditions/cq5dam.thumbnail.319.319.png`;
   }

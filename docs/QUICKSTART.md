@@ -51,7 +51,6 @@ mountpoints:
     url: https://content.da.live/{owner}/{repo}/
     type: markup
 folders:
-    /details: /details/default
 ```
 
 Replace `{owner}` and `{repo}` with your actual GitHub org and repo name. Commit and push this change to `main`.
@@ -92,9 +91,9 @@ Each table becomes a block. The block name in row 1 maps to a folder in `/blocks
 
 The full set of available blocks is in the `/blocks/` directory: `search-bar`, `search-results`, `search-property`, `search-path`, `search-date-range`, `search-tags`, `search-statistics`, `details-actions`, `details-download`, `details-preview`, `details-property`, `collection`, `collections`, and more.
 
-### `/details/default`
+### `/details/index` (served as `/details`)
 
-The asset details modal template. This page is loaded inside the details modal when a user opens an asset. Assemble it with details blocks:
+The default asset details modal template. Name it `index` inside a `details/` folder so it is served at the clean URL `/details`. This page is loaded inside the details modal when a user opens an asset. Assemble it with details blocks:
 
 | Details Preview |
 |-----------------|
@@ -109,7 +108,7 @@ The asset details modal template. This page is loaded inside the details modal w
 | Details Actions |
 |-----------------|
 
-You can create additional detail templates per MIME type (e.g., `/details/video`, `/details/pdf`) and map them in `configurations.js`.
+You can create additional detail templates per MIME type — e.g. `/details/image`, `/details/video`, `/details/pdf` — and map them in `configurations.js`. The default always maps to `/details`.
 
 ---
 
@@ -190,16 +189,13 @@ To publish content, use the da.live sidebar: open any page and click **Publish**
 
 ## Themes
 
-Six themes ship out of the box:
+Three themes ship out of the box:
 
 | Theme | Description |
 |-------|-------------|
-| `default` | Clean light theme |
-| `dark` | Dark mode |
-| `warm` | Warm neutrals |
-| `studio` | Airy SaaS aesthetic, blue + violet accents |
-| `vault` | Professional dark asset manager, near-black with blue accents |
-| `custom` | Starter file for your own theme (`styles/themes/custom.css`) |
+| `default` | Violet Studio — clean light theme with violet accents |
+| `dark` | Deep Ocean — dark mode, navy + azure |
+| `studio` | Unsplash — near-black, image-first |
 
 Switch themes in `configurations.js`:
 
@@ -209,13 +205,70 @@ theme: {
 },
 ```
 
-To create a custom theme, add a CSS file to `styles/themes/` that overrides CSS variables, then set `default` to your filename (without `.css`).
+To create a custom theme, add a CSS file to `styles/themes/` that overrides `--color-*` CSS variables, then set `default` to your filename (without `.css`). See `docs/THEMING_README.md` for the full token reference.
+
+---
+
+## Controlling What Shows on Search Result Cards
+
+By default, cards show: thumbnail, title, file type, file size. You can change this per view (Cards, List, Masonry) using `searchResults.views` in `configurations.js`:
+
+```js
+searchResults: {
+  views: {
+    // Cards view — ordered list of property names to display
+    cards: ['thumbnail', 'title', 'file-type', 'file-size', 'dimensions'],
+
+    // Masonry view — keep it short; meta overlays on hover
+    masonry: ['thumbnail', 'title'],
+
+    // List view — columns with optional label and width overrides
+    list: [
+      { property: 'thumbnail',  width: '48px'  },
+      { property: 'title',      width: '1fr'   },
+      { property: 'file-type',  width: '120px' },
+      { property: 'file-size',  width: '90px'  },
+      { property: 'modified',   width: '120px' },
+    ],
+  },
+},
+```
+
+**Built-in property names:**
+
+| Property | Displays |
+|----------|---------|
+| `thumbnail` | Preview image |
+| `title` | Asset title (`dc:title`) |
+| `file-type` | Human-readable type (e.g. "JPEG", "PDF") |
+| `file-size` | Formatted size (e.g. "1.2 MB") |
+| `file-extension` | File extension |
+| `dimensions` | Width × Height (images only) |
+| `width` / `height` | Individual pixel dimensions |
+| `mime-type` | Raw MIME type string |
+| `modified` | Last-modified date |
+| `created` | Created date |
+| `description` | Asset description |
+| `filename` | Node filename |
+
+Any custom property registered in `properties.custom` is also valid here.
 
 ---
 
 ## Custom Asset Properties
 
-To expose non-standard JCR metadata fields in details blocks, add handlers to the `properties.custom` map in `configurations.js`. See the commented-out example in that file for the handler signature.
+To expose non-standard JCR metadata fields in details blocks or search result views, add handlers to the `properties.custom` map in `configurations.js`:
+
+```js
+properties: {
+  custom: {
+    'brand': (asset) => asset.getProperty('jcr:content/metadata/myco:brand'),
+    'approval-status': (asset) => asset.getProperty('jcr:content/metadata/dam:status'),
+  },
+},
+```
+
+Once registered, the property name can be used anywhere a built-in property name is accepted — including `searchResults.views` and `details-property` blocks.
 
 ---
 

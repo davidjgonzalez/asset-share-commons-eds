@@ -1,65 +1,53 @@
-/* Dark Theme - Modern and Sleek */
-.theme-dark {
-  /* Colors */
-  --background-color: #0f172a;
-  --light-color: #1e293b;
-  --dark-color: #cbd5e1;
-  --text-color: #f1f5f9;
-  --link-color: #60a5fa;
-  --link-hover-color: #93c5fd;
+/*
+ * Dark Theme — "Deep Ocean"
+ *
+ * Inspired by the asset-share-commons-eds gh-pages site.
+ * Deep navy canvas, azure blue accents, sharp typographic contrast.
+ * Professional and refined — like a high-end creative tool.
+ *
+ * Palette:
+ *   Page background  #0f172a  (navy abyss)
+ *   Card surface     #1e293b  (lifted navy)
+ *   Primary text     #f1f5f9  (cool near-white)
+ *   Primary action   #60a5fa  (azure blue — crisp on dark)
+ *   Muted surface    #1e293b  (same as card — intentional)
+ *   Border           #334155  (slate divider)
+ *
+ * Activate: set `theme: { default: 'dark' }` in scripts/configurations.js
+ */
 
-  /* Component Colors */
-  --search-border-color: #334155;
-  --search-background: #1e293b;
-  --search-text-color: #f1f5f9;
-  --search-placeholder-color: #64748b;
-  --search-primary-color: #60a5fa;
-  --search-primary-hover: #93c5fd;
-  --search-primary-focus: rgba(96, 165, 250, 0.1);
+:root {
+  /* ── Semantic color tokens ─────────────────────────────────────── */
+  --color-bg:          #0f172a;
+  --color-fg:          #f1f5f9;
+  --color-card:        #1e293b;
+  --color-card-fg:     #f1f5f9;
+  --color-popover:     #1e293b;
+  --color-popover-fg:  #f1f5f9;
 
-  --card-background: #1e293b;
-  --card-border-color: #334155;
-  --card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.2);
-  --card-shadow-hover: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+  --color-primary:     #60a5fa;
+  --color-primary-fg:  #0f172a;
 
-  --button-primary-bg: #60a5fa;
-  --button-primary-text: #0f172a;
-  --button-primary-hover: #93c5fd;
-  --button-secondary-bg: transparent;
-  --button-secondary-border: #cbd5e1;
-  --button-secondary-text: #cbd5e1;
+  --color-secondary:    #1e293b;
+  --color-secondary-fg: #94a3b8;
 
-  --input-border-color: #334155;
-  --input-border-focus: #60a5fa;
-  --input-background: #1e293b;
-  --input-text-color: #f1f5f9;
-  --input-placeholder-color: #64748b;
+  --color-muted:    #1e293b;
+  --color-muted-fg: #94a3b8;
 
-  /* Form Input Specific Variables */
-  --input-border-color-hover: #4b5563;
-  --input-border-color-error: #f87171;
-  --input-border-color-success: #34d399;
-  --input-border-color-disabled: #374151;
-  --input-focus-ring-color: rgba(96, 165, 250, 0.1);
-  
-  /* Checkbox & Radio */
-  --checkbox-border-color: #4b5563;
-  --checkbox-border-color-checked: #60a5fa;
-  --checkbox-background-checked: #60a5fa;
-  --checkbox-color: #0f172a;
-  
-  /* Select/Dropdown */
-  --select-arrow-color: #9ca3af;
-  --select-option-background: #1e293b;
-  --select-option-background-hover: #334155;
-  --select-option-text-color: #f1f5f9;
-  
-  /* Form Labels */
-  --label-color: #e2e8f0;
-  
-  /* Form Validation */
-  --validation-error-color: #f87171;
-  --validation-success-color: #34d399;
-  --validation-warning-color: #fbbf24;
-  --validation-info-color: #60a5fa;
+  --color-accent:    #1e3a5f;
+  --color-accent-fg: #93c5fd;
+
+  --color-destructive:    #f87171;
+  --color-destructive-fg: #0f172a;
+
+  --color-border: #334155;
+  --color-input:  #1e293b;
+  --color-ring:   #60a5fa;
+
+  /* ── Typography ─────────────────────────────────────────────────── */
+  --body-font-family:    'Inter', system-ui, -apple-system, sans-serif;
+  --heading-font-family: 'Inter', system-ui, -apple-system, sans-serif;
+
+  /* ── Light chevron for dark backgrounds ─────────────────────────── */
+  --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2394a3b8'/%3E%3C/svg%3E");
 }

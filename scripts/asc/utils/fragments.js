@@ -20,7 +20,13 @@ import {
  */
 export async function loadFragment(path, attrs = {}) {
   if (path && path.startsWith('/')) {
-    const resp = await fetch(`${path}.plain.html`);
+    // EDS convention: folder-index pages (e.g. /details served from details/index)
+    // must be fetched as /details/index.plain.html, not /details.plain.html.
+    // Use HEAD to check existence cheaply before committing to a full GET,
+    // then fall back to the /index variant if the direct path doesn't exist.
+    const head = await fetch(`${path}.plain.html`, { method: 'HEAD' });
+    const url = head.ok ? `${path}.plain.html` : `${path}/index.plain.html`;
+    const resp = await fetch(url);
     if (resp.ok) {
       /* +++ Begin customization of OOTB loadFragment +++ */
       /* Loading a Folder Map Fragment includes the FULL HTML document, extract the main element */

@@ -1,6 +1,6 @@
 # Theming
 
-Asset Share Commons uses a CSS custom property (variable) system for theming. A theme is a CSS file that overrides variables — no JavaScript involved.
+Asset Share Commons uses a semantic CSS custom property (variable) system for theming. A theme is a CSS file that overrides `--color-*` variables — no JavaScript involved.
 
 ## Activating a Theme
 
@@ -8,7 +8,7 @@ Set `theme.default` in `scripts/configurations.js`:
 
 ```js
 theme: {
-  default: 'vault',  // built-in: default | dark | warm | studio | vault
+  default: 'studio',  // built-in: default | dark | studio
 }
 ```
 
@@ -18,44 +18,42 @@ theme: {
 
 | Name | Description |
 |------|-------------|
-| `default` | Clean neutral light theme — EDS boilerplate defaults |
-| `dark` | Dark mode with blue accents |
-| `warm` | Warm earthy tones, orange accents |
-| `studio` | Webflow-inspired SaaS aesthetic — blue + violet, pill buttons, card hover lift |
-| `vault` | Dark professional DAM UI — near-black surfaces, blue accent, ghost buttons |
+| `default` | Violet Studio — clean light theme, violet primary |
+| `dark` | Deep Ocean — dark navy surfaces, azure blue accents |
+| `studio` | Unsplash — near-black, image-first, pill buttons |
 
 ## Creating a Custom Theme
 
-1. Copy `styles/themes/custom.css` as a starting point, or create a new file:
+Themes only need to override `--color-*` semantic tokens. Structural tokens (spacing, radius, shadow) are defined in `styles/tokens.css` and do not need to be set per theme.
+
+1. Create `styles/themes/my-theme.css`:
 
 ```css
-/* styles/themes/my-theme.css */
 .theme-my-theme {
+  /* ── Required color roles ─────────────────────────────────── */
+  --color-bg:             #f5f5f0;   /* Page background */
+  --color-fg:             #1a1a1a;   /* Default text */
+  --color-card:           #ffffff;   /* Card surfaces */
+  --color-card-fg:        #1a1a1a;
+  --color-primary:        #c44b0a;   /* Buttons, links, accents */
+  --color-primary-fg:     #ffffff;   /* Text ON primary color */
+  --color-secondary:      #eeece8;
+  --color-secondary-fg:   #1a1a1a;
+  --color-muted:          #f0ede8;   /* Subtle backgrounds */
+  --color-muted-fg:       #6b6560;   /* Secondary / placeholder text */
+  --color-accent:         #fce8dd;   /* Hover tints */
+  --color-accent-fg:      #c44b0a;
+  --color-destructive:    #dc2626;   /* Delete / danger actions */
+  --color-destructive-fg: #ffffff;
+  --color-border:         #ddd8d0;   /* All borders and dividers */
+  --color-input:          #ffffff;   /* Form input backgrounds */
+  --color-ring:           #c44b0a;   /* Focus outline */
 
-  /* ── Base ─── */
-  --background-color: #f5f5f0;
-  --light-color: #ebe9e2;
-  --dark-color: #6b6560;
-  --text-color: #1a1a1a;
-  --link-color: #c44b0a;
-  --link-hover-color: #a33c07;
-  --border-color: #dddad4;
+  /* ── Optional ──────────────────────────────────────────────── */
+  --body-font-family: Georgia, serif;
 
-  /* ── Asset teaser card ─── */
-  --asset-teaser-bg: #ffffff;
-  --asset-teaser-border: 1px solid #dddad4;
-  --asset-teaser-border-radius: var(--border-radius-md);
-
-  /* ── Search ─── */
-  --search-primary-color: #c44b0a;
-  --search-input-focus-border: #c44b0a;
-
-  /* ── Buttons ─── */
-  --button-primary-bg: #c44b0a;
-  --button-primary-text: #ffffff;
-  --button-primary-hover-bg: #a33c07;
-
-  /* Override any variable from styles/tokens.css */
+  /* Dark themes should override the select chevron:
+  --select-arrow: url("data:image/svg+xml,..."); */
 }
 ```
 
@@ -65,39 +63,59 @@ theme: {
 theme: { default: 'my-theme' }
 ```
 
-## CSS Variable Reference
+## Semantic Color Token Reference
 
-All theme-overridable variables are defined in `styles/tokens.css`. Key groups:
+Themes override **only** `--color-*` tokens. Every component reads from these roles — changing a token updates every block that uses it.
+
+| Token | Role |
+|-------|------|
+| `--color-bg` | Page background |
+| `--color-fg` | Default text color |
+| `--color-card` / `--color-card-fg` | Card surface / text on card |
+| `--color-popover` / `--color-popover-fg` | Dropdown and tooltip surfaces |
+| `--color-primary` / `--color-primary-fg` | Primary action color (buttons, links, badges) / text on primary |
+| `--color-secondary` / `--color-secondary-fg` | Secondary surface |
+| `--color-muted` / `--color-muted-fg` | Subtle backgrounds / secondary text |
+| `--color-accent` / `--color-accent-fg` | Hover tint backgrounds |
+| `--color-destructive` / `--color-destructive-fg` | Danger / delete actions |
+| `--color-border` | All borders and dividers |
+| `--color-input` | Form input backgrounds |
+| `--color-ring` | Focus outline (`:focus-visible`) |
+
+## Structural Tokens (do not override in themes)
+
+These live in `styles/tokens.css` and are shared across all themes:
 
 | Group | Variables |
 |-------|-----------|
-| Base | `--background-color` `--light-color` `--dark-color` `--text-color` `--link-color` `--link-hover-color` `--border-color` |
-| Typography | `--body-font-family` `--heading-font-family` |
-| Spacing | `--spacing-xs` `--spacing-sm` `--spacing-md` `--spacing-lg` `--spacing-xl` |
-| Border radius | `--border-radius-sm` `--border-radius-md` `--border-radius-lg` `--border-radius-xl` `--border-radius-full` |
-| Shadows | `--shadow-sm` `--shadow-md` `--shadow-lg` |
-| Transitions | `--transition-fast` `--transition-normal` `--transition-slow` |
-| Asset teaser | `--asset-teaser-bg` `--asset-teaser-border` `--asset-teaser-border-radius` `--asset-teaser-shadow` `--asset-teaser-shadow-hover` `--asset-teaser-title-color` `--asset-teaser-meta-color` |
-| Search | `--search-background` `--search-text-color` `--search-primary-color` `--search-input-bg` `--search-input-color` `--search-input-focus-border` `--search-input-focus-ring` |
-| Search results | `--search-results-gap` `--search-results-cols-mobile` `--search-results-cols-tablet` `--search-results-cols-desktop` |
-| Filters | `--filter-label-color` `--filter-input-border` `--filter-input-accent` |
-| Modal | `--modal-bg` `--modal-border-radius` `--modal-shadow` `--modal-backdrop` `--modal-padding` |
-| Buttons | `--button-primary-bg` `--button-primary-text` `--button-primary-hover-bg` `--button-primary-border-radius` `--button-padding` `--button-secondary-bg` `--button-secondary-border` `--button-secondary-text` |
-| Inputs | `--input-background` `--input-text-color` `--input-border-color` `--input-border-focus` `--input-border-radius` `--input-placeholder-color` `--input-focus-ring-color` `--input-transition` |
+| Spacing | `--spacing-xs/sm/md/lg/xl` |
+| Border radius | `--border-radius-sm/md/lg/xl/full` |
+| Shadows | `--shadow-sm/md/lg` |
+| Transitions | `--transition-fast/normal/slow` |
+| Typography scale | `--body-font-size-xs/s/m/l` · `--heading-font-size-s/m/l/xl` |
+| Button structural | `--button-padding` · `--button-border-radius` |
+| Input structural | `--input-border-radius` · `--input-focus-ring-width` |
 
-## Theme-Scoped Overrides
+## Button Utilities
 
-Themes can also override block-level styles directly, not just variables:
+Themes inherit global `.btn` utility classes defined in `styles/styles.css`. No per-theme button CSS needed unless you want shape overrides:
 
 ```css
-.theme-my-theme .asc-asset-teaser:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--shadow-lg);
-}
-
-.theme-my-theme .block.search-bar input {
-  border-radius: var(--border-radius-full);
+/* Example: pill buttons for the studio theme */
+.theme-my-theme {
+  --button-border-radius: var(--border-radius-full);
 }
 ```
 
-See `styles/themes/studio.css` and `styles/themes/vault.css` for examples of per-block theme overrides.
+## Theme-Scoped Block Overrides
+
+For visual changes beyond variables, scope overrides to your theme class:
+
+```css
+.theme-my-theme .asc-asset-teaser:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+```
+
+See `styles/themes/studio.css` for an example with image hover zoom.

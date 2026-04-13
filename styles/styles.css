@@ -10,81 +10,113 @@
  * governing permissions and limitations under the License.
  */
 
-/* ASC component design tokens — loaded before theme overrides */
+/* ASC structural tokens — loaded before theme overrides */
 @import url('./tokens.css');
 @import './sections/grid.css';
 @import './sections/aside.css';
 @import './sections/full-width.css';
 
+/* ─────────────────────────────────────────────────────────────────────────
+   SEMANTIC COLOR TOKENS
+   Themes override ONLY these --color-* variables. Everything else (blocks,
+   forms, buttons) references these roles — never raw color values.
+   Default palette: "Violet Studio" — warm white, vibrant violet primary.
+───────────────────────────────────────────────────────────────────────── */
+
 :root {
-  /* colors */
-  --background-color: white;
-  --light-color: #f5f5f5;
-  --dark-color: #666;
-  --text-color: #333;
-  --link-color: #0066cc;
-  --border-color: #ccc;
+  /* Page surfaces */
+  --color-bg:          #ffffff;  /* Page background */
+  --color-fg:          #1e1b4b;  /* Primary text */
+  --color-card:        #ffffff;  /* Card / panel surfaces */
+  --color-card-fg:     #1e1b4b;  /* Text on cards */
+  --color-popover:     #ffffff;  /* Dropdowns, tooltips */
+  --color-popover-fg:  #1e1b4b;  /* Text in popovers */
 
-  /* fonts */
-  --body-font-family: roboto, roboto-fallback, sans-serif;
-  --heading-font-family: roboto-condensed, roboto-condensed-fallback, sans-serif;
+  /* Brand / interactive */
+  --color-primary:     #7c3aed;  /* CTAs, links, active states */
+  --color-primary-fg:  #ffffff;  /* Text/icons on primary */
 
-  /* body sizes */
-  --body-font-size-m: 18px;
-  --body-font-size-s: 16px;
-  --body-font-size-xs: 14px;
+  /* Secondary actions */
+  --color-secondary:    #f5f3ff; /* Secondary button fill */
+  --color-secondary-fg: #1e1b4b; /* Text on secondary */
 
-  /* heading sizes */
+  /* Muted / quiet */
+  --color-muted:    #faf5ff;  /* Quiet backgrounds, zebra rows */
+  --color-muted-fg: #6b7280;  /* Muted text, labels, hints */
+
+  /* Accent / hover highlights */
+  --color-accent:    #ede9fe;  /* Hover/selected tint */
+  --color-accent-fg: #7c3aed;  /* Text on accent */
+
+  /* Feedback */
+  --color-destructive:    #dc2626;  /* Error, delete, danger */
+  --color-destructive-fg: #ffffff;  /* Text on destructive */
+
+  /* Form chrome */
+  --color-border: #e9d5ff;  /* All borders */
+  --color-input:  #ffffff;  /* Input backgrounds */
+  --color-ring:   #7c3aed;  /* Focus rings */
+
+  /* ── Backward-compat aliases (EDS boilerplate + legacy blocks) ── */
+  --background-color:   var(--color-bg);
+  --text-color:         var(--color-fg);
+  --link-color:         var(--color-primary);
+  --border-color:       var(--color-border);
+  --light-color:        var(--color-muted);
+  --dark-color:         var(--color-muted-fg);
+  --card-background:    var(--color-card);
+  --input-background:   var(--color-input);
+  --input-text-color:   var(--color-fg);
+  --input-border-color: var(--color-border);
+  --input-placeholder-color: var(--color-muted-fg);
+  --button-primary-bg:   var(--color-primary);
+  --button-primary-text: var(--color-primary-fg);
+
+  /* ── Typography ─────────────────────────────────────────────────── */
+  --body-font-family:    system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --heading-font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* Body sizes */
+  --body-font-size-m:  18px;
+  --body-font-size-s:  15px;
+  --body-font-size-xs: 13px;
+
+  /* Heading sizes */
   --heading-font-size-xxl: 48px;
-  --heading-font-size-xl: 36px;
-  --heading-font-size-l: 28px;
-  --heading-font-size-m: 24px;
-  --heading-font-size-s: 20px;
-  --heading-font-size-xs: 18px;
+  --heading-font-size-xl:  36px;
+  --heading-font-size-l:   28px;
+  --heading-font-size-m:   22px;
+  --heading-font-size-s:   18px;
+  --heading-font-size-xs:  15px;
 
-  /* nav height */
+  /* ── Layout ─────────────────────────────────────────────────────── */
   --nav-height: 64px;
 
-  /* spacing */
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 16px;
-  --spacing-lg: 24px;
-  --spacing-xl: 32px;
+  /* Spacing scale */
+  --spacing-xs:  4px;
+  --spacing-sm:  8px;
+  --spacing-md:  16px;
+  --spacing-lg:  24px;
+  --spacing-xl:  32px;
   --spacing-2xl: 48px;
   --spacing-3xl: 64px;
 
-  /* borders */
-  --border-width: 1px;
-  --border-style: solid;
-
-  /* z-index scale */
+  /* Z-index scale */
+  --z-behind:  -1;
+  --z-header:   2;
   --z-dropdown: 1000;
-  --z-sticky: 1020;
-  --z-fixed: 1030;
-  --z-modal: 1050;
+  --z-sticky:   1020;
+  --z-fixed:    1030;
+  --z-modal:    1050;
 
-  /* component variables */
-  --card-background: #fff;
-  --card-border-color: var(--border-color);
-  
-  --button-primary-bg: var(--text-color);
-  --button-primary-text: var(--background-color);
-  --button-secondary-border: var(--border-color);
-  
-  --input-border-color: var(--border-color);
-  --input-background: #fff;
-  --input-text-color: var(--text-color);
-  --input-placeholder-color: #999;
-  --input-padding-x: var(--spacing-md);
-  --input-padding-y: var(--spacing-sm);
-  --input-height-md: 40px;
-  
-  --label-color: var(--text-color);
-  --label-font-weight: 500;
+  /* Select arrow (overridden to light in dark themes) */
+  --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23555'/%3E%3C/svg%3E");
 }
 
-/* fallback fonts */
+/* ─────────────────────────────────────────────────────────────────────────
+   FONT FALLBACKS
+───────────────────────────────────────────────────────────────────────── */
+
 @font-face {
   font-family: roboto-condensed-fallback;
   size-adjust: 88.82%;
@@ -97,47 +129,38 @@
   src: local('Arial');
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   BASE RESET & TYPOGRAPHY
+───────────────────────────────────────────────────────────────────────── */
 
 body {
   display: none;
   margin: 0;
-  background-color: var(--background-color);
-  color: var(--text-color);
+  background-color: var(--color-bg);
+  color: var(--color-fg);
   font-family: var(--body-font-family);
   font-size: var(--body-font-size-m);
   line-height: 1.6;
 }
 
-body.appear {
-  display: block;
-}
+body.appear { display: block; }
 
-header {
-  height: var(--nav-height);
-}
+header { height: var(--nav-height); }
 
 header .header,
-footer .footer {
-  visibility: hidden;
-}
+footer .footer { visibility: hidden; }
 
 header .header[data-block-status="loaded"],
-footer .footer[data-block-status="loaded"] {
-  visibility: visible;
-}
+footer .footer[data-block-status="loaded"] { visibility: visible; }
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
+h1, h2, h3, h4, h5, h6 {
   margin-top: 0.8em;
   margin-bottom: 0.25em;
   font-family: var(--heading-font-family);
   font-weight: 600;
   line-height: 1.25;
   scroll-margin: 40px;
+  color: var(--color-fg);
 }
 
 h1 { font-size: var(--heading-font-size-xxl); }
@@ -147,32 +170,212 @@ h4 { font-size: var(--heading-font-size-m); }
 h5 { font-size: var(--heading-font-size-s); }
 h6 { font-size: var(--heading-font-size-xs); }
 
-p,
-dl,
-ol,
-ul,
-pre,
-blockquote {
+p, dl, ol, ul, pre, blockquote {
   margin-top: 0.8em;
   margin-bottom: 0.25em;
 }
 
-code,
-pre {
-  font-size: var(--body-font-size-s);
-}
+code, pre { font-size: var(--body-font-size-s); }
 
 pre {
   padding: var(--spacing-md);
-  background-color: var(--light-color);
-  border: var(--border-width) var(--border-style) var(--border-color);
+  background-color: var(--color-muted);
+  border: 1px solid var(--color-border);
   overflow-x: auto;
   white-space: pre;
 }
 
-main > div {
-  margin: 40px 16px;
+main > div { margin: 40px 16px; }
+
+main img {
+  max-width: 100%;
+  width: auto;
+  height: auto;
 }
+
+.icon { display: inline-block; height: 24px; width: 24px; }
+.icon img { height: 100%; width: 100%; }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   LINKS
+───────────────────────────────────────────────────────────────────────── */
+
+a:any-link {
+  color: var(--color-primary);
+  text-decoration: underline;
+  overflow-wrap: break-word;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   EDS EDITORIAL BUTTON (a.button only — not applied to component buttons)
+───────────────────────────────────────────────────────────────────────── */
+
+a.button:any-link {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  margin: var(--spacing-md) 0;
+  padding: var(--button-padding);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--button-border-radius);
+  font-family: var(--body-font-family);
+  font-size: var(--body-font-size-s);
+  font-weight: 500;
+  line-height: 1.5;
+  text-align: center;
+  text-decoration: none;
+  background-color: var(--color-primary);
+  color: var(--color-primary-fg);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: filter var(--transition-fast);
+
+  &:hover { filter: brightness(1.1); }
+}
+
+a.button.secondary:any-link {
+  background-color: transparent;
+  border-color: var(--color-border);
+  color: var(--color-fg);
+  &:hover { background-color: var(--color-muted); }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   .btn UTILITY CLASSES
+   Used by all ASC component buttons. Apply to <button> or <a> elements.
+   Variants: --primary  --secondary  --ghost  --danger
+   Sizes:    --sm       --icon
+───────────────────────────────────────────────────────────────────────── */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  padding: var(--button-padding);
+  border: 1px solid transparent;
+  border-radius: var(--button-border-radius);
+  font-family: var(--body-font-family);
+  font-size: var(--body-font-size-s);
+  font-weight: 500;
+  line-height: 1;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  background: transparent;
+  color: var(--color-fg);
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast),
+    filter var(--transition-fast);
+
+  &:focus-visible {
+    outline: var(--input-focus-ring-width) solid var(--color-ring);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+}
+
+/* Anchor buttons: global a:any-link sets underline — win specificity for .btn */
+a.btn:any-link,
+a.btn:any-link:hover,
+a.btn:any-link:visited {
+  text-decoration: none;
+}
+
+.btn--primary {
+  background: var(--color-primary);
+  color: var(--color-primary-fg);
+  border-color: transparent;
+
+  &:hover { filter: brightness(1.1); }
+}
+
+.btn--secondary {
+  background: transparent;
+  color: var(--color-fg);
+  border-color: var(--color-border);
+
+  &:hover {
+    background: var(--color-muted);
+    border-color: var(--color-muted-fg);
+  }
+}
+
+.btn--ghost {
+  background: transparent;
+  color: var(--color-fg);
+  border-color: transparent;
+
+  &:hover { background: var(--color-muted); }
+}
+
+.btn--danger {
+  background: var(--color-destructive);
+  color: var(--color-destructive-fg);
+  border-color: transparent;
+
+  &:hover { filter: brightness(1.1); }
+}
+
+/*
+ * <a class="btn"> — `a:any-link { color: var(--color-primary) }` is (0,1,1) and beats
+ * `.btn--primary` (0,1,0), so primary anchors became dark text on dark fill. Pin colors.
+ */
+a.btn.btn--primary:any-link,
+a.btn.btn--primary:any-link:visited {
+  color: var(--color-primary-fg);
+}
+
+a.btn.btn--primary:any-link:hover {
+  color: var(--color-primary-fg);
+}
+
+a.btn.btn--secondary:any-link,
+a.btn.btn--secondary:any-link:visited,
+a.btn.btn--secondary:any-link:hover {
+  color: var(--color-fg);
+}
+
+a.btn.btn--ghost:any-link,
+a.btn.btn--ghost:any-link:visited,
+a.btn.btn--ghost:any-link:hover {
+  color: var(--color-fg);
+}
+
+a.btn.btn--danger:any-link,
+a.btn.btn--danger:any-link:visited,
+a.btn.btn--danger:any-link:hover {
+  color: var(--color-destructive-fg);
+}
+
+.btn--sm {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--body-font-size-xs);
+}
+
+/* Icon-only circular button */
+.btn--icon {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: var(--border-radius-full);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   FORM ELEMENTS — global baseline
+   All inputs/selects/textareas share the same base style.
+   Blocks may add contextual overrides (e.g. borderless search input).
+───────────────────────────────────────────────────────────────────────── */
 
 input,
 textarea,
@@ -181,88 +384,224 @@ button {
   font: inherit;
 }
 
+input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="range"]),
+textarea {
+  background: var(--color-input);
+  color: var(--color-fg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--input-border-radius);
+  padding: var(--input-padding-y) var(--input-padding-x);
+  font-size: var(--body-font-size-s);
+  transition: var(--input-transition);
+
+  &::placeholder { color: var(--color-muted-fg); opacity: 0.7; }
+
+  &:focus-visible {
+    outline: none;
+    border-color: var(--color-ring);
+    box-shadow: 0 0 0 var(--input-focus-ring-width) color-mix(in srgb, var(--color-ring) 25%, transparent);
+  }
+
+  &:disabled {
+    background: var(--color-muted);
+    color: var(--color-muted-fg);
+    cursor: not-allowed;
+  }
+}
+
+textarea {
+  min-height: 100px;
+  height: auto;
+  resize: vertical;
+}
+
 select {
   appearance: none;
-  padding-right: var(--spacing-xl, 2rem);
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3e%3ctext x='0' y='9' font-size='11' fill='%23333'%3e%u25BE%3c/text%3e%3c/svg%3e");
-  background-position: right var(--spacing-sm, 0.5rem) center;
+  padding: var(--input-padding-y) 2rem var(--input-padding-y) var(--input-padding-x);
+  background-color: var(--color-input);
+  background-image: var(--select-arrow);
+  background-position: right 0.6rem center;
   background-repeat: no-repeat;
-  background-size: 10px;
+  background-size: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--input-border-radius);
+  color: var(--color-fg);
+  font-size: var(--body-font-size-s);
+  cursor: pointer;
+  transition: var(--input-transition);
+
+  &:focus-visible {
+    outline: none;
+    border-color: var(--color-ring);
+    box-shadow: 0 0 0 var(--input-focus-ring-width) color-mix(in srgb, var(--color-ring) 25%, transparent);
+  }
 }
 
-/* links */
-a:any-link {
-  color: var(--link-color);
-  text-decoration: underline;
-  overflow-wrap: break-word;
-}
-
-/* buttons */
-a.button:any-link,
-button {
-  box-sizing: border-box;
-  display: inline-block;
-  max-width: 100%;
-  margin: var(--spacing-md) 0;
-  border: var(--border-width) var(--border-style) var(--text-color);
-  padding: var(--spacing-sm) var(--spacing-lg);
-  font-family: var(--body-font-family);
+label {
+  color: var(--color-muted-fg);
   font-size: var(--body-font-size-s);
   font-weight: 500;
-  line-height: 1.5;
-  text-align: center;
-  text-decoration: none;
-  background-color: var(--button-primary-bg);
-  color: var(--button-primary-text);
+}
+
+/* Checkboxes and radios use accent-color for zero-effort theming */
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--color-primary);
+  width: 16px;
+  height: 16px;
   cursor: pointer;
-  white-space: nowrap;
 }
 
-button:disabled {
-  background-color: var(--light-color);
-  border-color: var(--border-color);
-  color: var(--dark-color);
-  cursor: not-allowed;
+/* ── Form groups ────────────────────────────────────────────────── */
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-md);
+
+  label { display: block; }
+
+  input:not([type="checkbox"]):not([type="radio"]),
+  textarea,
+  select { width: 100%; box-sizing: border-box; }
 }
 
-a.button.secondary,
-button.secondary {
-  background-color: transparent;
-  border: var(--border-width) var(--border-style) var(--border-color);
-  color: var(--text-color);
+.form-row {
+  display: grid;
+  gap: var(--spacing-lg);
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
 }
 
-main img {
-  max-width: 100%;
-  width: auto;
-  height: auto;
+.form-group .checkbox-group,
+.form-group .radio-group {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
 }
 
-.icon {
-  display: inline-block;
-  height: 24px;
-  width: 24px;
+/* ─────────────────────────────────────────────────────────────────────────
+   NATIVE <dialog> — .asc-dialog
+   Centered by the top layer (showModal()). Single card surface — no inner
+   “panel” needed. Layout: header (title + optional description, close) /
+   scrollable body / footer (Cancel left, actions right).
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-dialog {
+  display: none;
+  box-sizing: border-box;
+  border: 1px solid var(--color-border);
+  border-radius: var(--modal-border-radius);
+  box-shadow: var(--modal-shadow);
+  background: var(--color-card);
+  color: var(--color-card-fg);
+  padding: 0;
+  margin: auto;
+  width: min(var(--modal-max-width), 92vw);
+  min-width: min(var(--modal-min-width), 92vw);
+  min-height: var(--modal-min-height);
+  max-height: 90vh;
+  overflow: hidden;
+
+  &[open] {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &::backdrop {
+    background: rgb(0 0 0 / 55%);
+    backdrop-filter: blur(2px);
+  }
+
+  &.asc-dialog--narrow {
+    width: min(var(--modal-narrow-max-width), 92vw);
+  }
+
+  .asc-dialog__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--spacing-md);
+    flex-shrink: 0;
+    padding: var(--spacing-lg) var(--modal-padding) var(--spacing-md);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .asc-dialog__header-main {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .asc-dialog__title {
+    margin: 0;
+    font-size: var(--heading-font-size-s);
+    font-weight: 600;
+    color: var(--color-fg);
+    line-height: 1.25;
+  }
+
+  .asc-dialog__description {
+    margin: var(--spacing-xs) 0 0;
+    font-size: var(--body-font-size-s);
+    font-weight: 400;
+    color: var(--color-muted-fg);
+    line-height: 1.45;
+  }
+
+  .asc-dialog__body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: var(--modal-padding);
+  }
+
+  .asc-dialog__footer {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+    flex-shrink: 0;
+    padding: var(--spacing-md) var(--modal-padding) var(--spacing-lg);
+    border-top: 1px solid var(--color-border);
+  }
+
+  .asc-dialog__footer-end {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--spacing-sm);
+    margin-inline-start: auto;
+  }
+
+  .asc-dialog__close {
+    flex-shrink: 0;
+  }
+
+  /*
+   * Native <dialog> / UA can apply buttonface appearance so .btn padding/borders
+   * look wrong. Reset chrome; utility classes supply the full look.
+   */
+  button.btn {
+    appearance: none;
+    -webkit-appearance: none;
+    box-sizing: border-box;
+  }
 }
 
-.icon img {
-  height: 100%;
-  width: 100%;
-}
+/* ─────────────────────────────────────────────────────────────────────────
+   SECTIONS
+───────────────────────────────────────────────────────────────────────── */
 
-/* sections */
-main > .section {
-  margin: 40px 0;
-}
+main > .section { margin: 40px 0; }
 
-/* Regular sections: constrain the inner wrapper div */
 main > .section > div {
   max-width: var(--section-max-width, 1200px);
   margin: 0 auto;
   padding: 0 var(--section-padding, 24px);
 }
 
-/* Layout sections are their own containers — apply the same constraint at section level.
-   Add any new layout section types here. */
 main .section.grid,
 main .section.aside {
   max-width: var(--section-max-width, 1200px);
@@ -273,9 +612,7 @@ main .section.aside {
   box-sizing: border-box;
 }
 
-main > .section:first-of-type {
-  margin-top: 0;
-}
+main > .section:first-of-type { margin-top: 0; }
 
 @media (width >= 900px) {
   main > .section > div,
@@ -286,91 +623,137 @@ main > .section:first-of-type {
   }
 }
 
-/* section metadata */
 main .section.light,
 main .section.highlight {
-  background-color: var(--light-color);
+  background-color: var(--color-muted);
   margin: 0;
   padding: 40px 0;
 }
 
-/* form styles */
-.form-group {
-  margin-bottom: var(--spacing-lg);
+/* ── Search filter rail / top layouts ──────────────────────────────────── */
+/*
+  Apply via section metadata:
+    style: right search-filters   — sticky rail on the right
+    style: left search-filters    — sticky rail on the left
+    style: top search-filters     — horizontal row above results
+
+  Filter blocks get a card appearance automatically.
+  Adjust --search-filters-width and --nav-height as needed.
+*/
+
+main .section.search-filters .block {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
 }
 
-.form-group label {
-  display: block;
-  color: var(--label-color);
-  font-weight: var(--label-font-weight);
-  font-size: var(--body-font-size-s);
-  margin-bottom: var(--spacing-xs);
+/* ── Rail layouts ────────────────────────────────────────────────────────── */
+
+@media (width >= 900px) {
+  /* Switch main to a 2-column grid when a rail exists.
+     max-width + margin: auto mirrors the nav's 1264px border-box so the
+     left rail edge and nav logo left-align, and the right content edge
+     and nav tools right-align. */
+  main:has(.section.right.search-filters) {
+    display: grid;
+    grid-template-columns: 1fr var(--search-filters-width, 280px);
+    column-gap: var(--search-filters-gap, var(--spacing-xl, 40px));
+    align-items: start;
+    max-width: 1264px;
+    margin-inline: auto;
+    padding-inline: var(--section-padding-wide, 32px);
+    box-sizing: border-box;
+  }
+
+  main:has(.section.left.search-filters) {
+    display: grid;
+    grid-template-columns: var(--search-filters-width, 280px) 1fr;
+    column-gap: var(--search-filters-gap, var(--spacing-xl, 40px));
+    align-items: start;
+    max-width: 1264px;
+    margin-inline: auto;
+    padding-inline: var(--section-padding-wide, 32px);
+    box-sizing: border-box;
+  }
+
+  /* Non-filter sections → content column (order-independent) */
+  main:has(.section.left.search-filters) > .section:not(.left.search-filters) {
+    grid-column: 2;
+  }
+
+  main:has(.section.right.search-filters) > .section:not(.right.search-filters) {
+    grid-column: 1;
+  }
+
+  /* Filter → rail column, anchored at row 1 spanning all rows so every
+     content row sits alongside it regardless of HTML order. */
+  main:has(.section.left.search-filters) > .section.left.search-filters {
+    grid-column: 1;
+    grid-row: 1 / span 100;
+  }
+
+  main:has(.section.right.search-filters) > .section.right.search-filters {
+    grid-column: 2;
+    grid-row: 1 / span 100;
+  }
+
+  /* Override section > div double-padding when main has its own padding */
+  main:has(.section.left.search-filters) > .section > div,
+  main:has(.section.right.search-filters) > .section > div {
+    max-width: none;
+    padding-inline: 0;
+  }
+
+  /* Sticky rail */
+  main .section.right.search-filters,
+  main .section.left.search-filters {
+    position: sticky;
+    top: var(--nav-height, 80px);
+    padding-top: var(--spacing-md);
+    max-height: calc(100vh - var(--nav-height, 80px) - var(--spacing-xl, 40px));
+    overflow-y: auto;
+  }
 }
 
-.form-group input[type="text"],
-.form-group input[type="email"],
-.form-group input[type="password"],
-.form-group input[type="tel"],
-.form-group input[type="url"],
-.form-group input[type="search"],
-.form-group input[type="number"],
-.form-group input[type="date"],
-.form-group textarea,
-.form-group select {
-  display: block;
-  width: 100%;
-  padding: var(--input-padding-y) var(--input-padding-x);
-  font-size: var(--body-font-size-s);
-  color: var(--input-text-color);
-  background-color: var(--input-background);
-  border: var(--border-width) var(--border-style) var(--input-border-color);
-  box-sizing: border-box;
-  height: var(--input-height-md);
+/* ── Top layout ──────────────────────────────────────────────────────────── */
+
+main .section.top.search-filters {
+  position: sticky;
+  top: var(--nav-height, 64px);
+  z-index: var(--z-sticky);
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: var(--spacing-sm);
 }
 
-.form-group input:focus,
-.form-group textarea:focus,
-.form-group select:focus {
-  outline: 2px solid var(--text-color);
-  outline-offset: 2px;
-}
-
-.form-group input:disabled,
-.form-group textarea:disabled,
-.form-group select:disabled {
-  background-color: var(--light-color);
-  color: var(--dark-color);
-  cursor: not-allowed;
-}
-
-.form-group input::placeholder,
-.form-group textarea::placeholder {
-  color: var(--input-placeholder-color);
-}
-
-.form-group textarea {
-  min-height: 100px;
-  height: auto;
-}
-
-
-.form-group .checkbox-group,
-.form-group .radio-group {
+main .section.top.search-filters > div {
   display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+  align-items: flex-end;
+}
+
+main .section.top.search-filters .block {
+  flex: 1 1 160px;
+  margin: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   BLOCK SPACING & SEARCH FILTER RESETS
+───────────────────────────────────────────────────────────────────────── */
+
+/* Default block padding — override with --block-padding at the section level */
+main .block {
+  padding: var(--block-padding, var(--spacing-md));
   margin-bottom: var(--spacing-md);
 }
 
-.form-group input[type="checkbox"],
-.form-group input[type="radio"] {
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
-}
-
-.form-row {
-  display: grid;
-  gap: var(--spacing-lg);
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+/* Remove bullets from lists inside search filter blocks */
+main .section.search-filters ul,
+main .section.search-filters ol {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
 }

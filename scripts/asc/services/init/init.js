@@ -4,7 +4,7 @@ import { delegateEvent } from "../../utils/events.js";
 
 class Init {
   constructor(config) {
-    this.config = config;
+    this.config = config || {};
     this.preloads = new Map();
 
     window.asc = {
@@ -24,7 +24,7 @@ class Init {
           (block) => block.getAttribute("data-block-status") === "loaded"
         );
 
-        if (loadedBlocks.length === blocks.length) {
+        if (blocks.length > 0 && loadedBlocks.length === blocks.length) {
           document.dispatchEvent(
             new CustomEvent("asc:blocks:loaded", {
               detail: { blocks: loadedBlocks },
@@ -54,11 +54,16 @@ class Init {
 
           fetch(ascPreload);
           if (!ascPreload.includes('.')) {
-            fetch(`${ascPreload}.plain.html`);
+            // Try direct path first; fall back to /index variant for folder-index pages
+            fetch(`${ascPreload}.plain.html`).then((r) => {
+              if (!r.ok && !ascPreload.endsWith('/index')) {
+                fetch(`${ascPreload}/index.plain.html`);
+              }
+            });
           }
         });
     }
   }
 }
 
-export default new Init(serviceConfigurations.init);
+export default new Init(serviceConfigurations.init || {});

@@ -20,7 +20,7 @@ export default async function decorate(block) {
 
 function html() {
   return `<dialog>
-            <button class="close" data-asc-action="asset:details:close@click">Close</button>
+            <button class="close" aria-label="Close" data-asc-action="asset:details:close@click">&#x2715;</button>
 
             <div class="content"></div>
         </dialog>`;

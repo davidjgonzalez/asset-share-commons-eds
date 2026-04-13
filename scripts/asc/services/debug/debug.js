@@ -25,4 +25,4 @@ class Debug {
   }
 }
 
-export default new Debug(serviceConfigurations.debug);
+export default new Debug(serviceConfigurations.debug || {});

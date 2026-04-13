@@ -14,7 +14,7 @@ import services from '../../scripts/asc/services/services.js';
 export default async function decorate(block) {
   block.innerHTML = await buildHtml();
 
-  document.addEventListener('asc:collection:update', async () => {
+  document.addEventListener('asc:collection:change', async () => {
     block.innerHTML = await buildHtml();
   });
 
@@ -32,7 +32,7 @@ async function buildHtml() {
 }
 
 async function htmlSheet() {
-  const cart = await services.collections.getCollection('cart', false);
+  const cart = await services.collections.getActive();
   const assetIds = cart?.assetIds || [];
 
   if (!assetIds.length) {
@@ -52,7 +52,7 @@ async function htmlSheet() {
 }
 
 async function htmlCollections() {
-  const collections = await services.collections.getCollections(false);
+  const collections = await services.collections.getAll();
 
   return `
     <h4>Collections</h4>

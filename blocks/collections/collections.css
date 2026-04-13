@@ -1,11 +1,271 @@
+/* Collections index — calm SaaS layout (SlothUI-inspired: clear hierarchy, flat cards, muted chrome) */
+
 .block.collections {
+    --collections-gap: var(--spacing-lg);
+    --collections-card-radius: var(--border-radius-md);
 
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(257px, 1fr));
-    gap: var(--spacing-lg);
+    container-type: inline-size;
 
-    .collection {
-        border: solid 1px red;
+    .collections__shell {
+        max-width: 1200px;
+        margin-inline: auto;
     }
 
+    /* ── Toolbar (title / intro come from page content above this block) ─ */
+
+    .collections__toolbar {
+        display: flex;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: var(--spacing-md);
+        margin-block-end: var(--spacing-lg);
+    }
+
+    .collections__new-btn {
+        flex-shrink: 0;
+    }
+
+    /* ── New collection (inline panel) ───────────────────────────────── */
+
+    .collections__new-form {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        gap: var(--spacing-md);
+        margin-block-end: var(--spacing-xl);
+        padding: var(--spacing-md);
+        background: var(--color-muted);
+        border: 1px solid var(--color-border);
+        border-radius: var(--collections-card-radius);
+
+        &[hidden] {
+            display: none;
+        }
+    }
+
+    .collections__new-label {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xs);
+        flex: 1;
+        min-width: min(100%, 220px);
+        font-size: var(--body-font-size-xs);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--color-muted-fg);
+    }
+
+    .collections__new-label-text {
+        display: block;
+    }
+
+    .collections__new-name {
+        width: 100%;
+        box-sizing: border-box;
+        margin: 0;
+        padding: var(--input-padding-y) var(--input-padding-x);
+        border: 1px solid var(--color-border);
+        border-radius: var(--input-border-radius);
+        font-size: var(--body-font-size-s);
+        font-weight: 400;
+        text-transform: none;
+        letter-spacing: normal;
+        background: var(--color-input);
+        color: var(--color-fg);
+        transition: var(--input-transition);
+
+        &:focus-visible {
+            outline: none;
+            border-color: var(--color-ring);
+            box-shadow: var(--focus-ring);
+        }
+    }
+
+    .collections__new-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--spacing-sm);
+        align-items: center;
+    }
+
+    /* ── Grid (list semantics) ───────────────────────────────────────── */
+
+    .collections__grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+        gap: var(--collections-gap);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .collections__empty {
+        grid-column: 1 / -1;
+        list-style: none;
+        margin: 0;
+        padding: var(--spacing-3xl) var(--spacing-md);
+        text-align: center;
+        border: 1px dashed var(--color-border);
+        border-radius: var(--collections-card-radius);
+        background: color-mix(in srgb, var(--color-muted) 50%, var(--color-bg));
+    }
+
+    .collections__empty-title {
+        margin: 0 0 var(--spacing-sm);
+        font-size: var(--heading-font-size-s);
+        font-weight: 600;
+        color: var(--color-fg);
+    }
+
+    .collections__empty-hint {
+        margin: 0;
+        font-size: var(--body-font-size-s);
+        color: var(--color-muted-fg);
+        max-width: 36ch;
+        margin-inline: auto;
+        line-height: 1.5;
+    }
+
+    /* ── Cards ───────────────────────────────────────────────────────── */
+
+    .collections__card {
+        display: flex;
+        flex-direction: column;
+        min-height: 11rem;
+        padding: var(--spacing-md);
+        border: 1px solid var(--color-border);
+        border-radius: var(--collections-card-radius);
+        background: var(--color-card);
+        color: var(--color-card-fg);
+        transition:
+            border-color var(--transition-fast),
+            background var(--transition-fast),
+            box-shadow var(--transition-fast);
+    }
+
+    .collections__card:hover {
+        border-color: color-mix(in srgb, var(--color-fg) 18%, var(--color-border));
+        background: color-mix(in srgb, var(--color-fg) 2.5%, var(--color-card));
+        box-shadow: var(--shadow-sm);
+    }
+
+    .collections__card--active {
+        border-color: var(--color-primary);
+        background: color-mix(in srgb, var(--color-primary) 5%, var(--color-card));
+        box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-primary) 35%, transparent);
+    }
+
+    .collections__card--active:hover {
+        border-color: var(--color-primary);
+        background: color-mix(in srgb, var(--color-primary) 7%, var(--color-card));
+    }
+
+    .collections__card-top {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-sm);
+        min-height: 0;
+    }
+
+    .collections__card-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: var(--spacing-sm);
+    }
+
+    .collections__card-name {
+        margin: 0;
+        font-size: var(--body-font-size-m);
+        font-weight: 600;
+        line-height: 1.3;
+        color: var(--color-fg);
+        word-break: break-word;
+    }
+
+    .collections__card-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--spacing-2xs);
+        justify-content: flex-end;
+        flex-shrink: 0;
+    }
+
+    .collections__card-badge {
+        font-size: var(--body-font-size-xs);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        padding: var(--spacing-2xs) var(--spacing-xs);
+        border-radius: var(--border-radius-sm);
+        white-space: nowrap;
+    }
+
+    .collections__card-badge--active {
+        background: var(--color-accent);
+        color: var(--color-accent-fg);
+    }
+
+    .collections__card-badge--default {
+        background: var(--color-muted);
+        color: var(--color-muted-fg);
+    }
+
+    .collections__card-count {
+        margin: 0;
+        font-size: var(--body-font-size-s);
+        color: var(--color-muted-fg);
+    }
+
+    .collections__card-count-num {
+        font-variant-numeric: tabular-nums;
+        font-weight: 600;
+        color: var(--color-fg);
+    }
+
+    .collections__card-updated {
+        margin: 0;
+        font-size: var(--body-font-size-xs);
+        color: var(--color-muted-fg);
+        line-height: 1.35;
+    }
+
+    .collections__card-updated time {
+        font-variant-numeric: tabular-nums;
+    }
+
+    .collections__card-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--spacing-sm);
+        align-items: center;
+        justify-content: flex-start;
+        margin-block-start: auto;
+        padding-block-start: var(--spacing-md);
+        border-top: 1px solid var(--color-border);
+    }
+
+    /* Primary + secondary row; destructive aligned end */
+    .collections__card-delete {
+        color: var(--color-destructive);
+        margin-inline-start: auto;
+    }
+
+    .collections__card-delete:hover {
+        background: color-mix(in srgb, var(--color-destructive) 10%, transparent);
+        color: var(--color-destructive);
+    }
+
+    .collections__card-actions .btn {
+        min-height: var(--input-height-sm);
+        box-sizing: border-box;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .collections__card {
+            transition: none;
+        }
+    }
 }

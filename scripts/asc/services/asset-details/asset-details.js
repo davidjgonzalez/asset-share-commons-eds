@@ -24,7 +24,7 @@ const ASSET_URL_PARAM = 'asset';
 class AssetDetails {
   constructor(config) {
     this.config = config || {};
-    this.templates = this.config.templates || { default: '/details/default' };
+    this.templates = this.config.templates || (() => '/details');
     this.modal = null;
     this.init();
   }
@@ -57,36 +57,44 @@ class AssetDetails {
       this.close();
     });
 
-    // Auto-open if URL already contains an asset param on page load
+    // Handle browser back/forward navigation
+    window.addEventListener('popstate', (event) => {
+      if (event.state?.assetId) {
+        // Navigate to the asset in this history entry without pushing a new entry
+        this.open(event.state.assetId, { addHistory: false });
+      } else {
+        // No asset in this history entry — close without touching history
+        this.close({ updateHistory: false });
+      }
+    });
+
+    // Auto-open if URL already contains an asset param on page load.
+    // Use replaceState (not pushState) — the URL already reflects this state.
     const urlAsset = new URLSearchParams(window.location.search).get(ASSET_URL_PARAM);
     if (urlAsset) {
-      this.open(urlAsset);
+      this.open(urlAsset, { addHistory: false });
     }
   }
 
   /**
-   * Resolve which fragment template to load for a given MIME type.
-   * Uses the templates map from configurations.assetDetails.templates.
-   * Supports exact matches ('application/pdf') and wildcard prefixes ('image/*').
-   * Falls back to 'default'.
+   * Resolve which fragment template to load for a given asset.
+   * `config.templates` must be a function: (asset) => string.
+   * Falls back to '/details' if the function returns a falsy value.
    */
-  resolveTemplate(mimeType) {
-    if (!mimeType) return this.templates.default || '/details/default';
-
-    for (const [pattern, path] of Object.entries(this.templates)) {
-      if (pattern === 'default') continue;
-      if (pattern.endsWith('/*')) {
-        const prefix = pattern.slice(0, -2);
-        if (mimeType.startsWith(prefix)) return path;
-      } else if (mimeType === pattern) {
-        return path;
-      }
-    }
-
-    return this.templates.default || '/details/default';
+  resolveTemplate(asset) {
+    return this.templates(asset) || '/details';
   }
 
-  async open(assetId) {
+  /**
+   * Open the asset details modal for the given asset ID.
+   *
+   * @param {string} assetId  UUID of the asset to display
+   * @param {object} [opts]
+   * @param {boolean} [opts.addHistory=true]  Push a new browser history entry.
+   *   Pass false when responding to a popstate event (back/forward) or on
+   *   initial page load (URL already reflects the state).
+   */
+  async open(assetId, { addHistory = true } = {}) {
     if (!this.modal) return;
 
     // Fetch the asset to determine its MIME type for template resolution
@@ -99,7 +107,7 @@ class AssetDetails {
       return;
     }
 
-    const templatePath = this.resolveTemplate(asset.mimeType);
+    const templatePath = this.resolveTemplate(asset);
 
     const fragment = await loadFragment(templatePath, {
       main: {
@@ -113,24 +121,39 @@ class AssetDetails {
       return;
     }
 
-    this.modal.querySelector('dialog .content').replaceChildren(fragment);
-    this.modal.querySelector('dialog').showModal();
+    const dialog = this.modal.querySelector('dialog');
+    dialog.querySelector('.content').replaceChildren(fragment);
+    if (!dialog.open) dialog.showModal();
 
-    // Update URL to make this view deep-linkable
+    // Update URL and browser history
     const url = new URL(window.location);
     url.searchParams.set(ASSET_URL_PARAM, assetId);
-    window.history.replaceState({ assetId }, '', url);
+
+    if (addHistory) {
+      window.history.pushState({ assetId }, '', url);
+    } else {
+      window.history.replaceState({ assetId }, '', url);
+    }
   }
 
-  close() {
+  /**
+   * Close the asset details modal.
+   *
+   * @param {object} [opts]
+   * @param {boolean} [opts.updateHistory=true]  Update the URL/history.
+   *   Pass false when responding to a popstate event — history is already
+   *   being navigated and should not be modified again.
+   */
+  close({ updateHistory = true } = {}) {
     if (!this.modal) return;
     this.modal.querySelector('dialog')?.close();
 
-    // Remove asset param from URL
-    const url = new URL(window.location);
-    url.searchParams.delete(ASSET_URL_PARAM);
-    window.history.replaceState({}, '', url);
+    if (updateHistory) {
+      const url = new URL(window.location);
+      url.searchParams.delete(ASSET_URL_PARAM);
+      window.history.replaceState({}, '', url);
+    }
   }
 }
 
-export default new AssetDetails(serviceConfigurations.assetDetails);
+export default new AssetDetails(serviceConfigurations.assetDetails || {});

@@ -1,3 +1,115 @@
 .block.details-download {
+    /* ── Header ────────────────────────────────────────────────────────── */
+    .details-download__header {
+        margin-bottom: var(--spacing-md, 1rem);
+    }
 
+    .details-download__title {
+        font-size: var(--heading-font-size-s, 1rem);
+        font-weight: 600;
+        margin: 0 0 var(--spacing-2xs);
+        color: var(--color-fg);
+    }
+
+    .details-download__description {
+        font-size: var(--body-font-size-s, 0.875rem);
+        color: var(--color-muted-fg);
+        margin: 0;
+    }
+
+    /* ── Grid ───────────────────────────────────────────────────────────── */
+    .details-download__grid {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: var(--spacing-md, 1rem);
+    }
+
+    /* ── Card ───────────────────────────────────────────────────────────── */
+    .details-download__card {
+        display: flex;
+        flex-direction: column;
+        background: var(--color-surface, var(--color-bg));
+        border: 1px solid var(--color-border);
+        border-radius: var(--border-radius-md);
+        overflow: hidden;
+        transition: box-shadow var(--transition-normal);
+
+        &:hover {
+            box-shadow: var(--shadow-sm);
+        }
+    }
+
+    /* ── Preview ────────────────────────────────────────────────────────── */
+    .details-download__preview {
+        aspect-ratio: 4 / 3;
+        background: var(--color-surface-muted, transparent);
+        overflow: hidden;
+
+        img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+            display: block;
+        }
+    }
+
+    /* ── Info ───────────────────────────────────────────────────────────── */
+    .details-download__info {
+        padding: var(--spacing-xs) var(--spacing-sm) var(--spacing-xs);
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-2xs);
+    }
+
+    .details-download__rendition-label {
+        font-size: var(--body-font-size-s, 0.875rem);
+        font-weight: 600;
+        color: var(--color-fg);
+        line-height: 1.2;
+    }
+
+    .details-download__filename {
+        font-size: var(--body-font-size-xs, 0.75rem);
+        color: var(--color-muted-fg);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .details-download__meta {
+        font-size: var(--body-font-size-xs, 0.75rem);
+        color: var(--color-muted-fg);
+        margin-top: var(--spacing-2xs);
+    }
+
+    /* ── Download button ────────────────────────────────────────────────── */
+    .details-download__btn {
+        display: block;
+        margin: var(--spacing-xs) var(--spacing-sm) var(--spacing-sm);
+        padding: var(--spacing-2xs) 0;
+        text-align: center;
+        font-size: var(--body-font-size-s, 0.875rem);
+        font-weight: 500;
+        color: var(--color-primary-fg);
+        background: var(--color-primary);
+        border-radius: var(--border-radius-sm);
+        text-decoration: none;
+        transition: background-color var(--transition-normal);
+
+        &:hover {
+            background: color-mix(in srgb, var(--color-primary) 85%, black);
+            text-decoration: none;
+        }
+    }
+
+    /* ── Empty state ────────────────────────────────────────────────────── */
+    .details-download__empty {
+        color: var(--color-muted-fg);
+        font-size: var(--body-font-size-s, 0.875rem);
+    }
 }

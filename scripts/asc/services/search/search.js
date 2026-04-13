@@ -33,11 +33,6 @@ class SearchService {
   }
 
   init() {
-    // Only initialize on pages that have search blocks.
-    if (!document.querySelector('.block.search-bar, .block.search-results, .block.search-property, .block.search-path')) {
-      return;
-    }
-
     document.addEventListener(Events.SEARCH_START, (event) => {
       if (event.detail?.source === 'query-params') {
         this.executeSearchFromUrl(event.detail.value || window.location.search);
@@ -46,8 +41,12 @@ class SearchService {
       }
     });
 
+    // Wait until all blocks are decorated before running the initial search.
+    // The search-page check runs here — after blocks exist — not at import time.
     document.addEventListener('asc:blocks:loaded', () => {
-      this.executeSearchFromUrl(window.location.search);
+      if (document.querySelector('.block.search-bar, .block.search-results, .block.search-property, .block.search-path')) {
+        this.executeSearchFromUrl(window.location.search);
+      }
     });
   }
 
@@ -111,7 +110,17 @@ class SearchService {
 
       this.updateBrowserUrl(this.provider.buildParams(adjusted));
 
-      return await this.provider.search(adjusted);
+      const results = await this.provider.search(adjusted);
+
+      if (results && this.config.accepts) {
+        const before = results.assets.length;
+        results.assets = results.assets.filter((asset) => this.config.accepts(asset));
+        const removed = before - results.assets.length;
+        results.size = results.assets.length;
+        results.total = Math.max(0, (results.total || 0) - removed);
+      }
+
+      return results;
     } catch (error) {
       console.error('Search failed:', error);
       document.dispatchEvent(

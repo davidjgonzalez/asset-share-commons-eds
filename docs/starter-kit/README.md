@@ -15,7 +15,7 @@ Upload each `.html` file directly to your da.live project via the da.live admin 
 1. Open your da.live project.
 2. For each file in this kit, use **File > Upload** or drag-and-drop the `.html` file to the correct path in your content tree.
 3. The file paths should match the URLs you want on your site (e.g., `index.html` → `/`, `sheet.html` → `/sheet`).
-4. For the `details/` subfolder, upload both files under a `details/` path so the detail templates resolve to `/details/default` and `/details/image`.
+4. For the `details/` subfolder, upload files under a `details/` path. Name the default template `index` so it is served at the clean URL `/details`. Custom templates use their own name, e.g. `/details/image`.
 
 ### Option 2 — Recreate manually in da.live
 
@@ -34,7 +34,7 @@ Use the HTML comments in each file as a guide to the table structure.
 | `nav.html` | `/nav` | Semantic `<nav>` (no blocks) |
 | `footer.html` | `/footer` | Semantic `<footer>` (no blocks) |
 | `index.html` | `/` | `stub`, `search-statistics`, `search-bar`, `search-property` (x2), `search-path`, `search-date-range`, `search-tags`, `search-results` |
-| `details/default.html` | `/details/default` | `details-preview`, `details-property` (x6), `details-download`, `details-actions` |
+| `details/index.html` | `/details` | `details-preview`, `details-property` (x6), `details-download`, `details-actions` |
 | `details/image.html` | `/details/image` | Same as default — `details-actions` adds the `share` action |
 | `sheet.html` | `/sheet` | `sheet` |
 | `collections.html` | `/collections` | `collections` |
@@ -51,7 +51,7 @@ The filter blocks in `index.html` are pre-populated with example values. Before 
 
 ## Configuring the Details Templates
 
-The `assetDetails` service in `scripts/configurations.js` maps MIME type patterns to detail template URLs. By default it will load `/details/default` for all asset types. To use the image-specific template for images, add a mapping such as:
+The `assetDetails` service in `scripts/configurations.js` maps MIME type patterns to detail template URLs. By default it loads `/details` (authored as `details/index` in da.live) for all asset types. To use the image-specific template for images, add a mapping such as:
 
 ```js
 assetDetails: {

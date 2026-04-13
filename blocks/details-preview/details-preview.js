@@ -13,16 +13,16 @@
 // limitations under the License.
 
 import Asset from '../../scripts/asc/models/asset.js';
-import services from '../../scripts/asc/services/services.js';
+import collectionToggle from '../../scripts/asc/parts/collection-toggle/collection-toggle.js';
 
 export default async function decorate(block) {
   try {
     // Get asset from URL (UUID or path)
     const asset = await Asset.create(block);
-    
+
     // Update page title
     document.title = `${asset.title} - Asset Details`;
-    
+
     // Render asset preview
     block.innerHTML = `
       <section class="asset-preview">
@@ -41,15 +41,16 @@ export default async function decorate(block) {
             <dt>File Path</dt>
             <dd class="file-path">${asset.path}</dd>
           </dl>
-          ${services.collections.contains('cart', asset.uuid) ? 
-            `<button data-asc-action="collection.remove@click" data-asc-asset="${asset.uuid}" data-asc-collection="cart">Remove from Cart</button>` 
-            : 
-            `<button data-asc-action="collection.add@click" data-asc-asset="${asset.uuid}" data-asc-collection="cart">Add to Cart</button>`
-          }
+          <div class="asset-actions">
+            ${collectionToggle(asset, {
+              addLabel: 'Add to collection',
+              removeLabel: 'Remove from collection',
+            })}
+          </div>
         </aside>
       </section>
     `;
-    
+
   } catch (error) {
     console.error('Failed to load asset:', error);
     block.innerHTML = `

@@ -19,7 +19,7 @@ import users from '../users/users.js';
 
 class AEM {
   constructor(config) {
-    this.config = config;
+    this.config = config || {};
 
     this.preconnect();
   }
@@ -53,4 +53,4 @@ class AEM {
   }
 }
 
-export default new AEM(serviceConfigurations.aem);
+export default new AEM(serviceConfigurations.aem || {});

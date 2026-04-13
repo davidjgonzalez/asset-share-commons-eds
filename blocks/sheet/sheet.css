@@ -6,9 +6,9 @@
     .sheet__back {
         display: inline-flex;
         align-items: center;
-        gap: 0.4em;
+        gap: var(--spacing-xs);
         margin-bottom: var(--spacing-md, 16px);
-        color: var(--link-color, #1473e6);
+        color: var(--color-primary);
         text-decoration: none;
         font-size: var(--body-font-size-s, 0.875rem);
 
@@ -24,13 +24,13 @@
     }
 
     .sheet__count {
-        color: var(--text-color-secondary, #767676);
+        color: var(--color-muted-fg);
         font-size: var(--body-font-size-s, 0.875rem);
         margin-bottom: var(--spacing-lg, 24px);
     }
 
     .sheet__empty {
-        color: var(--text-color-secondary, #767676);
+        color: var(--color-muted-fg);
         padding: var(--spacing-xl, 40px) 0;
         text-align: center;
     }
@@ -49,15 +49,15 @@
         gap: var(--spacing-md, 16px);
         align-items: center;
         padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
-        border: 1px solid var(--border-color, #e0e0e0);
-        border-radius: var(--border-radius, 8px);
-        background: var(--background-color, #fff);
+        border: 1px solid var(--color-border);
+        border-radius: var(--border-radius-md);
+        background: var(--color-bg);
         cursor: grab;
-        transition: box-shadow 0.15s, border-color 0.15s;
+        transition: box-shadow var(--transition-fast), border-color var(--transition-fast);
 
         &:hover {
-            border-color: var(--link-color, #1473e6);
-            box-shadow: 0 2px 8px rgb(0 0 0 / 8%);
+            border-color: var(--color-primary);
+            box-shadow: var(--shadow-sm);
         }
 
         &:active {
@@ -73,7 +73,7 @@
         height: 66px;
         border-radius: var(--border-radius-sm, 4px);
         overflow: hidden;
-        background: var(--color-surface-muted, #f5f5f5);
+        background: var(--color-muted);
         flex-shrink: 0;
 
         img {
@@ -89,7 +89,7 @@
             inset: 0;
             align-items: center;
             justify-content: center;
-            font-size: 2rem;
+            font-size: var(--heading-font-size-xl);
         }
 
         &.sheet__asset-thumb--error {
@@ -119,8 +119,8 @@
 
     .sheet__asset-meta {
         font-size: var(--body-font-size-s, 0.875rem);
-        color: var(--text-color-secondary, #767676);
-        margin-top: 2px;
+        color: var(--color-muted-fg);
+        margin-top: var(--spacing-2xs);
     }
 
     /* ── Rendition switcher ──────────────────────────────────────────── */
@@ -133,32 +133,32 @@
     }
 
     .sheet__rendition-pill {
-        padding: 0.25rem 0.875rem;
-        border: 1px solid var(--border-color, #e0e0e0);
-        border-radius: 999px;
+        padding: var(--spacing-xs) var(--spacing-sm);
+        border: 1px solid var(--color-border);
+        border-radius: var(--border-radius-full);
         background: transparent;
         cursor: pointer;
         font-size: var(--body-font-size-xs, 0.8rem);
         font-family: inherit;
-        color: var(--text-color, #333);
-        transition: background 0.15s, border-color 0.15s, color 0.15s;
+        color: var(--color-fg);
+        transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
         white-space: nowrap;
 
         &:hover {
-            background: var(--color-surface-hover, #f5f5f5);
-            border-color: var(--text-color-secondary, #767676);
+            background: var(--color-muted);
+            border-color: var(--color-muted-fg);
         }
 
         &.sheet__rendition-pill--active {
-            background: var(--button-primary-bg, #1473e6);
-            border-color: var(--button-primary-bg, #1473e6);
-            color: #fff;
+            background: var(--color-primary);
+            border-color: var(--color-primary);
+            color: var(--color-primary-fg);
         }
     }
 
     .sheet__no-renditions {
         font-size: var(--body-font-size-s, 0.875rem);
-        color: var(--text-color-secondary, #767676);
+        color: var(--color-muted-fg);
     }
 
     /* ── Download button ─────────────────────────────────────────────── */
@@ -169,19 +169,19 @@
 
     .sheet__download-btn {
         display: inline-block;
-        padding: 0.4rem 1rem;
-        background: var(--button-primary-bg, #1473e6);
-        color: #fff;
+        padding: var(--spacing-xs) var(--spacing-md);
+        background: var(--color-primary);
+        color: var(--color-primary-fg);
         border-radius: var(--border-radius-sm, 4px);
         text-decoration: none;
         font-size: var(--body-font-size-s, 0.875rem);
         font-weight: 600;
         white-space: nowrap;
-        transition: background 0.15s;
+        transition: background var(--transition-fast);
 
         &:hover {
-            background: var(--button-primary-hover-bg, #0d66d0);
-            color: #fff;
+            background: color-mix(in srgb, var(--color-primary) 85%, black);
+            color: var(--color-primary-fg);
         }
     }
 

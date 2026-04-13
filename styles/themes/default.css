@@ -1,65 +1,48 @@
-/* Default Theme - Clean and Professional */
-.theme-default {
-  /* Colors */
-  --background-color: #ffffff;
-  --light-color: #f8fafc;
-  --dark-color: #334155;
-  --text-color: #1e293b;
-  --link-color: #3b82f6;
-  --link-hover-color: #2563eb;
+/*
+ * Default Theme — "Violet Studio"
+ *
+ * Clean, modern, creative. Vibrant violet primary on crisp white.
+ * Designed for creative professionals who care about visual quality.
+ *
+ * Palette:
+ *   Page background  #ffffff  (pure white — let the assets breathe)
+ *   Primary text     #1e1b4b  (deep indigo — rich, not harsh black)
+ *   Primary action   #7c3aed  (violet — confident, creative)
+ *   Muted surface    #faf5ff  (whisper of violet — barely there)
+ *   Border           #e9d5ff  (soft violet tint)
+ *
+ * Activate: set `theme: { default: 'default' }` in scripts/configurations.js
+ */
 
-  /* Component Colors */
-  --search-border-color: #e2e8f0;
-  --search-background: #ffffff;
-  --search-text-color: #334155;
-  --search-placeholder-color: #94a3b8;
-  --search-primary-color: #3b82f6;
-  --search-primary-hover: #2563eb;
-  --search-primary-focus: rgba(59, 130, 246, 0.1);
+:root {
+  /* ── Semantic color tokens ─────────────────────────────────────── */
+  --color-bg:          #ffffff;
+  --color-fg:          #1e1b4b;
+  --color-card:        #ffffff;
+  --color-card-fg:     #1e1b4b;
+  --color-popover:     #ffffff;
+  --color-popover-fg:  #1e1b4b;
 
-  --card-background: #ffffff;
-  --card-border-color: #e2e8f0;
-  --card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  --card-shadow-hover: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --color-primary:     #7c3aed;
+  --color-primary-fg:  #ffffff;
 
-  --button-primary-bg: #3b82f6;
-  --button-primary-text: #ffffff;
-  --button-primary-hover: #2563eb;
-  --button-secondary-bg: transparent;
-  --button-secondary-border: #334155;
-  --button-secondary-text: #334155;
+  --color-secondary:    #f5f3ff;
+  --color-secondary-fg: #1e1b4b;
 
-  --input-border-color: #e2e8f0;
-  --input-border-focus: #3b82f6;
-  --input-background: #ffffff;
-  --input-text-color: #334155;
-  --input-placeholder-color: #94a3b8;
+  --color-muted:    #faf5ff;
+  --color-muted-fg: #6b7280;
 
-  /* Form Input Specific Variables */
-  --input-border-color-hover: #cbd5e1;
-  --input-border-color-error: #ef4444;
-  --input-border-color-success: #10b981;
-  --input-border-color-disabled: #e2e8f0;
-  --input-focus-ring-color: rgba(59, 130, 246, 0.1);
-  
-  /* Checkbox & Radio */
-  --checkbox-border-color: #d1d5db;
-  --checkbox-border-color-checked: #3b82f6;
-  --checkbox-background-checked: #3b82f6;
-  --checkbox-color: #ffffff;
-  
-  /* Select/Dropdown */
-  --select-arrow-color: #6b7280;
-  --select-option-background: #ffffff;
-  --select-option-background-hover: #f8fafc;
-  --select-option-text-color: #334155;
-  
-  /* Form Labels */
-  --label-color: #1e293b;
-  
-  /* Form Validation */
-  --validation-error-color: #ef4444;
-  --validation-success-color: #10b981;
-  --validation-warning-color: #f59e0b;
-  --validation-info-color: #3b82f6;
+  --color-accent:    #ede9fe;
+  --color-accent-fg: #7c3aed;
+
+  --color-destructive:    #dc2626;
+  --color-destructive-fg: #ffffff;
+
+  --color-border: #e9d5ff;
+  --color-input:  #ffffff;
+  --color-ring:   #7c3aed;
+
+  /* ── Typography ─────────────────────────────────────────────────── */
+  --body-font-family:    'Inter', system-ui, -apple-system, sans-serif;
+  --heading-font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }

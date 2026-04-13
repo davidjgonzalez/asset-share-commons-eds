@@ -89,4 +89,4 @@ class Users {
   }
 }
 
-export default new Users(serviceConfigurations.users);
+export default new Users(serviceConfigurations.users || {});

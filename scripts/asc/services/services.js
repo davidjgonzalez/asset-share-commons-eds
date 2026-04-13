@@ -18,6 +18,7 @@ import actions from './actions/actions.js';
 import assetDetails from './asset-details/asset-details.js';
 import debug from './debug/debug.js';
 import collections from './collections/collections.js';
+import downloads from './downloads/downloads.js';
 import fileType from './file-type/file-type.js';
 import properties from './properties/properties.js';
 import renditions from './renditions/renditions.js';
@@ -35,6 +36,7 @@ const services = {
   assetDetails,
   collections,
   debug,
+  downloads,
   fileType,
   init,
   properties,

@@ -3,21 +3,6 @@ import services from "../services/services.js";
 import Rendition from "./rendition.js";
 
 export default class Asset {
-  /**
-   * Common picture html configurations.
-   */
-  pictureHtmlConfigurations = {
-    card: {
-      breakpoints: [
-        { renditionWidth: 319, width: 0 },
-        { renditionWidth: 560, width: 768 },
-        { renditionWidth: 840, width: 1024 },
-      ],
-      sizes: "(max-width: 768px) 250px, (max-width: 1024px) 280px, 280px",
-      loading: "eager",
-    },
-  };
-
   constructor(data) {
     // Store raw data
     this.data = data;
@@ -236,96 +221,6 @@ export default class Asset {
     }
     this._staticRenditions = staticRenditions;
     return this._staticRenditions;
-  }
-
-  /* HTML helpers */
-
-  /**
-   * Returns a <picture> element HTML string for this asset.
-   *
-   * If the asset has multiple image renditions (e.g. cq5dam.web.* nodes from DAM
-   * processing profiles), a responsive <picture> with <source> breakpoints is built.
-   * If only one rendition is available, a plain <img> is returned.
-   *
-   * Options:
-   *   alt           {string}   Alt text override (defaults to asset title)
-   *   eager         {boolean}  loading="eager" + fetchpriority="high" (for LCP images)
-   *   breakpoints   {Array}    Custom breakpoints: [{ media: '(min-width: 768px)', renditionWidth: 800 }, ...]
-   *   imgAttributes {Object}   Additional attributes merged onto <img>
-   */
-  getPictureHtml(options = {}) {
-    const {
-      alt = null,
-      eager = false,
-      breakpoints = null,
-      imgAttributes = {},
-    } = options;
-
-    const altText = alt !== null ? alt : this.title;
-    const loading = eager ? 'eager' : 'lazy';
-    const fetchpriority = eager ? 'high' : 'auto';
-
-    // Collect image renditions — prefer explicit rendition nodes when available,
-    // fall back to the thumbnail URL (works for search results without rendition data).
-    const imageRenditions = this.staticRenditions
-      .filter((r) => ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(r.mimeType))
-      .sort((a, b) => (b.width || 0) - (a.width || 0));
-
-    const thumbnailUrl = services.renditions.getThumbnailUrl(this);
-
-    if (!imageRenditions.length) {
-      // No JCR rendition data — render a simple img using the thumbnail URL.
-      const attrStr = this._buildImgAttrString({
-        src: thumbnailUrl,
-        alt: altText,
-        loading,
-        fetchpriority,
-        ...imgAttributes,
-      });
-      return `<img ${attrStr} />`;
-    }
-
-    // Build responsive <picture> from available renditions.
-    let sources = '';
-    if (breakpoints) {
-      sources = breakpoints.map((bp) => {
-        const rendition = imageRenditions.find((r) => r.width >= bp.renditionWidth)
-          || imageRenditions[imageRenditions.length - 1];
-        return `<source srcset="${rendition.url}" type="${rendition.mimeType}" media="${bp.media}" />`;
-      }).join('\n');
-    } else {
-      // Auto breakpoints: one <source> per rendition, largest first.
-      sources = imageRenditions.map((r, i) => {
-        const next = imageRenditions[i + 1];
-        const media = next ? `(min-width: ${next.width + 1}px)` : '';
-        return media
-          ? `<source srcset="${r.url}" type="${r.mimeType}" media="${media}" />`
-          : `<source srcset="${r.url}" type="${r.mimeType}" />`;
-      }).join('\n');
-    }
-
-    const fallback = imageRenditions[imageRenditions.length - 1];
-    const style = fallback.width && fallback.height
-      ? `aspect-ratio: ${fallback.width}/${fallback.height}; width: 100%; object-fit: cover;`
-      : 'width: 100%; object-fit: cover;';
-
-    const attrStr = this._buildImgAttrString({
-      src: fallback.url,
-      alt: altText,
-      loading,
-      fetchpriority,
-      style,
-      ...imgAttributes,
-    });
-
-    return `<picture>\n${sources}\n<img ${attrStr} />\n</picture>`;
-  }
-
-  _buildImgAttrString(attrs) {
-    return Object.entries(attrs)
-      .filter(([, v]) => v != null && v !== '')
-      .map(([k, v]) => `${k}="${v}"`)
-      .join(' ');
   }
 
   /**

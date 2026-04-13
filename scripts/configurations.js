@@ -71,31 +71,141 @@ const configurations = {
 
     // Modify the raw results array before assets are created from them.
     // postprocessResults: (results) => results,
+
+    // Filter individual assets out of results. Return true to include, false to exclude.
+    // Applied after postprocessResults, before results are dispatched to the page.
+    //
+    // Examples:
+    //
+    // Exclude assets with no renditions and no MIME type (skeleton / incomplete assets):
+    accepts: (asset) => asset.mimeType && asset.staticRenditions.length > 0,
+    //
+    // Only show images:
+    // accepts: (asset) => asset.mimeType?.startsWith('image/'),
+    //
+    // Require a specific metadata property:
+    // accepts: (asset) => !!asset.getProperty('jcr:content/metadata/dam:status'),
+  },
+
+  // ─── Search Results ──────────────────────────────────────────────────────────
+  //
+  // Controls which asset properties are shown in each view.
+  // Property names map to the built-in property registry or your custom properties.
+  //
+  // Built-in properties:
+  //   thumbnail, title, file-type, file-size, file-extension,
+  //   dimensions, width, height, modified, created, description, filename, mime-type
+  //
+  // Custom properties defined in configurations.properties.custom are also valid here.
+  //
+  // searchResults: {
+  //   views: {
+  //     // Cards view — ordered list of property names
+  //     cards: ['thumbnail', 'title', 'file-type', 'file-size'],
+  //
+  //     // Masonry view — keep it minimal; meta overlays on hover
+  //     masonry: ['thumbnail', 'title'],
+  //
+  //     // Quick actions shown on card/masonry teasers.
+  //     // Download uses this rendition ID by default (falls back to original, then web).
+  //     // quickActions: {
+  //     //   downloadRendition: 'original',
+  //     // },
+  //
+  //     // List view — property name + column layout hints
+  //     // 'label' defaults to a sensible built-in name; 'width' is a CSS grid track
+  //     list: [
+  //       { property: 'thumbnail',  width: '48px'  },
+  //       { property: 'title',      width: '1fr'   },
+  //       { property: 'file-type',  width: '120px' },
+  //       { property: 'file-size',  width: '90px'  },
+  //       { property: 'modified',   width: '120px' },
+  //       // Custom property — must be registered in properties.custom:
+  //       // { property: 'brand',   label: 'Brand', width: '120px' },
+  //       // Escape hatch — custom render function when a property name isn't enough:
+  //       // { label: 'Status', width: '80px', render: (asset) => asset.getProperty('dam:status') || '—' },
+  //     ],
+  //   },
+  // },
+  searchResults: {
+    views: {
+      // Show dimensions in card metadata when available.
+      cards: ['thumbnail', 'title', 'file-type', 'dimensions', 'file-size'],
+    },
   },
 
   // ─── Asset Details Modal ─────────────────────────────────────────────────────
   assetDetails: {
-    // Maps MIME type patterns to the fragment page used for asset details.
-    // First match wins. Supports exact types ('application/pdf') and wildcards ('image/*').
-    // The 'default' key is the fallback for unmatched types.
-    // Page naming convention: default templates live at /details/index (served as /details).
-    // Custom MIME-type templates are siblings: /details/image, /details/video, etc.
-    templates: {
-      // 'image/*':           '/details/image',
-      // 'video/*':           '/details/video',
-      // 'application/pdf':   '/details/pdf',
-      default: '/details',
-    },
+    // A function that receives the Asset and returns the fragment page path to load.
+    // Return null or undefined to fall back to '/details'.
+    //
+    // Examples:
+    //
+    // Route by MIME type:
+    // templates: (asset) => {
+    //   if (asset.mimeType?.startsWith('image/'))       return '/details/image';
+    //   if (asset.mimeType?.startsWith('video/'))       return '/details/video';
+    //   if (asset.mimeType === 'application/pdf')        return '/details/pdf';
+    //   return '/details';
+    // },
+    //
+    // Route by metadata property:
+    // templates: (asset) => {
+    //   const brand = asset.getProperty('jcr:content/metadata/myco:brand');
+    //   return brand === 'acme' ? '/details/acme' : '/details';
+    // },
+    templates: () => '/details',
   },
+
+  // ─── Collections ─────────────────────────────────────────────────────────────
+  //
+  // collections: {
+  //   // Path to the collections management index page (used by collection-switcher block)
+  //   managePath: '/collections',
+  //
+  //   // Path to the single collection detail/edit page.
+  //   // The collections block appends '?id=<uuid>' as a query param.
+  //   collectionPath: '/collections/collection',
+  //
+  //   // Target sheet page for collection share links.
+  //   // The collection block builds share URLs as:
+  //   //   {sheetPath}?assets=<compressed>&title=<encoded>&description=<encoded>
+  //   sheetPath: '/sheets/',
+  // },
+
+  // ─── Downloads ───────────────────────────────────────────────────────────────
+  //
+  // Configures the async bulk-download service.
+  // Bulk downloads are submitted to the AEM download framework and polled
+  // until complete, then the browser download is triggered automatically.
+  //
+  // downloads: {
+  //   // AEM servlet path for initiating and polling download jobs.
+  //   // POST to initiate; GET with ?jobId=<id> to poll status.
+  //   // Defaults to AEM's standard download initiation endpoint.
+  //   initiateUrl: '/content/dam.downloads.initiateDownload.json',
+  //
+  //   // How long (ms) to poll for a quick auto-download (default: 15 seconds).
+  //   // If the job finishes within this window the browser download triggers.
+  //   // If not, the job is left as 'running' and can be resumed later.
+  //   quickPollTimeout: 15000,
+  //
+  //   // Interval between status polls in ms (default: 2000).
+  //   pollInterval: 2000,
+  //
+  //   // How long (ms) to keep completed/failed jobs in localStorage (default: 7 days).
+  //   jobExpiry: 7 * 24 * 60 * 60 * 1000,
+  // },
 
   // ─── Theme ───────────────────────────────────────────────────────────────────
   theme: {
     // CSS class applied to <body> to activate a theme.
-    // Built-in themes: 'default', 'dark', 'warm', 'studio', 'vault'.
-    //   studio — clean, airy SaaS aesthetic (light, blue + violet accents)
-    //   vault  — professional dark asset manager (near-black, blue accents)
+    // Built-in themes: 'default', 'dark', 'studio'.
+    //   default — Violet Studio (light, violet accents)
+    //   dark    — Deep Ocean (navy, azure accents)
+    //   studio  — Unsplash (near-black, image-first)
     // Custom: add your own in styles/themes/custom.css and set the name here.
-    default: 'studio',
+    default: 'pro',
   },
 
   // ─── Asset Properties ────────────────────────────────────────────────────────

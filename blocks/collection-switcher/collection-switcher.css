@@ -1,0 +1,175 @@
+.block.collection-switcher {
+    --cs-radius: var(--border-radius-md);
+    --cs-dropdown-width: 280px;
+
+    position: relative;
+    display: inline-block;
+
+    /* ── Trigger button ─────────────────────────────────────────────── */
+
+    .cs__wrapper {
+        position: relative;
+    }
+
+    .cs__trigger {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xs, 6px);
+        padding: var(--spacing-xs, 6px) var(--spacing-sm, 10px);
+        background: var(--color-muted);
+        border: 1px solid var(--color-border);
+        border-radius: var(--cs-radius);
+        cursor: pointer;
+        font-size: var(--body-font-size-s);
+        color: var(--color-fg);
+        transition: background var(--transition-fast), border-color var(--transition-fast);
+        white-space: nowrap;
+        max-width: 200px;
+
+        &:hover {
+            background: var(--color-accent);
+            border-color: var(--color-muted-fg);
+        }
+
+        &[aria-expanded="true"] {
+            border-color: var(--color-primary);
+            box-shadow: var(--focus-ring);
+        }
+    }
+
+    .cs__trigger-name {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-weight: 500;
+    }
+
+    .cs__trigger-count {
+        min-width: 20px;
+        height: 20px;
+        line-height: 20px;
+        text-align: center;
+        background: var(--color-primary);
+        color: var(--color-primary-fg);
+        border-radius: var(--border-radius-full);
+        font-size: var(--body-font-size-xs);
+        font-weight: 600;
+        padding: 0 var(--spacing-xs);
+    }
+
+    .cs__trigger-arrow {
+        font-size: 0.65rem;
+        color: var(--color-muted-fg);
+    }
+
+    /* ── Dropdown ────────────────────────────────────────────────────── */
+
+    .cs__dropdown {
+        position: absolute;
+        top: calc(100% + var(--spacing-xs));
+        right: 0;
+        width: var(--cs-dropdown-width);
+        background: var(--color-bg);
+        border: 1px solid var(--color-border);
+        border-radius: var(--cs-radius);
+        box-shadow: var(--shadow-lg, 0 8px 30px rgb(0 0 0 / 12%));
+        z-index: var(--z-dropdown);
+        overflow: hidden;
+
+        &[hidden] { display: none; }
+    }
+
+    /* ── Collection list ─────────────────────────────────────────────── */
+
+    .cs__list {
+        list-style: none;
+        margin: 0;
+        padding: var(--spacing-xs, 4px) 0;
+        max-height: 240px;
+        overflow-y: auto;
+    }
+
+    .cs__option {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm, 8px);
+        padding: var(--spacing-sm, 8px) var(--spacing-md, 14px);
+        cursor: pointer;
+        transition: background var(--transition-fast);
+
+        &:hover { background: var(--color-accent); }
+
+        &.cs__option--active {
+            background: var(--color-accent);
+            font-weight: 500;
+        }
+    }
+
+    .cs__option-name {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: var(--body-font-size-s);
+    }
+
+    .cs__option-count {
+        font-size: var(--body-font-size-xs);
+        color: var(--color-muted-fg);
+    }
+
+    .cs__option-check {
+        color: var(--color-primary);
+        font-size: var(--body-font-size-xs);
+    }
+
+    /* ── Create form area ────────────────────────────────────────────── */
+
+    .cs__create-wrap {
+        border-top: 1px solid var(--color-border);
+        padding: var(--spacing-sm, 8px) var(--spacing-md, 12px);
+    }
+
+    .cs__create-form {
+        display: flex;
+        gap: var(--spacing-xs, 4px);
+        align-items: center;
+
+        &[hidden] { display: none; }
+    }
+
+    .cs__create-input {
+        flex: 1;
+        padding: 5px var(--spacing-sm, 8px);
+        border: 1px solid var(--color-border);
+        border-radius: var(--border-radius-sm);
+        font-size: var(--body-font-size-s);
+        background: var(--color-input);
+        color: var(--color-fg);
+        min-width: 0;
+    }
+
+    .cs__create-btn {
+        width: 100%;
+        text-align: left;
+        font-size: var(--body-font-size-s);
+        color: var(--color-primary);
+
+        &[hidden] { display: none; }
+    }
+
+    /* ── Footer ───────────────────────────────────────────────────────── */
+
+    .cs__footer {
+        border-top: 1px solid var(--color-border);
+        padding: var(--spacing-sm, 8px) var(--spacing-md, 14px);
+    }
+
+    .cs__manage-link {
+        font-size: var(--body-font-size-s);
+        color: var(--color-muted-fg);
+        text-decoration: none;
+
+        &:hover { color: var(--color-primary); text-decoration: underline; }
+    }
+}

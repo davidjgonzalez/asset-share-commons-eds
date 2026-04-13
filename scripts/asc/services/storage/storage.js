@@ -48,6 +48,8 @@ class Storage {
 
   RECENTLY_VIEWED = "recentlyViewed";
 
+  DOWNLOAD_JOBS = "downloadJobs";
+
   THEME = "theme";
 
   SHARED_LINKS = "sharedLinks";

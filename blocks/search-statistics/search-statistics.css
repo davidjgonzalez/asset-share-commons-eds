@@ -5,5 +5,5 @@
 .block.search-statistics .search-statistics__count {
     margin: 0;
     font-size: var(--body-font-size-s);
-    color: var(--dark-color);
+    color: var(--color-muted-fg);
 }

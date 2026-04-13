@@ -1,100 +1,84 @@
 /*
- * ASC Component Design Tokens
+ * ASC Structural Design Tokens
  *
- * This file contains all component-level CSS variables for Asset Share Commons blocks.
- * Override these in your theme file (styles/themes/custom.css) to customize the look
- * without modifying any block CSS.
- *
- * Base spacing, color, and typography variables are in styles/styles.css (:root).
- * This file extends those with component-specific tokens.
+ * Structural tokens only — values that never change between themes.
+ * Color/visual tokens live in styles/styles.css as --color-* semantic variables,
+ * overridden per theme in styles/themes/*.css.
  */
 
 :root {
-
   /* ── Border radius ──────────────────────────────────────────────── */
-  --border-radius-sm: 4px;
-  --border-radius-md: 8px;
-  --border-radius-lg: 12px;
-  --border-radius-xl: 16px;
+  --border-radius-sm:   4px;
+  --border-radius-md:   8px;
+  --border-radius-lg:   12px;
+  --border-radius-xl:   16px;
   --border-radius-full: 9999px;
 
+  /* ── Micro-spacing ──────────────────────────────────────────────── */
+  --spacing-2xs: 2px;
+
+  /* ── Icon sizes ─────────────────────────────────────────────────── */
+  --icon-size-sm: 16px;
+  --icon-size-md: 24px;
+  --icon-size-lg: 32px;
+
   /* ── Shadows ────────────────────────────────────────────────────── */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 6%);
+  --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 12%);
+  --shadow-lg: 0 10px 30px -4px rgb(0 0 0 / 15%);
 
   /* ── Transitions ────────────────────────────────────────────────── */
-  --transition-fast: 150ms ease;
+  --transition-fast:   150ms ease;
   --transition-normal: 250ms ease;
-  --transition-slow: 350ms ease;
+  --transition-slow:   350ms ease;
 
-  /* ── Asset Teaser (card / list item) ────────────────────────────── */
-  --asset-teaser-bg: var(--card-background);
-  --asset-teaser-border: 1px solid var(--border-color);
-  --asset-teaser-border-radius: var(--border-radius-md);
-  --asset-teaser-shadow: var(--shadow-sm);
-  --asset-teaser-shadow-hover: var(--shadow-md);
-  --asset-teaser-padding: var(--spacing-md);
-  --asset-teaser-title-color: var(--text-color);
-  --asset-teaser-meta-color: var(--dark-color);
-  --asset-teaser-gap: var(--spacing-md);
+  /* ── Motion / Elevation ─────────────────────────────────────────── */
+  --lift-sm: translateY(-2px);
+  --lift-md: translateY(-4px);
+  --lift-lg: translateY(-8px);
+  --drop-sm: translateY(4px);
+  --scale-sm: scale(1.04);
+  --scale-md: scale(1.1);
 
-  /* ── Search bar ─────────────────────────────────────────────────── */
-  --search-input-border: 1px solid var(--border-color);
-  --search-input-border-radius: var(--border-radius-full);
-  --search-input-bg: var(--input-background);
-  --search-input-color: var(--text-color);
-  --search-input-placeholder-color: var(--input-placeholder-color);
-  --search-input-focus-border: var(--link-color);
-  --search-input-focus-ring: 0 0 0 3px rgb(0 102 204 / 0.15);
+  /* ── Overlay opacity ────────────────────────────────────────────── */
+  --overlay-sm: rgb(0 0 0 / 40%);
+  --overlay-md: rgb(0 0 0 / 55%);
+  --overlay-lg: rgb(0 0 0 / 75%);
 
-  /* ── Search results ─────────────────────────────────────────────── */
-  --search-results-gap: var(--spacing-md);
-  --search-results-cols-mobile: 1;
-  --search-results-cols-tablet: 2;
+  /* ── Composed focus ring ────────────────────────────────────────── */
+  --focus-ring: 0 0 0 var(--input-focus-ring-width) color-mix(in srgb, var(--color-ring) 25%, transparent);
+
+  /* ── Button structural ──────────────────────────────────────────── */
+  --button-padding:       var(--spacing-sm) var(--spacing-md);
+  --button-border-radius: var(--border-radius-md);
+
+  /* ── Input structural ───────────────────────────────────────────── */
+  --input-border-radius:    var(--border-radius-sm);
+  --input-padding-x:        var(--spacing-md);
+  --input-padding-y:        var(--spacing-sm);
+  --input-height-sm:        32px;
+  --input-height-md:        40px;
+  --input-height-lg:        52px;
+  --input-focus-ring-width: 3px;
+  --input-transition:       border-color var(--transition-fast), box-shadow var(--transition-fast);
+
+  /* ── Search results grid ────────────────────────────────────────── */
+  --search-results-gap:          var(--spacing-md);
+  --search-results-cols-mobile:  1;
+  --search-results-cols-tablet:  2;
   --search-results-cols-desktop: 4;
 
-  /* ── Search filters (property / path) ──────────────────────────── */
-  --filter-label-color: var(--text-color);
-  --filter-input-border: 1px solid var(--border-color);
-  --filter-input-border-radius: var(--border-radius-sm);
-  --filter-input-accent: var(--link-color);
-
-  /* ── Details modal ──────────────────────────────────────────────── */
-  --modal-bg: var(--background-color);
+  /* ── Modal structural ───────────────────────────────────────────── */
   --modal-border-radius: var(--border-radius-lg);
-  --modal-shadow: var(--shadow-lg);
-  --modal-max-width: 900px;
-  --modal-padding: var(--spacing-xl);
-  --modal-backdrop: rgb(0 0 0 / 0.5);
+  --modal-shadow:        var(--shadow-lg);
+  --modal-max-width:     900px;
+  --modal-min-width:     320px;
+  --modal-min-height:    220px;
+  --modal-padding:       var(--spacing-xl);
+  --modal-narrow-max-width: 520px;
 
-  /* ── Buttons ────────────────────────────────────────────────────── */
-  --button-primary-bg: var(--link-color);
-  --button-primary-color: #fff;
-  --button-primary-hover-bg: var(--dark-color);
-  --button-primary-border-radius: var(--border-radius-sm);
-  --button-padding: var(--spacing-sm) var(--spacing-md);
-
-  /* ── Form inputs (extended from styles.css) ─────────────────────── */
-  --input-border-radius: var(--border-radius-sm);
-  --input-border-color-focus: var(--link-color);
-  --input-border-color-hover: #9ca3af;
-  --input-border-color-error: #ef4444;
-  --input-border-color-success: #10b981;
-  --input-border-color-disabled: #e5e7eb;
-  --input-focus-ring-width: 3px;
-  --input-focus-ring-color: rgb(0 102 204 / 0.15);
-  --input-height-sm: 32px;
-  --input-height-lg: 52px;
-  --form-group-margin-bottom: var(--spacing-md);
-  --form-group-label-margin-bottom: var(--spacing-xs);
-  --checkbox-size: 18px;
-  --radio-size: 18px;
-  --input-group-gap: var(--spacing-xs);
-  --input-transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
-
-  /* ── Validation ─────────────────────────────────────────────────── */
-  --validation-error-color: #ef4444;
+  /* ── Validation (aliases to semantic color tokens) ──────────────── */
+  --validation-error-color:   var(--color-destructive);
   --validation-success-color: #10b981;
   --validation-warning-color: #f59e0b;
 }

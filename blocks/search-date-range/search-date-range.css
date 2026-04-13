@@ -40,11 +40,11 @@
     border: var(--filter-input-border, 1px solid var(--border-color));
     border-radius: var(--filter-input-border-radius, var(--border-radius-sm));
     box-sizing: border-box;
-    transition: var(--input-transition, border-color 150ms ease);
+    transition: var(--input-transition, border-color var(--transition-fast));
 }
 
 .block.search-date-range input[type="date"]:focus {
     outline: none;
     border-color: var(--filter-input-accent, var(--link-color));
-    box-shadow: 0 0 0 3px var(--input-focus-ring-color, rgb(0 0 0 / 0.08));
+    box-shadow: var(--focus-ring);
 }

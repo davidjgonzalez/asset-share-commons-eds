@@ -15,11 +15,12 @@ import services from '../../scripts/asc/services/services.js';
  * the asset dragged when the row is dragged to Finder / Photoshop / etc.
  */
 export default async function decorate(block) {
-  const { assets, renditionDefinitions } = await getDataFromSearchParams(
-    new URLSearchParams(window.location.search),
-  );
+  const params = new URLSearchParams(window.location.search);
+  const { assets, renditionDefinitions } = await getDataFromSearchParams(params);
+  const title = params.get('title') ? decodeURIComponent(params.get('title')) : '';
+  const description = params.get('description') ? decodeURIComponent(params.get('description')) : '';
 
-  block.innerHTML = html(assets, renditionDefinitions);
+  block.innerHTML = html(assets, renditionDefinitions, title, description);
 
   initRenditionSwitcher(block);
   initDragAndDrop(block);
@@ -27,7 +28,7 @@ export default async function decorate(block) {
 
 // ─── HTML ────────────────────────────────────────────────────────────────────
 
-function html(assets, renditionDefinitions) {
+function html(assets, renditionDefinitions, title, description) {
   const rows = assets
     .filter(Boolean)
     .map((asset) => assetRow(asset, renditionDefinitions))
@@ -35,7 +36,8 @@ function html(assets, renditionDefinitions) {
 
   return `
     <a href="/" class="sheet__back">&#8592; Back to search</a>
-    <h1 class="sheet__title">Download Sheet</h1>
+    <h1 class="sheet__title">${title || 'Download Sheet'}</h1>
+    ${description ? `<p class="sheet__description">${description}</p>` : ''}
     <p class="sheet__count">${assets.length} asset${assets.length === 1 ? '' : 's'}</p>
     <div class="sheet__asset-list">
       ${rows || '<p class="sheet__empty">No assets selected.</p>'}

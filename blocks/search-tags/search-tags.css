@@ -17,23 +17,25 @@
 }
 
 .block.search-tags .search-tags__option {
-    display: flex;
+    display: grid;
+    grid-template-columns: var(--icon-size-sm) 1fr;
     align-items: center;
     gap: var(--spacing-sm);
 }
 
 .block.search-tags input[type="checkbox"],
 .block.search-tags input[type="radio"] {
-    width: 16px;
-    height: 16px;
+    width: var(--icon-size-sm);
+    height: var(--icon-size-sm);
     margin: 0;
     cursor: pointer;
     flex-shrink: 0;
-    accent-color: var(--filter-input-accent, var(--link-color));
+    accent-color: var(--color-primary);
 }
 
 .block.search-tags .search-tags__option label {
-    color: var(--text-color);
+    display: inline;
+    color: var(--color-fg);
     font-size: var(--body-font-size-s);
     cursor: pointer;
     margin: 0;
@@ -45,9 +47,9 @@
     width: 100%;
     padding: var(--input-padding-y, 6px) var(--input-padding-x, 10px);
     font-size: var(--body-font-size-s);
-    color: var(--input-text-color, var(--text-color));
-    background-color: var(--input-background, var(--background-color));
-    border: var(--filter-input-border, 1px solid var(--border-color));
+    color: var(--color-fg);
+    background-color: var(--color-input);
+    border: 1px solid var(--color-border);
     border-radius: var(--filter-input-border-radius, var(--border-radius-sm));
     box-sizing: border-box;
     appearance: none;
@@ -59,6 +61,6 @@
 }
 
 .block.search-tags select:focus {
-    outline: 2px solid var(--filter-input-accent, var(--link-color));
+    outline: 2px solid var(--color-primary);
     outline-offset: 2px;
 }

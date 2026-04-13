@@ -17,7 +17,7 @@
     max-width: 100%;
     height: auto;
     display: block;
-    border: var(--border-width) var(--border-style) var(--border-color);
+    border: var(--border-width) var(--border-style) var(--color-border);
 }
 
 .block.details-preview figcaption {
@@ -28,19 +28,19 @@
     margin: 0 0 var(--spacing-sm) 0;
     font-size: var(--heading-font-size-l);
     font-weight: 600;
-    color: var(--text-color);
+    color: var(--color-fg);
 }
 
 .block.details-preview .description {
     margin: 0;
-    color: var(--dark-color);
+    color: var(--color-muted-fg);
     font-size: var(--body-font-size-s);
 }
 
 .block.details-preview .asset-info {
     padding: var(--spacing-md);
-    background-color: var(--light-color);
-    border: var(--border-width) var(--border-style) var(--border-color);
+    background-color: var(--color-muted);
+    border: var(--border-width) var(--border-style) var(--color-border);
 }
 
 .block.details-preview .metadata {
@@ -52,25 +52,70 @@
 
 .block.details-preview .metadata dt {
     font-weight: 600;
-    color: var(--text-color);
+    color: var(--color-fg);
     font-size: var(--body-font-size-s);
 }
 
 .block.details-preview .metadata dd {
     margin: 0;
-    color: var(--dark-color);
+    color: var(--color-muted-fg);
     font-size: var(--body-font-size-s);
 }
+
+/* ── Collection toggle: show as full-width labelled button in the aside ─── */
+/* stylelint-disable selector-class-pattern */
+.block.details-preview .asset-actions {
+    margin-top: var(--spacing-md);
+    padding-top: var(--spacing-md);
+    border-top: var(--border-width) var(--border-style) var(--color-border);
+}
+
+.block.details-preview .asc-collection-toggle__btn {
+    width: 100%;
+    height: auto;
+    padding: var(--spacing-xs) var(--spacing-md);
+    border-radius: var(--border-radius-sm);
+    justify-content: center;
+    gap: var(--spacing-xs);
+}
+
+.block.details-preview .asc-collection-toggle__label {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip: auto;
+    clip-path: none;
+    white-space: normal;
+    font-size: var(--body-font-size-s);
+}
+
+.block.details-preview .asc-collection-toggle__add {
+    background: var(--color-primary);
+    color: var(--color-primary-fg);
+    border-color: transparent;
+}
+
+.block.details-preview .asc-collection-toggle__remove {
+    background: transparent;
+    color: var(--color-destructive);
+    border-color: var(--color-destructive);
+}
+
+.block.details-preview .asc-collection-toggle__remove:hover {
+    background: color-mix(in srgb, var(--color-destructive) 10%, transparent);
+}
+/* stylelint-enable selector-class-pattern */
 
 .block.details-preview .error {
     padding: var(--spacing-lg);
     text-align: center;
-    color: var(--dark-color);
+    color: var(--color-muted-fg);
 }
 
 .block.details-preview .error h2 {
     margin: 0 0 var(--spacing-sm) 0;
-    color: var(--text-color);
+    color: var(--color-fg);
 }
 
 .block.details-preview .error p {
@@ -78,7 +123,7 @@
     font-size: var(--body-font-size-s);
 }
 
-@media (min-width: 768px) {
+@media (width >= 768px) {
     .block.details-preview .asset-preview {
         flex-direction: row;
         gap: var(--spacing-xl);

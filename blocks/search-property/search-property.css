@@ -2,8 +2,9 @@
   margin-bottom: var(--spacing-lg);
 }
 
-/* Main label for the filter group */
-.block.search-property > label {
+/* Group title label */
+.block.search-property > label,
+.block.search-property .search-property__title {
   display: block;
   color: var(--label-color);
   font-weight: var(--label-font-weight);
@@ -11,16 +12,20 @@
   margin-bottom: var(--spacing-sm);
 }
 
-/* Container for filter options */
-.block.search-property .expand-collapse {
+/* Options list */
+.block.search-property .search-property__options {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
-/* Checkbox list items */
-.block.search-property .expand-collapse li {
-  display: flex;
+/* Each option row: input pinned to col 1, label in col 2 */
+.block.search-property .search-property__option {
+  display: grid;
+  grid-template-columns: var(--icon-size-sm) 1fr;
   align-items: center;
   gap: var(--spacing-sm);
   list-style: none;
@@ -31,20 +36,22 @@
 /* Checkbox and radio inputs */
 .block.search-property input[type="checkbox"],
 .block.search-property input[type="radio"] {
-  width: 16px;
-  height: 16px;
+  width: var(--icon-size-sm);
+  height: var(--icon-size-sm);
   margin: 0;
   cursor: pointer;
   flex-shrink: 0;
 }
 
-/* Labels for checkboxes and radios */
-.block.search-property .expand-collapse label {
-  color: var(--text-color);
+/* Option labels — explicitly inline so they sit beside the input */
+.block.search-property .search-property__option label {
+  display: inline;
+  color: var(--color-fg);
   font-size: var(--body-font-size-s);
+  font-weight: normal;
   cursor: pointer;
   margin: 0;
-  font-weight: normal;
+  line-height: 1;
 }
 
 /* Select dropdown */
@@ -54,7 +61,7 @@
   padding: var(--input-padding-y) var(--input-padding-x);
   font-size: var(--body-font-size-s);
   color: var(--input-text-color);
-  background-color: var(--input-background);
+  background-color: var(--color-input);
   border: var(--border-width) var(--border-style) var(--input-border-color);
   box-sizing: border-box;
   appearance: none;
@@ -66,16 +73,6 @@
 }
 
 .block.search-property select:focus {
-  outline: 2px solid var(--text-color);
+  outline: 2px solid var(--color-fg);
   outline-offset: 2px;
-}
-
-/* Radio button groups (not in li elements) */
-.block.search-property .expand-collapse input[type="radio"] {
-  margin-right: var(--spacing-sm);
-}
-
-.block.search-property .expand-collapse input[type="radio"] + label {
-  display: inline;
-  margin-right: var(--spacing-lg);
 }

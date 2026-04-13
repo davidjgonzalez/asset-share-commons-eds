@@ -390,6 +390,33 @@ class Collections {
   }
 
   // ---------------------------------------------------------------------------
+  // Asset reordering
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Replaces the asset order in a collection with a new ordered array.
+   * Only IDs already in the collection are accepted; unknowns are silently dropped.
+   * @param {string} collectionId
+   * @param {string[]} newAssetIds - Full ordered array of asset IDs
+   */
+  reorderAssets(collectionId, newAssetIds) {
+    const data = this._getData();
+    const collection = data.items[collectionId];
+    if (!collection) {
+      console.error(`Collection "${collectionId}" not found`);
+      return;
+    }
+    const existing = new Set(collection.assetIds);
+    collection.assetIds = newAssetIds.filter((id) => existing.has(id));
+    this._saveCollection(collection);
+    document.dispatchEvent(
+      new CustomEvent(Events.CHANGED, {
+        detail: { action: "reordered", id: collectionId },
+      }),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
   // User login / merge
   // ---------------------------------------------------------------------------
 
@@ -461,6 +488,24 @@ class Collections {
     document.dispatchEvent(
       new CustomEvent(Events.CHANGED, {
         detail: { action: "login", userId },
+      }),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // User logout
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Switches back to anonymous scope.
+   * Call this when the user signs out so collection state returns to anonymous.
+   * Dispatches CHANGED so all subscribers re-render.
+   */
+  logout() {
+    storage._setCurrentUserId("anonymous");
+    document.dispatchEvent(
+      new CustomEvent(Events.CHANGED, {
+        detail: { action: "logout" },
       }),
     );
   }

@@ -166,4 +166,4 @@ class FileType {
     }
 }
 
-export default new FileType(serviceConfigurations.fileType);
+export default new FileType(serviceConfigurations.fileType || {});
