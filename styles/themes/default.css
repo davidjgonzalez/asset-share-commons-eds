@@ -1,48 +1,83 @@
 /*
- * Default Theme — "Violet Studio"
+ * Default Theme — "Cosmos"
  *
- * Clean, modern, creative. Vibrant violet primary on crisp white.
- * Designed for creative professionals who care about visual quality.
+ * Inspired by cosmos.so — warm monochromatic, content-first.
+ * Pure white canvas, near-black type, warm gray surfaces. No accent color.
+ * Designed to let assets breathe with minimal UI chrome.
  *
- * Palette:
- *   Page background  #ffffff  (pure white — let the assets breathe)
- *   Primary text     #1e1b4b  (deep indigo — rich, not harsh black)
- *   Primary action   #7c3aed  (violet — confident, creative)
- *   Muted surface    #faf5ff  (whisper of violet — barely there)
- *   Border           #e9d5ff  (soft violet tint)
+ * Palette (sourced from cosmos.so CSS):
+ *   Page background  #ffffff   gray-0     — pure white canvas
+ *   Primary text     #0d0d0d   gray-1000  — near black, slightly warm
+ *   Elevation        #f2f1f0   gray-100   — warm off-white surface
+ *   Secondary text   #6e6a69   warm-gray-light-600
+ *   Border           #e2e1e0   ~12% gray-1000 on white
+ *   Primary action   #0d0d0d   gray-1000  — black pill CTA, white label
  *
  * Activate: set `theme: { default: 'default' }` in scripts/configurations.js
  */
 
 :root {
   /* ── Semantic color tokens ─────────────────────────────────────── */
-  --color-bg:          #ffffff;
-  --color-fg:          #1e1b4b;
-  --color-card:        #ffffff;
-  --color-card-fg:     #1e1b4b;
-  --color-popover:     #ffffff;
-  --color-popover-fg:  #1e1b4b;
+  --color-bg:         #ffffff;
+  --color-fg:         #0d0d0d;
+  --color-card:       #ffffff;
+  --color-card-fg:    #0d0d0d;
+  --color-popover:    #ffffff;
+  --color-popover-fg: #0d0d0d;
 
-  --color-primary:     #7c3aed;
-  --color-primary-fg:  #ffffff;
+  /* Brand / interactive — monochromatic black */
+  --color-primary:    #0d0d0d;
+  --color-primary-fg: #ffffff;
 
-  --color-secondary:    #f5f3ff;
-  --color-secondary-fg: #1e1b4b;
+  /* Secondary actions — warm light gray */
+  --color-secondary:    #f2f1f0;
+  --color-secondary-fg: #0d0d0d;
 
-  --color-muted:    #faf5ff;
-  --color-muted-fg: #6b7280;
+  /* Muted / quiet surfaces — warm off-white */
+  --color-muted:    #f2f1f0;
+  --color-muted-fg: #6e6a69;
 
-  --color-accent:    #ede9fe;
-  --color-accent-fg: #7c3aed;
+  /* Accent / hover highlights — same warm gray, no color cast */
+  --color-accent:    #f2f1f0;
+  --color-accent-fg: #0d0d0d;
 
-  --color-destructive:    #dc2626;
+  /* Feedback */
+  --color-destructive:    #c2410c;
   --color-destructive-fg: #ffffff;
 
-  --color-border: #e9d5ff;
+  /* Form chrome — very subtle warm-gray borders */
+  --color-border: #e2e1e0;
   --color-input:  #ffffff;
-  --color-ring:   #7c3aed;
+  --color-ring:   #0d0d0d;
 
   /* ── Typography ─────────────────────────────────────────────────── */
-  --body-font-family:    'Inter', system-ui, -apple-system, sans-serif;
-  --heading-font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  --body-font-family:    system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --heading-font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* Cosmos uses -0.02em tight tracking throughout */
+  --body-letter-spacing:    -0.02em;
+  --heading-letter-spacing: -0.025em;
+
+  /* ── Buttons — pill shape, flat, no decoration ─────────────────────── */
+  --button-border-radius:     var(--border-radius-full);
+  --btn-shadow:               none;
+  --btn-shadow-hover:         none;
+  --btn-lift:                 none;
+  /* brightness(1.1) is imperceptible on near-black; 4× gives visible charcoal hover */
+  --btn-primary-hover-filter: brightness(4);
+
+  /* ── Inputs — small radius (cosmos uses ~3px for form controls) ──── */
+  --input-border-radius: var(--border-radius-sm);
+
+  /* ── Panels — subtle neutral shadow, no color cast ──────────────── */
+  --panel-shadow: 0 4px 16px 0 rgb(0 0 0 / 8%), 0 1px 4px 0 rgb(0 0 0 / 3%);
+
+  /* ── Modal — understated rounding ──────────────────────────────── */
+  --modal-border-radius: var(--border-radius-lg);
+
+  /* ── Search bar — pill shape matching cosmos nav search ─────────── */
+  --search-bar-shell-radius:   var(--border-radius-full);
+  --search-bar-shell-overflow: hidden;
+
+  /* ── Collection toggle — styled contextually per block (see details-actions.css, search-results.css) */
 }

@@ -1,3 +1,4 @@
+/** @owner user */
 import { SEARCH_FORM } from '../../scripts/asc/utils/search.js';
 
 /**

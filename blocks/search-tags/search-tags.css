@@ -1,8 +1,8 @@
-.block.search-tags {
+main .search-tags {
     margin-bottom: var(--spacing-lg);
 }
 
-.block.search-tags .search-tags__title {
+main .search-tags .search-tags__title {
     display: block;
     color: var(--label-color);
     font-weight: var(--label-font-weight);
@@ -10,21 +10,22 @@
     margin-bottom: var(--spacing-sm);
 }
 
-.block.search-tags .search-tags__options {
+main .search-tags .search-tags__options {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-sm);
+    gap: var(--spacing-md);
 }
 
-.block.search-tags .search-tags__option {
+main .search-tags .search-tags__option {
     display: grid;
     grid-template-columns: var(--icon-size-sm) 1fr;
     align-items: center;
-    gap: var(--spacing-sm);
+    gap: var(--spacing-md);
+    padding: var(--spacing-xs) 0;
 }
 
-.block.search-tags input[type="checkbox"],
-.block.search-tags input[type="radio"] {
+main .search-tags input[type="checkbox"],
+main .search-tags input[type="radio"] {
     width: var(--icon-size-sm);
     height: var(--icon-size-sm);
     margin: 0;
@@ -33,7 +34,7 @@
     accent-color: var(--color-primary);
 }
 
-.block.search-tags .search-tags__option label {
+main .search-tags .search-tags__option label {
     display: inline;
     color: var(--color-fg);
     font-size: var(--body-font-size-s);
@@ -42,7 +43,7 @@
     font-weight: normal;
 }
 
-.block.search-tags select {
+main .search-tags select {
     display: block;
     width: 100%;
     padding: var(--input-padding-y, 6px) var(--input-padding-x, 10px);
@@ -50,7 +51,7 @@
     color: var(--color-fg);
     background-color: var(--color-input);
     border: 1px solid var(--color-border);
-    border-radius: var(--filter-input-border-radius, var(--border-radius-sm));
+    border-radius: var(--border-radius-full);
     box-sizing: border-box;
     appearance: none;
     padding-right: var(--spacing-xl);
@@ -60,7 +61,7 @@
     background-size: 12px;
 }
 
-.block.search-tags select:focus {
+main .search-tags select:focus {
     outline: 2px solid var(--color-primary);
     outline-offset: 2px;
 }

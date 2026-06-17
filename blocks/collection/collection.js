@@ -1,3 +1,4 @@
+/** @owner user */
 import services from '../../scripts/asc/services/services.js';
 import { Events as CollectionEvents } from '../../scripts/asc/services/collections/collections.js';
 import { Events as DownloadEvents, Status as DownloadStatus } from '../../scripts/asc/services/downloads/downloads.js';

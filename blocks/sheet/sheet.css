@@ -1,4 +1,4 @@
-.block.sheet {
+main .sheet {
     max-width: 1000px;
     margin: 0 auto;
     padding: var(--spacing-lg, 24px);
@@ -132,28 +132,11 @@
         align-items: center;
     }
 
-    .sheet__rendition-pill {
-        padding: var(--spacing-xs) var(--spacing-sm);
-        border: 1px solid var(--color-border);
-        border-radius: var(--border-radius-full);
-        background: transparent;
-        cursor: pointer;
-        font-size: var(--body-font-size-xs, 0.8rem);
-        font-family: inherit;
-        color: var(--color-fg);
-        transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
-        white-space: nowrap;
-
-        &:hover {
-            background: var(--color-muted);
-            border-color: var(--color-muted-fg);
-        }
-
-        &.sheet__rendition-pill--active {
-            background: var(--color-primary);
-            border-color: var(--color-primary);
-            color: var(--color-primary-fg);
-        }
+    .sheet__rendition-pill--active,
+    .sheet__rendition-pill--active:hover {
+        background: var(--color-primary);
+        border-color: var(--color-primary);
+        color: var(--color-primary-fg);
     }
 
     .sheet__no-renditions {
@@ -167,23 +150,6 @@
         flex-shrink: 0;
     }
 
-    .sheet__download-btn {
-        display: inline-block;
-        padding: var(--spacing-xs) var(--spacing-md);
-        background: var(--color-primary);
-        color: var(--color-primary-fg);
-        border-radius: var(--border-radius-sm, 4px);
-        text-decoration: none;
-        font-size: var(--body-font-size-s, 0.875rem);
-        font-weight: 600;
-        white-space: nowrap;
-        transition: background var(--transition-fast);
-
-        &:hover {
-            background: color-mix(in srgb, var(--color-primary) 85%, black);
-            color: var(--color-primary-fg);
-        }
-    }
 
     /* ── Responsive ──────────────────────────────────────────────────── */
 

@@ -1,6 +1,8 @@
 # Sheets Feature Specification  
 **Project:** Asset Share Commons  
 
+> **Status**: ✅ Implemented. See [blocks/sheet/](../blocks/sheet/) for the Sheet block implementation and [blocks/collection/](../blocks/collection/) for collection management. Referenced in [ARCHITECTURE_ASSESSMENT.md](../docs/ARCHITECTURE_ASSESSMENT.md).
+
 ---
 
 ## Objective

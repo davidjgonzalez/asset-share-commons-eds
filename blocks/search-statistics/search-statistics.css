@@ -1,8 +1,8 @@
-.block.search-statistics {
+main .search-statistics {
     padding: var(--spacing-sm) 0;
 }
 
-.block.search-statistics .search-statistics__count {
+main .search-statistics .search-statistics__count {
     margin: 0;
     font-size: var(--body-font-size-s);
     color: var(--color-muted-fg);

@@ -62,6 +62,42 @@ transition: background 120ms ease;
 
 See `styles/tokens.css` for the complete variable list. See `THEMING_README.md` for grouped reference.
 
+## Units: rem vs px
+
+**Use `rem` by default. Use `px` only when you need a physical pixel measurement.**
+
+### Use `rem` for:
+- Font sizes
+- Spacing (margin, padding, gaps)
+- Widths and heights of components that should scale with user font preferences
+- Border radius
+- Layout measurements that should remain proportional
+
+### Use `px` for:
+- Hairline borders (`1px`, `2px`)
+- Shadow offsets and blur values
+- Precise visual effects (e.g. hamburger bar geometry, transform-origin)
+- Icon rendering dimensions when exact pixel output is required (e.g. `width: 24px` on `<img>`)
+
+```css
+/* ✅ correct — scales with user font preference */
+padding: 1rem;
+font-size: 0.875rem;
+border-radius: 0.5rem;
+min-height: 2.5rem;
+
+/* ✅ correct — physical measurement */
+border: 1px solid var(--color-border);
+box-shadow: 0 4px 12px rgb(0 0 0 / 12%);
+
+/* ❌ avoid — hard-coded px for scalable measurements */
+padding: 16px;
+font-size: 14px;
+border-radius: 8px;
+```
+
+> Token definitions in `styles/styles.css` and `styles/tokens.css` follow this rule at the source — spacing, font-size, and border-radius tokens are defined in `rem`.
+
 ## Theme Boundaries
 
 Themes should primarily set CSS custom property values and avoid styling specific

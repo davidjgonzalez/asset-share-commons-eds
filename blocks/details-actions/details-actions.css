@@ -1,10 +1,57 @@
-.block.details-actions {
-    margin: var(--spacing-md) 0;
+main .details-actions {
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-top: var(--border-width) var(--border-style) var(--color-border);
+    background: var(--color-muted);
+    margin: 0;
 }
 
-.block.details-actions .details-actions__buttons {
+main .details-actions .details-actions__buttons {
     display: flex;
     flex-wrap: wrap;
     gap: var(--spacing-sm);
     align-items: center;
 }
+
+/* ── Collection toggle — pill button with visible label ─────────────── */
+/* stylelint-disable selector-class-pattern */
+main .details-actions .asc-collection-toggle {
+    --collection-toggle-btn-width:     auto;
+    --collection-toggle-btn-height:    auto;
+    --collection-toggle-btn-padding:   10px 20px;
+    --collection-toggle-btn-radius:    var(--button-border-radius);
+}
+
+main .details-actions .asc-collection-toggle__label {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: 0;
+    margin: 0;
+    overflow: visible;
+    clip-path: none;
+    white-space: normal;
+    border: 0;
+    font-size: var(--body-font-size-s);
+}
+
+main .details-actions .asc-collection-toggle__add {
+    background: var(--color-primary);
+    color: var(--color-primary-fg);
+    border-color: transparent;
+
+    &:hover {
+        filter: var(--btn-primary-hover-filter, brightness(1.1));
+    }
+}
+
+main .details-actions .asc-collection-toggle__remove {
+    background: transparent;
+    color: var(--color-fg);
+    border-color: var(--color-border);
+
+    &:hover {
+        background: var(--color-muted);
+        border-color: var(--color-muted-fg);
+    }
+}
+/* stylelint-enable selector-class-pattern */

@@ -205,7 +205,7 @@ const configurations = {
     //   dark    — Deep Ocean (navy, azure accents)
     //   studio  — Unsplash (near-black, image-first)
     // Custom: add your own in styles/themes/custom.css and set the name here.
-    default: 'pro',
+    default: 'default',
   },
 
   // ─── Asset Properties ────────────────────────────────────────────────────────

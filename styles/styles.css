@@ -12,6 +12,9 @@
 
 /* ASC structural tokens — loaded before theme overrides */
 @import url('./tokens.css');
+/* ASC UI Kit — reusable .asc-ui-* component primitives (see /ui-kit.html, docs/UI_KIT.md) */
+@import './ui-kit.css';
+@import './sections/inline.css';
 @import './sections/grid.css';
 @import './sections/aside.css';
 @import './sections/full-width.css';
@@ -77,29 +80,29 @@
   --heading-font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
 
   /* Body sizes */
-  --body-font-size-m:  18px;
-  --body-font-size-s:  15px;
-  --body-font-size-xs: 13px;
+  --body-font-size-m:  1.125rem;
+  --body-font-size-s:  0.9375rem;
+  --body-font-size-xs: 0.8125rem;
 
   /* Heading sizes */
-  --heading-font-size-xxl: 48px;
-  --heading-font-size-xl:  36px;
-  --heading-font-size-l:   28px;
-  --heading-font-size-m:   22px;
-  --heading-font-size-s:   18px;
-  --heading-font-size-xs:  15px;
+  --heading-font-size-xxl: 3rem;
+  --heading-font-size-xl:  2.25rem;
+  --heading-font-size-l:   1.75rem;
+  --heading-font-size-m:   1.375rem;
+  --heading-font-size-s:   1.125rem;
+  --heading-font-size-xs:  0.9375rem;
 
   /* ── Layout ─────────────────────────────────────────────────────── */
-  --nav-height: 64px;
+  --nav-height: 4rem;
 
   /* Spacing scale */
-  --spacing-xs:  4px;
-  --spacing-sm:  8px;
-  --spacing-md:  16px;
-  --spacing-lg:  24px;
-  --spacing-xl:  32px;
-  --spacing-2xl: 48px;
-  --spacing-3xl: 64px;
+  --spacing-xs:  0.25rem;
+  --spacing-sm:  0.5rem;
+  --spacing-md:  1rem;
+  --spacing-lg:  1.5rem;
+  --spacing-xl:  2rem;
+  --spacing-2xl: 3rem;
+  --spacing-3xl: 4rem;
 
   /* Z-index scale */
   --z-behind:  -1;
@@ -134,18 +137,23 @@
 ───────────────────────────────────────────────────────────────────────── */
 
 body {
-  display: none;
-  margin: 0;
-  background-color: var(--color-bg);
+  display: none;  background-color: var(--color-bg);
   color: var(--color-fg);
   font-family: var(--body-font-family);
   font-size: var(--body-font-size-m);
   line-height: 1.6;
+  letter-spacing: var(--body-letter-spacing, 0);
+  min-width: 1024px;
 }
 
 body.appear { display: block; }
 
-header { height: var(--nav-height); }
+header {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  height: var(--nav-height);
+}
 
 header .header,
 footer .footer { visibility: hidden; }
@@ -159,8 +167,9 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--heading-font-family);
   font-weight: 600;
   line-height: 1.25;
-  scroll-margin: 40px;
+  scroll-margin: 2.5rem;
   color: var(--color-fg);
+  letter-spacing: var(--heading-letter-spacing, var(--body-letter-spacing, 0));
 }
 
 h1 { font-size: var(--heading-font-size-xxl); }
@@ -185,7 +194,8 @@ pre {
   white-space: pre;
 }
 
-main > div { margin: 40px 16px; }
+main { margin-top: 2.5rem; }
+main > div { margin: 2.5rem 1rem; }
 
 main img {
   max-width: 100%;
@@ -239,14 +249,16 @@ a.button.secondary:any-link {
   background-color: transparent;
   border-color: var(--color-border);
   color: var(--color-fg);
-  &:hover { background-color: var(--color-muted); }
+  &:hover { background-color: var(--color-muted); border-color: var(--color-muted-fg); }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
    .btn UTILITY CLASSES
    Used by all ASC component buttons. Apply to <button> or <a> elements.
-   Variants: --primary  --secondary  --ghost  --danger
-   Sizes:    --sm       --icon
+
+   Shapes:   pill (default)   .btn--circle
+   Colors:   --primary  --secondary  --ghost  --danger
+   Sizes:    --lg (44px)  default medium (36px)  --sm (28px)
 ───────────────────────────────────────────────────────────────────────── */
 
 .btn {
@@ -254,7 +266,11 @@ a.button.secondary:any-link {
   align-items: center;
   justify-content: center;
   gap: var(--spacing-xs);
-  padding: var(--button-padding);
+  /* medium pill: 36px tall with 15px font at line-height 1 */
+  padding: 10px 20px;
+  appearance: none;
+  -webkit-appearance: none;
+  box-sizing: border-box;
   border: 1px solid transparent;
   border-radius: var(--button-border-radius);
   font-family: var(--body-font-family);
@@ -267,10 +283,13 @@ a.button.secondary:any-link {
   white-space: nowrap;
   background: transparent;
   color: var(--color-fg);
+  box-shadow: var(--btn-shadow);
   transition:
     background var(--transition-fast),
     color var(--transition-fast),
     border-color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    transform var(--transition-fast),
     filter var(--transition-fast);
 
   &:focus-visible {
@@ -297,7 +316,11 @@ a.btn:any-link:visited {
   color: var(--color-primary-fg);
   border-color: transparent;
 
-  &:hover { filter: brightness(1.1); }
+  &:hover {
+    filter: var(--btn-primary-hover-filter, brightness(1.1));
+    box-shadow: var(--btn-shadow-hover);
+    transform: var(--btn-lift);
+  }
 }
 
 .btn--secondary {
@@ -329,11 +352,16 @@ a.btn:any-link:visited {
 
 /*
  * <a class="btn"> — `a:any-link { color: var(--color-primary) }` is (0,1,1) and beats
- * `.btn--primary` (0,1,0), so primary anchors became dark text on dark fill. Pin colors.
+ * variant classes (0,1,0), so anchor buttons can get wrong text color. Pin both variants.
  */
 a.btn.btn--primary:any-link,
 a.btn.btn--primary:any-link:visited {
   color: var(--color-primary-fg);
+}
+
+a.btn.btn--secondary:any-link,
+a.btn.btn--secondary:any-link:visited {
+  color: var(--color-fg);
 }
 
 a.btn.btn--primary:any-link:hover {
@@ -358,17 +386,100 @@ a.btn.btn--danger:any-link:hover {
   color: var(--color-destructive-fg);
 }
 
+/* ── Size modifiers ─────────────────────────────────────────────────── */
+
+/* Large — 44px tall: for primary CTAs like "Manage Collections" */
+.btn--lg {
+  padding: 13px 28px;
+  font-size: var(--body-font-size-s);
+}
+
+/* Small — 28px tall: for card overlays, compact inline actions */
 .btn--sm {
-  padding: var(--spacing-xs) var(--spacing-sm);
+  padding: 6px 14px;
   font-size: var(--body-font-size-xs);
 }
 
-/* Icon-only circular button */
-.btn--icon {
+/* ── Circle — icon-only, pairs with a size modifier ────────────────── */
+/* medium: 36px  |  .btn--lg: 44px  |  .btn--sm: 28px                  */
+
+.btn--circle,
+.btn--icon {      /* --icon kept as alias */
+  border-radius: 50%;
+  padding: 0;
   width: 36px;
   height: 36px;
-  padding: 0;
-  border-radius: var(--border-radius-full);
+  min-width: 36px;
+}
+
+.btn--circle.btn--lg,
+.btn--icon.btn--lg {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+}
+
+.btn--circle.btn--sm,
+.btn--icon.btn--sm {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   .asc-panel UTILITY
+   Reusable floating panel for dropdowns, sheets, and small modals.
+   Apply to any positioned container. Use modifier classes for variants.
+
+   Modifier classes:
+     .asc-panel--scroll    cap height and scroll body
+     .asc-panel--no-pad    remove default padding (use header/body/footer slots instead)
+
+   Slot classes (optional):
+     .asc-panel__header    bordered top section — title / controls
+     .asc-panel__body      padded main content area
+     .asc-panel__footer    bordered bottom section — actions
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-panel {
+  background: var(--panel-bg);
+  border: var(--panel-border);
+  border-radius: var(--panel-radius);
+  box-shadow: var(--panel-shadow);
+  padding: var(--panel-padding);
+  z-index: var(--panel-z);
+  overflow: hidden;
+
+  &.asc-panel--scroll {
+    max-height: var(--panel-max-height);
+    overflow-y: auto;
+  }
+
+  &.asc-panel--no-pad { padding: 0; }
+}
+
+.asc-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-bottom: var(--panel-border);
+  font-weight: 600;
+  font-size: var(--body-font-size-s);
+  color: var(--color-fg);
+}
+
+.asc-panel__body {
+  padding: var(--panel-padding);
+}
+
+.asc-panel__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-top: var(--panel-border);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -482,6 +593,12 @@ input[type="radio"] {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
+   ASC UI PRIMITIVES — the reusable .asc-ui-* component classes now live in
+   styles/ui-kit.css (imported at the top of this file). Preview them in
+   /ui-kit.html and copy canonical markup from docs/UI_KIT.md.
+───────────────────────────────────────────────────────────────────────── */
+
+/* ─────────────────────────────────────────────────────────────────────────
    NATIVE <dialog> — .asc-dialog
    Centered by the top layer (showModal()). Single card surface — no inner
    “panel” needed. Layout: header (title + optional description, close) /
@@ -516,6 +633,12 @@ input[type="radio"] {
 
   &.asc-dialog--narrow {
     width: min(var(--modal-narrow-max-width), 92vw);
+  }
+
+  /* Large asset overlay (e.g. asset-details). Roomy, near-viewport height. */
+  &.asc-dialog--wide {
+    width: min(var(--modal-wide-max-width, 80rem), 95vw);
+    max-height: 92vh;
   }
 
   .asc-dialog__header {
@@ -577,16 +700,6 @@ input[type="radio"] {
 
   .asc-dialog__close {
     flex-shrink: 0;
-  }
-
-  /*
-   * Native <dialog> / UA can apply buttonface appearance so .btn padding/borders
-   * look wrong. Reset chrome; utility classes supply the full look.
-   */
-  button.btn {
-    appearance: none;
-    -webkit-appearance: none;
-    box-sizing: border-box;
   }
 }
 
@@ -738,6 +851,91 @@ main .section.top.search-filters > div {
 main .section.top.search-filters .block {
   flex: 1 1 160px;
   margin: 0;
+}
+
+main .section.inline > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+  align-items: flex-start;
+}
+
+main .section.inline > div > .block {
+  border: 0;
+  margin: 1rem;
+  padding: 0;}
+
+main .section.inline.dropdowns.search-filters > div,
+main .section.top.dropdowns.search-filters > div {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow: visible;
+  gap: var(--spacing-sm);
+  align-items: center;
+}
+
+main > .section.inline > div {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+
+main .section.inline.dropdowns.search-filters .search-filter-dropdown,
+main .section.top.dropdowns.search-filters .search-filter-dropdown {
+  position: relative;
+}
+
+main .section.inline.dropdowns.search-filters .search-filter-dropdown__trigger,
+main .section.top.dropdowns.search-filters .search-filter-dropdown__trigger {
+  min-width: 8rem;
+  justify-content: flex-start;
+  gap: var(--spacing-sm);
+}
+
+main .section.inline.dropdowns.search-filters .search-filter-dropdown__trigger[aria-expanded="true"],
+main .section.top.dropdowns.search-filters .search-filter-dropdown__trigger[aria-expanded="true"] {
+  background: var(--color-accent);
+  box-shadow: none;
+}
+
+main .section.inline.dropdowns.search-filters .search-filter-dropdown__arrow,
+main .section.top.dropdowns.search-filters .search-filter-dropdown__arrow {
+  margin-left: auto;
+  font-size: var(--body-font-size-m);
+  line-height: 1;
+  color: var(--color-muted-fg);
+}
+
+main .section.inline.dropdowns.search-filters .search-filter-dropdown__panel,
+main .section.top.dropdowns.search-filters .search-filter-dropdown__panel {
+  position: absolute;
+  top: calc(100% + var(--spacing-xs));
+  left: 0;
+  min-width: 17.5rem;
+  max-width: min(28rem, calc(100vw - 2rem));
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-lg, 0 8px 30px rgb(0 0 0 / 12%));
+  z-index: var(--z-dropdown);
+  overflow: hidden;
+  padding: var(--spacing-md);
+}
+
+main .section.inline.dropdowns.search-filters .search-filter-dropdown__panel[hidden],
+main .section.top.dropdowns.search-filters .search-filter-dropdown__panel[hidden] {
+  display: none;
+}
+
+main .section.inline.dropdowns.search-filters .search-filter-dropdown__panel ul,
+main .section.inline.dropdowns.search-filters .search-filter-dropdown__panel ol,
+main .section.top.dropdowns.search-filters .search-filter-dropdown__panel ul,
+main .section.top.dropdowns.search-filters .search-filter-dropdown__panel ol {
+  margin: 0;
+  padding: 0;
+  max-height: 15rem;
+  overflow-y: auto;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────

@@ -1,3 +1,4 @@
+/** @owner user */
 import services from '../../scripts/asc/services/services.js';
 import { Events as CollectionEvents } from '../../scripts/asc/services/collections/collections.js';
 
@@ -48,8 +49,8 @@ function html(collections, activeId, defaultId) {
       </div>
 
       <form class="collections__new-form" hidden>
-        <label class="collections__new-label">
-          <span class="collections__new-label-text">Name</span>
+        <label class="collections__new-label asc-ui-field">
+          <span class="asc-ui-field__label">Name</span>
           <input type="text" class="collections__new-name" placeholder="e.g. Q1 campaign" maxlength="80" autocomplete="off" />
         </label>
         <div class="collections__new-actions">
@@ -61,9 +62,10 @@ function html(collections, activeId, defaultId) {
       <ul class="collections__grid" role="list">
         ${collections.length
     ? collections.map((c) => collectionCard(c, activeId, defaultId)).join('')
-    : `<li class="collections__empty">
-          <p class="collections__empty-title">No collections yet</p>
-          <p class="collections__empty-hint">Create a collection to start building a downloadable set of assets.</p>
+    : `<li class="collections__empty asc-ui-empty-state">
+          <span class="asc-ui-empty-state__icon" aria-hidden="true">📁</span>
+          <p class="asc-ui-empty-state__title">No collections yet</p>
+          <p class="asc-ui-empty-state__hint">Create a collection to start building a downloadable set of assets.</p>
         </li>`}
       </ul>
     </section>`;
@@ -76,14 +78,14 @@ function collectionCard(collection, activeId, defaultId) {
   const updated = formatUpdated(collection.modifiedAt);
 
   return `
-    <li class="collections__card${isActive ? ' collections__card--active' : ''}"
+    <li class="collections__card asc-ui-card asc-ui-card--interactive${isActive ? ' asc-ui-card--active' : ''}"
         data-collection-id="${collection.id}">
-      <div class="collections__card-top">
-        <div class="collections__card-header">
-          <h2 class="collections__card-name">${escHtml(collection.name)}</h2>
+      <div class="asc-ui-card__body">
+        <div class="asc-ui-card__header">
+          <h2 class="collections__card-name asc-ui-card__title">${escHtml(collection.name)}</h2>
           <div class="collections__card-badges" role="presentation">
-            ${isActive ? '<span class="collections__card-badge collections__card-badge--active">Active</span>' : ''}
-            ${isDefault ? '<span class="collections__card-badge collections__card-badge--default">Default</span>' : ''}
+            ${isActive ? '<span class="asc-ui-badge asc-ui-badge--primary">Active</span>' : ''}
+            ${isDefault ? '<span class="asc-ui-badge">Default</span>' : ''}
           </div>
         </div>
         <p class="collections__card-count"><span class="collections__card-count-num">${count}</span> asset${count !== 1 ? 's' : ''}</p>
@@ -91,7 +93,7 @@ function collectionCard(collection, activeId, defaultId) {
     ? `<p class="collections__card-updated"><time datetime="${escAttr(updated.iso)}">${escHtml(updated.label)}</time></p>`
     : ''}
       </div>
-      <div class="collections__card-actions">
+      <div class="collections__card-actions asc-ui-card__footer">
         <a class="collections__card-open btn btn--primary btn--sm"
            href="${COLLECTION_PATH}?id=${collection.id}">Open</a>
         ${!isActive

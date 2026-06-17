@@ -1,139 +1,176 @@
-.block.details-preview {
+main .details-preview {
     padding: var(--spacing-lg);
 }
 
-.block.details-preview .asset-preview {
+main .details-preview .asset-preview {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-lg);
 }
 
-.block.details-preview figure {
+/* ── Image container ───────────────────────────────────────────────────── */
+
+main .details-preview figure {
     margin: 0;
-    padding: 0;
+    padding: var(--spacing-xl);
+    background: var(--color-muted);
+    border-radius: var(--border-radius-lg);
 }
 
-.block.details-preview img {
+main .details-preview img {
     max-width: 100%;
+    max-height: 55vh;
     height: auto;
+    width: auto;
     display: block;
-    border: var(--border-width) var(--border-style) var(--color-border);
+    margin: 0 auto;
+    object-fit: contain;
+    border-radius: var(--border-radius-sm);
+    box-shadow: 0 4px 24px rgb(0 0 0 / 12%);
 }
 
-.block.details-preview figcaption {
-    margin-top: var(--spacing-md);
-}
-
-.block.details-preview h1 {
-    margin: 0 0 var(--spacing-sm) 0;
-    font-size: var(--heading-font-size-l);
-    font-weight: 600;
-    color: var(--color-fg);
-}
-
-.block.details-preview .description {
-    margin: 0;
-    color: var(--color-muted-fg);
-    font-size: var(--body-font-size-s);
-}
-
-.block.details-preview .asset-info {
-    padding: var(--spacing-md);
-    background-color: var(--color-muted);
-    border: var(--border-width) var(--border-style) var(--color-border);
-}
-
-.block.details-preview .metadata {
-    margin: 0;
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: var(--spacing-sm) var(--spacing-md);
-}
-
-.block.details-preview .metadata dt {
-    font-weight: 600;
-    color: var(--color-fg);
-    font-size: var(--body-font-size-s);
-}
-
-.block.details-preview .metadata dd {
-    margin: 0;
-    color: var(--color-muted-fg);
-    font-size: var(--body-font-size-s);
-}
-
-/* ── Collection toggle: show as full-width labelled button in the aside ─── */
-/* stylelint-disable selector-class-pattern */
-.block.details-preview .asset-actions {
+main .details-preview figcaption {
     margin-top: var(--spacing-md);
     padding-top: var(--spacing-md);
     border-top: var(--border-width) var(--border-style) var(--color-border);
 }
 
-.block.details-preview .asc-collection-toggle__btn {
+main .details-preview h1 {
+    margin: 0;
+    font-size: var(--body-font-size-m);
+    font-weight: 600;
+    color: var(--color-fg);
+    word-break: break-all;
+    line-height: 1.4;
+}
+
+main .details-preview .description {
+    margin: var(--spacing-xs) 0 0;
+    color: var(--color-muted-fg);
+    font-size: var(--body-font-size-s);
+}
+
+/* ── Info card ─────────────────────────────────────────────────────────── */
+
+main .details-preview .asset-info {
+    border: var(--border-width) var(--border-style) var(--color-border);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    background: var(--color-bg);
+    padding: 0;
+}
+
+/* ── Metadata rows ─────────────────────────────────────────────────────── */
+
+main .details-preview .metadata {
+    margin: 0;
+    display: grid;
+    grid-template-columns: auto 1fr;
+}
+
+main .details-preview .metadata dt {
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: var(--body-font-size-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-muted-fg);
+    background: var(--color-muted);
+    border-bottom: var(--border-width) var(--border-style) var(--color-border);
+    white-space: nowrap;
+}
+
+main .details-preview .metadata dd {
+    padding: var(--spacing-sm) var(--spacing-md);
+    margin: 0;
+    color: var(--color-fg);
+    font-size: var(--body-font-size-s);
+    border-bottom: var(--border-width) var(--border-style) var(--color-border);
+    word-break: break-word;
+}
+
+/* ── Collection toggle ─────────────────────────────────────────────────── */
+
+main .details-preview .asset-actions {
+    padding: var(--spacing-md);
+    background: var(--color-muted);
+    border-top: var(--border-width) var(--border-style) var(--color-border);
+    margin-top: 0;
+}
+
+/* stylelint-disable selector-class-pattern */
+main .details-preview .asc-collection-toggle__btn {
     width: 100%;
     height: auto;
     padding: var(--spacing-xs) var(--spacing-md);
-    border-radius: var(--border-radius-sm);
+    border-radius: var(--button-border-radius);
     justify-content: center;
     gap: var(--spacing-xs);
 }
 
-.block.details-preview .asc-collection-toggle__label {
+main .details-preview .asc-collection-toggle__label {
     position: static;
     width: auto;
     height: auto;
     overflow: visible;
-    clip: auto;
     clip-path: none;
     white-space: normal;
     font-size: var(--body-font-size-s);
 }
 
-.block.details-preview .asc-collection-toggle__add {
+main .details-preview .asc-collection-toggle__add {
     background: var(--color-primary);
     color: var(--color-primary-fg);
     border-color: transparent;
 }
 
-.block.details-preview .asc-collection-toggle__remove {
+main .details-preview .asc-collection-toggle__remove {
     background: transparent;
     color: var(--color-destructive);
     border-color: var(--color-destructive);
 }
 
-.block.details-preview .asc-collection-toggle__remove:hover {
+main .details-preview .asc-collection-toggle__remove:hover {
     background: color-mix(in srgb, var(--color-destructive) 10%, transparent);
 }
 /* stylelint-enable selector-class-pattern */
 
-.block.details-preview .error {
+/* ── Error state ───────────────────────────────────────────────────────── */
+
+main .details-preview .error {
     padding: var(--spacing-lg);
     text-align: center;
     color: var(--color-muted-fg);
 }
 
-.block.details-preview .error h2 {
+main .details-preview .error h2 {
     margin: 0 0 var(--spacing-sm) 0;
     color: var(--color-fg);
 }
 
-.block.details-preview .error p {
+main .details-preview .error p {
     margin: 0;
     font-size: var(--body-font-size-s);
 }
 
+/* ── Desktop layout ────────────────────────────────────────────────────── */
+
 @media (width >= 768px) {
-    .block.details-preview .asset-preview {
+    main .details-preview .asset-preview {
         flex-direction: row;
         gap: var(--spacing-xl);
+        align-items: flex-start;
     }
 
-    .block.details-preview figure {
+    main .details-preview figure {
         flex: 1;
+        position: sticky;
+        top: calc(var(--nav-height) + var(--spacing-md));
+        align-self: flex-start;
     }
 
-    .block.details-preview .asset-info {
+    main .details-preview .asset-info {
         flex: 0 0 300px;
     }
 }

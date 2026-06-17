@@ -485,6 +485,26 @@ services.renditions.getThumbnailUrl(asset);        // best thumbnail URL (with f
 
 ---
 
+## UI Kit (`.asc-ui-*`)
+
+Reusable, theme-driven UI primitives shared across blocks, parts, and templates.
+**Before writing new block CSS, reuse a kit primitive.** Full catalog with copy-paste
+markup: [`docs/UI_KIT.md`](docs/UI_KIT.md). Visual gallery (themed, with per-element
+code/usage): [`/ui-kit.html`](ui-kit.html). Styles: [`styles/ui-kit.css`](styles/ui-kit.css)
+(each primitive tagged `@kit <name>` for grepping).
+
+Primitives: `asc-ui-card`, `asc-ui-badge`, `asc-ui-chip`, `asc-ui-empty-state`,
+`asc-ui-skeleton`, `asc-ui-spinner`, `asc-ui-segmented`, `asc-ui-switch`, `asc-ui-field`,
+`asc-ui-search`, `asc-ui-control`/`asc-ui-dropdown`, `asc-ui-collection-card`,
+`asc-ui-asset-row`, `asc-ui-table`, `asc-ui-masonry`, `asc-ui-icon-btn`, plus the
+typography helpers. Foundational `.btn`, form fields, `.asc-panel`, and `.asc-dialog`
+live in `styles.css` (documented below).
+
+When a block needs a primitive to look different, add a variant *to the kit* (and document
+it) rather than overriding it inside the block.
+
+---
+
 ## Button Utilities (`.btn`)
 
 Global utility classes defined in `styles/styles.css`. Use these for all component buttons — not EDS editorial `a.button:any-link`.

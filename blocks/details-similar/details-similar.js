@@ -1,3 +1,4 @@
+/** @owner user */
 /**
  * details-similar block — shows assets similar to the current details asset.
  *
@@ -7,8 +8,7 @@
  * https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/implementing/developing/full-stack/search/query-builder-predicates#similar
  *
  * Authorable configuration:
- *   title       {string}   Heading shown above the strip (optional)
- *   description {string}   Subtext below the heading (optional)
+ *   description {string}   Subtext shown above the strip (optional)
  *   max         {number}   Maximum number of similar assets to show (default: 8)
  *   show-empty  {boolean}  Show the block when no similar assets are found (default: false)
  */
@@ -19,7 +19,6 @@ import services from '../../scripts/asc/services/services.js';
 import Asset from '../../scripts/asc/models/asset.js';
 
 const DEFAULTS = {
-  title: '',
   description: '',
   max: 8,
   'show-empty': false,
@@ -28,7 +27,6 @@ const DEFAULTS = {
 export default async function decorate(block) {
   const raw = readBlockConfig(block);
   const config = {
-    title: raw.title || DEFAULTS.title,
     description: raw.description || DEFAULTS.description,
     max: raw.max ? Number.parseInt(raw.max, 10) : DEFAULTS.max,
     showEmpty: raw['show-empty'] === 'true' || raw['show-empty'] === true,
@@ -65,10 +63,9 @@ export default async function decorate(block) {
 }
 
 function buildHtml(config, resultsHtml) {
-  const header = (config.title || config.description) ? `
+  const header = config.description ? `
     <div class="details-similar__header">
-      ${config.title ? `<h3 class="details-similar__title">${config.title}</h3>` : ''}
-      ${config.description ? `<p class="details-similar__description">${config.description}</p>` : ''}
+      <p class="details-similar__description">${config.description}</p>
     </div>` : '';
 
   return `${header}${resultsHtml}`;

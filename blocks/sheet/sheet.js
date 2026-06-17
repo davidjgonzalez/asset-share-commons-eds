@@ -1,3 +1,4 @@
+/** @owner user */
 import services from '../../scripts/asc/services/services.js';
 
 /**
@@ -52,7 +53,7 @@ function assetRow(asset, renditionDefinitions) {
   const defaultRenditionId = renditionDefinitions[0]?.id || '';
 
   const pills = renditionDefinitions.map((def) => `
-    <button class="sheet__rendition-pill${def.id === defaultRenditionId ? ' sheet__rendition-pill--active' : ''}"
+    <button class="btn btn--ghost btn--sm sheet__rendition-pill${def.id === defaultRenditionId ? ' sheet__rendition-pill--active' : ''}"
             data-rendition-id="${def.id}"
             aria-pressed="${def.id === defaultRenditionId}"
             type="button">
@@ -83,7 +84,7 @@ function assetRow(asset, renditionDefinitions) {
         ${pills || '<span class="sheet__no-renditions">—</span>'}
       </div>
       <div class="sheet__asset-actions">
-        <a class="sheet__download-btn"
+        <a class="btn btn--primary btn--sm sheet__download-btn"
            href="#"
            download
            data-asc-asset="${asset.uuid}">

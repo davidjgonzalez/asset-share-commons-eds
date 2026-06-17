@@ -1,9 +1,9 @@
+/** @owner user */
 import { readBlockConfig } from '../../scripts/aem.js';
 import Asset from '../../scripts/asc/models/asset.js';
 import services from '../../scripts/asc/services/services.js';
 
 const DEFAULTS = {
-  title: '',
   description: '',
   renditions: [], // empty = all visible renditions in definition order
 };
@@ -11,7 +11,6 @@ const DEFAULTS = {
 export default async function decorate(block) {
   const raw = readBlockConfig(block);
   const config = {
-    title: raw.title || DEFAULTS.title,
     description: raw.description || DEFAULTS.description,
     // Accept comma- or newline-separated rendition IDs, or an array from readBlockConfig
     renditions: parseList(raw.renditions),
@@ -30,10 +29,9 @@ export default async function decorate(block) {
     return;
   }
 
-  const header = (config.title || config.description) ? `
+  const header = config.description ? `
     <div class="details-download__header">
-      ${config.title ? `<h3 class="details-download__title">${config.title}</h3>` : ''}
-      ${config.description ? `<p class="details-download__description">${config.description}</p>` : ''}
+      <p class="details-download__description">${config.description}</p>
     </div>` : '';
 
   block.innerHTML = `
@@ -80,10 +78,9 @@ function renditionCard(asset, rendition) {
       </div>
       <div class="details-download__info">
         <div class="details-download__rendition-label">${rendition.label}</div>
-        <div class="details-download__filename">${filename}</div>
         ${metaParts.length ? `<div class="details-download__meta">${metaParts.join(' · ')}</div>` : ''}
       </div>
-      <a class="details-download__btn"
+      <a class="btn btn--primary btn--sm details-download__btn"
          href="${rendition.url}"
          download="${filename}"
          data-asc-action="rendition:download@click"

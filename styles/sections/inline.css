@@ -1,0 +1,12 @@
+/* aside section — wide main content + narrow sidebar
+ *
+ * style: aside, right   →  content left  | sidebar right  (also the default)
+ * style: aside, left    →  sidebar left  | content right
+ *
+ * Override sidebar width via CSS variable in your theme:
+ *   --aside-sidebar-width: 320px;
+ */
+main .section.inline {
+    display: flex;
+}
+

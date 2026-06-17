@@ -1,14 +1,14 @@
-.block.details-property {
+main .details-property {
     margin-bottom: var(--spacing-md);
     padding: var(--spacing-sm) 0;
     border-bottom: var(--border-width) var(--border-style) var(--color-border);
 }
 
-.block.details-property:last-child {
+main .details-property:last-child {
     border-bottom: none;
 }
 
-.block.details-property label {
+main .details-property label {
     display: block;
     font-weight: 600;
     font-size: var(--body-font-size-s);
@@ -16,13 +16,13 @@
     margin-bottom: var(--spacing-xs);
 }
 
-.block.details-property span {
+main .details-property span {
     display: block;
     font-size: var(--body-font-size-s);
     color: var(--color-muted-fg);
 }
 
-.block.details-property.pill span {
+main .details-property.pill span {
     display: inline-block;
     padding: var(--spacing-xs) var(--spacing-sm);
     background-color: var(--color-muted);

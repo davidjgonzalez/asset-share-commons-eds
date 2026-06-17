@@ -1,3 +1,4 @@
+/** @owner user */
 /**
  * search-bar — full-text search input.
  *
@@ -8,6 +9,8 @@
 import { readBlockConfig } from '../../scripts/asc/utils/search.js';
 
 export default function decorate(block) {
+  block.classList.add('asc-ui-search');
+
   const config = readBlockConfig(block, {}, {
     placeholder: 'Search assets...',
     inputType: 'search',

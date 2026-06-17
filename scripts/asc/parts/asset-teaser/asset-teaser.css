@@ -95,15 +95,15 @@
         top: var(--spacing-xs);
         right: var(--spacing-xs);
         z-index: 3;
-        opacity: var(--asset-teaser-actions-opacity, 1);
-        pointer-events: var(--asset-teaser-actions-pointer-events, auto);
+        opacity: 0;
+        pointer-events: none;
         transition: opacity var(--transition-fast);
     }
 
     &:hover .asc-collection-toggle,
     &:focus-within .asc-collection-toggle {
-        opacity: var(--asset-teaser-actions-hover-opacity, var(--asset-teaser-actions-opacity, 1));
-        pointer-events: var(--asset-teaser-actions-hover-pointer-events, var(--asset-teaser-actions-pointer-events, auto));
+        opacity: 1;
+        pointer-events: auto;
     }
 }
 

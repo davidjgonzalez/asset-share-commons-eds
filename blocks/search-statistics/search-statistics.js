@@ -1,3 +1,4 @@
+/** @owner user */
 /**
  * search-statistics — displays search result counts.
  *

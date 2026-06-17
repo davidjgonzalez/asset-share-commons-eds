@@ -1,0 +1,1002 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ASC UI Kit</title>
+  <link rel="stylesheet" href="./styles/styles.css">
+  <link rel="stylesheet" href="./styles/lazy-styles.css">
+  <link id="theme-link" rel="stylesheet" href="">
+  <style>
+    /*
+     * Page chrome only — every reusable element on this page comes from the
+     * ASC UI Kit (styles/ui-kit.css) or the foundational layer (styles.css).
+     * These `kit-*` classes style the gallery scaffold itself, not the kit.
+     */
+    :root { --kit-max: 1180px; }
+
+    body {
+      display: block;
+      min-width: 0;
+      padding: 0 0 6rem;
+      background: var(--color-bg);
+    }
+
+    .kit-topbar {
+      position: sticky;
+      top: 0;
+      z-index: var(--z-sticky);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--spacing-md);
+      padding: var(--spacing-md) var(--spacing-xl);
+      background: color-mix(in srgb, var(--color-bg) 88%, transparent);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .kit-topbar__title { display: grid; gap: 0.15rem; }
+    .kit-topbar__controls { display: flex; flex-wrap: wrap; align-items: center; gap: var(--spacing-lg); }
+    .kit-control { display: grid; gap: 0.3rem; }
+
+    .kit-page {
+      max-width: var(--kit-max);
+      margin: 0 auto;
+      padding: var(--spacing-xl);
+      display: grid;
+      gap: var(--spacing-2xl);
+    }
+
+    .kit-section { display: grid; gap: var(--spacing-md); scroll-margin-top: 6rem; }
+    .kit-section__head { display: grid; gap: 0.25rem; border-bottom: 1px solid var(--color-border); padding-bottom: var(--spacing-sm); }
+    .kit-section__title { margin: 0; font-size: var(--heading-font-size-l); color: var(--color-fg); }
+    .kit-section__sub { margin: 0; font-size: var(--body-font-size-s); color: var(--color-muted-fg); }
+
+    .kit-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: var(--spacing-md); }
+
+    .kit-demo {
+      border: 1px solid var(--color-border);
+      border-radius: var(--border-radius-lg);
+      background: var(--color-card);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Tiles whose content escapes the box (open dropdown / popover) */
+    .kit-demo[data-overflow] { overflow: visible; position: relative; z-index: 1; }
+    .kit-demo[data-overflow] .kit-demo__preview { padding-bottom: 12rem; }
+
+    /* Full-width tile — for primitives that need room (e.g. metadata grid) */
+    .kit-demo[data-span] { grid-column: 1 / -1; }
+
+    .kit-demo__bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--spacing-sm);
+      padding: 0.25rem 0.4rem 0.25rem var(--spacing-md);
+      border-bottom: 1px solid var(--color-border);
+      background: var(--color-muted);
+    }
+
+    .kit-demo__name { font-size: var(--body-font-size-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-muted-fg); }
+
+    .kit-demo__toggle {
+      appearance: none;
+      border: 1px solid var(--color-border);
+      border-radius: var(--border-radius-full);
+      background: var(--color-card);
+      color: var(--color-muted-fg);
+      font-size: 0.68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.15rem 0.6rem;
+      cursor: pointer;
+    }
+    .kit-demo__toggle:hover { color: var(--color-fg); border-color: var(--color-muted-fg); }
+
+    /* Token visualizers */
+    .kit-tokens { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--spacing-lg); }
+    /* Inline class/tag annotation shown next to a rendered example */
+    .kit-anno { display: inline-block; margin-left: 0.6rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.72rem; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--color-muted-fg); vertical-align: middle; }
+    .kit-token { display: grid; gap: 0.4rem; justify-items: center; font-size: 0.72rem; color: var(--color-muted-fg); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .kit-token__radius { width: 4rem; height: 4rem; background: var(--color-accent); border: 1px solid var(--color-border); }
+    .kit-spacescale { display: grid; gap: 0.5rem; }
+    .kit-spacescale__row { display: grid; grid-template-columns: 7rem 1fr; align-items: center; gap: var(--spacing-md); font-size: 0.72rem; color: var(--color-muted-fg); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .kit-spacescale__bar { height: 0.9rem; background: var(--color-primary); border-radius: var(--border-radius-sm); }
+    .kit-pad { background: var(--color-accent); border-radius: var(--border-radius-md); }
+    .kit-pad__inner { background: var(--color-card); border: 1px dashed var(--color-muted-fg); border-radius: var(--border-radius-sm); padding: 0.4rem 0.6rem; text-align: center; font-size: 0.72rem; color: var(--color-muted-fg); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .kit-margin { display: inline-flex; align-items: stretch; background: repeating-linear-gradient(45deg, var(--color-muted), var(--color-muted) 4px, transparent 4px, transparent 8px); border: 1px dashed var(--color-border); border-radius: var(--border-radius-sm); }
+    .kit-margin__box { width: 2.25rem; height: 2.25rem; background: var(--color-primary); border-radius: var(--border-radius-sm); }
+
+    .kit-demo__preview {
+      flex: 1 1 auto;
+      padding: var(--spacing-lg);
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--spacing-sm);
+      align-items: center;
+    }
+    .kit-demo__preview[data-layout="block"] { display: block; }
+    .kit-demo__preview[data-layout="stack"] { flex-direction: column; align-items: stretch; }
+
+    .kit-demo__code { display: none; border-top: 1px solid var(--color-border); }
+    .kit-demo.is-open .kit-demo__code,
+    body.kit-show-code .kit-demo__code { display: block; }
+
+    .kit-demo__usage { margin: 0; padding: var(--spacing-sm) var(--spacing-md); font-size: var(--body-font-size-xs); color: var(--color-muted-fg); background: var(--color-muted); }
+    .kit-demo__codehead { display: flex; align-items: center; justify-content: space-between; padding: var(--spacing-xs) var(--spacing-md); }
+    .kit-demo__codelabel { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-muted-fg); }
+    .kit-demo__copy { appearance: none; border: 1px solid var(--color-border); border-radius: var(--border-radius-sm); background: var(--color-card); color: var(--color-muted-fg); font-size: 0.7rem; padding: 0.2rem 0.55rem; cursor: pointer; }
+    .kit-demo__copy:hover { color: var(--color-fg); }
+
+    .kit-demo pre { margin: 0; padding: var(--spacing-md); background: var(--color-muted); overflow-x: auto; border: 0; }
+    .kit-demo code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.78rem; color: var(--color-fg); white-space: pre; }
+
+    .kit-colorgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--spacing-sm); }
+    .kit-color { border: 1px solid var(--color-border); border-radius: var(--border-radius-md); overflow: hidden; }
+    .kit-color__swatch { height: 3rem; background: var(--swatch); border-bottom: 1px solid var(--color-border); }
+    .kit-color__meta { padding: 0.5rem; display: grid; gap: 0.1rem; }
+    .kit-color__name { font-size: var(--body-font-size-xs); font-weight: 600; color: var(--color-fg); }
+    .kit-color__var { font-size: 0.72rem; color: var(--color-muted-fg); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+    .kit-typescale { display: grid; gap: var(--spacing-sm); }
+
+    @media (width < 700px) {
+      .kit-topbar, .kit-page { padding-inline: var(--spacing-md); }
+    }
+  </style>
+</head>
+<body class="appear">
+  <header class="kit-topbar">
+    <div class="kit-topbar__title">
+      <span class="asc-ui-heading-eyebrow">Asset Share Commons</span>
+      <strong style="font-size: var(--heading-font-size-m);">UI Kit</strong>
+    </div>
+    <div class="kit-topbar__controls">
+      <label class="kit-control">
+        <span class="asc-ui-label">Theme</span>
+        <select id="theme-selector">
+          <option value="none" selected>Default (no theme class)</option>
+          <option value="default">default</option>
+          <option value="dark">dark</option>
+          <option value="pro">pro</option>
+          <option value="studio">studio</option>
+          <option value="custom">custom</option>
+        </select>
+      </label>
+      <label class="asc-ui-switch">
+        <input type="checkbox" id="code-toggle">
+        <span class="asc-ui-switch__track"><span class="asc-ui-switch__thumb"></span></span>
+        <span>Show code &amp; usage</span>
+      </label>
+    </div>
+  </header>
+
+  <main class="kit-page">
+    <p class="asc-ui-copy" style="max-width: 70ch;">
+      Every element below is a reusable ASC UI Kit primitive. Workshop and theme them here, then
+      reuse the same classes in blocks. Toggle <strong>Show code &amp; usage</strong> (or the
+      <em>Code</em> button on any tile) to reveal canonical markup. The agent catalog lives in
+      <code>docs/UI_KIT.md</code>; the styles in <code>styles/ui-kit.css</code>.
+    </p>
+
+    <!-- ───────────────────────── FOUNDATIONS ───────────────────────── -->
+    <section class="kit-section" id="colors">
+      <div class="kit-section__head">
+        <h2 class="kit-section__title">Color tokens</h2>
+        <p class="kit-section__sub">Semantic roles themes override. Blocks reference these — never raw hex.</p>
+      </div>
+      <div class="kit-colorgrid">
+        <div class="kit-color"><div class="kit-color__swatch" style="--swatch: var(--color-bg);"></div><div class="kit-color__meta"><span class="kit-color__name">Background</span><span class="kit-color__var">--color-bg</span></div></div>
+        <div class="kit-color"><div class="kit-color__swatch" style="--swatch: var(--color-fg);"></div><div class="kit-color__meta"><span class="kit-color__name">Foreground</span><span class="kit-color__var">--color-fg</span></div></div>
+        <div class="kit-color"><div class="kit-color__swatch" style="--swatch: var(--color-card);"></div><div class="kit-color__meta"><span class="kit-color__name">Card</span><span class="kit-color__var">--color-card</span></div></div>
+        <div class="kit-color"><div class="kit-color__swatch" style="--swatch: var(--color-primary);"></div><div class="kit-color__meta"><span class="kit-color__name">Primary</span><span class="kit-color__var">--color-primary</span></div></div>
+        <div class="kit-color"><div class="kit-color__swatch" style="--swatch: var(--color-secondary);"></div><div class="kit-color__meta"><span class="kit-color__name">Secondary</span><span class="kit-color__var">--color-secondary</span></div></div>
+        <div class="kit-color"><div class="kit-color__swatch" style="--swatch: var(--color-muted);"></div><div class="kit-color__meta"><span class="kit-color__name">Muted</span><span class="kit-color__var">--color-muted</span></div></div>
+        <div class="kit-color"><div class="kit-color__swatch" style="--swatch: var(--color-muted-fg);"></div><div class="kit-color__meta"><span class="kit-color__name">Muted FG</span><span class="kit-color__var">--color-muted-fg</span></div></div>
+        <div class="kit-color"><div class="kit-color__swatch" style="--swatch: var(--color-accent);"></div><div class="kit-color__meta"><span class="kit-color__name">Accent</span><span class="kit-color__var">--color-accent</span></div></div>
+        <div class="kit-color"><div class="kit-color__swatch" style="--swatch: var(--color-destructive);"></div><div class="kit-color__meta"><span class="kit-color__name">Destructive</span><span class="kit-color__var">--color-destructive</span></div></div>
+        <div class="kit-color"><div class="kit-color__swatch" style="--swatch: var(--color-border);"></div><div class="kit-color__meta"><span class="kit-color__name">Border</span><span class="kit-color__var">--color-border</span></div></div>
+      </div>
+    </section>
+
+    <section class="kit-section" id="typography">
+      <div class="kit-section__head">
+        <h2 class="kit-section__title">Typography</h2>
+        <p class="kit-section__sub">Heading + copy primitives for block markup.</p>
+      </div>
+      <div class="kit-grid">
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Text styles</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-layout="block" data-snippet>
+            <p class="asc-ui-heading-eyebrow">Eyebrow<code class="kit-anno" data-omit>&lt;p&gt; .asc-ui-heading-eyebrow</code></p>
+            <h2 class="asc-ui-heading-xl">Heading XL<code class="kit-anno" data-omit>&lt;h2&gt; .asc-ui-heading-xl</code></h2>
+            <h3 class="asc-ui-heading-l">Heading L<code class="kit-anno" data-omit>&lt;h3&gt; .asc-ui-heading-l</code></h3>
+            <h4 class="asc-ui-heading-m">Heading M<code class="kit-anno" data-omit>&lt;h4&gt; .asc-ui-heading-m</code></h4>
+            <p class="asc-ui-copy">Body copy uses asc-ui-copy for muted secondary text.<code class="kit-anno" data-omit>&lt;p&gt; .asc-ui-copy</code></p>
+            <p class="asc-ui-label">Field label<code class="kit-anno" data-omit>&lt;p&gt; .asc-ui-label</code></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────────────────────── SPACING & RADIUS ───────────────────────── -->
+    <section class="kit-section" id="spacing">
+      <div class="kit-section__head">
+        <h2 class="kit-section__title">Spacing &amp; radius tokens</h2>
+        <p class="kit-section__sub">Structural tokens (<code>styles/tokens.css</code>). The spacing scale drives padding, margin, and gap.</p>
+      </div>
+      <div class="kit-grid">
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Border radius</span></div>
+          <div class="kit-demo__preview">
+            <div class="kit-tokens">
+              <span class="kit-token"><span class="kit-token__radius" style="border-radius: var(--border-radius-sm);"></span>--border-radius-sm</span>
+              <span class="kit-token"><span class="kit-token__radius" style="border-radius: var(--border-radius-md);"></span>--border-radius-md</span>
+              <span class="kit-token"><span class="kit-token__radius" style="border-radius: var(--border-radius-lg);"></span>--border-radius-lg</span>
+              <span class="kit-token"><span class="kit-token__radius" style="border-radius: var(--border-radius-xl);"></span>--border-radius-xl</span>
+              <span class="kit-token"><span class="kit-token__radius" style="border-radius: var(--border-radius-full);"></span>--border-radius-full</span>
+            </div>
+          </div>
+        </div>
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Spacing scale</span></div>
+          <div class="kit-demo__preview" data-layout="block">
+            <div class="kit-spacescale">
+              <div class="kit-spacescale__row"><span>--spacing-2xs</span><span class="kit-spacescale__bar" style="width: var(--spacing-2xs);"></span></div>
+              <div class="kit-spacescale__row"><span>--spacing-xs</span><span class="kit-spacescale__bar" style="width: var(--spacing-xs);"></span></div>
+              <div class="kit-spacescale__row"><span>--spacing-sm</span><span class="kit-spacescale__bar" style="width: var(--spacing-sm);"></span></div>
+              <div class="kit-spacescale__row"><span>--spacing-md</span><span class="kit-spacescale__bar" style="width: var(--spacing-md);"></span></div>
+              <div class="kit-spacescale__row"><span>--spacing-lg</span><span class="kit-spacescale__bar" style="width: var(--spacing-lg);"></span></div>
+              <div class="kit-spacescale__row"><span>--spacing-xl</span><span class="kit-spacescale__bar" style="width: var(--spacing-xl);"></span></div>
+              <div class="kit-spacescale__row"><span>--spacing-2xl</span><span class="kit-spacescale__bar" style="width: var(--spacing-2xl);"></span></div>
+              <div class="kit-spacescale__row"><span>--spacing-3xl</span><span class="kit-spacescale__bar" style="width: var(--spacing-3xl);"></span></div>
+            </div>
+          </div>
+        </div>
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Padding</span></div>
+          <div class="kit-demo__preview" data-layout="block">
+            <div class="kit-tokens">
+              <span class="kit-token"><span class="kit-pad" style="padding: var(--spacing-sm);"><span class="kit-pad__inner"></span></span>--spacing-sm</span>
+              <span class="kit-token"><span class="kit-pad" style="padding: var(--spacing-md);"><span class="kit-pad__inner"></span></span>--spacing-md</span>
+              <span class="kit-token"><span class="kit-pad" style="padding: var(--spacing-lg);"><span class="kit-pad__inner"></span></span>--spacing-lg</span>
+              <span class="kit-token"><span class="kit-pad" style="padding: var(--spacing-xl);"><span class="kit-pad__inner"></span></span>--spacing-xl</span>
+              <span class="kit-token"><span class="kit-pad" style="padding: var(--spacing-2xl);"><span class="kit-pad__inner"></span></span>--spacing-2xl</span>
+              <span class="kit-token"><span class="kit-pad" style="padding: var(--spacing-3xl);"><span class="kit-pad__inner"></span></span>--spacing-3xl</span>
+            </div>
+            <p class="kit-demo__usage" style="background:none; padding:var(--spacing-md) 0 0;">Accent ring = the padding token between the box edge and inner content.</p>
+          </div>
+        </div>
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Margin</span></div>
+          <div class="kit-demo__preview" data-layout="block">
+            <div class="kit-tokens">
+              <span class="kit-token"><span class="kit-margin"><span class="kit-margin__box"></span><span class="kit-margin__box" style="margin-left: var(--spacing-sm);"></span></span>--spacing-sm</span>
+              <span class="kit-token"><span class="kit-margin"><span class="kit-margin__box"></span><span class="kit-margin__box" style="margin-left: var(--spacing-md);"></span></span>--spacing-md</span>
+              <span class="kit-token"><span class="kit-margin"><span class="kit-margin__box"></span><span class="kit-margin__box" style="margin-left: var(--spacing-lg);"></span></span>--spacing-lg</span>
+              <span class="kit-token"><span class="kit-margin"><span class="kit-margin__box"></span><span class="kit-margin__box" style="margin-left: var(--spacing-xl);"></span></span>--spacing-xl</span>
+              <span class="kit-token"><span class="kit-margin"><span class="kit-margin__box"></span><span class="kit-margin__box" style="margin-left: var(--spacing-2xl);"></span></span>--spacing-2xl</span>
+              <span class="kit-token"><span class="kit-margin"><span class="kit-margin__box"></span><span class="kit-margin__box" style="margin-left: var(--spacing-3xl);"></span></span>--spacing-3xl</span>
+            </div>
+            <p class="kit-demo__usage" style="background:none; padding:var(--spacing-md) 0 0;">Hatched area = the margin between two blocks.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────────────────────── BUTTONS ───────────────────────── -->
+    <section class="kit-section" id="buttons">
+      <div class="kit-section__head">
+        <h2 class="kit-section__title">Buttons</h2>
+        <p class="kit-section__sub"><code>.btn</code> + variant + size. Defined in styles.css.</p>
+      </div>
+      <div class="kit-grid">
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Variants</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-snippet>
+            <button class="btn btn--primary" type="button">Primary</button>
+            <button class="btn btn--secondary" type="button">Secondary</button>
+            <button class="btn btn--ghost" type="button">Ghost</button>
+            <button class="btn btn--danger" type="button">Danger</button>
+          </div>
+          <p class="kit-demo__usage">Use <code>btn--primary</code> for the single main action; <code>btn--secondary</code> / <code>btn--ghost</code> for the rest; <code>btn--danger</code> for destructive.</p>
+        </div>
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Sizes</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-snippet>
+            <button class="btn btn--primary btn--lg" type="button">Large</button>
+            <button class="btn btn--primary" type="button">Medium</button>
+            <button class="btn btn--primary btn--sm" type="button">Small</button>
+          </div>
+        </div>
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Circle / icon buttons</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-snippet>
+            <button class="btn btn--secondary btn--circle btn--lg" type="button" aria-label="Add">
+              <svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true"><path d="M8 3.5v9M3.5 8h9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            </button>
+            <button class="btn btn--secondary btn--circle" type="button" aria-label="Add">
+              <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M8 3.5v9M3.5 8h9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            </button>
+            <button class="btn btn--secondary btn--circle btn--sm" type="button" aria-label="Add">
+              <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M8 3.5v9M3.5 8h9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            </button>
+            <button class="btn btn--ghost btn--icon" type="button" aria-label="Close">
+              <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            </button>
+          </div>
+          <p class="kit-demo__usage">Sizes: <code>btn--lg</code> (44px) · default (36px) · <code>btn--sm</code> (28px). Pair <code>btn--circle</code> / <code>btn--icon</code> with a size. Use an SVG (or icon) child — it centers exactly.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────────────────────── FORM FIELDS ───────────────────────── -->
+    <section class="kit-section" id="fields">
+      <div class="kit-section__head">
+        <h2 class="kit-section__title">Form fields</h2>
+        <p class="kit-section__sub"><code>.asc-ui-field</code> wraps a label, control, and hint/error. Controls inherit the global baseline.</p>
+      </div>
+      <div class="kit-grid">
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Field + hint</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-layout="stack" data-snippet>
+            <label class="asc-ui-field">
+              <span class="asc-ui-field__label">Collection name</span>
+              <input type="text" placeholder="e.g. Q1 campaign">
+              <span class="asc-ui-field__hint">Shown to anyone you share with.</span>
+            </label>
+          </div>
+        </div>
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Field + error</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-layout="stack" data-snippet>
+            <label class="asc-ui-field">
+              <span class="asc-ui-field__label">Email</span>
+              <input type="email" value="not-an-email">
+              <span class="asc-ui-field__error">Enter a valid email address.</span>
+            </label>
+          </div>
+        </div>
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Select &amp; textarea</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-layout="stack" data-snippet>
+            <label class="asc-ui-field">
+              <span class="asc-ui-field__label">Type</span>
+              <select><option>Image</option><option>Video</option><option>Document</option></select>
+            </label>
+            <label class="asc-ui-field">
+              <span class="asc-ui-field__label">Notes</span>
+              <textarea placeholder="Optional description"></textarea>
+            </label>
+          </div>
+        </div>
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Switch</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-snippet>
+            <label class="asc-ui-switch">
+              <input type="checkbox" checked>
+              <span class="asc-ui-switch__track"><span class="asc-ui-switch__thumb"></span></span>
+              <span>Include subfolders</span>
+            </label>
+          </div>
+        </div>
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Checkboxes</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-layout="stack" data-snippet>
+            <label class="asc-ui-dropdown__item"><input type="checkbox" checked> JPEG</label>
+            <label class="asc-ui-dropdown__item"><input type="checkbox"> PNG</label>
+            <label class="asc-ui-dropdown__item"><input type="checkbox"> PDF</label>
+          </div>
+          <p class="kit-demo__usage">Native inputs are themed globally via <code>accent-color</code>. <code>asc-ui-dropdown__item</code> lays out the row.</p>
+        </div>
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Radios</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-layout="stack" data-snippet>
+            <label class="asc-ui-dropdown__item"><input type="radio" name="range" checked> Past 7 days</label>
+            <label class="asc-ui-dropdown__item"><input type="radio" name="range"> Past 30 days</label>
+            <label class="asc-ui-dropdown__item"><input type="radio" name="range"> Past year</label>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────────────────────── SEARCH + CONTROLS ───────────────────────── -->
+    <section class="kit-section" id="search">
+      <div class="kit-section__head">
+        <h2 class="kit-section__title">Search &amp; filter controls</h2>
+        <p class="kit-section__sub">Growing search input, control buttons, and dropdown popovers.</p>
+      </div>
+      <div class="kit-grid">
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Search</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-layout="block" data-snippet>
+            <div class="asc-ui-search"><input type="search" placeholder="Search assets…" aria-label="Search assets"></div>
+          </div>
+        </div>
+        <div class="kit-demo" data-overflow>
+          <div class="kit-demo__bar"><span class="kit-demo__name">Dropdown control</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-layout="block" data-snippet>
+            <div class="asc-ui-control-set">
+              <div class="asc-ui-control asc-ui-dropdown" data-dropdown>
+                <button class="btn btn--secondary asc-ui-control-btn" type="button" aria-expanded="false" aria-controls="dd-format" data-dropdown-trigger>Format <span class="asc-ui-chevron">▾</span></button>
+                <div class="asc-ui-dropdown__panel" id="dd-format" hidden>
+                  <ul class="asc-ui-dropdown__list">
+                    <li><label class="asc-ui-dropdown__item"><input type="checkbox"> JPEG</label></li>
+                    <li><label class="asc-ui-dropdown__item"><input type="checkbox"> PNG</label></li>
+                    <li><label class="asc-ui-dropdown__item"><input type="checkbox"> PDF</label></li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Segmented control · 3 sizes</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-layout="block" data-snippet>
+            <div style="display:flex; flex-direction:column; gap:0.75rem; align-items:flex-start;">
+              <div class="asc-ui-segmented asc-ui-segmented--sm" role="group" aria-label="View small">
+                <button class="asc-ui-segmented__option is-active" type="button" aria-pressed="true">Grid</button>
+                <button class="asc-ui-segmented__option" type="button" aria-pressed="false">List</button>
+              </div>
+              <div class="asc-ui-segmented" role="group" aria-label="View medium">
+                <button class="asc-ui-segmented__option is-active" type="button" aria-pressed="true">Grid</button>
+                <button class="asc-ui-segmented__option" type="button" aria-pressed="false">List</button>
+                <button class="asc-ui-segmented__option" type="button" aria-pressed="false">Masonry</button>
+              </div>
+              <div class="asc-ui-segmented asc-ui-segmented--lg" role="group" aria-label="View large">
+                <button class="asc-ui-segmented__option is-active" type="button" aria-pressed="true">Grid</button>
+                <button class="asc-ui-segmented__option" type="button" aria-pressed="false">List</button>
+              </div>
+            </div>
+          </div>
+          <p class="kit-demo__usage">Sizes: <code>--sm</code> · default · <code>--lg</code>. Single-choice; mark the active option with <code>aria-pressed="true"</code> (or <code>.is-active</code>).</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────────────────────── BADGES + CHIPS ───────────────────────── -->
+    <section class="kit-section" id="badges">
+      <div class="kit-section__head">
+        <h2 class="kit-section__title">Badges &amp; chips</h2>
+        <p class="kit-section__sub">Status labels (badge) and removable filter tokens (chip).</p>
+      </div>
+      <div class="kit-grid">
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Badges</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-snippet>
+            <span class="asc-ui-badge">Default</span>
+            <span class="asc-ui-badge asc-ui-badge--primary">Active</span>
+            <span class="asc-ui-badge asc-ui-badge--success">Ready</span>
+            <span class="asc-ui-badge asc-ui-badge--warning">Pending</span>
+            <span class="asc-ui-badge asc-ui-badge--danger">Failed</span>
+          </div>
+        </div>
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Chips / tags</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-snippet>
+            <span class="asc-ui-chip">Campaign</span>
+            <span class="asc-ui-chip">JPEG</span>
+            <span class="asc-ui-chip">2026</span>
+          </div>
+          <p class="kit-demo__usage">Static tags — e.g. an asset's tags or an active facet label.</p>
+        </div>
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Count pill</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-snippet>
+            <span class="asc-ui-count">3</span>
+            <span class="asc-ui-count">12</span>
+            <span class="asc-ui-count asc-ui-count--muted">0</span>
+          </div>
+          <p class="kit-demo__usage">Numeric pill — the active-collection count on the collection-switcher trigger.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────────────────────── CARDS ───────────────────────── -->
+    <section class="kit-section" id="cards">
+      <div class="kit-section__head">
+        <h2 class="kit-section__title">Cards</h2>
+        <p class="kit-section__sub">Generic surface with header / body / footer slots. Add <code>--interactive</code> or <code>--active</code>.</p>
+      </div>
+      <div class="kit-grid">
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Card</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-layout="block" data-snippet>
+            <article class="asc-ui-card asc-ui-card--interactive">
+              <div class="asc-ui-card__header">
+                <h3 class="asc-ui-card__title">Spring Launch</h3>
+                <span class="asc-ui-badge asc-ui-badge--primary">Active</span>
+              </div>
+              <div class="asc-ui-card__body">
+                <p class="asc-ui-copy">18 assets · updated 2 hours ago</p>
+              </div>
+              <div class="asc-ui-card__footer">
+                <a class="btn btn--primary btn--sm" href="#">Open</a>
+                <button class="btn btn--ghost btn--sm" type="button" style="margin-inline-start:auto;">Delete</button>
+              </div>
+            </article>
+          </div>
+        </div>
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Collection card</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-layout="block" data-snippet>
+            <article class="asc-ui-collection-card">
+              <div class="asc-ui-collection-card__row">
+                <h3 class="asc-ui-heading-m">Brand System</h3>
+                <button class="btn btn--secondary btn--sm" type="button">Open</button>
+              </div>
+              <p class="asc-ui-collection-card__meta">7 assets • Updated yesterday</p>
+              <div class="asc-ui-collection-card__thumbs">
+                <div class="asc-ui-collection-card__thumb"></div>
+                <div class="asc-ui-collection-card__thumb"></div>
+                <div class="asc-ui-collection-card__thumb"></div>
+                <div class="asc-ui-collection-card__thumb"></div>
+              </div>
+            </article>
+          </div>
+        </div>
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Asset row</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-layout="block" data-snippet>
+            <div class="asc-ui-asset-row">
+              <div class="asc-ui-asset-row__thumb"></div>
+              <div>
+                <p class="asc-ui-asset-row__title">Summer Campaign Hero</p>
+                <p class="asc-ui-asset-row__meta">JPEG · 4.2 MB · 1200 × 800</p>
+              </div>
+              <div style="display:flex; gap:0.375rem;">
+                <button class="btn btn--secondary btn--circle btn--sm" type="button" aria-label="Add"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M8 3.5v9M3.5 8h9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+                <button class="btn btn--secondary btn--circle btn--sm" type="button" aria-label="Download"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M8 2.5v7m-2.5-2.5L8 9.5l2.5-2.5M3.5 12.5h9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────────────────────── TABLE + MASONRY ───────────────────────── -->
+    <section class="kit-section" id="collections-views">
+      <div class="kit-section__head">
+        <h2 class="kit-section__title">Data views</h2>
+        <p class="kit-section__sub">Table and masonry layouts for results.</p>
+      </div>
+      <div class="kit-grid">
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Table</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-layout="block" data-snippet>
+            <div class="asc-ui-table-wrap">
+              <table class="asc-ui-table">
+                <thead><tr><th>Name</th><th>Type</th><th>Size</th></tr></thead>
+                <tbody>
+                  <tr><td><span style="display:inline-flex; align-items:center; gap:var(--spacing-sm);"><span class="asc-ui-thumb"></span> Brand Guidelines</span></td><td>PDF</td><td>1.1 MB</td></tr>
+                  <tr><td><span style="display:inline-flex; align-items:center; gap:var(--spacing-sm);"><span class="asc-ui-thumb"></span> Hero Banner</span></td><td>JPEG</td><td>4.2 MB</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <p class="kit-demo__usage">Use a small <code>asc-ui-thumb</code> in the first cell for an asset preview at list/table density.</p>
+        </div>
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Masonry</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-layout="block" data-snippet>
+            <div class="asc-ui-masonry">
+              <article class="asc-ui-masonry__item">
+                <div class="asc-ui-masonry__photo asc-ui-masonry__photo--tall"></div>
+                <div class="asc-ui-masonry__actions"><button class="asc-ui-icon-btn" type="button" aria-label="Add"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M8 3.5v9M3.5 8h9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button></div>
+              </article>
+              <article class="asc-ui-masonry__item">
+                <div class="asc-ui-masonry__photo asc-ui-masonry__photo--square"></div>
+                <div class="asc-ui-masonry__actions"><button class="asc-ui-icon-btn" type="button" aria-label="Add"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M8 3.5v9M3.5 8h9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button></div>
+              </article>
+              <article class="asc-ui-masonry__item">
+                <div class="asc-ui-masonry__photo asc-ui-masonry__photo--wide"></div>
+                <div class="asc-ui-masonry__actions"><button class="asc-ui-icon-btn" type="button" aria-label="Add"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M8 3.5v9M3.5 8h9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button></div>
+              </article>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────────────────────── ASSET DISPLAYS ───────────────────────── -->
+    <section class="kit-section" id="assets">
+      <div class="kit-section__head">
+        <h2 class="kit-section__title">Asset displays</h2>
+        <p class="kit-section__sub">Ways to represent a digital asset: thumbnail cards, non-visual placeholders, labeled actions, metadata, and related-asset strips.</p>
+      </div>
+      <div class="kit-grid">
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Asset card · image</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-layout="block" data-snippet>
+            <article class="asc-ui-asset-card asc-ui-asset-card--interactive" style="max-width:18rem;">
+              <div class="asc-ui-asset-card__thumb">
+                <span class="asc-ui-asset-card__badge"><span class="asc-ui-badge asc-ui-badge--primary">In collection</span></span>
+                <div class="asc-ui-asset-card__overlay">
+                  <button class="asc-ui-icon-btn" type="button" aria-label="Add to collection"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M8 3.5v9M3.5 8h9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+                  <button class="asc-ui-icon-btn" type="button" aria-label="Download"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M8 2.5v7m-2.5-2.5L8 9.5l2.5-2.5M3.5 12.5h9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                </div>
+              </div>
+              <div class="asc-ui-asset-card__body">
+                <p class="asc-ui-asset-card__title">Summer Campaign Hero</p>
+                <p class="asc-ui-asset-card__meta">JPEG · 4.2 MB · 1200 × 800</p>
+              </div>
+            </article>
+          </div>
+          <p class="kit-demo__usage">Image goes in <code>__thumb</code> as <code>&lt;img&gt;</code>. Optional <code>__badge</code> (status) and <code>__overlay</code> (hover actions).</p>
+        </div>
+
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Asset card · non-visual</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-layout="block" data-snippet>
+            <article class="asc-ui-asset-card asc-ui-asset-card--interactive" style="max-width:18rem;">
+              <div class="asc-ui-asset-card__thumb">
+                <div class="asc-ui-filetype"><span class="asc-ui-filetype__glyph">📄</span><span class="asc-ui-filetype__ext">PDF</span></div>
+              </div>
+              <div class="asc-ui-asset-card__body">
+                <p class="asc-ui-asset-card__title">Brand Guidelines 2026</p>
+                <p class="asc-ui-asset-card__meta">PDF · 1.1 MB · 24 pages</p>
+              </div>
+              <div class="asc-ui-asset-card__footer">
+                <a class="btn btn--secondary btn--sm" href="#">Open</a>
+                <a class="btn btn--primary btn--sm" href="#" style="margin-inline-start:auto;">Download</a>
+              </div>
+            </article>
+          </div>
+          <p class="kit-demo__usage"><code>asc-ui-filetype</code> stands in for assets with no image preview (PDF, video, docs).</p>
+        </div>
+
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Labeled action bar</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-layout="block" data-snippet>
+            <div class="asc-ui-actions">
+              <button class="asc-ui-action asc-ui-action--primary" type="button">
+                <span class="asc-ui-action__icon"><svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true"><path d="M8 2.5v7m-2.5-2.5L8 9.5l2.5-2.5M3.5 12.5h9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                <span>Download</span>
+              </button>
+              <button class="asc-ui-action" type="button">
+                <span class="asc-ui-action__icon"><svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true"><path d="M8 3.5v9M3.5 8h9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span>
+                <span>Add to collection</span>
+              </button>
+              <button class="asc-ui-action" type="button">
+                <span class="asc-ui-action__icon"><svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true"><circle cx="12" cy="3.5" r="1.7" fill="currentColor"/><circle cx="4" cy="8" r="1.7" fill="currentColor"/><circle cx="12" cy="12.5" r="1.7" fill="currentColor"/><path d="M5.5 7l5-2.8M5.5 9l5 2.8" stroke="currentColor" stroke-width="1.2" fill="none"/></svg></span>
+                <span>Share</span>
+              </button>
+            </div>
+          </div>
+          <p class="kit-demo__usage">Stacked icon + text so each option is self-explanatory. Variants: <code>--primary</code>, <code>--danger</code>.</p>
+        </div>
+
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Metadata · list</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-layout="block" data-snippet>
+            <dl class="asc-ui-metadata" style="max-width:24rem;">
+              <div class="asc-ui-metadata__row"><dt class="asc-ui-metadata__term">Format</dt><dd class="asc-ui-metadata__value">JPEG</dd></div>
+              <div class="asc-ui-metadata__row"><dt class="asc-ui-metadata__term">Dimensions</dt><dd class="asc-ui-metadata__value">1200 × 800 px</dd></div>
+              <div class="asc-ui-metadata__row"><dt class="asc-ui-metadata__term">Size</dt><dd class="asc-ui-metadata__value">4.2 MB</dd></div>
+              <div class="asc-ui-metadata__row"><dt class="asc-ui-metadata__term">Modified</dt><dd class="asc-ui-metadata__value">2026-06-14</dd></div>
+            </dl>
+          </div>
+          <p class="kit-demo__usage">Stacked rows — good for a details sidebar / modal aside.</p>
+        </div>
+
+        <div class="kit-demo" data-span>
+          <div class="kit-demo__bar"><span class="kit-demo__name">Metadata · grid</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-layout="block" data-snippet>
+            <dl class="asc-ui-metadata asc-ui-metadata--grid" style="max-width: 23rem;">
+              <div class="asc-ui-metadata__row"><dt class="asc-ui-metadata__term">Format</dt><dd class="asc-ui-metadata__value">JPEG</dd></div>
+              <div class="asc-ui-metadata__row"><dt class="asc-ui-metadata__term">Dimensions</dt><dd class="asc-ui-metadata__value">1200 × 800 px</dd></div>
+              <div class="asc-ui-metadata__row"><dt class="asc-ui-metadata__term">Color space</dt><dd class="asc-ui-metadata__value">sRGB</dd></div>
+              <div class="asc-ui-metadata__row"><dt class="asc-ui-metadata__term">Size</dt><dd class="asc-ui-metadata__value">4.2 MB</dd></div>
+              <div class="asc-ui-metadata__row"><dt class="asc-ui-metadata__term">Created</dt><dd class="asc-ui-metadata__value">2026-05-30</dd></div>
+              <div class="asc-ui-metadata__row"><dt class="asc-ui-metadata__term">Modified</dt><dd class="asc-ui-metadata__value">2026-06-14</dd></div>
+            </dl>
+          </div>
+          <p class="kit-demo__usage">Responsive cells — good for a wide metadata panel on a details page.</p>
+        </div>
+
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Filmstrip · related</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-layout="block" data-snippet>
+            <div class="asc-ui-filmstrip">
+              <div class="asc-ui-filmstrip__item"><article class="asc-ui-asset-card asc-ui-asset-card--interactive"><div class="asc-ui-asset-card__thumb"></div><div class="asc-ui-asset-card__body"><p class="asc-ui-asset-card__title">Hero A</p><p class="asc-ui-asset-card__meta">JPEG</p></div></article></div>
+              <div class="asc-ui-filmstrip__item"><article class="asc-ui-asset-card asc-ui-asset-card--interactive"><div class="asc-ui-asset-card__thumb"></div><div class="asc-ui-asset-card__body"><p class="asc-ui-asset-card__title">Hero B</p><p class="asc-ui-asset-card__meta">PNG</p></div></article></div>
+              <div class="asc-ui-filmstrip__item"><article class="asc-ui-asset-card asc-ui-asset-card--interactive"><div class="asc-ui-asset-card__thumb"></div><div class="asc-ui-asset-card__body"><p class="asc-ui-asset-card__title">Hero C</p><p class="asc-ui-asset-card__meta">JPEG</p></div></article></div>
+              <div class="asc-ui-filmstrip__item"><article class="asc-ui-asset-card asc-ui-asset-card--interactive"><div class="asc-ui-asset-card__thumb"></div><div class="asc-ui-asset-card__body"><p class="asc-ui-asset-card__title">Hero D</p><p class="asc-ui-asset-card__meta">JPEG</p></div></article></div>
+            </div>
+          </div>
+          <p class="kit-demo__usage">Horizontal scroll-snap strip — e.g. similar / related assets on the details page.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────────────────────── FEEDBACK / STATES ───────────────────────── -->
+    <section class="kit-section" id="states">
+      <div class="kit-section__head">
+        <h2 class="kit-section__title">States &amp; feedback</h2>
+        <p class="kit-section__sub">Empty states, loading spinner, and skeleton placeholders.</p>
+      </div>
+      <div class="kit-grid">
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Empty state</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-layout="block" data-snippet>
+            <div class="asc-ui-empty-state">
+              <span class="asc-ui-empty-state__icon">📁</span>
+              <p class="asc-ui-empty-state__title">No collections yet</p>
+              <p class="asc-ui-empty-state__hint">Create a collection to start building a downloadable set of assets.</p>
+              <div class="asc-ui-empty-state__actions">
+                <button class="btn btn--primary btn--sm" type="button">New Collection</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Spinner</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-snippet>
+            <span class="asc-ui-spinner" role="status" aria-label="Loading"></span>
+            <span class="asc-ui-spinner" style="--asc-ui-spinner-size: 2.25rem;" role="status" aria-label="Loading"></span>
+          </div>
+        </div>
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Skeleton</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-layout="block" data-snippet>
+            <div style="display:grid; gap:0.75rem; max-width:18rem;">
+              <span class="asc-ui-skeleton asc-ui-skeleton--thumb"></span>
+              <span class="asc-ui-skeleton asc-ui-skeleton--title"></span>
+              <span class="asc-ui-skeleton asc-ui-skeleton--text"></span>
+              <span class="asc-ui-skeleton asc-ui-skeleton--text" style="width:80%;"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────────────────────── PANEL + DIALOG ───────────────────────── -->
+    <section class="kit-section" id="overlays">
+      <div class="kit-section__head">
+        <h2 class="kit-section__title">Panels &amp; dialogs</h2>
+        <p class="kit-section__sub"><code>.asc-panel</code> (popover/sheet) and <code>.asc-dialog</code> (native modal). Defined in styles.css.</p>
+      </div>
+      <div class="kit-grid">
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Panel</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-layout="block" data-snippet>
+            <div class="asc-panel asc-panel--no-pad" style="max-width: 20rem;">
+              <div class="asc-panel__header">Renditions</div>
+              <div class="asc-panel__body"><p class="asc-ui-copy" style="margin:0;">Choose a rendition to download.</p></div>
+              <div class="asc-panel__footer"><button class="btn btn--secondary btn--sm" type="button">Cancel</button><button class="btn btn--primary btn--sm" type="button">Download</button></div>
+            </div>
+          </div>
+        </div>
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Dialog (live)</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-layout="block" data-snippet>
+            <button class="btn btn--primary" type="button" data-open-dialog="kit-dialog">Open dialog</button>
+            <dialog class="asc-dialog asc-dialog--narrow" id="kit-dialog">
+              <div class="asc-dialog__header">
+                <div class="asc-dialog__header-main">
+                  <h2 class="asc-dialog__title">Create Collection</h2>
+                  <p class="asc-dialog__description">Name your collection to continue.</p>
+                </div>
+                <button class="btn btn--ghost btn--icon asc-dialog__close" type="button" data-close-dialog aria-label="Close">✕</button>
+              </div>
+              <div class="asc-dialog__body">
+                <label class="asc-ui-field"><span class="asc-ui-field__label">Name</span><input type="text" placeholder="Collection name"></label>
+              </div>
+              <div class="asc-dialog__footer">
+                <div class="asc-dialog__footer-end">
+                  <button class="btn btn--secondary" type="button" data-close-dialog>Cancel</button>
+                  <button class="btn btn--primary" type="button" data-close-dialog>Create</button>
+                </div>
+              </div>
+            </dialog>
+          </div>
+        </div>
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Popover menu</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-layout="block" data-snippet>
+            <div class="asc-panel asc-panel--no-pad" style="max-width: 18rem;">
+              <ul class="asc-ui-menu">
+                <li><button class="asc-ui-menu__item asc-ui-menu__item--active" type="button"><span class="asc-ui-menu__item-label">All Assets</span><span class="asc-ui-menu__item-meta">128</span><span class="asc-ui-menu__item-check">✓</span></button></li>
+                <li><button class="asc-ui-menu__item" type="button"><span class="asc-ui-menu__item-label">Spring Launch</span><span class="asc-ui-menu__item-meta">18</span></button></li>
+                <li><button class="asc-ui-menu__item" type="button"><span class="asc-ui-menu__item-label">Brand System</span><span class="asc-ui-menu__item-meta">7</span></button></li>
+              </ul>
+              <hr class="asc-ui-menu__separator">
+              <ul class="asc-ui-menu" style="padding-block: 0;">
+                <li><a class="asc-ui-menu__item" href="#"><span class="asc-ui-menu__item-label">Manage collections…</span></a></li>
+              </ul>
+            </div>
+          </div>
+          <p class="kit-demo__usage">A menu of rows inside a panel — the collection-switcher dropdown. Anchor it with <code>.asc-ui-dropdown</code> for a real popover.</p>
+        </div>
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Large asset modal (live)</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-layout="block" data-snippet>
+            <button class="btn btn--primary" type="button" data-open-dialog="kit-detail">Open asset details</button>
+            <dialog class="asc-dialog asc-dialog--wide" id="kit-detail">
+              <div class="asc-dialog__header">
+                <div class="asc-dialog__header-main">
+                  <h2 class="asc-dialog__title">Summer Campaign Hero</h2>
+                  <p class="asc-dialog__description">JPEG · 4.2 MB · 1200 × 800</p>
+                </div>
+                <button class="btn btn--ghost btn--icon asc-dialog__close" type="button" data-close-dialog aria-label="Close"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+              </div>
+              <div class="asc-dialog__body">
+                <div class="asc-ui-detail">
+                  <div class="asc-ui-detail__preview"></div>
+                  <div class="asc-ui-detail__aside">
+                    <div class="asc-ui-actions">
+                      <button class="asc-ui-action asc-ui-action--primary" type="button"><span class="asc-ui-action__icon"><svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true"><path d="M8 2.5v7m-2.5-2.5L8 9.5l2.5-2.5M3.5 12.5h9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>Download</span></button>
+                      <button class="asc-ui-action" type="button"><span class="asc-ui-action__icon"><svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true"><path d="M8 3.5v9M3.5 8h9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span><span>Add</span></button>
+                      <button class="asc-ui-action" type="button"><span class="asc-ui-action__icon"><svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true"><circle cx="12" cy="3.5" r="1.7" fill="currentColor"/><circle cx="4" cy="8" r="1.7" fill="currentColor"/><circle cx="12" cy="12.5" r="1.7" fill="currentColor"/><path d="M5.5 7l5-2.8M5.5 9l5 2.8" stroke="currentColor" stroke-width="1.2" fill="none"/></svg></span><span>Share</span></button>
+                    </div>
+                    <dl class="asc-ui-metadata">
+                      <div class="asc-ui-metadata__row"><dt class="asc-ui-metadata__term">Format</dt><dd class="asc-ui-metadata__value">JPEG</dd></div>
+                      <div class="asc-ui-metadata__row"><dt class="asc-ui-metadata__term">Dimensions</dt><dd class="asc-ui-metadata__value">1200 × 800 px</dd></div>
+                      <div class="asc-ui-metadata__row"><dt class="asc-ui-metadata__term">Size</dt><dd class="asc-ui-metadata__value">4.2 MB</dd></div>
+                      <div class="asc-ui-metadata__row"><dt class="asc-ui-metadata__term">Tags</dt><dd class="asc-ui-metadata__value"><span class="asc-ui-chip">Campaign</span> <span class="asc-ui-chip">2026</span></dd></div>
+                    </dl>
+                  </div>
+                </div>
+                <section class="asc-ui-detail__section">
+                  <h3 class="asc-ui-detail__section-title">Renditions</h3>
+                  <div class="asc-ui-table-wrap">
+                    <table class="asc-ui-table">
+                      <thead><tr><th>Rendition</th><th>Format</th><th>Size</th><th></th></tr></thead>
+                      <tbody>
+                        <tr><td>Original</td><td>JPEG</td><td>4.2 MB</td><td><a class="btn btn--secondary btn--sm" href="#">Download</a></td></tr>
+                        <tr><td>Web · 1280px</td><td>JPEG</td><td>820 KB</td><td><a class="btn btn--secondary btn--sm" href="#">Download</a></td></tr>
+                        <tr><td>Thumbnail · 320px</td><td>JPEG</td><td>48 KB</td><td><a class="btn btn--secondary btn--sm" href="#">Download</a></td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+                <section class="asc-ui-detail__section">
+                  <h3 class="asc-ui-detail__section-title">Similar assets</h3>
+                  <div class="asc-ui-filmstrip">
+                    <div class="asc-ui-filmstrip__item"><article class="asc-ui-asset-card asc-ui-asset-card--interactive"><div class="asc-ui-asset-card__thumb"></div><div class="asc-ui-asset-card__body"><p class="asc-ui-asset-card__title">Hero A</p><p class="asc-ui-asset-card__meta">JPEG · 3.8 MB</p></div></article></div>
+                    <div class="asc-ui-filmstrip__item"><article class="asc-ui-asset-card asc-ui-asset-card--interactive"><div class="asc-ui-asset-card__thumb"></div><div class="asc-ui-asset-card__body"><p class="asc-ui-asset-card__title">Hero B</p><p class="asc-ui-asset-card__meta">PNG · 1.2 MB</p></div></article></div>
+                    <div class="asc-ui-filmstrip__item"><article class="asc-ui-asset-card asc-ui-asset-card--interactive"><div class="asc-ui-asset-card__thumb"></div><div class="asc-ui-asset-card__body"><p class="asc-ui-asset-card__title">Hero C</p><p class="asc-ui-asset-card__meta">JPEG · 4.0 MB</p></div></article></div>
+                    <div class="asc-ui-filmstrip__item"><article class="asc-ui-asset-card asc-ui-asset-card--interactive"><div class="asc-ui-asset-card__thumb"></div><div class="asc-ui-asset-card__body"><p class="asc-ui-asset-card__title">Hero D</p><p class="asc-ui-asset-card__meta">JPEG · 2.6 MB</p></div></article></div>
+                  </div>
+                </section>
+              </div>
+            </dialog>
+          </div>
+          <p class="kit-demo__usage"><code>asc-dialog--wide</code> + <code>asc-ui-detail</code> (preview + aside), then stacked <code>asc-ui-detail__section</code> blocks (Renditions, Similar) in the body.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (function initUiKit() {
+      const body = document.body;
+
+      /* ── Theme switcher ───────────────────────────────────────────── */
+      const selector = document.getElementById('theme-selector');
+      const themeLink = document.getElementById('theme-link');
+      const themes = ['default', 'dark', 'pro', 'studio', 'custom'];
+      function applyTheme(theme) {
+        themes.forEach((t) => body.classList.remove(`theme-${t}`));
+        if (!theme || theme === 'none') { themeLink.href = ''; return; }
+        body.classList.add(`theme-${theme}`);
+        themeLink.href = `./styles/themes/${theme}.css`;
+      }
+      selector.addEventListener('change', (e) => applyTheme(e.target.value));
+      applyTheme('none');
+
+      /* ── Build code panels from each demo's rendered markup ───────── */
+      function dedent(html) {
+        const lines = html.replace(/\t/g, '  ').split('\n');
+        while (lines.length && !lines[0].trim()) lines.shift();
+        while (lines.length && !lines[lines.length - 1].trim()) lines.pop();
+        const indent = Math.min(...lines.filter((l) => l.trim()).map((l) => l.match(/^ */)[0].length));
+        return lines.map((l) => l.slice(indent)).join('\n');
+      }
+
+      document.querySelectorAll('.kit-demo').forEach((demo) => {
+        const snippet = demo.querySelector('[data-snippet]');
+        if (!snippet) return;
+        const clone = snippet.cloneNode(true);
+        clone.querySelectorAll('[data-omit]').forEach((n) => n.remove());
+        const code = dedent(clone.innerHTML);
+
+        const panel = document.createElement('div');
+        panel.className = 'kit-demo__code';
+        const head = document.createElement('div');
+        head.className = 'kit-demo__codehead';
+        head.innerHTML = '<span class="kit-demo__codelabel">HTML</span>';
+        const copy = document.createElement('button');
+        copy.className = 'kit-demo__copy';
+        copy.type = 'button';
+        copy.textContent = 'Copy';
+        copy.addEventListener('click', async () => {
+          try { await navigator.clipboard.writeText(code); copy.textContent = 'Copied'; }
+          catch (e) { copy.textContent = 'Copy failed'; }
+          setTimeout(() => { copy.textContent = 'Copy'; }, 1500);
+        });
+        head.appendChild(copy);
+        const pre = document.createElement('pre');
+        const codeEl = document.createElement('code');
+        codeEl.textContent = code;
+        pre.appendChild(codeEl);
+        panel.appendChild(head);
+        panel.appendChild(pre);
+
+        // Move any inline usage note into the code panel
+        const usage = demo.querySelector('.kit-demo__usage');
+        if (usage) panel.appendChild(usage);
+
+        demo.appendChild(panel);
+
+        const toggle = demo.querySelector('.kit-demo__toggle');
+        if (toggle) {
+          toggle.addEventListener('click', () => {
+            const open = demo.classList.toggle('is-open');
+            toggle.textContent = open ? 'Hide' : 'Code';
+            toggle.setAttribute('aria-expanded', String(open));
+          });
+        }
+      });
+
+      /* ── Global "show code & usage" switch ────────────────────────── */
+      const codeToggle = document.getElementById('code-toggle');
+      codeToggle.addEventListener('change', () => body.classList.toggle('kit-show-code', codeToggle.checked));
+
+      /* ── Dropdown popovers ────────────────────────────────────────── */
+      function closeAll(except) {
+        document.querySelectorAll('[data-dropdown]').forEach((dd) => {
+          if (dd === except) return;
+          const t = dd.querySelector('[data-dropdown-trigger]');
+          const p = dd.querySelector('.asc-ui-dropdown__panel');
+          if (t) t.setAttribute('aria-expanded', 'false');
+          if (p) p.hidden = true;
+        });
+      }
+      document.addEventListener('click', (e) => {
+        const trigger = e.target.closest('[data-dropdown-trigger]');
+        if (trigger) {
+          const dd = trigger.closest('[data-dropdown]');
+          const panel = dd.querySelector('.asc-ui-dropdown__panel');
+          const open = trigger.getAttribute('aria-expanded') === 'true';
+          closeAll(dd);
+          trigger.setAttribute('aria-expanded', String(!open));
+          panel.hidden = open;
+          return;
+        }
+        if (!e.target.closest('[data-dropdown]')) closeAll();
+      });
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAll(); });
+
+      /* ── Segmented control demo ───────────────────────────────────── */
+      document.querySelectorAll('.asc-ui-segmented').forEach((seg) => {
+        seg.addEventListener('click', (e) => {
+          const opt = e.target.closest('.asc-ui-segmented__option');
+          if (!opt) return;
+          seg.querySelectorAll('.asc-ui-segmented__option').forEach((o) => {
+            o.classList.toggle('is-active', o === opt);
+            o.setAttribute('aria-pressed', String(o === opt));
+          });
+        });
+      });
+
+      /* ── Live dialog ──────────────────────────────────────────────── */
+      document.querySelectorAll('[data-open-dialog]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const dlg = document.getElementById(btn.dataset.openDialog);
+          if (dlg && typeof dlg.showModal === 'function') dlg.showModal();
+        });
+      });
+      document.querySelectorAll('[data-close-dialog]').forEach((btn) => {
+        btn.addEventListener('click', () => btn.closest('dialog')?.close());
+      });
+    })();
+  </script>
+</body>
+</html>

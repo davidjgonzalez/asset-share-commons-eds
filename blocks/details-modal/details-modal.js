@@ -1,3 +1,4 @@
+/** @owner user */
 // Copyright 2025 David G.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,10 +21,11 @@ export default async function decorate(block) {
 
 function html() {
   return `<dialog>
-            <button class="close" aria-label="Close" data-asc-action="asset:details:close@click">&#x2715;</button>
-
+            <div class="modal-header">
+              <button class="btn btn--ghost btn--icon close" aria-label="Close" data-asc-action="asset:details:close@click">&#x2715;</button>
+            </div>
             <div class="content"></div>
-        </dialog>`;
+          </dialog>`;
 }
 
 function addEventListeners(block) {

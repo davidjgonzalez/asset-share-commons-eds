@@ -1,3 +1,4 @@
+/** @owner user */
 import { readBlockConfig } from '../../scripts/asc/utils/search.js';
 import assetTeaser from '../../scripts/asc/parts/asset-teaser/asset-teaser.js';
 import collectionToggle from '../../scripts/asc/parts/collection-toggle/collection-toggle.js';
@@ -55,11 +56,11 @@ function renderListActionsCell(asset, renditionId) {
     <div class="asc-list-view__actions">
       ${collectionToggle(asset, { addLabel: 'Add to collection', removeLabel: 'Remove from collection' })}
       <button type="button"
-              class="search-results__quick-download btn btn--secondary btn--sm"
+              class="search-results__quick-download btn btn--secondary btn--circle btn--sm"
               data-asc-asset="${esc(asset.uuid)}"
               data-rendition-id="${esc(renditionId)}"
               aria-label="Download asset">
-        ↓
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       </button>
     </div>`;
 }
@@ -119,11 +120,11 @@ function injectQuickDownloadButtons(resultsEl, display, renditionId = 'original'
 
     toggle.insertAdjacentHTML('beforeend', `
       <button type="button"
-              class="search-results__quick-download btn btn--secondary btn--sm"
+              class="search-results__quick-download btn btn--secondary btn--circle btn--sm"
               data-asc-asset="${esc(assetId)}"
               data-rendition-id="${esc(renditionId)}"
               aria-label="Download asset">
-        ↓
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       </button>`);
   });
 }
@@ -216,6 +217,31 @@ async function addEventListeners(block, _config) {
   });
 
   let isLoadingMore = false;
+  let sentinel = null;
+  let observer = null;
+
+  function setupSentinel() {
+    // Create a sentinel element just below the results; IntersectionObserver
+    // triggers load-more when it enters the viewport instead of polling on scroll.
+    if (sentinel) return;
+
+    sentinel = document.createElement('div');
+    sentinel.className = 'search-results__sentinel';
+    block.querySelector('[data-asc-results]').after(sentinel);
+
+    observer = new IntersectionObserver((entries) => {
+      if (!entries[0].isIntersecting) return;
+      const moreInput = block.querySelector('[name="asc.search-results.more"]');
+      if (!moreInput || moreInput.value === 'false' || isLoadingMore) return;
+
+      isLoadingMore = true;
+      document.dispatchEvent(new CustomEvent('asc:search:execute', {
+        detail: { type: 'load-more' },
+      }));
+    }, { rootMargin: '600px 0px' });
+
+    observer.observe(sentinel);
+  }
 
   /* Display the results */
   document.addEventListener('asc:search:complete', async (event) => {
@@ -229,7 +255,9 @@ async function addEventListeners(block, _config) {
     block.querySelector('[name="asc.search-results.more"]').value = results.more;
     block.querySelector('[name="asc.search-results.total"]').value = results.total || 0;
 
-    const newOffset = Number.parseInt(block.querySelector('[name="p.offset"]').value, 10) + (results.size || 0);
+    // Derive next offset from the server-reported values so fresh searches
+    // (offset=0) always reset correctly.
+    const newOffset = (results.offset || 0) + (results.size || 0);
     block.querySelector('[name="p.offset"]').value = newOffset;
 
     const display = getDisplayMode(block);
@@ -256,7 +284,7 @@ async function addEventListeners(block, _config) {
     attachImageHandlers(resultsEl);
     injectQuickDownloadButtons(resultsEl, display, quickDownloadRendition);
     isLoadingMore = false;
-    setTimeout(maybeLoadMore, 1);
+    setupSentinel();  // no-op after first call; observer handles subsequent loads
   });
 
   block.addEventListener('click', (event) => {
@@ -304,32 +332,6 @@ async function addEventListeners(block, _config) {
     event.dataTransfer.setData('text/uri-list', rendition.url);
     event.dataTransfer.setData('text/plain', rendition.url);
   });
-
-  /* Infinite scroll */
-  function maybeLoadMore() {
-    const moreInput = block.querySelector('[name="asc.search-results.more"]');
-    if (!moreInput || moreInput.value === 'false' || isLoadingMore) {
-      return;
-    }
-
-    const resultsEl = block.querySelector('[data-asc-results]');
-    if (!resultsEl || !resultsEl.lastElementChild) return;
-
-    const lastResult = resultsEl.lastElementChild;
-    const rect = lastResult.getBoundingClientRect();
-
-    if (rect.top < window.innerHeight + 1080) {
-      isLoadingMore = true;
-      document.dispatchEvent(
-        new CustomEvent('asc:search:execute', {
-          detail: { type: 'load-more' },
-        }),
-      );
-    }
-  }
-
-  document.addEventListener('scroll', maybeLoadMore, { passive: true });
-  window.addEventListener('resize', maybeLoadMore);
 }
 
 // Initial search is triggered by search.js once all blocks are loaded (asc:blocks:loaded).

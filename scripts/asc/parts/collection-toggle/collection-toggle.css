@@ -73,9 +73,12 @@
     /* ── Icon ────────────────────────────────────────────────────────────── */
 
     .asc-collection-toggle__icon {
-        font-size: 1.1em;
+        font-size: 1em;
         line-height: 1;
         font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     /* ── Label — visually hidden, kept for aria-label hydration ─────────── */

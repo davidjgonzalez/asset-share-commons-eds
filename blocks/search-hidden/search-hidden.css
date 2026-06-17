@@ -1,4 +1,4 @@
-.block.search-hidden {
+main .search-hidden {
   display: none;
   visibility: hidden;
 }

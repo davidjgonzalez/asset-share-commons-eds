@@ -1,6 +1,6 @@
 /* Collection detail — SlothUI-style: calm surfaces, flat rows, label-style meta, utility buttons */
 
-.block.collection {
+main .collection {
     --collection-radius: var(--border-radius-md);
     --collection-gap: var(--spacing-md);
 

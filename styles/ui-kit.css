@@ -1,0 +1,1162 @@
+/*
+ * ASC UI KIT — reusable, theme-driven UI primitives
+ * ────────────────────────────────────────────────────────────────────────────
+ * These `.asc-ui-*` classes are the shared building blocks for blocks, parts,
+ * and templates. They consume ONLY semantic tokens (--color-*, --spacing-*,
+ * --border-radius-*, --shadow-*, --transition-*) so every primitive themes for
+ * free. Never hard-code colors/spacing here.
+ *
+ * Workflow:
+ *   1. Workshop / preview every primitive in  /ui-kit.html  (themed gallery).
+ *   2. Copy canonical markup + class names from  docs/UI_KIT.md  (agent catalog).
+ *   3. Reuse these classes in blocks instead of redefining buttons, cards,
+ *      badges, inputs, empty states, etc.
+ *
+ * Foundational primitives (.btn, form fields, .asc-panel, .asc-dialog) live in
+ * styles.css. This file holds the higher-level component primitives.
+ *
+ * Each primitive below is tagged with  @kit <name>  so it can be grepped and
+ * cross-referenced against docs/UI_KIT.md.
+ */
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit typography — headings, eyebrow, copy, label
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-heading-eyebrow {
+    margin: 0;
+    font-size: var(--body-font-size-xs);
+    color: var(--color-muted-fg);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+}
+
+.asc-ui-heading-xl,
+.asc-ui-heading-l,
+.asc-ui-heading-m {
+    margin: 0;
+    color: var(--color-fg);
+    line-height: 1.2;
+}
+
+.asc-ui-heading-xl {
+    font-size: var(--heading-font-size-xl);
+}
+
+.asc-ui-heading-l {
+    font-size: var(--heading-font-size-l);
+}
+
+.asc-ui-heading-m {
+    font-size: var(--heading-font-size-m);
+}
+
+.asc-ui-copy {
+    margin: 0;
+    color: var(--color-muted-fg);
+    font-size: var(--body-font-size-s);
+    line-height: 1.5;
+}
+
+.asc-ui-label {
+    margin: 0;
+    color: var(--color-muted-fg);
+    font-size: var(--body-font-size-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit field — form field group (label + control + hint/error)
+   Controls inherit the global input/select/textarea baseline from styles.css.
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-field {
+    display: grid;
+    gap: var(--spacing-xs);
+}
+
+.asc-ui-field__label {
+    font-size: var(--body-font-size-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-muted-fg);
+}
+
+.asc-ui-field__hint {
+    margin: 0;
+    font-size: var(--body-font-size-xs);
+    color: var(--color-muted-fg);
+}
+
+.asc-ui-field__error {
+    margin: 0;
+    font-size: var(--body-font-size-xs);
+    color: var(--validation-error-color);
+}
+
+.asc-ui-field input,
+.asc-ui-field select,
+.asc-ui-field textarea {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit search — pill search input that grows on focus
+   Width is configurable via --asc-ui-search-width.
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-search {
+    --asc-ui-search-width: 20rem;
+
+    display: inline-flex;
+    width: 100%;
+    max-width: var(--asc-ui-search-width);
+}
+
+/* Specificity matches the global input baseline (styles.css) so the pill
+   radius wins — the baseline's :not() chain would otherwise override it. */
+.asc-ui-search input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="range"]) {
+    width: var(--asc-ui-search-width);
+    max-width: 100%;
+    height: 2.75rem;
+    border-radius: var(--border-radius-full);
+    padding-inline: 1.25rem;
+    border: 1px solid var(--color-border);
+    background: var(--color-input);
+    color: var(--color-fg);
+    font-size: var(--body-font-size-s);
+    transition: width var(--transition-normal), border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.asc-ui-search input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="range"]):focus {
+    width: min(calc(var(--asc-ui-search-width) * 1.66), 100%);
+    outline: 2px solid var(--color-ring);
+    outline-offset: -2px;
+    border-color: var(--color-ring);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-ring) 20%, transparent);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit control / dropdown — filter control button + popover panel
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-control-set {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+}
+
+.asc-ui-control {
+    min-width: 8.5rem;
+}
+
+.asc-ui-control-btn {
+    justify-content: flex-start;
+    gap: var(--spacing-xs);
+    min-width: 100%;
+}
+
+.asc-ui-chevron {
+    margin-left: auto;
+    color: var(--color-muted-fg);
+}
+
+.asc-ui-dropdown {
+    position: relative;
+}
+
+.asc-ui-dropdown__panel {
+    position: absolute;
+    top: calc(100% + var(--spacing-xs));
+    left: 0;
+    min-width: 16rem;
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-md);
+    box-shadow: var(--shadow-lg);
+    padding: var(--spacing-sm);
+    z-index: var(--z-dropdown);
+}
+
+.asc-ui-dropdown__panel[hidden] {
+    display: none;
+}
+
+.asc-ui-dropdown__list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: var(--spacing-xs);
+}
+
+.asc-ui-dropdown__item {
+    display: flex;
+    gap: var(--spacing-xs);
+    align-items: center;
+    color: var(--color-fg);
+    font-size: var(--body-font-size-s);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit menu — popover menu of selectable rows / actions. Drop inside an
+   .asc-panel (use --no-pad) or .asc-ui-dropdown__panel. Items can be
+   <button>, <a>, or <li>. Mark the current row with --active.
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-menu {
+    list-style: none;
+    margin: 0;
+    padding: var(--spacing-xs) 0;
+}
+
+.asc-ui-menu__item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    width: 100%;
+    box-sizing: border-box;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border: 0;
+    background: transparent;
+    color: var(--color-fg);
+    font-size: var(--body-font-size-s);
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+
+.asc-ui-menu__item:hover {
+    background: var(--color-accent);
+}
+
+.asc-ui-menu__item--active {
+    background: var(--color-accent);
+    font-weight: 500;
+}
+
+.asc-ui-menu__item-label {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.asc-ui-menu__item-meta {
+    font-size: var(--body-font-size-xs);
+    color: var(--color-muted-fg);
+}
+
+.asc-ui-menu__item-check {
+    color: var(--color-primary);
+    font-size: var(--body-font-size-xs);
+}
+
+.asc-ui-menu__separator {
+    height: 1px;
+    margin: var(--spacing-xs) 0;
+    border: 0;
+    background: var(--color-border);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit card — generic surface. Use --interactive for hover, --active for
+   selected state. Slots: __header / __title / __body / __footer.
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-lg);
+    background: var(--color-card);
+    color: var(--color-card-fg);
+    box-shadow: var(--shadow-sm);
+}
+
+.asc-ui-card--interactive {
+    transition:
+        border-color var(--transition-fast),
+        background var(--transition-fast),
+        box-shadow var(--transition-fast),
+        transform var(--transition-fast);
+}
+
+.asc-ui-card--interactive:hover {
+    border-color: color-mix(in srgb, var(--color-fg) 18%, var(--color-border));
+    background: color-mix(in srgb, var(--color-fg) 2.5%, var(--color-card));
+    box-shadow: var(--shadow-md);
+}
+
+.asc-ui-card--active {
+    border-color: var(--color-primary);
+    background: color-mix(in srgb, var(--color-primary) 5%, var(--color-card));
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-primary) 35%, transparent);
+}
+
+.asc-ui-card__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--spacing-sm);
+}
+
+.asc-ui-card__title {
+    margin: 0;
+    font-size: var(--body-font-size-m);
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--color-fg);
+    overflow-wrap: break-word;
+}
+
+.asc-ui-card__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    flex: 1;
+    min-height: 0;
+}
+
+.asc-ui-card__footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-block-start: auto;
+    padding-block-start: var(--spacing-md);
+    border-top: 1px solid var(--color-border);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit badge — small status label. Default is muted; semantic modifiers tint.
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-2xs);
+    padding: var(--spacing-2xs) var(--spacing-xs);
+    border-radius: var(--border-radius-sm);
+    font-size: var(--body-font-size-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+    background: var(--color-muted);
+    color: var(--color-muted-fg);
+}
+
+.asc-ui-badge--primary {
+    background: var(--color-accent);
+    color: var(--color-accent-fg);
+}
+
+.asc-ui-badge--success {
+    background: color-mix(in srgb, var(--validation-success-color) 16%, var(--color-card));
+    color: color-mix(in srgb, var(--validation-success-color) 70%, var(--color-fg));
+}
+
+.asc-ui-badge--warning {
+    background: color-mix(in srgb, var(--validation-warning-color) 18%, var(--color-card));
+    color: color-mix(in srgb, var(--validation-warning-color) 70%, var(--color-fg));
+}
+
+.asc-ui-badge--danger {
+    background: color-mix(in srgb, var(--color-destructive) 14%, var(--color-card));
+    color: color-mix(in srgb, var(--color-destructive) 75%, var(--color-fg));
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit chip — static tag / token (e.g. an active search facet)
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-2xs) var(--spacing-sm);
+    border-radius: var(--border-radius-full);
+    border: 1px solid var(--color-border);
+    background: var(--color-accent);
+    color: var(--color-accent-fg);
+    font-size: var(--body-font-size-xs);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit count — small numeric pill (e.g. active-collection count on a trigger)
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-count {
+    display: inline-block;
+    min-width: 1.25rem;
+    height: 1.25rem;
+    padding: 0 var(--spacing-sm);
+    line-height: 1.25rem;
+    text-align: center;
+    border-radius: var(--border-radius-full);
+    background: var(--color-primary);
+    color: var(--color-primary-fg);
+    font-size: var(--body-font-size-xs);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.asc-ui-count--muted {
+    background: var(--color-muted);
+    color: var(--color-muted-fg);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit empty-state — placeholder for empty lists / no results
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-empty-state {
+    display: grid;
+    gap: var(--spacing-sm);
+    justify-items: center;
+    text-align: center;
+    padding: var(--spacing-3xl) var(--spacing-md);
+    border: 1px dashed var(--color-border);
+    border-radius: var(--border-radius-lg);
+    background: color-mix(in srgb, var(--color-muted) 50%, var(--color-bg));
+}
+
+.asc-ui-empty-state__icon {
+    font-size: 2rem;
+    line-height: 1;
+    color: var(--color-muted-fg);
+}
+
+.asc-ui-empty-state__title {
+    margin: 0;
+    font-size: var(--heading-font-size-s);
+    font-weight: 600;
+    color: var(--color-fg);
+}
+
+.asc-ui-empty-state__hint {
+    margin: 0;
+    max-width: 40ch;
+    font-size: var(--body-font-size-s);
+    color: var(--color-muted-fg);
+    line-height: 1.5;
+}
+
+.asc-ui-empty-state__actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    margin-block-start: var(--spacing-sm);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit segmented — option-pill / segmented control (single choice).
+   Toggle the active option with [aria-pressed="true"] or .is-active.
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-segmented {
+    display: inline-flex;
+    gap: var(--spacing-2xs);
+    padding: var(--spacing-2xs);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-full);
+    background: var(--color-muted);
+}
+
+.asc-ui-segmented__option {
+    appearance: none;
+    border: 0;
+    border-radius: var(--border-radius-full);
+    padding: var(--spacing-xs) var(--spacing-md);
+    background: transparent;
+    color: var(--color-muted-fg);
+    font-size: var(--body-font-size-s);
+    font-weight: 500;
+    line-height: 1;
+    cursor: pointer;
+    transition: background var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.asc-ui-segmented__option:hover {
+    color: var(--color-fg);
+}
+
+.asc-ui-segmented__option.is-active,
+.asc-ui-segmented__option[aria-pressed="true"] {
+    background: var(--color-card);
+    color: var(--color-fg);
+    box-shadow: var(--shadow-sm);
+}
+
+/* Sizes — default is medium */
+.asc-ui-segmented--sm .asc-ui-segmented__option {
+    padding: var(--spacing-2xs) var(--spacing-sm);
+    font-size: var(--body-font-size-xs);
+}
+
+.asc-ui-segmented--lg .asc-ui-segmented__option {
+    padding: var(--spacing-sm) var(--spacing-lg);
+    font-size: var(--body-font-size-m);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit switch — accessible on/off toggle built on a native checkbox
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    cursor: pointer;
+    font-size: var(--body-font-size-s);
+    color: var(--color-fg);
+}
+
+.asc-ui-switch input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+}
+
+.asc-ui-switch__track {
+    position: relative;
+    flex-shrink: 0;
+    width: 2.5rem;
+    height: 1.5rem;
+    border-radius: var(--border-radius-full);
+    background: color-mix(in srgb, var(--color-muted-fg) 45%, var(--color-muted));
+    transition: background var(--transition-fast);
+}
+
+.asc-ui-switch__thumb {
+    position: absolute;
+    top: 0.1875rem;
+    left: 0.1875rem;
+    width: 1.125rem;
+    height: 1.125rem;
+    border-radius: var(--border-radius-full);
+    background: var(--color-card);
+    box-shadow: var(--shadow-sm);
+    transition: transform var(--transition-fast);
+}
+
+.asc-ui-switch input:checked + .asc-ui-switch__track {
+    background: var(--color-primary);
+}
+
+.asc-ui-switch input:checked + .asc-ui-switch__track .asc-ui-switch__thumb {
+    transform: translateX(1rem);
+}
+
+.asc-ui-switch input:focus-visible + .asc-ui-switch__track {
+    outline: var(--input-focus-ring-width) solid var(--color-ring);
+    outline-offset: 2px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit spinner — indeterminate loading indicator. Size via --asc-ui-spinner-size.
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-spinner {
+    --asc-ui-spinner-size: 1.5rem;
+
+    display: inline-block;
+    width: var(--asc-ui-spinner-size);
+    height: var(--asc-ui-spinner-size);
+    border: 2px solid color-mix(in srgb, var(--color-fg) 15%, transparent);
+    border-top-color: var(--color-primary);
+    border-radius: var(--border-radius-full);
+    animation: asc-ui-spin 0.7s linear infinite;
+}
+
+@keyframes asc-ui-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit skeleton — shimmer placeholder while content loads
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-skeleton {
+    position: relative;
+    display: block;
+    overflow: hidden;
+    background: var(--color-muted);
+    border-radius: var(--border-radius-sm);
+}
+
+.asc-ui-skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+        90deg,
+        transparent,
+        color-mix(in srgb, var(--color-fg) 6%, transparent),
+        transparent
+    );
+    animation: asc-ui-shimmer 1.4s ease-in-out infinite;
+}
+
+.asc-ui-skeleton--text {
+    height: 0.75em;
+    margin-block: 0.25em;
+}
+
+.asc-ui-skeleton--title {
+    height: 1.25em;
+    width: 60%;
+}
+
+.asc-ui-skeleton--thumb {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: var(--border-radius-md);
+}
+
+.asc-ui-skeleton--circle {
+    aspect-ratio: 1;
+    border-radius: var(--border-radius-full);
+}
+
+@keyframes asc-ui-shimmer {
+    100% { transform: translateX(100%); }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit collection-card — preview tile for a collection (name + thumb grid)
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-collection-card {
+    display: grid;
+    gap: var(--spacing-sm);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-lg);
+    background: var(--color-card);
+    box-shadow: var(--shadow-sm);
+    padding: var(--spacing-md);
+}
+
+.asc-ui-collection-card__row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.asc-ui-collection-card__meta {
+    color: var(--color-muted-fg);
+    font-size: var(--body-font-size-xs);
+}
+
+.asc-ui-collection-card__thumbs {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--spacing-xs);
+}
+
+.asc-ui-collection-card__thumb {
+    aspect-ratio: 1;
+    border-radius: var(--border-radius-sm);
+    background: linear-gradient(145deg, color-mix(in srgb, var(--color-primary) 25%, white), color-mix(in srgb, var(--color-accent) 70%, white));
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit asset-row — compact horizontal asset row (list view)
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-asset-row {
+    display: grid;
+    grid-template-columns: 3rem 1fr auto;
+    gap: var(--spacing-sm);
+    align-items: center;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-md);
+    background: var(--color-card);
+    padding: var(--spacing-sm);
+}
+
+.asc-ui-asset-row__thumb {
+    width: 3rem;
+    height: 3rem;
+    border-radius: var(--border-radius-full);
+    background: linear-gradient(130deg, color-mix(in srgb, var(--color-primary) 28%, white), color-mix(in srgb, var(--color-accent) 68%, white));
+}
+
+.asc-ui-asset-row__title {
+    margin: 0;
+    color: var(--color-fg);
+    font-size: var(--body-font-size-s);
+    font-weight: 600;
+}
+
+.asc-ui-asset-row__meta {
+    margin: 0;
+    color: var(--color-muted-fg);
+    font-size: var(--body-font-size-xs);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit table — data table with header + zebra-ready rows
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-table-wrap {
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-md);
+    overflow: hidden;
+}
+
+.asc-ui-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--body-font-size-s);
+}
+
+.asc-ui-table th,
+.asc-ui-table td {
+    padding: 0.625rem 0.75rem;
+    border-bottom: 1px solid var(--color-border);
+    text-align: left;
+}
+
+.asc-ui-table th {
+    font-size: var(--body-font-size-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-muted-fg);
+    background: var(--color-muted);
+}
+
+.asc-ui-table tr:last-child td {
+    border-bottom: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit masonry — column-flow gallery of asset tiles
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-masonry {
+    columns: 3;
+    column-gap: 0.75rem;
+}
+
+.asc-ui-masonry__item {
+    break-inside: avoid;
+    margin-bottom: 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-md);
+    overflow: hidden;
+    position: relative;
+    background: var(--color-card);
+}
+
+.asc-ui-masonry__photo {
+    width: 100%;
+    background: linear-gradient(130deg, color-mix(in srgb, var(--color-primary) 22%, white), color-mix(in srgb, var(--color-accent) 65%, white));
+}
+
+.asc-ui-masonry__photo--tall { aspect-ratio: 3 / 4; }
+.asc-ui-masonry__photo--wide { aspect-ratio: 3 / 2; }
+.asc-ui-masonry__photo--square { aspect-ratio: 1; }
+
+.asc-ui-masonry__actions {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    display: flex;
+    gap: 0.375rem;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit icon-btn — circular icon-only button for card/photo overlays
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-icon-btn {
+    width: 2rem;
+    height: 2rem;
+    min-width: 2rem;
+    border-radius: 50%;
+    border: 1px solid color-mix(in srgb, var(--color-border) 85%, var(--color-fg));
+    background: color-mix(in srgb, var(--color-card) 90%, white);
+    color: var(--color-fg);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    line-height: 1;
+    transition: transform var(--transition-fast), background var(--transition-fast), color var(--transition-fast);
+}
+
+.asc-ui-icon-btn:hover {
+    transform: scale(1.1);
+    background: var(--color-card);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit asset-card — vertical asset tile: thumbnail + title + metadata.
+   Use --interactive for hover. Overlay slot for hover actions, badge slot
+   for type/status. Pair the thumb with <img> or .asc-ui-filetype.
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-asset-card {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-lg);
+    background: var(--color-card);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+}
+
+.asc-ui-asset-card--interactive {
+    transition: box-shadow var(--transition-fast), transform var(--transition-fast), border-color var(--transition-fast);
+}
+
+.asc-ui-asset-card--interactive:hover {
+    border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border));
+    box-shadow: var(--shadow-md);
+    transform: var(--lift-sm);
+}
+
+.asc-ui-asset-card__thumb {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: linear-gradient(130deg, color-mix(in srgb, var(--color-primary) 16%, var(--color-card)), color-mix(in srgb, var(--color-accent) 55%, var(--color-card)));
+}
+
+.asc-ui-asset-card__thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.asc-ui-asset-card__badge {
+    position: absolute;
+    top: var(--spacing-sm);
+    left: var(--spacing-sm);
+}
+
+.asc-ui-asset-card__overlay {
+    position: absolute;
+    top: var(--spacing-sm);
+    right: var(--spacing-sm);
+    display: flex;
+    gap: var(--spacing-xs);
+}
+
+.asc-ui-asset-card__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-2xs);
+    padding: var(--spacing-md);
+}
+
+.asc-ui-asset-card__title {
+    margin: 0;
+    font-size: var(--body-font-size-s);
+    font-weight: 600;
+    color: var(--color-fg);
+    overflow-wrap: break-word;
+}
+
+.asc-ui-asset-card__meta {
+    margin: 0;
+    font-size: var(--body-font-size-xs);
+    color: var(--color-muted-fg);
+}
+
+.asc-ui-asset-card__footer {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit thumb — small fixed-size asset thumbnail for dense contexts
+   (table cells, list rows, menus). Size via --asc-ui-thumb-size.
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-thumb {
+    --asc-ui-thumb-size: 2.5rem;
+
+    flex-shrink: 0;
+    width: var(--asc-ui-thumb-size);
+    height: var(--asc-ui-thumb-size);
+    border-radius: var(--border-radius-sm);
+    overflow: hidden;
+    background: linear-gradient(130deg, color-mix(in srgb, var(--color-primary) 22%, var(--color-card)), color-mix(in srgb, var(--color-accent) 60%, var(--color-card)));
+}
+
+.asc-ui-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit filetype — placeholder for non-visual assets (PDF, video, doc).
+   Drop inside an asset-card / detail thumb when there is no image preview.
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-filetype {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xs);
+    color: var(--color-muted-fg);
+}
+
+.asc-ui-filetype__glyph {
+    font-size: 2rem;
+    line-height: 1;
+}
+
+.asc-ui-filetype__ext {
+    font-size: var(--body-font-size-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit actions — labeled action bar: stacked icon + text so each option is
+   self-explanatory (e.g. asset details: Download / Add / Share).
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+}
+
+.asc-ui-action {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-xs);
+    min-width: 4.5rem;
+    padding: var(--spacing-sm);
+    border: 0;
+    border-radius: var(--border-radius-md);
+    background: transparent;
+    color: var(--color-fg);
+    font-size: var(--body-font-size-xs);
+    font-weight: 500;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+
+.asc-ui-action:hover {
+    background: var(--color-muted);
+}
+
+.asc-ui-action__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: var(--border-radius-full);
+    background: var(--color-secondary);
+    color: var(--color-secondary-fg);
+    border: 1px solid var(--color-border);
+}
+
+.asc-ui-action--primary .asc-ui-action__icon {
+    background: var(--color-primary);
+    color: var(--color-primary-fg);
+    border-color: transparent;
+}
+
+.asc-ui-action--danger .asc-ui-action__icon {
+    background: color-mix(in srgb, var(--color-destructive) 14%, var(--color-card));
+    color: var(--color-destructive);
+    border-color: transparent;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit metadata — asset property pairs. Default = stacked rows (sidebars);
+   --grid = responsive cells (wide panels). Markup: <dl> > __row(div) > dt/dd.
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-metadata {
+    margin: 0;
+    display: grid;
+    gap: 0;
+}
+
+.asc-ui-metadata__row {
+    display: grid;
+    grid-template-columns: 9rem 1fr;
+    gap: var(--spacing-md);
+    padding: var(--spacing-sm) 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.asc-ui-metadata__row:last-child {
+    border-bottom: 0;
+}
+
+.asc-ui-metadata__term {
+    margin: 0;
+    font-size: var(--body-font-size-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-muted-fg);
+}
+
+.asc-ui-metadata__value {
+    margin: 0;
+    font-size: var(--body-font-size-s);
+    color: var(--color-fg);
+    overflow-wrap: break-word;
+    min-width: 0;
+}
+
+.asc-ui-metadata--grid {
+    grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+    gap: var(--spacing-md);
+}
+
+.asc-ui-metadata--grid .asc-ui-metadata__row {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-2xs);
+    padding: 0;
+    border-bottom: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit filmstrip — horizontal scroll strip of related assets (e.g. similar
+   assets on the details page). Children are fixed-width asset tiles/cards.
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-filmstrip {
+    display: flex;
+    gap: var(--spacing-md);
+    overflow-x: auto;
+    /* overflow-x:auto makes overflow-y:auto too — pad so the cards' hover
+       lift + shadow aren't clipped at the top/bottom edges */
+    padding-block: var(--spacing-sm);
+    scroll-snap-type: x mandatory;
+}
+
+.asc-ui-filmstrip__item {
+    flex: 0 0 auto;
+    width: 10rem;
+    scroll-snap-align: start;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit detail — two-pane asset layout: large preview + metadata aside.
+   Drop inside .asc-dialog__body (asset overlay) or a details page section.
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-detail {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--spacing-xl);
+}
+
+.asc-ui-detail__preview {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 16rem;
+    overflow: hidden;
+    border-radius: var(--border-radius-md);
+    background: linear-gradient(130deg, color-mix(in srgb, var(--color-primary) 14%, var(--color-card)), color-mix(in srgb, var(--color-accent) 50%, var(--color-card)));
+}
+
+.asc-ui-detail__preview img {
+    max-width: 100%;
+    max-height: 70vh;
+    object-fit: contain;
+}
+
+.asc-ui-detail__aside {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+    min-width: 0;
+}
+
+/* Stacked content blocks below the preview/aside (renditions, similar, etc.) */
+.asc-ui-detail__section {
+    margin-block-start: var(--spacing-2xl);
+}
+
+.asc-ui-detail__section-title {
+    margin: 0 0 var(--spacing-md);
+    font-size: var(--heading-font-size-s);
+    font-weight: 600;
+    color: var(--color-fg);
+}
+
+@media (width >= 768px) {
+    .asc-ui-detail {
+        grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+    }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Responsive
+───────────────────────────────────────────────────────────────────────── */
+
+@media (width < 900px) {
+    .asc-ui-masonry {
+        columns: 2;
+    }
+}
+
+@media (width < 600px) {
+    .asc-ui-masonry {
+        columns: 1;
+    }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Reduced motion
+───────────────────────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+    .asc-ui-spinner,
+    .asc-ui-skeleton::after {
+        animation: none;
+    }
+
+    .asc-ui-card--interactive,
+    .asc-ui-asset-card--interactive {
+        transition: none;
+    }
+}

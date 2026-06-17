@@ -122,6 +122,20 @@ window.asc = { cache: { assets: new Map() } }
 
 Asset instances are cached by UUID here to avoid redundant fetches.
 
+## UI Kit — reuse before restyling
+
+Blocks should be built from the shared **UI Kit** primitives, not bespoke CSS. The kit is
+theme-driven (`.asc-ui-*` + `.btn`) and lives in `styles/ui-kit.css` (plus `.btn`/`.asc-panel`/
+`.asc-dialog` in `styles.css`).
+
+- **Catalog (agent source of truth):** `docs/UI_KIT.md` — every primitive's class, markup, variants.
+- **Gallery (visual workshop):** `ui-kit.html` — themed, with toggleable per-element code/usage.
+
+When asked to create or change a block, prefer composing kit primitives (e.g. `asc-ui-card`,
+`asc-ui-badge`, `asc-ui-empty-state`). If the user names specific kit elements, read those
+entries in `docs/UI_KIT.md` for exact markup. Need a new element or variant? Workshop it in the
+kit (CSS + gallery tile + catalog entry) first, then deploy across blocks.
+
 ## CSS Conventions (see docs/CSS_CONVENTION.md)
 
 - Root selector: `.block.<block-name> { ... }` — never a bare class

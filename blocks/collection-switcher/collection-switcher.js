@@ -1,3 +1,4 @@
+/** @owner user */
 import services from '../../scripts/asc/services/services.js';
 import { Events as CollectionEvents } from '../../scripts/asc/services/collections/collections.js';
 
@@ -28,7 +29,7 @@ export default async function decorate(block) {
   // Close dropdown on outside click
   document.addEventListener('click', (e) => {
     if (!block.contains(e.target)) {
-      block.querySelector('.cs__dropdown')?.setAttribute('hidden', '');
+      block.querySelector('.collection-switcher__dropdown')?.setAttribute('hidden', '');
     }
   });
 }
@@ -47,29 +48,29 @@ async function render(block) {
 function html(active, all, activeId) {
   const count = active?.assetIds?.length ?? 0;
   return `
-    <div class="cs__wrapper">
-      <button class="cs__trigger" aria-expanded="false" aria-haspopup="listbox">
-        <span class="cs__trigger-name">${escHtml(active?.name || 'My Collection')}</span>
-        <span class="cs__trigger-count" aria-label="${count} assets">${count}</span>
-        <span class="cs__trigger-arrow" aria-hidden="true">▾</span>
+    <div class="collection-switcher__wrapper">
+      <button class="collection-switcher__trigger btn btn--secondary btn--lg" aria-expanded="false" aria-haspopup="listbox">
+        <span class="collection-switcher__trigger-name">${escHtml(active?.name || 'My Collection')}</span>
+        <span class="collection-switcher__trigger-count" aria-label="${count} assets">${count}</span>
+        <span class="collection-switcher__trigger-arrow" aria-hidden="true">▾</span>
       </button>
 
-      <div class="cs__dropdown" hidden role="dialog" aria-label="Collections">
-        <ul class="cs__list" role="listbox" aria-label="Select active collection">
+      <div class="collection-switcher__dropdown" hidden role="dialog" aria-label="Collections">
+        <ul class="collection-switcher__list" role="listbox" aria-label="Select active collection">
           ${all.map((c) => collectionOption(c, activeId)).join('')}
         </ul>
 
-        <div class="cs__create-wrap">
-          <form class="cs__create-form" hidden>
-            <input type="text" class="cs__create-input" placeholder="Collection name" maxlength="80" />
-            <button type="submit" class="btn btn--primary btn--sm">Create</button>
-            <button type="button" class="cs__create-cancel btn btn--ghost btn--sm">✕</button>
+        <div class="collection-switcher__create-wrap">
+          <form class="collection-switcher__create-form" hidden>
+            <input type="text" class="collection-switcher__create-input" placeholder="Collection name" maxlength="80" />
+            <button type="submit" class="btn btn--primary">Create</button>
+            <button type="button" class="collection-switcher__create-cancel btn btn--ghost btn--sm">✕</button>
           </form>
-          <button class="cs__create-btn btn btn--ghost btn--sm">+ New collection</button>
+          <button class="collection-switcher__create-btn">+ New collection</button>
         </div>
 
-        <div class="cs__footer">
-          <a href="${MANAGE_PATH}" class="cs__manage-link">Manage collections</a>
+        <div class="collection-switcher__footer">
+          <a href="${MANAGE_PATH}" class="collection-switcher__manage-link">Manage collections</a>
         </div>
       </div>
     </div>`;
@@ -79,21 +80,21 @@ function collectionOption(collection, activeId) {
   const isActive = collection.id === activeId;
   const count = collection.assetIds?.length ?? 0;
   return `
-    <li class="cs__option${isActive ? ' cs__option--active' : ''}"
+    <li class="collection-switcher__option${isActive ? ' collection-switcher__option--active' : ''}"
         role="option"
         aria-selected="${isActive}"
         data-collection-id="${collection.id}">
-      <span class="cs__option-name">${escHtml(collection.name)}</span>
-      <span class="cs__option-count">${count}</span>
-      ${isActive ? '<span class="cs__option-check" aria-hidden="true">✓</span>' : ''}
+      <span class="collection-switcher__option-name">${escHtml(collection.name)}</span>
+      <span class="collection-switcher__option-count">${count}</span>
+      ${isActive ? '<span class="collection-switcher__option-check" aria-hidden="true">✓</span>' : ''}
     </li>`;
 }
 
 // ─── Interactions ─────────────────────────────────────────────────────────────
 
 function initInteractions(block) {
-  const trigger = block.querySelector('.cs__trigger');
-  const dropdown = block.querySelector('.cs__dropdown');
+  const trigger = block.querySelector('.collection-switcher__trigger');
+  const dropdown = block.querySelector('.collection-switcher__dropdown');
 
   // Toggle dropdown
   trigger.addEventListener('click', (e) => {
@@ -109,7 +110,7 @@ function initInteractions(block) {
   });
 
   // Activate collection on click
-  block.querySelectorAll('.cs__option').forEach((opt) => {
+  block.querySelectorAll('.collection-switcher__option').forEach((opt) => {
     opt.addEventListener('click', () => {
       services.collections.setActive(opt.dataset.collectionId);
       dropdown.setAttribute('hidden', '');
@@ -118,25 +119,25 @@ function initInteractions(block) {
   });
 
   // Show create form
-  block.querySelector('.cs__create-btn').addEventListener('click', (e) => {
+  block.querySelector('.collection-switcher__create-btn').addEventListener('click', (e) => {
     e.stopPropagation();
-    block.querySelector('.cs__create-form').removeAttribute('hidden');
-    block.querySelector('.cs__create-btn').setAttribute('hidden', '');
-    block.querySelector('.cs__create-input').focus();
+    block.querySelector('.collection-switcher__create-form').removeAttribute('hidden');
+    block.querySelector('.collection-switcher__create-btn').setAttribute('hidden', '');
+    block.querySelector('.collection-switcher__create-input').focus();
   });
 
   // Hide create form
-  block.querySelector('.cs__create-cancel').addEventListener('click', () => {
-    block.querySelector('.cs__create-form').setAttribute('hidden', '');
-    block.querySelector('.cs__create-btn').removeAttribute('hidden');
-    block.querySelector('.cs__create-input').value = '';
+  block.querySelector('.collection-switcher__create-cancel').addEventListener('click', () => {
+    block.querySelector('.collection-switcher__create-form').setAttribute('hidden', '');
+    block.querySelector('.collection-switcher__create-btn').removeAttribute('hidden');
+    block.querySelector('.collection-switcher__create-input').value = '';
   });
 
   // Submit new collection
-  block.querySelector('.cs__create-form').addEventListener('submit', (e) => {
+  block.querySelector('.collection-switcher__create-form').addEventListener('submit', (e) => {
     e.preventDefault();
     e.stopPropagation();
-    const input = block.querySelector('.cs__create-input');
+    const input = block.querySelector('.collection-switcher__create-input');
     const name = input.value.trim();
     if (!name) return;
     const newCollection = services.collections.create(name);

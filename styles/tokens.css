@@ -8,14 +8,14 @@
 
 :root {
   /* ── Border radius ──────────────────────────────────────────────── */
-  --border-radius-sm:   4px;
-  --border-radius-md:   8px;
-  --border-radius-lg:   12px;
-  --border-radius-xl:   16px;
+  --border-radius-sm:   0.25rem;
+  --border-radius-md:   0.5rem;
+  --border-radius-lg:   0.75rem;
+  --border-radius-xl:   1rem;
   --border-radius-full: 9999px;
 
   /* ── Micro-spacing ──────────────────────────────────────────────── */
-  --spacing-2xs: 2px;
+  --spacing-2xs: 0.125rem;
 
   /* ── Icon sizes ─────────────────────────────────────────────────── */
   --icon-size-sm: 16px;
@@ -33,10 +33,10 @@
   --transition-slow:   350ms ease;
 
   /* ── Motion / Elevation ─────────────────────────────────────────── */
-  --lift-sm: translateY(-2px);
-  --lift-md: translateY(-4px);
-  --lift-lg: translateY(-8px);
-  --drop-sm: translateY(4px);
+  --lift-sm: translateY(-0.125rem);
+  --lift-md: translateY(-0.25rem);
+  --lift-lg: translateY(-0.5rem);
+  --drop-sm: translateY(0.25rem);
   --scale-sm: scale(1.04);
   --scale-md: scale(1.1);
 
@@ -48,17 +48,28 @@
   /* ── Composed focus ring ────────────────────────────────────────── */
   --focus-ring: 0 0 0 var(--input-focus-ring-width) color-mix(in srgb, var(--color-ring) 25%, transparent);
 
+  /* ── Border defaults ───────────────────────────────────────────── */
+  --border-width: 1px;
+  --border-style: solid;
+
+  /* ── Form label defaults ────────────────────────────────────────── */
+  --label-color:       var(--color-muted-fg);
+  --label-font-weight: 600;
+
   /* ── Button structural ──────────────────────────────────────────── */
-  --button-padding:       var(--spacing-sm) var(--spacing-md);
-  --button-border-radius: var(--border-radius-md);
+  --button-padding:       var(--spacing-sm) var(--spacing-lg);
+  --button-border-radius: var(--border-radius-full);
+  --btn-shadow:           none;
+  --btn-shadow-hover:     none;
+  --btn-lift:             none;
 
   /* ── Input structural ───────────────────────────────────────────── */
   --input-border-radius:    var(--border-radius-sm);
   --input-padding-x:        var(--spacing-md);
   --input-padding-y:        var(--spacing-sm);
-  --input-height-sm:        32px;
-  --input-height-md:        40px;
-  --input-height-lg:        52px;
+  --input-height-sm:        2rem;
+  --input-height-md:        2.5rem;
+  --input-height-lg:        3.25rem;
   --input-focus-ring-width: 3px;
   --input-transition:       border-color var(--transition-fast), box-shadow var(--transition-fast);
 
@@ -69,13 +80,24 @@
   --search-results-cols-desktop: 4;
 
   /* ── Modal structural ───────────────────────────────────────────── */
-  --modal-border-radius: var(--border-radius-lg);
-  --modal-shadow:        var(--shadow-lg);
-  --modal-max-width:     900px;
-  --modal-min-width:     320px;
-  --modal-min-height:    220px;
-  --modal-padding:       var(--spacing-xl);
-  --modal-narrow-max-width: 520px;
+  --modal-border-radius:  var(--border-radius-xl);
+  --modal-shadow:         var(--shadow-lg);
+  --modal-max-width:      68.75rem;
+  --modal-wide-max-width: 80rem;
+  --modal-min-width:      20rem;
+  --modal-min-height:     13.75rem;
+  --modal-padding:        var(--spacing-xl);
+  --modal-narrow-max-width: 32.5rem;
+  --modal-viewport-gap:   var(--spacing-xl);
+
+  /* ── Panel / popover structural ────────────────────────────────── */
+  --panel-bg:         var(--color-bg);
+  --panel-border:     var(--border-width) var(--border-style) var(--color-border);
+  --panel-radius:     var(--border-radius-md);
+  --panel-shadow:     var(--shadow-lg);
+  --panel-padding:    var(--spacing-md);
+  --panel-z:          var(--z-dropdown);
+  --panel-max-height: 25rem;
 
   /* ── Validation (aliases to semantic color tokens) ──────────────── */
   --validation-error-color:   var(--color-destructive);

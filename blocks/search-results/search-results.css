@@ -1,18 +1,33 @@
-.block.search-results {
+main .search-results {
     min-height: 50vh;
+
+    .search-results__sentinel {
+        height: 1px;
+        visibility: hidden;
+    }
 
     .search-results__toolbar {
         display: flex;
         gap: var(--spacing-sm);
         margin-bottom: var(--spacing-md);
 
-        select { flex: 1; min-width: 0; }
+        border-radius: var(--border-radius-full);
+        background: var(--color-bg);
+        border: 1px solid var(--color-border);
+        padding: var(--spacing-sm) var(--spacing-sm);
+        width: 50%;
+
+        select { 
+            flex: 1; 
+            min-width: 0; 
+            border-radius: var(--border-radius-full);
+        }
     }
 
     [data-asc-results] {
         /* default — overridden by data-display attribute */
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr));
         gap: var(--spacing-md);
     }
 
@@ -20,8 +35,50 @@
 
     [data-asc-results][data-display="cards"] {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr));
         gap: var(--spacing-md);
+
+        .asc-asset-teaser .asc-collection-toggle,
+        .asc-asset-teaser .search-results__quick-download {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .asc-asset-teaser:hover .asc-collection-toggle,
+        .asc-asset-teaser:focus-within .asc-collection-toggle,
+        .asc-asset-teaser:hover .search-results__quick-download,
+        .asc-asset-teaser:focus-within .search-results__quick-download {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .asc-asset-teaser .asc-collection-toggle__icon {
+            width: 1em;
+            height: 1em;
+            line-height: 1;
+            transform: translateY(-0.03em);
+        }
+
+        .asc-asset-teaser .asc-collection-toggle__remove .asc-collection-toggle__icon {
+            font-size: 0;
+        }
+
+        .asc-asset-teaser .asc-collection-toggle__remove .asc-collection-toggle__icon::before {
+            content: '✓';
+            font-size: 0.875rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .asc-asset-teaser .asc-collection-toggle__btn,
+        .asc-asset-teaser .search-results__quick-download {
+            transition: opacity var(--transition-fast), transform var(--transition-fast);
+        }
+
+        .asc-asset-teaser .asc-collection-toggle__btn:hover,
+        .asc-asset-teaser .search-results__quick-download:hover {
+            transform: scale(1.1);
+        }
 
         .asc-asset-teaser__meta {
             display: flex;
@@ -34,6 +91,7 @@
         .asc-asset-teaser__title {
             width: 100%;
             margin-block-end: var(--spacing-2xs);
+            transition: opacity var(--transition-fast), visibility var(--transition-fast);
         }
 
         .asc-asset-teaser__prop {
@@ -58,13 +116,6 @@
         gap: var(--spacing-xs);
     }
 
-    .asc-list-view__actions .search-results__quick-download {
-        min-width: 32px;
-        height: 32px;
-        padding-inline: var(--spacing-xs);
-        line-height: 1;
-    }
-
     .asc-list-view__actions .asc-collection-toggle {
         --collection-toggle-add-bg: var(--color-card);
         --collection-toggle-add-fg: var(--color-fg);
@@ -80,29 +131,71 @@
     }
 
     [data-asc-results]:not([data-display="list"]) .asc-asset-teaser .asc-collection-toggle {
+        --search-results-action-bg: rgb(255 255 255 / 88%);
+        --search-results-action-bg-hover: #fff;
+        --search-results-action-border: #9ca3af;
+        --search-results-action-fg: #1f2937;
+        --search-results-action-fg-hover: #000;
+
         display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-        gap: var(--spacing-2xs);
+        flex-direction: row;
+        align-items: center;
+        gap: var(--spacing-sm);
+        top: 0.5rem;
+        right: 0.5rem;
+
+        /* Small circle buttons for card/masonry overlay */
+        --collection-toggle-btn-width:     2rem;
+        --collection-toggle-btn-min-width: 2rem;
+        --collection-toggle-btn-height:    2rem;
+        --collection-toggle-btn-padding:   0;
+        --collection-toggle-btn-radius:    50%;
+
+        --collection-toggle-add-bg: var(--search-results-action-bg);
+        --collection-toggle-add-fg: var(--search-results-action-fg);
+        --collection-toggle-add-border: var(--search-results-action-border);
+        --collection-toggle-add-hover-bg: var(--search-results-action-bg-hover);
+        --collection-toggle-add-hover-fg: var(--search-results-action-fg-hover);
+        --collection-toggle-add-hover-border: var(--search-results-action-border);
+        --collection-toggle-remove-bg: var(--search-results-action-bg);
+        --collection-toggle-remove-fg: var(--search-results-action-fg);
+        --collection-toggle-remove-border: var(--search-results-action-border);
+        --collection-toggle-remove-hover-bg: var(--search-results-action-bg-hover);
+        --collection-toggle-remove-hover-fg: var(--search-results-action-fg-hover);
+        --collection-toggle-remove-hover-border: var(--search-results-action-border);
+    }
+
+    /* Dark overlay style — matches the collection toggle circles */
+    [data-asc-results]:not([data-display="list"]) .search-results__quick-download {
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity var(--transition-fast);
+    }
+
+    [data-asc-results]:not([data-display="list"]) .asc-asset-teaser:hover .search-results__quick-download {
+        opacity: 1;
+        pointer-events: auto;
     }
 
     [data-asc-results]:not([data-display="list"]) .search-results__quick-download {
-        min-width: var(--search-results-quick-download-min-width, 32px);
-        height: var(--search-results-quick-download-height, 30px);
-        padding-inline: var(--search-results-quick-download-padding-x, var(--spacing-xs));
-        line-height: 1;
-        border-radius: var(--search-results-quick-download-radius, var(--border-radius-sm));
-        background: var(--search-results-quick-download-bg, var(--color-card));
-        border-color: var(--search-results-quick-download-border, var(--color-border));
-        color: var(--search-results-quick-download-fg, var(--color-fg));
-        box-shadow: var(--search-results-quick-download-shadow, none);
-        backdrop-filter: var(--search-results-quick-download-backdrop, none);
-        z-index: var(--search-results-quick-download-z, var(--z-header));
+        background: var(--search-results-action-bg);
+        color: var(--search-results-action-fg);
+        border-color: var(--search-results-action-border);
+        z-index: var(--z-header);
+        width: 2rem;
+        min-width: 2rem;
+        height: 2rem;
+        padding: 0;
+
+        svg {
+            width: 0.875rem;
+            height: 0.875rem;
+        }
 
         &:hover {
-            background: var(--search-results-quick-download-hover-bg, var(--search-results-quick-download-bg, var(--color-card)));
-            border-color: var(--search-results-quick-download-hover-border, var(--search-results-quick-download-border, var(--color-border)));
-            color: var(--search-results-quick-download-hover-fg, var(--search-results-quick-download-fg, var(--color-fg)));
+            background: var(--search-results-action-bg-hover);
+            border-color: var(--search-results-action-border);
+            color: var(--search-results-action-fg-hover);
         }
     }
 
@@ -164,15 +257,15 @@
     }
 
     .asc-list-view__cell .asc-list-view__thumb {
-        flex: 0 0 46px;
-        width: 46px;
-        height: 46px;
-        min-width: 46px;
-        min-height: 46px;
-        max-width: 46px;
-        max-height: 46px;
+        flex: 0 0 2.875rem;
+        width: 2.875rem;
+        height: 2.875rem;
+        min-width: 2.875rem;
+        min-height: 2.875rem;
+        max-width: 2.875rem;
+        max-height: 2.875rem;
         display: block;
-        margin-block: 5px;
+        margin-block: 0.3125rem;
         border-radius: var(--border-radius-full);
         overflow: hidden;
         object-fit: cover;
@@ -206,7 +299,7 @@
         /* Natural aspect ratio — override the card-mode forced aspect-ratio */
         .asc-asset-teaser__preview {
             aspect-ratio: unset;
-            min-height: 80px;
+            min-height: 5rem;
         }
 
         .asc-asset-teaser__preview img,
@@ -240,14 +333,61 @@
         }
 
         .asc-asset-teaser__title {
-            font-weight: 700;
-            letter-spacing: 0.01em;
+            display: none;
         }
 
         .asc-asset-teaser:hover .asc-asset-teaser__meta {
             opacity: 1;
             transform: translateY(0);
         }
+
+        /* Masonry actions: hidden until card hover/focus */
+        .asc-asset-teaser .asc-collection-toggle,
+        .asc-asset-teaser .search-results__quick-download {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* On card hover/focus: show actions */
+        .asc-asset-teaser:hover .asc-collection-toggle,
+        .asc-asset-teaser:focus-within .asc-collection-toggle,
+        .asc-asset-teaser:hover .search-results__quick-download,
+        .asc-asset-teaser:focus-within .search-results__quick-download {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Keep + icon optically centered in the circle */
+        .asc-asset-teaser .asc-collection-toggle__icon {
+            width: 1em;
+            height: 1em;
+            line-height: 1;
+            transform: translateY(-0.03em);
+        }
+
+        /* Remove-state icon should be a checkmark */
+        .asc-asset-teaser .asc-collection-toggle__remove .asc-collection-toggle__icon {
+            font-size: 0;
+        }
+
+        .asc-asset-teaser .asc-collection-toggle__remove .asc-collection-toggle__icon::before {
+            content: '✓';
+            font-size: 0.875rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        /* Button hover interaction in masonry: +10% */
+        .asc-asset-teaser .asc-collection-toggle__btn,
+        .asc-asset-teaser .search-results__quick-download {
+            transition: opacity var(--transition-fast), transform var(--transition-fast);
+        }
+
+        .asc-asset-teaser .asc-collection-toggle__btn:hover,
+        .asc-asset-teaser .search-results__quick-download:hover {
+            transform: scale(1.1);
+        }
+
     }
 
     /* ── Fallback icons for non-image / broken thumbnails ──────────────── */
