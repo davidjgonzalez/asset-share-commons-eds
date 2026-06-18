@@ -16,19 +16,10 @@ main .details-property label {
     margin-bottom: var(--spacing-xs);
 }
 
-main .details-property span {
+/* Base value. Scoped to :not(.pill) so the .pill variant's .asc-ui-badge
+   (UI Kit) keeps its own color/size/display instead of being overridden here. */
+main .details-property:not(.pill) span {
     display: block;
     font-size: var(--body-font-size-s);
     color: var(--color-muted-fg);
-}
-
-main .details-property.pill span {
-    display: inline-block;
-    padding: var(--spacing-xs) var(--spacing-sm);
-    background-color: var(--color-muted);
-    color: var(--color-fg);
-    font-size: var(--body-font-size-xs);
-    font-weight: 500;
-    text-transform: uppercase;
-    border: var(--border-width) var(--border-style) var(--color-border);
 }

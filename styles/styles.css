@@ -17,6 +17,7 @@
 @import './sections/inline.css';
 @import './sections/grid.css';
 @import './sections/aside.css';
+@import './sections/grid-layout.css';
 @import './sections/full-width.css';
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -308,6 +309,15 @@ a.button.secondary:any-link {
 a.btn:any-link,
 a.btn:any-link:hover,
 a.btn:any-link:visited {
+  text-decoration: none;
+}
+
+/* Same for UI Kit action buttons rendered as anchors (e.g. details-actions
+   Download): drop the link underline + colour so they match the button siblings. */
+a.asc-ui-action:any-link,
+a.asc-ui-action:any-link:hover,
+a.asc-ui-action:any-link:visited {
+  color: inherit;
   text-decoration: none;
 }
 
@@ -942,9 +952,11 @@ main .section.top.dropdowns.search-filters .search-filter-dropdown__panel ol {
    BLOCK SPACING & SEARCH FILTER RESETS
 ───────────────────────────────────────────────────────────────────────── */
 
-/* Default block padding — override with --block-padding at the section level */
+/* Blocks carry no implicit padding by default — opt in per block, or set
+   --block-padding at the section level. Horizontal inset comes from the section
+   wrapper (`main > .section > div`), so blocks align with default content. */
 main .block {
-  padding: var(--block-padding, var(--spacing-md));
+  padding: var(--block-padding, 0);
   margin-bottom: var(--spacing-md);
 }
 

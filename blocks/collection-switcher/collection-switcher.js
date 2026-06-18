@@ -4,7 +4,7 @@ import { Events as CollectionEvents } from '../../scripts/asc/services/collectio
 
 const configurations = (await import('../../scripts/configurations.js')).default;
 
-const MANAGE_PATH = configurations.collections?.managePath || '/collections';
+const MANAGE_PATH = configurations.collections?.managePath || '/collections/';
 
 /**
  * Collection-switcher block — persistent header widget.

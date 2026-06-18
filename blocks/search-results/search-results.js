@@ -273,7 +273,12 @@ async function addEventListeners(block, _config) {
           results.assets?.map((asset) => assetTeaser(asset, { mode: 'card', view: display })).join('') || '');
       }
     } else if (results.size === 0) {
-      resultsEl.innerHTML = '<h4>No results found.</h4>';
+      resultsEl.innerHTML = `
+        <div class="asc-ui-empty-state">
+          <span class="asc-ui-empty-state__icon" aria-hidden="true">🔍</span>
+          <p class="asc-ui-empty-state__title">No results found</p>
+          <p class="asc-ui-empty-state__hint">Try adjusting your search terms or filters.</p>
+        </div>`;
     } else if (display === 'list') {
       resultsEl.innerHTML = renderListView(results.assets, quickDownloadRendition);
     } else {

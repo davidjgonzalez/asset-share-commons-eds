@@ -1,0 +1,32 @@
+/*
+ * details-renditions — renditions listed as a UI Kit .asc-ui-table
+ * (styles/ui-kit.css); .asc-ui-empty-state for the empty case. Only the optional
+ * header copy and the action column (tight, right-aligned icon buttons) are
+ * block-specific.
+ */
+
+main .details-renditions {
+    .details-renditions__header {
+        margin-bottom: var(--spacing-md);
+    }
+
+    .details-renditions__description {
+        font-size: var(--body-font-size-s);
+        color: var(--color-muted-fg);
+        margin: 0;
+    }
+
+    /* Action columns: keep tight + right-aligned */
+    .asc-ui-table th.details-renditions__action,
+    .asc-ui-table td.details-renditions__action {
+        width: 1%;
+        white-space: nowrap;
+        text-align: right;
+    }
+
+    .details-renditions__actions {
+        display: inline-flex;
+        gap: var(--spacing-xs);
+        justify-content: flex-end;
+    }
+}

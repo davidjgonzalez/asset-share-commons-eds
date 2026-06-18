@@ -25,7 +25,7 @@
       "details-modal",
       "details-preview",
       "details-property",
-      "details-download",
+      "details-renditions",
       "details-actions",
       "stub",
       "sheet",
@@ -52,7 +52,7 @@
     "components": [
       "details-preview",
       "details-property",
-      "details-download",
+      "details-renditions",
       "details-actions"
     ]
   }

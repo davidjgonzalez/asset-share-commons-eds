@@ -43,6 +43,14 @@ EDS runs three phases on every page load:
 
 ASC services are imported in `scripts/scripts.js` and initialize themselves as singletons on module import.
 
+> **`scripts/scripts.js` is boilerplate, but ASC modifies it** — re-apply these after any EDS
+> boilerplate upgrade:
+>
+> - imports the ASC services bundle (`./asc/services/services.js`) and `configurations.js`
+> - `decorateMain()` calls `decorateGridLayouts(main)` (from `scripts/section-grid.js`) **after
+>   `decorateBlocks`** to enable the named-area `layout: grid` section paradigm (see
+>   AGENTS.md → "Section Layouts"). It must stay after `decorateBlocks` and before blocks render.
+
 ### Core Layers
 
 ```

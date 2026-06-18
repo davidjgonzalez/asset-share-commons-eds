@@ -20,8 +20,12 @@ export default async function decorate(block) {
   const config = readBlockConfig(block);
   const asset = await Asset.create(block);
 
+  // `pill` variant renders the value as a UI Kit badge
+  const valueClass = block.classList.contains("pill") ? "asc-ui-badge" : "";
+  const value = asset.getProperty(config.property) || config.default;
+
   block.innerHTML = `
       <label>${config.label}</label>
-      <span>${asset.getProperty(config.property) || config.default}</span>      
+      <span class="${valueClass}">${value}</span>
     `;
 }

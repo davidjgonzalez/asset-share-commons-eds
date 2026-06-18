@@ -121,21 +121,23 @@ function html(config) {
 }
 
 export function htmlCheckboxes(config) {
-  return `<ul class="search-property__options">
+  return `<ul class="search-property__options asc-ui-dropdown__list">
     ${config.options.filter((o) => o.value).map((option, index) => {
       const name = `${config.group}_group.${config.name}.${index}_value`;
       const id = `${config.fieldset}-option-${index}`;
       const checked = config.initial[name] === option.value;
       return `
         <li class="search-property__option">
-          <input type="checkbox"
-                 id="${id}"
-                 name="${name}"
-                 value="${option.value}"
-                 ${checked ? 'checked' : ''}
-                 data-asc-fieldset="${config.fieldset}"
-                 form="${config.form}"/>
-          <label for="${id}">${option.text}</label>
+          <label class="asc-ui-dropdown__item">
+            <input type="checkbox"
+                   id="${id}"
+                   name="${name}"
+                   value="${option.value}"
+                   ${checked ? 'checked' : ''}
+                   data-asc-fieldset="${config.fieldset}"
+                   form="${config.form}"/>
+            ${option.text}
+          </label>
         </li>`;
     }).join('')}
   </ul>`;
@@ -143,20 +145,22 @@ export function htmlCheckboxes(config) {
 
 export function htmlRadio(config) {
   const sharedName = `${config.group}_group.${config.name}.value`;
-  return `<ul class="search-property__options">
+  return `<ul class="search-property__options asc-ui-dropdown__list">
     ${config.options.filter((o) => o.value).map((option, index) => {
       const id = `${config.fieldset}-option-${index}`;
       const checked = config.initial[sharedName] === option.value;
       return `
         <li class="search-property__option">
-          <input type="radio"
-                 id="${id}"
-                 name="${sharedName}"
-                 value="${option.value}"
-                 ${checked ? 'checked' : ''}
-                 data-asc-fieldset="${config.fieldset}"
-                 form="${config.form}"/>
-          <label for="${id}">${option.text}</label>
+          <label class="asc-ui-dropdown__item">
+            <input type="radio"
+                   id="${id}"
+                   name="${sharedName}"
+                   value="${option.value}"
+                   ${checked ? 'checked' : ''}
+                   data-asc-fieldset="${config.fieldset}"
+                   form="${config.form}"/>
+            ${option.text}
+          </label>
         </li>`;
     }).join('')}
   </ul>`;

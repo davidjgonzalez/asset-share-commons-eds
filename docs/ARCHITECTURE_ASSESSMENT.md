@@ -193,7 +193,7 @@ Search Blocks (8):       search-bar, search-property, search-path,
                          search-results, search-statistics
 
 Details Blocks (6):      details-modal, details-preview, details-property, 
-                         details-download, details-actions, details-similar
+                         details-renditions, details-actions, details-similar
 
 Collections Blocks (4):  stub, sheet, collections, collection, 
                          collection-switcher
@@ -352,7 +352,7 @@ All blocks use `.block.{name}` as the root selector, not `main .{name}` (Adobe's
 | Category | Prefix | Examples |
 |----------|--------|----------|
 | Search | `search-*` | search-bar, search-property, search-date-range |
-| Details | `details-*` | details-modal, details-preview, details-download |
+| Details | `details-*` | details-modal, details-preview, details-renditions |
 | Collections | `collection*` | collection, collection-switcher, stub, sheet |
 | EDS standard | — | hero, footer, header, fragment, columns |
 
@@ -407,7 +407,7 @@ All blocks use `.block.{name}` as the root selector, not `main .{name}` (Adobe's
 | Search (OpenAPI) | ✓ Code exists | openapi.js provider, pattern matches Adobe guidance |
 | Collections (localStorage) | ✓ Working | collections.js + stub/sheet/collection blocks |
 | Asset Details Modal | ✓ Working | asset-details.js + details-*.js blocks |
-| Renditions (static) | ✓ Working | renditions.js + details-download block |
+| Renditions (static) | ✓ Working | renditions.js + details-renditions block |
 | Renditions (DM Legacy) | ✓ Code exists | configurations.js examples show pattern |
 | Renditions (DM OpenAPI) | ✓ Code exists | renditions.js implementation present |
 | Async Downloads | ✓ Code exists | downloads.js with polling logic |

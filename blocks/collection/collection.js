@@ -184,7 +184,7 @@ function initDelete(block, collection) {
     if (!window.confirm(`Delete "${collection.name}"? This cannot be undone.`)) return;
     services.collections.delete(collection.id);
     // Navigate to collections index
-    const managePath = configurations.collections?.managePath || '/collections';
+    const managePath = configurations.collections?.managePath || '/collections/';
     window.location.href = managePath;
   });
 }

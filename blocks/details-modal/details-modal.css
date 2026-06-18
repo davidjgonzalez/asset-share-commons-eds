@@ -1,68 +1,23 @@
-.details-modal {
-    dialog {
-        display: none;
-        padding: 0;
-        border: none;
-        outline: none;
-        border-radius: var(--modal-border-radius);
-        box-shadow: var(--modal-shadow);
-        background: var(--color-bg);
-        position: fixed;
-        top: var(--modal-viewport-gap);
-        left: 50%;
-        transform: translateX(-50%);
-        margin: 0;
-        width: min(calc(100vw - 2 * var(--modal-viewport-gap)), var(--modal-max-width));
-        max-height: calc(100vh - 2 * var(--modal-viewport-gap));
-        overflow: hidden;
+/*
+ * details-modal — dialog chrome (border, radius, shadow, backdrop, sizing,
+ * centered top-layer positioning) comes from the UI Kit .asc-dialog primitive
+ * in its large .asc-dialog--wide variant (styles.css). The service opens it
+ * with dialog.showModal() and injects the details fragment into .content.
+ *
+ * The fragment supplies its own header bar (details-header block), so the modal
+ * only floats a close button over the top-right corner.
+ */
 
-        &[open] {
-            display: flex;
-            flex-direction: column;
-        }
+.details-modal .close {
+    position: absolute;
+    top: var(--spacing-sm);
+    inset-inline-end: var(--spacing-sm);
+    z-index: 1;
+}
 
-        &::backdrop {
-            background: var(--overlay-md);
-            backdrop-filter: blur(4px);
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: flex-end;
-            align-items: center;
-            padding: var(--spacing-sm) var(--spacing-md);
-            flex-shrink: 0;
-            border-bottom: var(--border-width) var(--border-style) var(--color-border);
-        }
-
-        button.close {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 32px;
-            height: 32px;
-            min-width: 32px;
-            padding: 0;
-            border-radius: var(--border-radius-full);
-            border-color: transparent;
-            background: transparent;
-            color: var(--color-muted-fg);
-            font-size: 16px;
-            line-height: 1;
-
-            &:hover {
-                background: var(--color-muted);
-                border-color: transparent;
-                color: var(--color-fg);
-                box-shadow: none;
-            }
-        }
-
-        .content {
-            flex: 1;
-            overflow-y: auto;
-            width: 100%;
-            min-height: 0;
-        }
-    }
+.details-modal .content {
+    overflow-y: auto;
+    width: 100%;
+    max-height: 92vh;
+    min-height: 0;
 }

@@ -158,20 +158,19 @@ const configurations = {
   },
 
   // ─── Collections ─────────────────────────────────────────────────────────────
-  //
-  // collections: {
-  //   // Path to the collections management index page (used by collection-switcher block)
-  //   managePath: '/collections',
-  //
-  //   // Path to the single collection detail/edit page.
-  //   // The collections block appends '?id=<uuid>' as a query param.
-  //   collectionPath: '/collections/collection',
-  //
-  //   // Target sheet page for collection share links.
-  //   // The collection block builds share URLs as:
-  //   //   {sheetPath}?assets=<compressed>&title=<encoded>&description=<encoded>
-  //   sheetPath: '/sheets/',
-  // },
+  collections: {
+    // Path to the collections management index page (used by collection-switcher block)
+    managePath: '/collections/',
+
+    // Path to the single collection detail/edit page.
+    // The collections block appends '?id=<uuid>' as a query param.
+    // collectionPath: '/collections/collection',
+    //
+    // Target sheet page for collection share links.
+    // The collection block builds share URLs as:
+    //   {sheetPath}?assets=<compressed>&title=<encoded>&description=<encoded>
+    // sheetPath: '/sheets/',
+  },
 
   // ─── Downloads ───────────────────────────────────────────────────────────────
   //
@@ -209,6 +208,19 @@ const configurations = {
   },
 
   // ─── Asset Properties ────────────────────────────────────────────────────────
+  properties: {
+    custom: {
+      // Tags → array of leaf labels; the details-metadata block renders arrays
+      // as .asc-ui-chip pills. Reads AEM's cq:tags (tag IDs like "ns:foo/bar").
+      tags: (asset) => {
+        const raw = asset.getProperty('jcr:content/metadata/cq:tags');
+        const list = Array.isArray(raw) ? raw : (raw ? [raw] : []);
+        return list.map((t) => String(t).split('/').pop()).filter(Boolean);
+      },
+    },
+  },
+
+  // ─── Asset Properties (reference) ──────────────────────────────────────────────
   // properties: {
   //   // Add custom property handlers or override built-in ones.
   //   // The key is the property name used in details-property blocks.
@@ -232,7 +244,7 @@ const configurations = {
 
   // ─── Renditions ──────────────────────────────────────────────────────────────
   //
-  // Defines which renditions appear in the details-download block and how their
+  // Defines which renditions appear in the details-renditions block and how their
   // URLs are constructed. This is the client-side equivalent of ASC v1's
   // AssetRenditionDispatcher OSGi configurations.
   //

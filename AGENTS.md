@@ -37,11 +37,13 @@ Every file inside `scripts/asc/` starts with `// ASC Core — do not edit.` as a
 ### Details blocks (used on details fragment pages)
 | Block | Purpose |
 |-------|---------|
-| `details-modal` | Modal dialog shell; auto-injected by `AssetDetails` service |
-| `details-preview` | Asset preview (image / video / PDF) |
-| `details-property` | Displays a single metadata property |
-| `details-download` | Lists renditions as download links |
-| `details-actions` | Action buttons: add-to-cart, download, share |
+| `details-modal` | Modal dialog shell; auto-injected by `AssetDetails` service. Close button floats top-right; the loaded fragment supplies its own header |
+| `details-header` | Title + meta-subtitle bar. Authored content is a **token template** — `{{ accessor }}` / `{{ accessor \| fallback }}` resolved against the asset (see Token Placeholders below) |
+| `details-preview` | Asset preview **media only** (image / video / PDF). Title/metadata/actions live in sibling blocks, arranged by the section layout |
+| `details-property` | Displays a single metadata property (label + value; `pill` variant → badge) |
+| `details-metadata` | A panel of property rows (`asc-ui-metadata`). Rows are `Label \| property-key`; `display: list\|grid`; array values (e.g. `tags`) render as `asc-ui-chip` pills |
+| `details-renditions` | Renditions as an `asc-ui-table` with **author-configurable columns** (Title \| `{{ }}` value) and a rendition row list. See "Renditions Table Templates" below |
+| `details-actions` | Action buttons (`asc-ui-action` circle-icon + label): download, collection-toggle (add/remove), share. `actions` config sets which/order |
 
 ### Collections / cart blocks
 | Block | Purpose |
@@ -51,6 +53,108 @@ Every file inside `scripts/asc/` starts with `// ASC Core — do not edit.` as a
 | `collections` | Collections index/management page — list, create, delete, activate |
 | `collection` | Collection detail/edit page — rename, reorder assets, remove assets, share URL, download |
 | `collection-switcher` | Persistent header widget — active collection dropdown, inline create, navigate to /collections |
+
+---
+
+## Section Layouts — Named-Area Grid (`layout: grid`)
+
+A general, author-driven grid paradigm for sections, modeled on CSS `grid-template-areas`.
+Lets authors arrange blocks into a 2-D layout from **section metadata**, with each block
+declaring which cell it occupies — no per-layout CSS required.
+
+> ⚠️ **Boilerplate modification — `scripts/scripts.js`.** This feature adds an import and one
+> call to `decorateMain()`:
+>
+> ```js
+> import decorateGridLayouts from './section-grid.js';
+> // …
+> export function decorateMain(main) {
+>   decorateButtons(main);
+>   decorateIcons(main);
+>   buildAutoBlocks(main);
+>   decorateSections(main);
+>   decorateBlocks(main);
+>   decorateGridLayouts(main);   // ← ASC addition: must run AFTER decorateBlocks,
+>                                //    BEFORE blocks render (loadSection/loadBlock)
+> }
+> ```
+>
+> `scripts.js` is boilerplate (not `scripts/asc/`), so **re-apply these two edits after any EDS
+> boilerplate upgrade.** The logic itself lives in the user-owned `scripts/section-grid.js`; the
+> styling in `styles/sections/grid-layout.css` (imported by `styles.css`). Because `decorateMain`
+> also runs for fragments loaded via `loadFragment` (e.g. the asset-details modal), grid layouts
+> work inside the modal too.
+
+**Authoring** (section metadata):
+
+| Section Metadata |                    |
+|------------------|--------------------|
+| layout           | grid               |
+| areas            | preview actions    |
+|                  | preview metadata   |
+| columns          | 1.5fr 1fr          |
+| rows             | auto auto (opt)    |
+| gap              | 2rem (opt)         |
+
+- `areas` — one line per grid row (lines may also be separated by `/`, `\|`, or `,`). Repeat an
+  area name across cells to make a block span them. The example makes `preview` span both rows
+  on the left, with `actions` over `metadata` on the right.
+- `columns` — optional track sizing. **If omitted, defaults to equal `1fr` columns** (`repeat(N,
+  minmax(0,1fr))`) derived from the widest areas row.
+- `rows` — optional. **If omitted, defaults to `auto 1fr`** (first row content-sized, the rest
+  flexible). A block spanning the full column height (like `preview`) crosses the flexible track,
+  so the content rows stay content-sized and the other column's blocks **pack to the top** instead
+  of spacing evenly. Set `rows` explicitly to override.
+- `gap` — optional. A named token (`xs`|`s`|`m`|`l`|`xl`) maps to the theme `--spacing-*` scale; a
+  raw length (e.g. `1.5rem`) passes through.
+- Collapses to a single stacked column below 768px (named placement is dropped → source order).
+
+**Block placement** — each block claims a cell with an `area` config row:
+
+```
+| details-preview |         |
+| area            | preview |
+```
+
+`scripts/section-grid.js` (called from `decorateMain`, before blocks render) reads the section
+metadata into `--grid-areas` / `--grid-columns` / `--grid-cols` / `--grid-rows` / `--grid-gap`
+custom properties, and **strips each block's `area` row** (so it never reaches the block's own
+config) onto the wrapper as `--grid-area`. `grid-layout.css` turns those into the grid.
+
+### Token Placeholders (`details-header`)
+
+`details-header` treats authored text as a template. Tokens: `{{ accessor }}` or
+`{{ accessor | fallback }}`. `accessor` resolves via `Asset.getProperty()` (so `title`,
+`file-type`, `file-size`, `dimensions`, `description`, or raw keys like `dc:format`), with
+computed getters layered on (`url`, `uuid`, `filename`, `file-extension`). Empty values fall
+back to the text after `|`; dangling ` · ` separators are trimmed automatically.
+
+### Renditions Table Templates (`details-renditions`)
+
+The `details-renditions` block lists an asset's renditions as table rows with author-configurable
+columns. Authoring (da.live):
+
+```
+| details-renditions |                 |
+| renditions  | original, web         |   ← optional row list (by name); omit = all,
+|             |                       |     "original" first then A→Z
+| Name        | name                  |   ← column: Title | value
+| File size   | file-size             |
+| W x H       | dimensions            |
+|             | download, share       |   ← value of action keyword(s) → icon buttons
+```
+
+- **Values** resolve against the **current rendition**; the owning asset is reachable via
+  `asset.…`. A value is either a bare path (`name`, `file-size`) or contains `{{ }}` tokens for
+  mixed text (`{{ width }}×{{ height }}`).
+- **Rendition fields / aliases**: `name`, `label`, `url`, `format`, `file-type`, `file-size`
+  (formatted), `dimensions`, `width`, `height`, `mimeType`, `filename`.
+- **Asset paths**: `asset.properties.title`, `asset.renditions['web'].url`, or a bare term →
+  `asset.getProperty('…')`. Well-known asset sub-objects: `properties`, `renditions`.
+- **Path syntax**: dot (`a.b`), bracket (`a['b']`, `a[b]`), nesting combine.
+- **Action columns**: a column whose value is one or more known action keywords
+  (`download`, `share`) renders icon buttons (right-aligned) instead of text — `download` is a
+  rendition download link; `share` dispatches `asc:rendition:share`.
 
 ---
 

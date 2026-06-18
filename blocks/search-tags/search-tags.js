@@ -110,7 +110,7 @@ function html(config) {
 
     ${config.title ? `<label class="search-tags__title">${config.title}</label>` : ''}
 
-    <div class="search-tags__options">
+    <div class="search-tags__options asc-ui-dropdown__list">
       ${config.type === 'radio' ? htmlRadio(config) : ''}
       ${config.type === 'dropdown' || config.type === 'select' ? htmlDropdown(config) : ''}
       ${!config.type || config.type === 'checkbox' ? htmlCheckboxes(config) : ''}
@@ -125,7 +125,7 @@ function htmlCheckboxes(config) {
     const checked = config.initial[name] === option.value;
 
     return `
-      <div class="search-tags__option">
+      <label class="search-tags__option asc-ui-dropdown__item">
         <input type="checkbox"
                id="${id}"
                name="${name}"
@@ -133,8 +133,8 @@ function htmlCheckboxes(config) {
                ${checked ? 'checked' : ''}
                data-asc-fieldset="${config.fieldset}"
                form="${config.form}"/>
-        <label for="${id}">${option.text}</label>
-      </div>`;
+        ${option.text}
+      </label>`;
   }).join('');
 }
 
@@ -147,7 +147,7 @@ function htmlRadio(config) {
     const checked = config.initial[sharedName] === option.value;
 
     return `
-      <div class="search-tags__option">
+      <label class="search-tags__option asc-ui-dropdown__item">
         <input type="radio"
                id="${id}"
                name="${sharedName}"
@@ -155,8 +155,8 @@ function htmlRadio(config) {
                ${checked ? 'checked' : ''}
                data-asc-fieldset="${config.fieldset}"
                form="${config.form}"/>
-        <label for="${id}">${option.text}</label>
-      </div>`;
+        ${option.text}
+      </label>`;
   }).join('');
 }
 

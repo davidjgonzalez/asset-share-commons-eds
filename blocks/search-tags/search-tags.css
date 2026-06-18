@@ -1,3 +1,11 @@
+/*
+ * search-tags — composed from UI Kit primitives:
+ *   option rows  → .asc-ui-dropdown__list / .asc-ui-dropdown__item (see search-tags.js)
+ *   checkboxes   → global input baseline in styles.css
+ *   select       → global <select> baseline in styles.css
+ * Only the block's group title + spacing remain here.
+ */
+
 main .search-tags {
     margin-bottom: var(--spacing-lg);
 }
@@ -8,60 +16,4 @@ main .search-tags .search-tags__title {
     font-weight: var(--label-font-weight);
     font-size: var(--body-font-size-s);
     margin-bottom: var(--spacing-sm);
-}
-
-main .search-tags .search-tags__options {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-md);
-}
-
-main .search-tags .search-tags__option {
-    display: grid;
-    grid-template-columns: var(--icon-size-sm) 1fr;
-    align-items: center;
-    gap: var(--spacing-md);
-    padding: var(--spacing-xs) 0;
-}
-
-main .search-tags input[type="checkbox"],
-main .search-tags input[type="radio"] {
-    width: var(--icon-size-sm);
-    height: var(--icon-size-sm);
-    margin: 0;
-    cursor: pointer;
-    flex-shrink: 0;
-    accent-color: var(--color-primary);
-}
-
-main .search-tags .search-tags__option label {
-    display: inline;
-    color: var(--color-fg);
-    font-size: var(--body-font-size-s);
-    cursor: pointer;
-    margin: 0;
-    font-weight: normal;
-}
-
-main .search-tags select {
-    display: block;
-    width: 100%;
-    padding: var(--input-padding-y, 6px) var(--input-padding-x, 10px);
-    font-size: var(--body-font-size-s);
-    color: var(--color-fg);
-    background-color: var(--color-input);
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius-full);
-    box-sizing: border-box;
-    appearance: none;
-    padding-right: var(--spacing-xl);
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='%23333' d='M8 11L3 6h10z'/%3e%3c/svg%3e");
-    background-position: right var(--spacing-sm) center;
-    background-repeat: no-repeat;
-    background-size: 12px;
-}
-
-main .search-tags select:focus {
-    outline: 2px solid var(--color-primary);
-    outline-offset: 2px;
 }

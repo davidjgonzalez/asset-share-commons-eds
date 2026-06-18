@@ -1,9 +1,5 @@
+/* Count text uses the UI Kit .asc-ui-copy primitive (see search-statistics.js). */
+
 main .search-statistics {
     padding: var(--spacing-sm) 0;
-}
-
-main .search-statistics .search-statistics__count {
-    margin: 0;
-    font-size: var(--body-font-size-s);
-    color: var(--color-muted-fg);
 }

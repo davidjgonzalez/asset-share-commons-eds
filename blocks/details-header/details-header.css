@@ -1,0 +1,25 @@
+/*
+ * details-header — title + meta subtitle bar (mirrors .asc-dialog__header).
+ * Sits as the first section of the details view; the modal's floating close
+ * button overlaps the top-right corner, so the bar leaves room on the inline end.
+ */
+
+main .details-header {
+    margin: 0;
+    padding: var(--spacing-md) var(--spacing-xl);
+    padding-inline-end: 3.5rem;
+    border-bottom: var(--border-width) var(--border-style) var(--color-border);
+}
+
+main .details-header .details-header__title {
+    margin: 0;
+    font-size: var(--heading-font-size-m);
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+main .details-header .details-header__meta {
+    margin: var(--spacing-2xs, 0.25rem) 0 0;
+    color: var(--color-muted-fg);
+    font-size: var(--body-font-size-s);
+}

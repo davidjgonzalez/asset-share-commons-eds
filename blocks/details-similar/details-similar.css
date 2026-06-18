@@ -1,52 +1,23 @@
+/*
+ * details-similar — the scrollable strip uses the UI Kit .asc-ui-filmstrip
+ * primitive and the loading state uses .asc-ui-skeleton (see details-similar.js).
+ * Only the per-teaser sizing/overrides for this strip remain block-specific.
+ */
+
 main .details-similar {
-    /* Loading pulse */
-    .details-similar__loading {
-        height: 120px;
-        background: var(--color-surface-muted, transparent);
-        border-radius: var(--border-radius-md);
-        animation: details-similar-pulse 1.2s ease-in-out infinite;
-    }
+    .details-similar__results .asc-asset-teaser {
+        flex: 0 0 160px;
+        scroll-snap-align: start;
+        cursor: pointer;
 
-    @keyframes details-similar-pulse {
-        0%, 100% { opacity: 0.4; }
-        50%       { opacity: 0.9; }
-    }
-
-    /* Horizontal scrollable strip */
-    .details-similar__results {
-        display: flex;
-        gap: var(--spacing-sm, 8px);
-        overflow-x: auto;
-        scroll-snap-type: x mandatory;
-        padding-bottom: var(--spacing-xs, 4px); /* room for scrollbar */
-
-        /* Hide scrollbar but keep scrollability */
-        scrollbar-width: thin;
-        scrollbar-color: var(--color-border, #ddd) transparent;
-
-        &::-webkit-scrollbar {
-            height: 4px;
+        .asc-asset-teaser__preview {
+            aspect-ratio: 1;
         }
 
-        &::-webkit-scrollbar-thumb {
-            background: var(--color-border, #ddd);
-            border-radius: 2px;
-        }
-
-        .asc-asset-teaser {
-            flex: 0 0 160px;
-            scroll-snap-align: start;
-            cursor: pointer;
-
-            .asc-asset-teaser__preview {
-                aspect-ratio: 1;
-            }
-
-            /* Suppress meta in the strip — just show the image */
-            .asc-asset-teaser__meta,
-            .asc-asset-teaser__add-to-cart {
-                display: none;
-            }
+        /* Suppress meta in the strip — just show the image */
+        .asc-asset-teaser__meta,
+        .asc-asset-teaser__add-to-cart {
+            display: none;
         }
     }
 }

@@ -110,24 +110,24 @@ function html(config) {
     ${config.title ? `<label class="search-date-range__title">${config.title}</label>` : ''}
 
     <div class="search-date-range__inputs">
-      <div class="search-date-range__field">
-        <label class="search-date-range__label" for="${config.fieldset}-lower">From</label>
+      <label class="search-date-range__field asc-ui-field">
+        <span class="asc-ui-field__label">From</span>
         <input type="date"
                id="${config.fieldset}-lower"
                name="${lowerName}"
                value="${lowerInitial}"
                data-asc-fieldset="${config.fieldset}"
                form="${config.form}"/>
-      </div>
-      <div class="search-date-range__field">
-        <label class="search-date-range__label" for="${config.fieldset}-upper">To</label>
+      </label>
+      <label class="search-date-range__field asc-ui-field">
+        <span class="asc-ui-field__label">To</span>
         <input type="date"
                id="${config.fieldset}-upper"
                name="${upperName}"
                value="${upperInitial}"
                data-asc-fieldset="${config.fieldset}"
                form="${config.form}"/>
-      </div>
+      </label>
     </div>
   `;
 }

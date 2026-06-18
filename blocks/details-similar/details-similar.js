@@ -41,7 +41,10 @@ export default async function decorate(block) {
 
   if (!asset) return;
 
-  block.innerHTML = '<div class="details-similar__loading"></div>';
+  block.innerHTML = `
+    <div class="asc-ui-filmstrip">
+      ${Array.from({ length: 4 }).map(() => '<span class="asc-ui-filmstrip__item asc-ui-skeleton asc-ui-skeleton--thumb"></span>').join('')}
+    </div>`;
 
   const similar = await fetchSimilarAssets(asset, config.max);
 
@@ -56,7 +59,7 @@ export default async function decorate(block) {
 
   block.innerHTML = buildHtml(
     config,
-    `<div class="details-similar__results">
+    `<div class="details-similar__results asc-ui-filmstrip">
       ${similar.map((a) => assetTeaser(a, { mode: 'card' })).join('')}
     </div>`,
   );

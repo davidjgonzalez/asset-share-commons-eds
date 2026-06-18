@@ -411,7 +411,7 @@ search: { provider: 'my-provider' },
 
 ### Rendition Definitions
 
-**Use when**: You want to add, remove, or reconfigure downloadable renditions that appear in the `details-download` block.
+**Use when**: You want to add, remove, or reconfigure downloadable renditions that appear in the `details-renditions` block.
 
 **File**: `scripts/configurations.js` → `renditions.definitions`
 

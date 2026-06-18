@@ -302,7 +302,7 @@
   },
 
   {
-    "id": "details-download",
+    "id": "details-renditions",
     "fields": [
       {
         "component": "text",

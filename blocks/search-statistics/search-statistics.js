@@ -13,7 +13,7 @@
  * No authoring config required. Place this block anywhere on the search page.
  */
 export default function decorate(block) {
-  block.innerHTML = `<p class="search-statistics__count" role="status" aria-live="polite"></p>`;
+  block.innerHTML = `<p class="search-statistics__count asc-ui-copy" role="status" aria-live="polite"></p>`;
 
   const countEl = block.querySelector('.search-statistics__count');
   let shown = 0;

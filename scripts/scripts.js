@@ -15,6 +15,7 @@ import {
 
 import './asc/services/services.js';
 import configurations from './configurations.js';
+import decorateGridLayouts from './section-grid.js';
 
 /**
  * Builds hero block and prepends to main in a new section.
@@ -65,6 +66,9 @@ export function decorateMain(main) {
   buildAutoBlocks(main);
   decorateSections(main);
   decorateBlocks(main);
+  // Apply named-area grid layouts (layout: grid + areas) before blocks render,
+  // so each block's `area` row is pulled onto its wrapper first. See section-grid.js.
+  decorateGridLayouts(main);
 }
 
 /**

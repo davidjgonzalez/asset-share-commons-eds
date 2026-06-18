@@ -89,7 +89,7 @@ Example search page with a search bar and results grid:
 
 Each table becomes a block. The block name in row 1 maps to a folder in `/blocks/`. Configuration rows are key/value pairs passed to the block's `decorate()` function.
 
-The full set of available blocks is in the `/blocks/` directory: `search-bar`, `search-results`, `search-property`, `search-path`, `search-date-range`, `search-tags`, `search-statistics`, `details-actions`, `details-download`, `details-preview`, `details-property`, `collection`, `collections`, and more.
+The full set of available blocks is in the `/blocks/` directory: `search-bar`, `search-results`, `search-property`, `search-path`, `search-date-range`, `search-tags`, `search-statistics`, `details-actions`, `details-renditions`, `details-preview`, `details-property`, `collection`, `collections`, and more.
 
 ### `/details/index` (served as `/details`)
 

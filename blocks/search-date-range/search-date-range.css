@@ -1,3 +1,10 @@
+/*
+ * search-date-range — composed from UI Kit primitives:
+ *   field + label → .asc-ui-field / .asc-ui-field__label (see search-date-range.js)
+ *   date inputs   → global input baseline in styles.css
+ * Only the block's title + inputs layout + spacing remain here.
+ */
+
 main .search-date-range {
     margin-bottom: var(--spacing-lg);
 }
@@ -14,37 +21,4 @@ main .search-date-range .search-date-range__inputs {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-sm);
-}
-
-main .search-date-range .search-date-range__field {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-main .search-date-range .search-date-range__label {
-    color: var(--filter-label-color, var(--dark-color));
-    font-size: var(--body-font-size-xs, 11px);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    font-weight: 500;
-}
-
-main .search-date-range input[type="date"] {
-    display: block;
-    width: 100%;
-    padding: var(--input-padding-y, 6px) var(--input-padding-x, 10px);
-    font-size: var(--body-font-size-s);
-    color: var(--input-text-color, var(--text-color));
-    background-color: var(--input-background, var(--background-color));
-    border: var(--filter-input-border, 1px solid var(--border-color));
-    border-radius: var(--filter-input-border-radius, var(--border-radius-sm));
-    box-sizing: border-box;
-    transition: var(--input-transition, border-color var(--transition-fast));
-}
-
-main .search-date-range input[type="date"]:focus {
-    outline: none;
-    border-color: var(--filter-input-accent, var(--link-color));
-    box-shadow: var(--focus-ring);
 }

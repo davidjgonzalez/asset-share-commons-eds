@@ -10,16 +10,15 @@ main .search-results {
         display: flex;
         gap: var(--spacing-sm);
         margin-bottom: var(--spacing-md);
-
         border-radius: var(--border-radius-full);
         background: var(--color-bg);
         border: 1px solid var(--color-border);
         padding: var(--spacing-sm) var(--spacing-sm);
         width: 50%;
 
-        select { 
-            flex: 1; 
-            min-width: 0; 
+        select {
+            flex: 1;
+            min-width: 0;
             border-radius: var(--border-radius-full);
         }
     }
@@ -29,6 +28,11 @@ main .search-results {
         display: grid;
             grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr));
         gap: var(--spacing-md);
+    }
+
+    /* Empty state (asc-ui-empty-state) spans the whole results area */
+    [data-asc-results]:has(.asc-ui-empty-state) {
+        display: block;
     }
 
     /* ── Display modes ─────────────────────────────────────────────────── */
@@ -169,15 +173,6 @@ main .search-results {
     [data-asc-results]:not([data-display="list"]) .search-results__quick-download {
         opacity: 0;
         pointer-events: none;
-        transition: opacity var(--transition-fast);
-    }
-
-    [data-asc-results]:not([data-display="list"]) .asc-asset-teaser:hover .search-results__quick-download {
-        opacity: 1;
-        pointer-events: auto;
-    }
-
-    [data-asc-results]:not([data-display="list"]) .search-results__quick-download {
         background: var(--search-results-action-bg);
         color: var(--search-results-action-fg);
         border-color: var(--search-results-action-border);
@@ -186,6 +181,7 @@ main .search-results {
         min-width: 2rem;
         height: 2rem;
         padding: 0;
+        transition: opacity var(--transition-fast);
 
         svg {
             width: 0.875rem;
@@ -197,6 +193,11 @@ main .search-results {
             border-color: var(--search-results-action-border);
             color: var(--search-results-action-fg-hover);
         }
+    }
+
+    [data-asc-results]:not([data-display="list"]) .asc-asset-teaser:hover .search-results__quick-download {
+        opacity: 1;
+        pointer-events: auto;
     }
 
     /* ── List view data grid ────────────────────────────────────────── */

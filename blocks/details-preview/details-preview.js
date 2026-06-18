@@ -1,12 +1,12 @@
 /** @owner user */
 // Copyright 2025 David G.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     https://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -14,59 +14,36 @@
 // limitations under the License.
 
 import Asset from '../../scripts/asc/models/asset.js';
-import collectionToggle from '../../scripts/asc/parts/collection-toggle/collection-toggle.js';
 
+/**
+ * details-preview — renders ONLY the asset's visual preview (the media).
+ *
+ * Title, metadata, and actions are intentionally NOT part of this block — they
+ * are composed from separate blocks (details-property, details-actions) and
+ * arranged alongside the preview by the `detail` section layout (see
+ * styles/sections/detail.css). This keeps the details page author-arrangeable
+ * and mirrors the UI Kit `.asc-ui-detail` two-pane layout.
+ */
 export default async function decorate(block) {
   try {
-    // Get asset from URL (UUID or path)
     const asset = await Asset.create(block);
 
-    // Update page title
+    // Reflect the asset in the page/tab title
     document.title = `${asset.title} - Asset Details`;
 
-    // Render asset preview
     block.innerHTML = `
-      <section class="asset-preview">
-        <figure>
-          <img src="${asset.getRendition('web').url}" alt="${asset.title}" loading="eager">
-          <figcaption>
-            <h1>${asset.title}</h1>
-            ${asset.description ? `<p class="description">${asset.description}</p>` : ''}
-          </figcaption>
-        </figure>
-        <aside class="asset-info">
-          <dl class="metadata">
-            <dt>File Type</dt>
-            <dd class="file-type">${asset.getProperty('file-type') || 'Unknown file type'}</dd>
-            ${asset.sizeInBytes ? `<dt>File Size</dt><dd class="file-size">${formatFileSize(asset.sizeInBytes)}</dd>` : ''}
-            <dt>File Path</dt>
-            <dd class="file-path">${asset.path}</dd>
-          </dl>
-          <div class="asset-actions">
-            ${collectionToggle(asset, {
-              addLabel: 'Add to collection',
-              removeLabel: 'Remove from collection',
-            })}
-          </div>
-        </aside>
-      </section>
+      <div class="asc-ui-detail__preview">
+        <img src="${asset.getRendition('web')?.url || asset.thumbnail}" alt="${asset.title}" loading="eager">
+      </div>
     `;
-
   } catch (error) {
     console.error('Failed to load asset:', error);
     block.innerHTML = `
-      <div class="error">
-        <h2>Asset not found</h2>
-        <p>${error.message}</p>
+      <div class="asc-ui-empty-state">
+        <span class="asc-ui-empty-state__icon" aria-hidden="true">⚠️</span>
+        <p class="asc-ui-empty-state__title">Asset not found</p>
+        <p class="asc-ui-empty-state__hint">${error.message}</p>
       </div>
     `;
   }
-}
-
-function formatFileSize(bytes) {
-  if (!bytes) return 'Unknown';
-  
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(1024));
-  return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
 }

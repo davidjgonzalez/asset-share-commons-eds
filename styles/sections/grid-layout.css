@@ -1,0 +1,72 @@
+/*
+ * Named-area section grid — the general `layout: grid` paradigm.
+ *
+ * Driven entirely by section metadata, read into --grid-* custom properties by
+ * scripts/section-grid.js:
+ *
+ *   | Section Metadata |                  |
+ *   | layout           | grid             |
+ *   | areas            | preview actions  |   ← one line per grid row;
+ *   |                  | preview metadata |     repeat a name to span cells
+ *   | columns          | 1.5fr 1fr        |   (optional track sizing)
+ *   | rows             | auto auto        |   (optional)
+ *   | gap              | m                |   (optional: xs|s|m|l|xl or raw length)
+ *
+ * Blocks claim a cell with an `area` config row (| area | preview |).
+ *
+ * Defaults (when the key is omitted): `columns` → equal 1fr tracks derived from
+ * the widest areas row; `rows` → `auto 1fr` (first row content-sized, the rest
+ * flexible) so a block spanning the full column height packs the other column's
+ * blocks to the top (see section-grid.js). Collapses to a single stacked column
+ * below 768px (named placement is dropped so blocks fall back to source order).
+ */
+
+main .section[data-layout="grid"] {
+    display: grid;
+    gap: var(--grid-gap, var(--spacing-xl, 2rem));
+    align-items: start;
+    align-content: start;
+
+    /* Exact same content box / margins as `main > .section > div` (content-box,
+       so max-width is the content width and padding sits outside it) — this keeps
+       the grid's edges aligned with default content. NB: no `box-sizing: border-box`
+       here on purpose; that would narrow the content by the padding and inset the
+       grid 24px more than other sections. Block wrappers below add no inset. */
+    max-width: var(--section-max-width, 1200px);
+    margin-inline: auto;
+    padding-inline: var(--section-padding, 24px);
+
+    /* Longhands kept separate so each maps to its own --grid-* property
+       (the grid-template shorthand can't interleave var()-driven areas/tracks). */
+    /* stylelint-disable declaration-block-no-redundant-longhand-properties */
+    grid-template-areas: var(--grid-areas, none);
+    grid-template-columns: var(--grid-columns, repeat(var(--grid-cols, 1), minmax(0, 1fr)));
+    grid-template-rows: var(--grid-rows, auto);
+    /* stylelint-enable declaration-block-no-redundant-longhand-properties */
+}
+
+/* Block wrappers are grid items — no extra inset; align with default content. */
+main .section[data-layout="grid"] > div {
+    min-width: 0;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+    grid-area: var(--grid-area, auto);
+}
+
+@media (width >= 900px) {
+    main .section[data-layout="grid"] {
+        padding-inline: var(--section-padding-wide, 32px);
+    }
+}
+
+@media (width < 768px) {
+    main .section[data-layout="grid"] {
+        grid-template-columns: 1fr;
+        grid-template-areas: none;
+    }
+
+    main .section[data-layout="grid"] > div {
+        grid-area: auto;
+    }
+}
