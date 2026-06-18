@@ -28,7 +28,7 @@
  * Section-metadata keys become data-* attributes on the .section (handled by
  * EDS). This module (called from decorateMain, before blocks render) reads them
  * into --grid-* custom properties and pulls each block's `area` row onto its
- * wrapper. styles/sections/grid-layout.css turns those properties into the grid
+ * wrapper. styles/asc/sections/grid-layout.css turns those properties into the grid
  * and collapses to a single column on narrow viewports.
  */
 

@@ -81,7 +81,7 @@ declaring which cell it occupies — no per-layout CSS required.
 >
 > `scripts.js` is boilerplate (not `scripts/asc/`), so **re-apply these two edits after any EDS
 > boilerplate upgrade.** The logic itself lives in the user-owned `scripts/section-grid.js`; the
-> styling in `styles/sections/grid-layout.css` (imported by `styles.css`). Because `decorateMain`
+> styling in `styles/asc/sections/grid-layout.css` (imported by `styles.css`). Because `decorateMain`
 > also runs for fragments loaded via `loadFragment` (e.g. the asset-details modal), grid layouts
 > work inside the modal too.
 
@@ -594,7 +594,7 @@ services.renditions.getThumbnailUrl(asset);        // best thumbnail URL (with f
 Reusable, theme-driven UI primitives shared across blocks, parts, and templates.
 **Before writing new block CSS, reuse a kit primitive.** Full catalog with copy-paste
 markup: [`docs/UI_KIT.md`](docs/UI_KIT.md). Visual gallery (themed, with per-element
-code/usage): [`/docs/ui-kit.html`](docs/ui-kit.html). Styles: [`styles/asc-ui-kit.css`](styles/asc-ui-kit.css)
+code/usage): [`/docs/ui-kit.html`](docs/ui-kit.html). Styles: [`styles/asc/ui-kit.css`](styles/asc/ui-kit.css)
 (each primitive tagged `@kit <name>` for grepping).
 
 Primitives: `asc-ui-card`, `asc-ui-badge`, `asc-ui-chip`, `asc-ui-empty-state`,

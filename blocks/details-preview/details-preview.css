@@ -1,7 +1,7 @@
 /*
  * details-preview renders ONLY the asset media into the UI Kit
  * .asc-ui-detail__preview pane (gradient backdrop, centered, contained image).
- * The two-pane layout is the `detail` section style (styles/sections/detail.css);
+ * The two-pane layout is the `detail` section style (styles/asc/sections/detail.css);
  * title / metadata / actions are separate blocks in the aside. The error state
  * uses .asc-ui-empty-state. No block-specific CSS is needed.
  */

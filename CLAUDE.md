@@ -142,7 +142,7 @@ anything already covered by the kit. This is a hard rule, not a preference.
 3. If a primitive needs to look different in one block, add a variant *to the kit first*
    (CSS + gallery tile + catalog entry), then use it. Never override kit styles inside a block.
 
-The kit is theme-driven (`.asc-ui-*` + `.btn`) and lives in `styles/asc-ui-kit.css` (plus
+The kit is theme-driven (`.asc-ui-*` + `.btn`) and lives in `styles/asc/ui-kit.css` (plus
 `.btn`/`.asc-panel`/`.asc-dialog` in `styles.css`).
 
 - **Catalog (agent source of truth):** `docs/UI_KIT.md` — every primitive's class, markup, variants.
