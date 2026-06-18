@@ -150,6 +150,26 @@ Parts (reusable UI components) scope to `.asc-{part-name}`, not `.block.*`:
 
 Parts load their own CSS via `loadCSS()` at module import time. Do not import part CSS from block CSS files.
 
+## Class Naming
+
+| Prefix | Where defined | Purpose |
+|--------|--------------|---------|
+| `.block.<block-name>` | `blocks/<block-name>/<block-name>.css` | Root selector for every block. EDS appends both `block` and the block name as classes — always use both together. Never write a bare `.my-block { }` root. |
+| `.asc-ui-*` | `styles/ui-kit.css` | Shared UI Kit primitives (cards, badges, empty states, etc.). Use these in block HTML; do not redefine them in block CSS. |
+| `.asc-{part-name}` | `scripts/asc/parts/<part-name>/<part-name>.css` | Reusable part components (e.g. `.asc-asset-teaser`, `.asc-collection-toggle`). Parts own their own CSS; do not duplicate part styles in blocks. |
+| `.btn` | `styles/styles.css` | Global button primitive. Variants: `.btn--primary`, `.btn--secondary`, `.btn--sm`, `.btn--destructive`. |
+
+### Kit primitive rule
+
+Never override `.asc-ui-*` primitive styles in block CSS. If a primitive needs a visual variant that does not exist yet:
+
+1. Add the variant to `styles/ui-kit.css` (e.g. `.asc-ui-card--compact`).
+2. Document it in `docs/UI_KIT.md`.
+3. Add a tile to `ui-kit.html`.
+4. Use the new variant class in the block HTML.
+
+Block CSS that reaches into a kit primitive (`block.foo .asc-ui-card { … }`) creates invisible coupling and breaks theming — add a kit variant instead.
+
 ## Accessibility
 
 Include at minimum:

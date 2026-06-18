@@ -135,11 +135,11 @@ main .search-results {
     }
 
     [data-asc-results]:not([data-display="list"]) .asc-asset-teaser .asc-collection-toggle {
-        --search-results-action-bg: rgb(255 255 255 / 88%);
-        --search-results-action-bg-hover: #fff;
-        --search-results-action-border: #9ca3af;
-        --search-results-action-fg: #1f2937;
-        --search-results-action-fg-hover: #000;
+        --search-results-action-bg: color-mix(in srgb, var(--color-card) 88%, transparent);
+        --search-results-action-bg-hover: var(--color-card);
+        --search-results-action-border: var(--color-border);
+        --search-results-action-fg: var(--color-fg);
+        --search-results-action-fg-hover: var(--color-fg);
 
         display: flex;
         flex-direction: row;
@@ -154,7 +154,6 @@ main .search-results {
         --collection-toggle-btn-height:    2rem;
         --collection-toggle-btn-padding:   0;
         --collection-toggle-btn-radius:    50%;
-
         --collection-toggle-add-bg: var(--search-results-action-bg);
         --collection-toggle-add-fg: var(--search-results-action-fg);
         --collection-toggle-add-border: var(--search-results-action-border);
@@ -315,11 +314,11 @@ main .search-results {
             position: absolute;
             inset: auto 0 0;
             background: transparent;
-            color: #fff;
+            color: var(--color-primary-fg);
             text-shadow:
-                0 1px 1px rgb(0 0 0 / 88%),
-                0 0 2px rgb(0 0 0 / 78%);
-            -webkit-text-stroke: 0.35px rgb(0 0 0 / 60%);
+                0 1px 1px color-mix(in srgb, black 88%, transparent),
+                0 0 2px color-mix(in srgb, black 78%, transparent);
+            -webkit-text-stroke: 0.35px color-mix(in srgb, black 60%, transparent);
             padding: 2rem 1rem 0.75rem;
             opacity: 0;
             transform: var(--drop-sm);
