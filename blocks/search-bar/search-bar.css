@@ -1,6 +1,6 @@
 /* Do not scope with `main` as this block can be used in the header */
 
-.search-bar.block {
+.block.search-bar {
   /* asc-ui-search uses --asc-ui-search-width as its sizing contract. */
   --asc-ui-search-width: var(--search-bar-width, 20rem);
 }

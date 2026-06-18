@@ -1,6 +1,7 @@
 /** @owner user */
 import services from '../../scripts/asc/services/services.js';
 import { Events as CollectionEvents } from '../../scripts/asc/services/collections/collections.js';
+import { escHtml, escAttr, formatUpdated } from '../../scripts/html.js';
 
 const configurations = (await import('../../scripts/configurations.js')).default;
 
@@ -152,27 +153,3 @@ function initInteractions(block) {
   });
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function escHtml(str) {
-  return String(str ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-function escAttr(str) {
-  return escHtml(str);
-}
-
-/** @returns {{ iso: string, label: string } | null} */
-function formatUpdated(iso) {
-  if (iso == null || iso === '') return null;
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return null;
-  return {
-    iso,
-    label: `Updated ${d.toLocaleDateString(undefined, { dateStyle: 'medium' })}`,
-  };
-}

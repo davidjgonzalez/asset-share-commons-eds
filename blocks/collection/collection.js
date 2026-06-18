@@ -2,6 +2,7 @@
 import services from '../../scripts/asc/services/services.js';
 import { Events as CollectionEvents } from '../../scripts/asc/services/collections/collections.js';
 import { Events as DownloadEvents, Status as DownloadStatus } from '../../scripts/asc/services/downloads/downloads.js';
+import { escHtml, escAttr, formatUpdated } from '../../scripts/html.js';
 
 const configurations = (await import('../../scripts/configurations.js')).default;
 
@@ -493,25 +494,3 @@ function jobStatusLabel(job) {
   }
 }
 
-function escHtml(str) {
-  return String(str ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-function escAttr(str) {
-  return String(str ?? '').replace(/"/g, '&quot;');
-}
-
-/** @returns {{ iso: string, label: string } | null} */
-function formatUpdated(iso) {
-  if (iso == null || iso === '') return null;
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return null;
-  return {
-    iso,
-    label: `Updated ${d.toLocaleDateString(undefined, { dateStyle: 'medium' })}`,
-  };
-}

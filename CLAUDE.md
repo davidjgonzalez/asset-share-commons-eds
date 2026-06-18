@@ -174,4 +174,5 @@ Need a new primitive? Workshop it in the kit first, then deploy into blocks.
 | `scripts/asc/services/services.js` | All service singletons exported together |
 | `scripts/asc/utils/events.js` | `delegateEvent()` — use for all event binding |
 | `AGENTS.md` | Full event/attribute/parts/provider reference for AI assistants |
+| `docs/PROJECT_STRUCTURE.md` | Ownership zones — EDS boilerplate vs ASC Core vs user-owned |
 | `docs/CSS_CONVENTION.md` | Full CSS coding standards |

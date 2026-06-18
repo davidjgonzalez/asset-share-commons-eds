@@ -6,16 +6,16 @@
  * Only the block's group title + spacing remain here.
  */
 
-main .search-property {
-  margin-bottom: var(--spacing-lg);
-}
+.block.search-property {
+    margin-bottom: var(--spacing-lg);
 
-/* Group title label */
-main .search-property > label,
-main .search-property .search-property__title {
-  display: block;
-  color: var(--label-color);
-  font-weight: var(--label-font-weight);
-  font-size: var(--body-font-size-s);
-  margin-bottom: var(--spacing-sm);
+    /* Group title label */
+    > label,
+    .search-property__title {
+        display: block;
+        color: var(--label-color);
+        font-weight: var(--label-font-weight);
+        font-size: var(--body-font-size-s);
+        margin-bottom: var(--spacing-sm);
+    }
 }

@@ -1,6 +1,7 @@
 /** @owner user */
 import services from '../../scripts/asc/services/services.js';
 import { Events as CollectionEvents } from '../../scripts/asc/services/collections/collections.js';
+import { escHtml } from '../../scripts/html.js';
 
 const configurations = (await import('../../scripts/configurations.js')).default;
 
@@ -149,12 +150,3 @@ function initInteractions(block) {
   });
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function escHtml(str) {
-  return String(str ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}

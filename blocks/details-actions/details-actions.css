@@ -7,105 +7,106 @@
  * Flush in the aside (no background bar), matching the kit .asc-ui-actions.
  */
 
-main .details-actions {
-    margin: 0;
-}
-
-main .details-actions .asc-ui-actions {
-    align-items: flex-start;
-}
-
-/* Collection toggle → match .asc-ui-action: transparent column button, colored
-   circle on the icon, label revealed below. Theming via the part's variables. */
-main .details-actions .asc-collection-toggle {
-    --collection-toggle-btn-width: auto;
-    --collection-toggle-btn-min-width: 0;
-    --collection-toggle-btn-height: auto;
-    --collection-toggle-btn-padding: var(--spacing-sm);
-    --collection-toggle-btn-radius: var(--border-radius-md);
-    --collection-toggle-btn-backdrop: none;
-    --collection-toggle-btn-hover-transform: none;
-    --collection-toggle-add-bg: transparent;
-    --collection-toggle-add-fg: var(--color-fg);
-    --collection-toggle-add-border: transparent;
-    --collection-toggle-add-hover-bg: var(--color-muted);
-    --collection-toggle-add-hover-fg: var(--color-fg);
-    --collection-toggle-add-hover-border: transparent;
-    --collection-toggle-remove-bg: transparent;
-    --collection-toggle-remove-fg: var(--color-fg);
-    --collection-toggle-remove-border: transparent;
-    --collection-toggle-remove-hover-bg: var(--color-muted);
-    --collection-toggle-remove-hover-fg: var(--color-fg);
-    --collection-toggle-remove-hover-border: transparent;
-}
-
 /* stylelint-disable selector-class-pattern */
 
-/* Mirror .asc-ui-action exactly so Collection matches Download/Share.
-   line-height: inherit makes the label inherit from the shared .asc-ui-actions
-   parent — identical to the real kit buttons, so all three labels line up. */
-main .details-actions .asc-collection-toggle__btn {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--spacing-xs);
-    min-width: 4.5rem;
-    padding: var(--spacing-sm);
-    color: var(--color-fg);
-    font-size: var(--body-font-size-xs);
-    font-weight: 500;
-    line-height: inherit;
-    text-align: center;
-}
-
-/* Colored circle (like .asc-ui-action__icon). The part renders a "+"/"−" text
-   glyph — we hide it (font-size: 0) and draw an SVG via a masked ::before so the
-   shape inherits the icon colour: plus when addable, check when in-collection. */
-main .details-actions .asc-collection-toggle__icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 2.75rem;
-    height: 2.75rem;
-    flex-shrink: 0;
-    overflow: hidden;
-    border-radius: var(--border-radius-full);
-    border: 1px solid var(--color-border);
-    font-size: 0;
-}
-
-main .details-actions .asc-collection-toggle__icon::before {
-    content: "";
-    width: 1.25rem;
-    height: 1.25rem;
-    background-color: currentcolor;
-    mask: var(--toggle-icon) center / contain no-repeat;
-}
-
-main .details-actions .asc-collection-toggle__add .asc-collection-toggle__icon {
-    --toggle-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='M12 5v14M5 12h14'/%3E%3C/svg%3E");
-
-    background: var(--color-secondary);
-    color: var(--color-secondary-fg);
-}
-
-/* When the asset is in the collection, the circle reads as active/filled with a check */
-main .details-actions .asc-collection-toggle__remove .asc-collection-toggle__icon {
-    --toggle-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
-
-    background: var(--color-primary);
-    color: var(--color-primary-fg);
-    border-color: transparent;
-}
-
-/* Reveal the label below the circle (part hides it for sr-only) */
-main .details-actions .asc-collection-toggle__label {
-    position: static;
-    width: auto;
-    height: auto;
+.block.details-actions {
     margin: 0;
-    overflow: visible;
-    white-space: normal;
-    text-align: center;
+
+    .asc-ui-actions {
+        align-items: flex-start;
+    }
+
+    /* Collection toggle → match .asc-ui-action: transparent column button, colored
+       circle on the icon, label revealed below. Theming via the part's variables. */
+    .asc-collection-toggle {
+        --collection-toggle-btn-width: auto;
+        --collection-toggle-btn-min-width: 0;
+        --collection-toggle-btn-height: auto;
+        --collection-toggle-btn-padding: var(--spacing-sm);
+        --collection-toggle-btn-radius: var(--border-radius-md);
+        --collection-toggle-btn-backdrop: none;
+        --collection-toggle-btn-hover-transform: none;
+        --collection-toggle-add-bg: transparent;
+        --collection-toggle-add-fg: var(--color-fg);
+        --collection-toggle-add-border: transparent;
+        --collection-toggle-add-hover-bg: var(--color-muted);
+        --collection-toggle-add-hover-fg: var(--color-fg);
+        --collection-toggle-add-hover-border: transparent;
+        --collection-toggle-remove-bg: transparent;
+        --collection-toggle-remove-fg: var(--color-fg);
+        --collection-toggle-remove-border: transparent;
+        --collection-toggle-remove-hover-bg: var(--color-muted);
+        --collection-toggle-remove-hover-fg: var(--color-fg);
+        --collection-toggle-remove-hover-border: transparent;
+    }
+
+    /* Mirror .asc-ui-action exactly so Collection matches Download/Share.
+       line-height: inherit makes the label inherit from the shared .asc-ui-actions
+       parent — identical to the real kit buttons, so all three labels line up. */
+    .asc-collection-toggle__btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--spacing-xs);
+        min-width: 4.5rem;
+        padding: var(--spacing-sm);
+        color: var(--color-fg);
+        font-size: var(--body-font-size-xs);
+        font-weight: 500;
+        line-height: inherit;
+        text-align: center;
+    }
+
+    /* Colored circle (like .asc-ui-action__icon). The part renders a "+"/"−" text
+       glyph — we hide it (font-size: 0) and draw an SVG via a masked ::before so the
+       shape inherits the icon colour: plus when addable, check when in-collection. */
+    .asc-collection-toggle__icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.75rem;
+        height: 2.75rem;
+        flex-shrink: 0;
+        overflow: hidden;
+        border-radius: var(--border-radius-full);
+        border: 1px solid var(--color-border);
+        font-size: 0;
+
+        &::before {
+            content: "";
+            width: 1.25rem;
+            height: 1.25rem;
+            background-color: currentcolor;
+            mask: var(--toggle-icon) center / contain no-repeat;
+        }
+    }
+
+    .asc-collection-toggle__add .asc-collection-toggle__icon {
+        --toggle-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='M12 5v14M5 12h14'/%3E%3C/svg%3E");
+
+        background: var(--color-secondary);
+        color: var(--color-secondary-fg);
+    }
+
+    /* When the asset is in the collection, the circle reads as active/filled with a check */
+    .asc-collection-toggle__remove .asc-collection-toggle__icon {
+        --toggle-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
+
+        background: var(--color-primary);
+        color: var(--color-primary-fg);
+        border-color: transparent;
+    }
+
+    /* Reveal the label below the circle (part hides it for sr-only) */
+    .asc-collection-toggle__label {
+        position: static;
+        width: auto;
+        height: auto;
+        margin: 0;
+        overflow: visible;
+        white-space: normal;
+        text-align: center;
+    }
 }
+
 /* stylelint-enable selector-class-pattern */

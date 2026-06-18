@@ -1,4 +1,4 @@
-main .search-results {
+.block.search-results {
     min-height: 50vh;
 
     .search-results__sentinel {

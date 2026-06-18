@@ -5,7 +5,7 @@
  * block-specific.
  */
 
-main .details-renditions {
+.block.details-renditions {
     .details-renditions__header {
         margin-bottom: var(--spacing-md);
     }

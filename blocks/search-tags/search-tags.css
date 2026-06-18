@@ -6,14 +6,14 @@
  * Only the block's group title + spacing remain here.
  */
 
-main .search-tags {
+.block.search-tags {
     margin-bottom: var(--spacing-lg);
-}
 
-main .search-tags .search-tags__title {
-    display: block;
-    color: var(--label-color);
-    font-weight: var(--label-font-weight);
-    font-size: var(--body-font-size-s);
-    margin-bottom: var(--spacing-sm);
+    .search-tags__title {
+        display: block;
+        color: var(--label-color);
+        font-weight: var(--label-font-weight);
+        font-size: var(--body-font-size-s);
+        margin-bottom: var(--spacing-sm);
+    }
 }

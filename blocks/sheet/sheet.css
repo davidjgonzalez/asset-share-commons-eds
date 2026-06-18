@@ -1,4 +1,4 @@
-main .sheet {
+.block.sheet {
     max-width: 1000px;
     margin: 0 auto;
     padding: var(--spacing-lg, 24px);

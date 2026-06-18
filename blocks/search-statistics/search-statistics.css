@@ -1,5 +1,5 @@
 /* Count text uses the UI Kit .asc-ui-copy primitive (see search-statistics.js). */
 
-main .search-statistics {
+.block.search-statistics {
     padding: var(--spacing-sm) 0;
 }

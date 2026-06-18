@@ -10,7 +10,9 @@ Every block's CSS file must scope all styles under `.block.<block-name>`:
 }
 ```
 
-Never write bare classes at the top level. EDS appends both `block` and the block name as classes.
+Never write bare classes at the top level. EDS appends both `block` and the block name as classes on the block element, so `.block.<block-name>` always matches regardless of where the block appears in the page.
+
+> **Why `.block.<block-name>` and not `main .<block-name>`?** The EDS default convention is `main .<block-name>`, but ASC blocks can be placed in the header or footer (outside `main`) — for example `collection-switcher` lives in the site header. Using `.block.<block-name>` ensures styles apply everywhere the block is used.
 
 ## CSS Nesting
 

@@ -4,6 +4,6 @@
  * The block only resets the section wrapper spacing so it sits flush in the aside.
  */
 
-main .details-metadata {
+.block.details-metadata {
     margin: 0;
 }

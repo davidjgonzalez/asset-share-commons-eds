@@ -4,14 +4,14 @@
  * baseline. Only the block's title + spacing remain here.
  */
 
-main .search-path {
-  margin-bottom: var(--spacing-md);
-}
+.block.search-path {
+    margin-bottom: var(--spacing-md);
 
-main .search-path .search-path__title {
-  display: block;
-  color: var(--label-color);
-  font-weight: var(--label-font-weight);
-  font-size: var(--body-font-size-s);
-  margin-bottom: var(--spacing-xs);
+    .search-path__title {
+        display: block;
+        color: var(--label-color);
+        font-weight: var(--label-font-weight);
+        font-size: var(--body-font-size-s);
+        margin-bottom: var(--spacing-xs);
+    }
 }

@@ -8,7 +8,7 @@
  * This file only holds collections-specific layout (grid, toolbar, count/updated meta).
  */
 
-main .collections {
+.block.collections {
     --collections-gap: var(--spacing-lg);
     --collections-card-radius: var(--border-radius-md);
 

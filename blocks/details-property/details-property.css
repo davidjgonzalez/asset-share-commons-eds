@@ -1,25 +1,25 @@
-main .details-property {
+.block.details-property {
     margin-bottom: var(--spacing-md);
     padding: var(--spacing-sm) 0;
     border-bottom: var(--border-width) var(--border-style) var(--color-border);
-}
 
-main .details-property:last-child {
-    border-bottom: none;
-}
+    &:last-child {
+        border-bottom: none;
+    }
 
-main .details-property label {
-    display: block;
-    font-weight: 600;
-    font-size: var(--body-font-size-s);
-    color: var(--color-fg);
-    margin-bottom: var(--spacing-xs);
-}
+    label {
+        display: block;
+        font-weight: 600;
+        font-size: var(--body-font-size-s);
+        color: var(--color-fg);
+        margin-bottom: var(--spacing-xs);
+    }
 
-/* Base value. Scoped to :not(.pill) so the .pill variant's .asc-ui-badge
-   (UI Kit) keeps its own color/size/display instead of being overridden here. */
-main .details-property:not(.pill) span {
-    display: block;
-    font-size: var(--body-font-size-s);
-    color: var(--color-muted-fg);
+    /* Base value. Scoped to :not(.pill) so the .pill variant's .asc-ui-badge
+       (UI Kit) keeps its own color/size/display instead of being overridden here. */
+    &:not(.pill) span {
+        display: block;
+        font-size: var(--body-font-size-s);
+        color: var(--color-muted-fg);
+    }
 }

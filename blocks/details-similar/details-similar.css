@@ -4,7 +4,7 @@
  * Only the per-teaser sizing/overrides for this strip remain block-specific.
  */
 
-main .details-similar {
+.block.details-similar {
     .details-similar__results .asc-asset-teaser {
         flex: 0 0 160px;
         scroll-snap-align: start;
