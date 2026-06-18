@@ -107,6 +107,26 @@
         white-space: normal;
         text-align: center;
     }
+
+    /* Exactly ONE collection button visible — it toggles. Add by default (incl.
+       before hydration / no active collection); Remove (check) only when the asset
+       is in the active collection. Overrides the Core part, which renders both and
+       hides via `visibility` while unhydrated (leaving two empty slots). */
+    .asc-collection-toggle[data-in-collection] .asc-collection-toggle__btn {
+        visibility: visible;
+    }
+
+    .asc-collection-toggle .asc-collection-toggle__remove {
+        display: none;
+    }
+
+    .asc-collection-toggle[data-in-collection="true"] .asc-collection-toggle__add {
+        display: none;
+    }
+
+    .asc-collection-toggle[data-in-collection="true"] .asc-collection-toggle__remove {
+        display: flex;
+    }
 }
 
 /* stylelint-enable selector-class-pattern */

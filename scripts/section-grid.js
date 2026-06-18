@@ -69,6 +69,28 @@ export default function decorateGridLayouts(main) {
       const area = extractArea(block);
       if (area) wrapper.style.setProperty('--grid-area', area);
     });
+
+    // When multiple wrappers share the same area name they would overlap in the
+    // grid (CSS places them all in the same cell). Group them into a single
+    // flex-column container so they stack instead.
+    const areaGroups = new Map();
+    section.querySelectorAll(':scope > div').forEach((wrapper) => {
+      const area = wrapper.style.getPropertyValue('--grid-area').trim();
+      if (!area) return;
+      if (!areaGroups.has(area)) areaGroups.set(area, []);
+      areaGroups.get(area).push(wrapper);
+    });
+    areaGroups.forEach((wrappers, area) => {
+      if (wrappers.length <= 1) return;
+      const stack = document.createElement('div');
+      stack.classList.add('grid-area-stack');
+      stack.style.gridArea = area;
+      wrappers[0].before(stack);
+      wrappers.forEach((w) => {
+        w.style.removeProperty('--grid-area');
+        stack.appendChild(w);
+      });
+    });
   });
 }
 

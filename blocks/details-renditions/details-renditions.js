@@ -29,11 +29,15 @@
  * Actions (a column whose value is one or more of these keywords):
  *   download   download link for the rendition
  *   share      dispatches asc:rendition:share
+ *   preview    thumbnail image of the rendition; column title may be left empty.
+ *              Image renditions use their own URL; non-image renditions fall back
+ *              to the asset thumbnail.
  */
 import Asset from '../../scripts/asc/models/asset.js';
 import services from '../../scripts/asc/services/services.js';
 
 const KNOWN_ACTIONS = new Set(['download', 'share']);
+const PREVIEW_KEYWORD = 'preview';
 
 const DEFAULT_COLUMNS = [
   { title: 'Rendition', value: 'label' },
@@ -55,6 +59,10 @@ export default async function decorate(block) {
       renditionIds = parseList(cells[1]);
     } else if (lower === 'description') {
       description = val;
+    } else if (cells.length === 1 && key) {
+      // Single-cell row: da.live may collapse an empty first cell, so treat
+      // the lone cell as the value with no title (e.g. | | download, share |).
+      columns.push({ title: '', value: key });
     } else if (key || val) {
       columns.push({ title: key, value: val });
     }
@@ -77,14 +85,17 @@ export default async function decorate(block) {
     return;
   }
 
-  // Pre-classify each column: an "action" column lists known action keywords.
+  // Pre-classify each column.
   const colActions = cols.map((col) => parseActions(col.value));
+  const colPreviews = cols.map((col) => col.value.trim().toLowerCase() === PREVIEW_KEYWORD);
 
   const rows = renditions.map((rendition) => {
     const ctx = renditionContext(asset, rendition);
-    const cells = cols.map((col, i) => (colActions[i]
-      ? actionCell(asset, rendition, colActions[i])
-      : valueCell(col, ctx, asset)));
+    const cells = cols.map((col, i) => {
+      if (colActions[i]) return actionCell(asset, rendition, colActions[i]);
+      if (colPreviews[i]) return previewCell(asset);
+      return valueCell(col, ctx, asset);
+    });
     return `<tr>${cells.join('')}</tr>`;
   }).join('');
 
@@ -98,7 +109,12 @@ export default async function decorate(block) {
     <div class="asc-ui-table-wrap">
       <table class="asc-ui-table">
         <thead>
-          <tr>${cols.map((col, i) => `<th${colActions[i] ? ' class="details-renditions__action"' : ''}>${esc(col.title)}</th>`).join('')}</tr>
+          <tr>${cols.map((col, i) => {
+    let cls = '';
+    if (colActions[i]) cls = ' class="details-renditions__action"';
+    else if (colPreviews[i]) cls = ' class="details-renditions__preview"';
+    return `<th${cls}>${esc(col.title)}</th>`;
+  }).join('')}</tr>
         </thead>
         <tbody>${rows}</tbody>
       </table>
@@ -112,6 +128,12 @@ function valueCell(col, ctx, asset) {
 function actionCell(asset, rendition, actions) {
   const buttons = actions.map((a) => renderAction(asset, rendition, a)).filter(Boolean).join('');
   return `<td class="details-renditions__action"><div class="details-renditions__actions">${buttons}</div></td>`;
+}
+
+function previewCell(asset) {
+  const src = services.renditions.getThumbnailUrl(asset) || '';
+  if (!src) return '<td class="details-renditions__preview"></td>';
+  return `<td class="details-renditions__preview"><img class="details-renditions__thumb" src="${esc(src)}" alt="" width="48" height="48" loading="lazy"></td>`;
 }
 
 function renderAction(asset, rendition, action) {

@@ -46,6 +46,18 @@ main .section[data-layout="grid"] {
 }
 
 /* Block wrappers are grid items — no extra inset; align with default content. */
+/* When multiple blocks share an area name, section-grid.js wraps them in a
+   .grid-area-stack container that stacks them vertically. */
+main .section[data-layout="grid"] > .grid-area-stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+    min-width: 0;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
 main .section[data-layout="grid"] > div {
     min-width: 0;
     max-width: 100%;

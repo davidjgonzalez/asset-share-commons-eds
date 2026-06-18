@@ -37,6 +37,8 @@ const configurations = {
     //   'jcr:content/metadata/dc:title',
     //   'jcr:content/metadata/dc:description',
     //   'jcr:content/metadata/dc:format',
+    //   'jcr:content/metadata/predictedTags',            // required for smart-tags property
+    //   'jcr:content/metadata/dam:colorDistribution',  // required for colors property
     // ],
     //
     // Static QueryBuilder predicates always merged into every query.
@@ -216,6 +218,40 @@ const configurations = {
         const raw = asset.getProperty('jcr:content/metadata/cq:tags');
         const list = Array.isArray(raw) ? raw : (raw ? [raw] : []);
         return list.map((t) => String(t).split('/').pop()).filter(Boolean);
+      },
+
+      // Colors → HTML swatch strip from AEM Sensei dominant color analysis.
+      // Reads dam:colorDistribution; each swatch shows the actual color dot + label.
+      // Requires 'jcr:content/metadata/dam:colorDistribution' in search.properties
+      // so the node is fetched with each result (QueryBuilder provider only).
+      // Returns null when no color distribution data is present.
+      colors: (asset) => {
+        const dist = asset.getProperty('jcr:content/metadata/dam:colorDistribution');
+        if (!dist || typeof dist !== 'object') return null;
+        const list = Object.values(dist)
+          .filter((c) => c && Array.isArray(c.rgb) && c.rgb.length === 3)
+          .sort((a, b) => (a.rank ?? 99) - (b.rank ?? 99));
+        if (!list.length) return null;
+        const swatches = list.map(({ rgb, name }) => {
+          const hex = `#${rgb.map((n) => n.toString(16).padStart(2, '0')).join('')}`;
+          const label = name.replace(/_/g, ' ').toLowerCase().replace(/^\w/, (c) => c.toUpperCase());
+          return `<span class="asc-ui-swatch" style="--asc-ui-swatch-color:${hex}"><span class="asc-ui-swatch__dot"></span><span class="asc-ui-swatch__label">${label}</span></span>`;
+        }).join('');
+        return `<span class="asc-ui-swatch-list">${swatches}</span>`;
+      },
+
+      // Smart Tags → array of tag names from AEM Sensei AI, sorted by confidence.
+      // Requires 'jcr:content/metadata/predictedTags' in search.properties
+      // so the data is fetched with each result (QueryBuilder provider only).
+      // Returns null when no smart tags are present on the asset.
+      'smart-tags': (asset) => {
+        const predictedTags = asset.getProperty('jcr:content/metadata/predictedTags');
+        if (!predictedTags || typeof predictedTags !== 'object') return null;
+        return Object.values(predictedTags)
+          .filter((tag) => tag && typeof tag.confidence === 'number')
+          .sort((a, b) => b.confidence - a.confidence)
+          .map((tag) => tag.name)
+          .filter(Boolean) || null;
       },
     },
   },

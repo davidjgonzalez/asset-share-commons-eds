@@ -380,6 +380,12 @@
    @kit chip — static tag / token (e.g. an active search facet)
 ───────────────────────────────────────────────────────────────────────── */
 
+.asc-ui-chip-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+}
+
 .asc-ui-chip {
     display: inline-flex;
     align-items: center;
@@ -1128,6 +1134,44 @@
     .asc-ui-detail {
         grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
     }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit swatch — color swatch strip: dot + label. Displays dam:colorDistribution
+   dominant colors. Set --asc-ui-swatch-color inline on each .asc-ui-swatch.
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-swatch-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+}
+
+.asc-ui-swatch {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-2xs) var(--spacing-sm) var(--spacing-2xs) var(--spacing-2xs);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-full);
+    background: var(--color-muted);
+}
+
+.asc-ui-swatch__dot {
+    flex-shrink: 0;
+    width: 1.25rem;
+    height: 1.25rem;
+    border-radius: var(--border-radius-full);
+    background: var(--asc-ui-swatch-color, var(--color-muted));
+    box-shadow: inset 0 0 0 1px rgb(0 0 0 / 12%);
+}
+
+.asc-ui-swatch__label {
+    font-size: var(--body-font-size-xs);
+    font-weight: 500;
+    color: var(--color-fg);
+    line-height: 1;
+    white-space: nowrap;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────

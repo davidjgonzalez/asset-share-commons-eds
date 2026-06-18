@@ -239,6 +239,18 @@ Markup is a `<dl>` with each pair wrapped in a `__row` div.
 </dl>
 ```
 
+### Color swatch — `@kit swatch` · `styles/ui-kit.css`
+Pill-shaped color tags — a color circle on the left, label on the right, fully rounded border.
+Used to display `dam:colorDistribution` dominant colors. Set `--asc-ui-swatch-color` inline
+on each `.asc-ui-swatch`. The `colors` custom property in `configurations.js` returns the
+ready-to-render HTML string.
+```html
+<span class="asc-ui-swatch-list">
+  <span class="asc-ui-swatch" style="--asc-ui-swatch-color:#a5d9e3"><span class="asc-ui-swatch__dot"></span><span class="asc-ui-swatch__label">Cyan</span></span>
+  <span class="asc-ui-swatch" style="--asc-ui-swatch-color:#0b5c5b"><span class="asc-ui-swatch__dot"></span><span class="asc-ui-swatch__label">Dark green</span></span>
+</span>
+```
+
 ### Filmstrip — `@kit filmstrip` · `styles/ui-kit.css`
 Horizontal scroll-snap strip of related assets. Each `__item` holds a fixed-width tile/card.
 ```html

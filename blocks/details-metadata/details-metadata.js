@@ -75,11 +75,16 @@ function renderValue(raw) {
     const chips = raw
       .map((t) => String(t).trim())
       .filter(Boolean)
-      .map((t) => `<span class="asc-ui-chip">${esc(t)}</span>`);
-    return chips.join(' ');
+      .map((t) => `<span class="asc-ui-chip">${esc(t)}</span>`)
+      .join('');
+    return `<span class="asc-ui-chip-list">${chips}</span>`;
   }
   const str = stringifyValue(raw);
-  return str ? esc(str) : '';
+  if (!str) return '';
+  // Custom property functions (e.g. `colors`) may return a trusted HTML string.
+  // Strings that begin with '<' are passed through unescaped.
+  if (str.startsWith('<')) return str;
+  return esc(str);
 }
 
 /** Coerce a property value to a display string, formatting known object shapes. */
