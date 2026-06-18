@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Asset Share Commons - Theme Demo</title>
+  
+  <!-- CSS Files -->
+  <link rel="stylesheet" href="styles/styles.css">
+  <link rel="stylesheet" href="styles/themes/default.css">
+  <link rel="stylesheet" href="styles/themes/dark.css">
+  <link rel="stylesheet" href="styles/themes/warm.css">
+  <link rel="stylesheet" href="blocks/search-bar/search-bar.css">
+  <link rel="stylesheet" href="blocks/hero/hero.css">
+  <link rel="stylesheet" href="blocks/cards/cards.css">
+  
+  <style>
+    .demo-section {
+      margin: var(--spacing-3xl) 0;
+      padding: var(--spacing-2xl);
+      border-radius: var(--border-radius-lg);
+      background: var(--card-background);
+      border: 1px solid var(--card-border-color);
+      box-shadow: var(--card-shadow);
+    }
+    
+    .demo-title {
+      text-align: center;
+      margin-bottom: var(--spacing-2xl);
+      color: var(--text-color);
+    }
+    
+    .theme-info {
+      background: var(--light-color);
+      padding: var(--spacing-lg);
+      border-radius: var(--border-radius-md);
+      margin-bottom: var(--spacing-xl);
+    }
+    
+    .component-grid {
+      display: grid;
+      gap: var(--spacing-xl);
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      margin-top: var(--spacing-xl);
+    }
+  </style>
+</head>
+<body class="theme-default">
+  <div class="container">
+    <h1 class="demo-title">Asset Share Commons - Theme Demo</h1>
+    
+    <div class="theme-info">
+      <h2>Current Theme: <span id="current-theme">Default</span></h2>
+      <p>Use the theme toggle button (🎨) in the top right corner to switch between themes.</p>
+    </div>
+
+    <!-- Search Bar Demo -->
+    <div class="demo-section">
+      <h2 class="demo-title">Search Bar Component</h2>
+      <div class="search-bar block" data-block-name="search-bar">
+        <div>
+          <div>placeholder</div>
+          <div>Search for assets...</div>
+        </div>
+        <div>
+          <div>buttonLabel</div>
+          <div>Search</div>
+        </div>
+        <div>
+          <div>hideButton</div>
+          <div>false</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hero Demo -->
+    <div class="demo-section">
+      <h2 class="demo-title">Hero Component</h2>
+      <div class="hero block" data-block-name="hero">
+        <h1>Welcome to Asset Share Commons</h1>
+        <picture>
+          <img src="https://via.placeholder.com/1200x400/3b82f6/ffffff?text=Hero+Image" alt="Hero placeholder">
+        </picture>
+      </div>
+    </div>
+
+    <!-- Cards Demo -->
+    <div class="demo-section">
+      <h2 class="demo-title">Cards Component</h2>
+      <div class="cards block grid-3" data-block-name="cards">
+        <div class="card">
+          <div class="card-image">
+            <img src="https://via.placeholder.com/400x200/ef4444/ffffff?text=Card+1" alt="Card 1">
+          </div>
+          <div class="card-content">
+            <h3>Card Title 1</h3>
+            <p>This is a sample card with some content to demonstrate the theming system.</p>
+          </div>
+          <div class="card-actions">
+            <a href="#" class="button">Primary Action</a>
+            <a href="#" class="button secondary">Secondary</a>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-image">
+            <img src="https://via.placeholder.com/400x200/10b981/ffffff?text=Card+2" alt="Card 2">
+          </div>
+          <div class="card-content">
+            <h3>Card Title 2</h3>
+            <p>Another sample card showing how the theme affects different components.</p>
+          </div>
+          <div class="card-actions">
+            <a href="#" class="button">Learn More</a>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-image">
+            <img src="https://via.placeholder.com/400x200/8b5cf6/ffffff?text=Card+3" alt="Card 3">
+          </div>
+          <div class="card-content">
+            <h3>Card Title 3</h3>
+            <p>Notice how colors, shadows, and spacing change with different themes.</p>
+          </div>
+          <div class="card-actions">
+            <a href="#" class="button">Get Started</a>
+            <a href="#" class="button secondary">Documentation</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Theme Comparison -->
+    <div class="demo-section">
+      <h2 class="demo-title">Theme Comparison</h2>
+      <div class="component-grid">
+        <div>
+          <h3>Default Theme</h3>
+          <p>Clean, professional design with blue accents. Perfect for corporate and business applications.</p>
+          <ul>
+            <li>White background with subtle shadows</li>
+            <li>Blue primary colors</li>
+            <li>High contrast text</li>
+          </ul>
+        </div>
+        
+        <div>
+          <h3>Dark Theme</h3>
+          <p>Modern dark interface with blue accents. Great for reducing eye strain and modern aesthetics.</p>
+          <ul>
+            <li>Dark backgrounds with blue highlights</li>
+            <li>High contrast elements</li>
+            <li>Modern, sleek appearance</li>
+          </ul>
+        </div>
+        
+        <div>
+          <h3>Warm Theme</h3>
+          <p>Friendly, earthy colors with orange accents. Ideal for creative and community-focused applications.</p>
+          <ul>
+            <li>Warm, friendly color palette</li>
+            <li>Orange primary colors</li>
+            <li>Comfortable, approachable feel</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    // Import and initialize the search-bar block
+    import decorate from './blocks/search-bar/search-bar.js';
+    import { themeManager } from './scripts/asc/utils/theme.js';
+    
+    // Auto-decorate all blocks on the page
+    document.querySelectorAll('.search-bar.block').forEach(decorate);
+    
+    // Update theme display
+    const updateThemeDisplay = () => {
+      const currentTheme = themeManager.getCurrentTheme();
+      document.getElementById('current-theme').textContent = 
+        currentTheme.charAt(0).toUpperCase() + currentTheme.slice(1);
+    };
+    
+    // Listen for theme changes
+    document.addEventListener('asc:theme:changed', updateThemeDisplay);
+    
+    // Initial update
+    updateThemeDisplay();
+  </script>
+</body>
+</html>
+
