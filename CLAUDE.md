@@ -130,19 +130,27 @@ window.asc = { cache: { assets: new Map() } }
 
 Asset instances are cached by UUID here to avoid redundant fetches.
 
-## UI Kit — reuse before restyling
+## UI Kit — mandatory, not optional
 
-Blocks should be built from the shared **UI Kit** primitives, not bespoke CSS. The kit is
-theme-driven (`.asc-ui-*` + `.btn`) and lives in `styles/ui-kit.css` (plus `.btn`/`.asc-panel`/
-`.asc-dialog` in `styles.css`).
+**Every block must be composed from UI Kit primitives.** Do not write bespoke CSS for
+anything already covered by the kit. This is a hard rule, not a preference.
+
+**Three rules — memorize these before touching a block:**
+
+1. Before writing any block CSS, scan `docs/UI_KIT.md` for a matching primitive.
+2. Compose blocks from kit primitives; add only layout CSS (grid columns, gaps) at the block level.
+3. If a primitive needs to look different in one block, add a variant *to the kit first*
+   (CSS + gallery tile + catalog entry), then use it. Never override kit styles inside a block.
+
+The kit is theme-driven (`.asc-ui-*` + `.btn`) and lives in `styles/ui-kit.css` (plus
+`.btn`/`.asc-panel`/`.asc-dialog` in `styles.css`).
 
 - **Catalog (agent source of truth):** `docs/UI_KIT.md` — every primitive's class, markup, variants.
-- **Gallery (visual workshop):** `ui-kit.html` — themed, with toggleable per-element code/usage.
+- **Gallery (visual workshop):** `docs/ui-kit.html` — themed, with toggleable per-element code/usage.
+- **Build-block skill:** use `/build-block` for a structured, kit-first block workflow.
 
-When asked to create or change a block, prefer composing kit primitives (e.g. `asc-ui-card`,
-`asc-ui-badge`, `asc-ui-empty-state`). If the user names specific kit elements, read those
-entries in `docs/UI_KIT.md` for exact markup. Need a new element or variant? Workshop it in the
-kit (CSS + gallery tile + catalog entry) first, then deploy across blocks.
+If the user names specific kit elements, read those entries in `docs/UI_KIT.md` for exact markup.
+Need a new primitive? Workshop it in the kit first, then deploy into blocks.
 
 ## CSS Conventions (see docs/CSS_CONVENTION.md)
 

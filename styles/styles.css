@@ -12,13 +12,14 @@
 
 /* ASC structural tokens — loaded before theme overrides */
 @import url('./tokens.css');
+
 /* ASC UI Kit — reusable .asc-ui-* component primitives (see /ui-kit.html, docs/UI_KIT.md) */
-@import './ui-kit.css';
-@import './sections/inline.css';
-@import './sections/grid.css';
-@import './sections/aside.css';
-@import './sections/grid-layout.css';
-@import './sections/full-width.css';
+@import url('./ui-kit.css');
+@import url('./sections/inline.css');
+@import url('./sections/grid.css');
+@import url('./sections/aside.css');
+@import url('./sections/grid-layout.css');
+@import url('./sections/full-width.css');
 
 /* ─────────────────────────────────────────────────────────────────────────
    SEMANTIC COLOR TOKENS
@@ -29,16 +30,16 @@
 
 :root {
   /* Page surfaces */
-  --color-bg:          #ffffff;  /* Page background */
+  --color-bg:          #fff;  /* Page background */
   --color-fg:          #1e1b4b;  /* Primary text */
-  --color-card:        #ffffff;  /* Card / panel surfaces */
+  --color-card:        #fff;  /* Card / panel surfaces */
   --color-card-fg:     #1e1b4b;  /* Text on cards */
-  --color-popover:     #ffffff;  /* Dropdowns, tooltips */
+  --color-popover:     #fff;  /* Dropdowns, tooltips */
   --color-popover-fg:  #1e1b4b;  /* Text in popovers */
 
   /* Brand / interactive */
   --color-primary:     #7c3aed;  /* CTAs, links, active states */
-  --color-primary-fg:  #ffffff;  /* Text/icons on primary */
+  --color-primary-fg:  #fff;  /* Text/icons on primary */
 
   /* Secondary actions */
   --color-secondary:    #f5f3ff; /* Secondary button fill */
@@ -54,11 +55,11 @@
 
   /* Feedback */
   --color-destructive:    #dc2626;  /* Error, delete, danger */
-  --color-destructive-fg: #ffffff;  /* Text on destructive */
+  --color-destructive-fg: #fff;  /* Text on destructive */
 
   /* Form chrome */
   --color-border: #e9d5ff;  /* All borders */
-  --color-input:  #ffffff;  /* Input backgrounds */
+  --color-input:  #fff;  /* Input backgrounds */
   --color-ring:   #7c3aed;  /* Focus rings */
 
   /* ── Backward-compat aliases (EDS boilerplate + legacy blocks) ── */
@@ -267,10 +268,11 @@ a.button.secondary:any-link {
   align-items: center;
   justify-content: center;
   gap: var(--spacing-xs);
+
   /* medium pill: 36px tall with 15px font at line-height 1 */
   padding: 10px 20px;
   appearance: none;
-  -webkit-appearance: none;
+  appearance: none;
   box-sizing: border-box;
   border: 1px solid transparent;
   border-radius: var(--button-border-radius);
@@ -411,6 +413,7 @@ a.btn.btn--danger:any-link:hover {
 }
 
 /* ── Circle — icon-only, pairs with a size modifier ────────────────── */
+
 /* medium: 36px  |  .btn--lg: 44px  |  .btn--sm: 28px                  */
 
 .btn--circle,
@@ -505,7 +508,7 @@ button {
   font: inherit;
 }
 
-input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="range"]),
+input:not([type="checkbox"], [type="radio"], [type="hidden"], [type="range"]),
 textarea {
   background: var(--color-input);
   color: var(--color-fg);
@@ -583,7 +586,7 @@ input[type="radio"] {
 
   label { display: block; }
 
-  input:not([type="checkbox"]):not([type="radio"]),
+  input:not([type="checkbox"], [type="radio"]),
   textarea,
   select { width: 100%; box-sizing: border-box; }
 }
@@ -754,6 +757,7 @@ main .section.highlight {
 }
 
 /* ── Search filter rail / top layouts ──────────────────────────────────── */
+
 /*
   Apply via section metadata:
     style: right search-filters   — sticky rail on the right

@@ -5,7 +5,7 @@ templates build from. **Reuse a kit primitive before writing new block CSS.**
 
 | Resource | What it is |
 |----------|-----------|
-| [`/ui-kit.html`](../ui-kit.html) | Themed visual gallery. Toggle a theme; toggle **Show code & usage** to reveal canonical markup per element. |
+| [`/docs/ui-kit.html`](ui-kit.html) | Themed visual gallery. Toggle a theme; toggle **Show code & usage** to reveal canonical markup per element. |
 | [`styles/ui-kit.css`](../styles/ui-kit.css) | The `.asc-ui-*` component primitives. Each is tagged `@kit <name>` for grepping. |
 | [`styles/styles.css`](../styles/styles.css) | Foundational layer: `.btn`, form fields, `.asc-panel`, `.asc-dialog`. |
 | [`styles/tokens.css`](../styles/tokens.css) | Structural tokens (radius, shadow, spacing, transitions). |
@@ -31,6 +31,19 @@ All primitives consume **semantic tokens only** (`--color-*`, `--spacing-*`,
 
 > When asked to "build block X using `asc-ui-card` + `asc-ui-empty-state`", read those
 > entries here for the exact markup and class names, then assemble.
+
+### Common compositions — block type → kit primitives
+
+Use this table as the first lookup before reading the full catalog.
+
+| Block type | Typical primitives |
+|---|---|
+| Asset grid / list results | `asc-ui-asset-card` / `asc-ui-asset-row` + `asc-ui-empty-state` + `asc-ui-skeleton` |
+| Collection management | `asc-ui-card` + `asc-ui-badge` + `asc-ui-empty-state` |
+| Filter dropdown | `asc-ui-control` + `asc-ui-dropdown` + `asc-ui-dropdown__list` / `__item` |
+| Asset details modal | `.asc-dialog --wide` + `asc-ui-detail` + `asc-ui-actions` + `asc-ui-metadata` |
+| Switcher / popover menu | `asc-ui-dropdown` + `asc-ui-menu` + `asc-ui-count` |
+| Download sheet rows | `asc-ui-asset-row` + `.btn` |
 
 ---
 

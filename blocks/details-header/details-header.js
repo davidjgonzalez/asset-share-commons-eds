@@ -22,6 +22,7 @@
  * Defaults (when a row is omitted): title → {{title}}, meta → file info line.
  */
 import Asset from '../../scripts/asc/models/asset.js';
+import { resolveTokens } from '../../scripts/tokens.js';
 
 const DEFAULT_TITLE = '{{title}}';
 const DEFAULT_META = '{{file-type}} · {{file-size}} · {{dimensions}}';
@@ -54,48 +55,6 @@ export default async function decorate(block) {
   block.innerHTML = `
     ${title ? `<h2 class="details-header__title">${esc(title)}</h2>` : ''}
     ${meta ? `<p class="details-header__meta">${esc(meta)}</p>` : ''}`;
-}
-
-/**
- * Replace every {{ accessor | fallback }} token in `tpl` with its asset value,
- * then tidy up separators left dangling by empty values (e.g. "JPEG · · 800").
- */
-function resolveTokens(tpl, asset) {
-  const out = tpl.replace(/\{\{\s*([^}|]+?)\s*(?:\|\s*([^}]*?)\s*)?\}\}/g, (_, expr, fallback) => {
-    const value = stringifyValue(assetValue(asset, expr.trim()));
-    if (value === '') return fallback != null ? fallback : '';
-    return value;
-  });
-
-  // Collapse separators around now-empty segments and trim the ends.
-  return out
-    .replace(/\s*·\s*·\s*/g, ' · ')
-    .replace(/^\s*·\s*|\s*·\s*$/g, '')
-    .trim();
-}
-
-/** Resolve a single accessor against the asset (computed getters first, then getProperty). */
-function assetValue(asset, accessor) {
-  const direct = {
-    url: asset.url,
-    uuid: asset.uuid,
-    id: asset.id,
-    filename: asset.filename,
-    'file-extension': asset.fileExtension,
-  };
-  if (accessor in direct && direct[accessor] != null) return direct[accessor];
-  return asset.getProperty(accessor);
-}
-
-/** Coerce an asset value to a display string, formatting known object shapes. */
-function stringifyValue(value) {
-  if (value == null) return '';
-  if (Array.isArray(value)) return value.map((v) => String(v).trim()).filter(Boolean).join(', ');
-  if (typeof value === 'object') {
-    if (value.width != null && value.height != null) return `${value.width} × ${value.height}`;
-    return '';
-  }
-  return String(value).trim();
 }
 
 function esc(str) {

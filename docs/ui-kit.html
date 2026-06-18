@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ASC UI Kit</title>
-  <link rel="stylesheet" href="./styles/styles.css">
-  <link rel="stylesheet" href="./styles/lazy-styles.css">
+  <link rel="stylesheet" href="../styles/styles.css">
+  <link rel="stylesheet" href="../styles/lazy-styles.css">
   <link id="theme-link" rel="stylesheet" href="">
   <style>
     /*
@@ -886,7 +886,7 @@
         themes.forEach((t) => body.classList.remove(`theme-${t}`));
         if (!theme || theme === 'none') { themeLink.href = ''; return; }
         body.classList.add(`theme-${theme}`);
-        themeLink.href = `./styles/themes/${theme}.css`;
+        themeLink.href = `../styles/themes/${theme}.css`;
       }
       selector.addEventListener('change', (e) => applyTheme(e.target.value));
       applyTheme('none');

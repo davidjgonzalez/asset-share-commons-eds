@@ -65,18 +65,18 @@ main .sheet {
         }
     }
 
-    /* ── Thumbnail ───────────────────────────────────────────────────── */
+    /* ── Thumbnail — .asc-ui-thumb provides base; size override here ── */
 
-    .sheet__asset-thumb {
+    .asc-ui-thumb.sheet__asset-thumb {
+        --asc-ui-thumb-size: 88px;
+
         position: relative;
-        width: 88px;
         height: 66px;
-        border-radius: var(--border-radius-sm, 4px);
-        overflow: hidden;
-        background: var(--color-muted);
+        border-radius: var(--border-radius-sm);
         flex-shrink: 0;
 
         img {
+            border-radius: 0;
             width: 100%;
             height: 100%;
             object-fit: cover;
@@ -103,24 +103,20 @@ main .sheet {
         }
     }
 
-    /* ── Asset info ──────────────────────────────────────────────────── */
+    /* ── Asset info — .asc-ui-asset-row__title/meta provide text styles */
 
     .sheet__asset-info {
         min-width: 0;
-    }
 
-    .sheet__asset-title {
-        font-weight: 600;
-        font-size: var(--body-font-size-m, 1rem);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
+        .asc-ui-asset-row__title {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
 
-    .sheet__asset-meta {
-        font-size: var(--body-font-size-s, 0.875rem);
-        color: var(--color-muted-fg);
-        margin-top: var(--spacing-2xs);
+        .asc-ui-asset-row__meta {
+            margin-top: var(--spacing-2xs);
+        }
     }
 
     /* ── Rendition switcher ──────────────────────────────────────────── */

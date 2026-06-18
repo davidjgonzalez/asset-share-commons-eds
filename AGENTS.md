@@ -594,7 +594,7 @@ services.renditions.getThumbnailUrl(asset);        // best thumbnail URL (with f
 Reusable, theme-driven UI primitives shared across blocks, parts, and templates.
 **Before writing new block CSS, reuse a kit primitive.** Full catalog with copy-paste
 markup: [`docs/UI_KIT.md`](docs/UI_KIT.md). Visual gallery (themed, with per-element
-code/usage): [`/ui-kit.html`](ui-kit.html). Styles: [`styles/ui-kit.css`](styles/ui-kit.css)
+code/usage): [`/docs/ui-kit.html`](docs/ui-kit.html). Styles: [`styles/ui-kit.css`](styles/ui-kit.css)
 (each primitive tagged `@kit <name>` for grepping).
 
 Primitives: `asc-ui-card`, `asc-ui-badge`, `asc-ui-chip`, `asc-ui-empty-state`,
@@ -603,6 +603,21 @@ Primitives: `asc-ui-card`, `asc-ui-badge`, `asc-ui-chip`, `asc-ui-empty-state`,
 `asc-ui-asset-row`, `asc-ui-table`, `asc-ui-masonry`, `asc-ui-icon-btn`, plus the
 typography helpers. Foundational `.btn`, form fields, `.asc-panel`, and `.asc-dialog`
 live in `styles.css` (documented below).
+
+### Kit-first checklist (run through this for every block task)
+
+- [ ] Checked `docs/UI_KIT.md` for existing primitives that cover the UI I need?
+- [ ] Used `.asc-ui-*` / `.btn` classes — not reimplemented them in block CSS?
+- [ ] Needed a new variant? Added it to `ui-kit.css` + gallery tile + catalog entry first?
+- [ ] Block CSS contains only layout rules (grid tracks, gaps, spacing between primitives)?
+- [ ] Ran `npm run lint:css` after any kit or block CSS changes?
+
+### Kit anti-patterns — never do these
+
+- **Don't** write `.my-block__badge { … }` when `.asc-ui-badge` exists — use the kit class.
+- **Don't** override kit primitive styles inside a block's CSS — add a modifier variant to the kit instead.
+- **Don't** use raw color values — always use `--color-*` semantic tokens.
+- **Don't** duplicate a row/card/table layout that `asc-ui-asset-row`, `asc-ui-card`, or `asc-ui-table` already provides.
 
 When a block needs a primitive to look different, add a variant *to the kit* (and document
 it) rather than overriding it inside the block.

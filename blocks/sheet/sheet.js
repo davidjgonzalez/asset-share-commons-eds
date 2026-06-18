@@ -69,7 +69,7 @@ function assetRow(asset, renditionDefinitions) {
          data-asc-mime-type="${asset.mimeType || ''}"
          data-selected-rendition="${defaultRenditionId}"
          draggable="true">
-      <div class="sheet__asset-thumb">
+      <div class="asc-ui-thumb sheet__asset-thumb">
         <img src="${thumbnailUrl}"
              alt="${asset.title}"
              loading="lazy"
@@ -77,8 +77,8 @@ function assetRow(asset, renditionDefinitions) {
         <span class="sheet__asset-thumb-fallback" aria-hidden="true">${getFileIcon(fileType)}</span>
       </div>
       <div class="sheet__asset-info">
-        <div class="sheet__asset-title">${asset.title}</div>
-        ${meta ? `<div class="sheet__asset-meta">${meta}</div>` : ''}
+        <p class="asc-ui-asset-row__title">${asset.title}</p>
+        ${meta ? `<p class="asc-ui-asset-row__meta">${meta}</p>` : ''}
       </div>
       <div class="sheet__asset-renditions" role="group" aria-label="Select rendition for ${asset.title}">
         ${pills || '<span class="sheet__no-renditions">—</span>'}

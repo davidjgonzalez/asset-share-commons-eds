@@ -51,12 +51,12 @@ function html(active, all, activeId) {
     <div class="collection-switcher__wrapper">
       <button class="collection-switcher__trigger btn btn--secondary btn--lg" aria-expanded="false" aria-haspopup="listbox">
         <span class="collection-switcher__trigger-name">${escHtml(active?.name || 'My Collection')}</span>
-        <span class="collection-switcher__trigger-count" aria-label="${count} assets">${count}</span>
+        <span class="asc-ui-count" aria-label="${count} assets">${count}</span>
         <span class="collection-switcher__trigger-arrow" aria-hidden="true">▾</span>
       </button>
 
       <div class="collection-switcher__dropdown" hidden role="dialog" aria-label="Collections">
-        <ul class="collection-switcher__list" role="listbox" aria-label="Select active collection">
+        <ul class="asc-ui-menu" role="listbox" aria-label="Select active collection">
           ${all.map((c) => collectionOption(c, activeId)).join('')}
         </ul>
 
@@ -80,13 +80,16 @@ function collectionOption(collection, activeId) {
   const isActive = collection.id === activeId;
   const count = collection.assetIds?.length ?? 0;
   return `
-    <li class="collection-switcher__option${isActive ? ' collection-switcher__option--active' : ''}"
-        role="option"
-        aria-selected="${isActive}"
-        data-collection-id="${collection.id}">
-      <span class="collection-switcher__option-name">${escHtml(collection.name)}</span>
-      <span class="collection-switcher__option-count">${count}</span>
-      ${isActive ? '<span class="collection-switcher__option-check" aria-hidden="true">✓</span>' : ''}
+    <li>
+      <button class="asc-ui-menu__item${isActive ? ' asc-ui-menu__item--active' : ''}"
+              type="button"
+              role="option"
+              aria-selected="${isActive}"
+              data-collection-id="${collection.id}">
+        <span class="asc-ui-menu__item-label">${escHtml(collection.name)}</span>
+        <span class="asc-ui-menu__item-meta">${count}</span>
+        ${isActive ? '<span class="asc-ui-menu__item-check" aria-hidden="true">✓</span>' : ''}
+      </button>
     </li>`;
 }
 
@@ -110,7 +113,7 @@ function initInteractions(block) {
   });
 
   // Activate collection on click
-  block.querySelectorAll('.collection-switcher__option').forEach((opt) => {
+  block.querySelectorAll('.asc-ui-menu__item').forEach((opt) => {
     opt.addEventListener('click', () => {
       services.collections.setActive(opt.dataset.collectionId);
       dropdown.setAttribute('hidden', '');
