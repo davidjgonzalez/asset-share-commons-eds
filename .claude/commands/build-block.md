@@ -129,7 +129,7 @@ function buildGrid(assets) {
 If a primitive needs to look different for this block, the change belongs in the kit —
 not inside block CSS. Procedure:
 
-1. Add a modifier class to `styles/ui-kit.css`, tagged with `/* @kit <name> */`:
+1. Add a modifier class to `styles/asc-ui-kit.css`, tagged with `/* @kit <name> */`:
    ```css
    /* @kit card */
    .asc-ui-card--compact {
@@ -170,7 +170,7 @@ Manual checks:
 |------|--------------|
 | Kit primitives catalog | `docs/UI_KIT.md` |
 | Kit visual gallery | `ui-kit.html` |
-| Kit CSS source | `styles/ui-kit.css` (grep `@kit <name>`) |
+| Kit CSS source | `styles/asc-ui-kit.css` (grep `@kit <name>`) |
 | CSS token reference | `styles/tokens.css` + `styles/styles.css` |
 | CSS conventions | `docs/CSS_CONVENTION.md` |
 | Event binding | `scripts/asc/utils/events.js` → `delegateEvent()` |
