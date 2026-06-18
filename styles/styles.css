@@ -14,12 +14,12 @@
 @import url('./tokens.css');
 
 /* ASC UI Kit — reusable .asc-ui-* component primitives (see /ui-kit.html, docs/UI_KIT.md) */
-@import url('./asc/ui-kit.css');
-@import url('./asc/sections/inline.css');
-@import url('./asc/sections/grid.css');
-@import url('./asc/sections/aside.css');
-@import url('./asc/sections/grid-layout.css');
-@import url('./asc/sections/full-width.css');
+@import url('./asc-ui-kit.css');
+@import url('./sections/inline.css');
+@import url('./sections/grid.css');
+@import url('./sections/aside.css');
+@import url('./sections/grid-layout.css');
+@import url('./sections/full-width.css');
 
 /* ─────────────────────────────────────────────────────────────────────────
    SEMANTIC COLOR TOKENS
@@ -607,7 +607,7 @@ input[type="radio"] {
 
 /* ─────────────────────────────────────────────────────────────────────────
    ASC UI PRIMITIVES — the reusable .asc-ui-* component classes now live in
-   styles/asc/ui-kit.css (imported at the top of this file). Preview them in
+   styles/asc-ui-kit.css (imported at the top of this file). Preview them in
    /ui-kit.html and copy canonical markup from docs/UI_KIT.md.
 ───────────────────────────────────────────────────────────────────────── */
 

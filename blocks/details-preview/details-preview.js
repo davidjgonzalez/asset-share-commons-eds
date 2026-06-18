@@ -21,7 +21,7 @@ import Asset from '../../scripts/asc/models/asset.js';
  * Title, metadata, and actions are intentionally NOT part of this block — they
  * are composed from separate blocks (details-property, details-actions) and
  * arranged alongside the preview by the `detail` section layout (see
- * styles/asc/sections/detail.css). This keeps the details page author-arrangeable
+ * styles/sections/detail.css). This keeps the details page author-arrangeable
  * and mirrors the UI Kit `.asc-ui-detail` two-pane layout.
  */
 export default async function decorate(block) {

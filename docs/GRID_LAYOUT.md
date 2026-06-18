@@ -13,7 +13,7 @@ each block declaring which cell it occupies — no per-layout CSS required.
 3. `scripts/section-grid.js` runs (called from `decorateMain`, before blocks render) and
    reads those attributes into CSS custom properties on the section
 4. Each block wrapper picks up its `--grid-area` from the block's own `area` config row
-5. `styles/asc/sections/grid-layout.css` turns those custom properties into the live grid
+5. `styles/sections/grid-layout.css` turns those custom properties into the live grid
 
 This means grid layouts work everywhere `decorateMain` runs — including inside the
 asset-details modal (loaded via `loadFragment`).
@@ -108,7 +108,7 @@ These are set as inline styles on the `.section` element and on each block wrapp
 | `--grid-gap` | `.section` | Resolved `gap` value (token → `var(--spacing-*)` or raw length) |
 | `--grid-area` | Block wrapper `div` | The block's area name |
 
-`styles/asc/sections/grid-layout.css` applies these properties to produce the live grid.
+`styles/sections/grid-layout.css` applies these properties to produce the live grid.
 
 ---
 
@@ -206,7 +206,7 @@ export function decorateMain(main) {
 ```
 
 Re-apply this edit after any EDS boilerplate upgrade. The logic lives in the user-owned
-`scripts/section-grid.js`; the styling in `styles/asc/sections/grid-layout.css` (imported by
+`scripts/section-grid.js`; the styling in `styles/sections/grid-layout.css` (imported by
 `styles.css`).
 
 ---
@@ -216,6 +216,6 @@ Re-apply this edit after any EDS boilerplate upgrade. The logic lives in the use
 | File | Purpose |
 |---|---|
 | `scripts/section-grid.js` | Reads section metadata, sets CSS custom properties |
-| `styles/asc/sections/grid-layout.css` | Applies custom properties to produce the grid |
+| `styles/sections/grid-layout.css` | Applies custom properties to produce the grid |
 | `scripts/scripts.js` | Must import and call `decorateGridLayouts` in `decorateMain` |
 | `AGENTS.md` → "Section Layouts" | Shorter summary for AI assistant context |
