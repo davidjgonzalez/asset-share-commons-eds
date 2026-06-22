@@ -47,9 +47,10 @@ ASC services are imported in `scripts/scripts.js` and initialize themselves as s
 > boilerplate upgrade:
 >
 > - imports the ASC services bundle (`./asc/services/services.js`) and `configurations.js`
-> - `decorateMain()` calls `decorateGridLayouts(main)` (from `scripts/section-grid.js`) **after
->   `decorateBlocks`** to enable the named-area `layout: grid` section paradigm (see
->   AGENTS.md → "Section Layouts"). It must stay after `decorateBlocks` and before blocks render.
+> - `decorateMain()` calls `decorateASCSections(main)` (from `scripts/section-grid.js`) **after
+>   `decorateBlocks`** to enable the named-area `_layout: grid` section paradigm (see
+>   AGENTS.md → "Section Layouts"). It reads layout config from `section.dataset` (set by
+>   `decorateSections`) and assigns grid areas to the block wrappers `decorateSections` created.
 
 ### Core Layers
 

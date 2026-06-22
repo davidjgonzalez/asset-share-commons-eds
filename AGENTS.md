@@ -30,20 +30,21 @@ Every file inside `scripts/asc/` starts with `// ASC Core — do not edit.` as a
 | `search-path` | DAM path filter (checkbox / radio / dropdown) | Via QB `path` predicate; OpenAPI maps `filter[assetAncestorPath]` |
 | `search-date-range` | Date range filter (from/to date inputs) | Via QB `daterange` predicate; OpenAPI maps via `DATE_PROPERTY_MAP` |
 | `search-tags` | Tag filter (checkbox / radio / dropdown) | Via QB `tagid` predicate; OpenAPI maps `filter[assetTagIds][]` |
-| `search-hidden` | Hidden fixed search parameters | Passed through to provider as-is |
+| `search-hidden` | ~~Removed~~ — replaced by the search config sheet (see below) | — |
 | `search-statistics` | Displays result counts ("Showing N of M assets") | No — reads `asc:search:complete` event |
-| `search-results` | Infinite-scroll results grid with sort/layout controls | No — renders assets from `asc:search:complete` |
+| `search-results` | Infinite-scroll results grid with sort/layout controls. Masonry view uses JS-managed flex columns (`MASONRY_COLS = 3`) so load-more never reflows existing items. | No — renders assets from `asc:search:complete` |
 
 ### Details blocks (used on details fragment pages)
 | Block | Purpose |
 |-------|---------|
 | `details-modal` | Modal dialog shell; auto-injected by `AssetDetails` service. Close button floats top-right; the loaded fragment supplies its own header |
 | `details-header` | Title + meta-subtitle bar. Authored content is a **token template** — `{{ accessor }}` / `{{ accessor \| fallback }}` resolved against the asset (see Token Placeholders below) |
-| `details-preview` | Asset preview **media only** (image / video / PDF). Title/metadata/actions live in sibling blocks, arranged by the section layout |
+| `details-preview` | Asset preview **media only** (image / video / PDF). Shows a rendition label chip below the preview. Container height is sized to the most-vertical rendition's aspect ratio (no layout shift on rendition switch). Responds to `asc:rendition:activate` (sticky) and `asc:rendition:preview` (hover/restore). |
 | `details-property` | Displays a single metadata property (label + value; `pill` variant → badge) |
 | `details-metadata` | A panel of property rows (`asc-ui-metadata`). Rows are `Label \| property-key`; `display: list\|grid`; array values (e.g. `tags`) render as `asc-ui-chip` pills |
-| `details-renditions` | Renditions as an `asc-ui-table` with **author-configurable columns** (Title \| `{{ }}` value) and a rendition row list. See "Renditions Table Templates" below |
-| `details-actions` | Action buttons (`asc-ui-action` circle-icon + label): download, collection-toggle (add/remove), share. `actions` config sets which/order |
+| `details-renditions` | Renditions as an `asc-ui-table` (default) or card grid (`\| display \| cards \|`). Author-configurable columns; highlights original rendition as active on load and dispatches `asc:rendition:activate`. See "Renditions Table Templates" below |
+| `details-actions` | Action buttons (`asc-ui-action` circle-icon + label). One row per action: `\| Label \| action-name \|`. Actions: `download`, `copy-url`, `share`, `collection`. Labels are used exactly as authored. Updates `href`/`data-copy-url` on `asc:rendition:activate`. |
+| `details-pdf` | Embeds a PDF rendition inline via native `<iframe>`. `rendition` row selects which rendition (default: `original`); `height` row sets iframe height (default: `75vh`). Includes a download fallback button. Route PDFs here via `assetDetails.templates` in `configurations.js`. |
 
 ### Collections / cart blocks
 | Block | Purpose |
@@ -56,30 +57,36 @@ Every file inside `scripts/asc/` starts with `// ASC Core — do not edit.` as a
 
 ---
 
-## Section Layouts — Named-Area Grid (`layout: grid`)
+## Section Layouts — Named-Area Grid (`_layout: grid`)
 
 A general, author-driven grid paradigm for sections, modeled on CSS `grid-template-areas`.
 Lets authors arrange blocks into a 2-D layout from **section metadata**, with each block
 declaring which cell it occupies — no per-layout CSS required.
 
 > ⚠️ **Boilerplate modification — `scripts/scripts.js`.** This feature adds an import and one
-> call to `decorateMain()`:
+> call to `decorateMain()`. Grid layouts must run **before** `decorateSections` so the
+> `_`-prefixed keys can be read directly from the raw block DOM — EDS's `toClassName()` strips
+> underscores, making `_layout` indistinguishable from `layout` after section-metadata processing.
 >
 > ```js
-> import decorateGridLayouts from './section-grid.js';
+> import { decorateASCSections } from './section-grid.js';
 > // …
 > export function decorateMain(main) {
 >   decorateButtons(main);
 >   decorateIcons(main);
 >   buildAutoBlocks(main);
->   decorateSections(main);
->   decorateBlocks(main);
->   decorateGridLayouts(main);   // ← ASC addition: must run AFTER decorateBlocks,
->                                //    BEFORE blocks render (loadSection/loadBlock)
+>   decorateSections(main);    // sets section.dataset.layout/areas/columns/rows/gap
+>   resolvePageTokens(main);
+>   decorateBlocks(main);      // decorates all blocks (wrappers created by decorateSections)
+>   decorateASCSections(main); // ← ASC addition: AFTER decorateBlocks
 > }
 > ```
 >
-> `scripts.js` is boilerplate (not `scripts/asc/`), so **re-apply these two edits after any EDS
+> `decorateASCSections` reads layout config from `section.dataset` (already set by `decorateSections`
+> via `toClassName`, which strips the leading `_` — `_layout→layout`, `_areas→areas`, etc.), assigns
+> `--grid-area` to block wrappers, and groups co-area blocks into `.grid-area-stack` containers.
+>
+> `scripts.js` is boilerplate (not `scripts/asc/`), so **re-apply this edit after any EDS
 > boilerplate upgrade.** The logic itself lives in the user-owned `scripts/section-grid.js`; the
 > styling in `styles/sections/grid-layout.css` (imported by `styles.css`). Because `decorateMain`
 > also runs for fragments loaded via `loadFragment` (e.g. the asset-details modal), grid layouts
@@ -89,37 +96,38 @@ declaring which cell it occupies — no per-layout CSS required.
 
 | Section Metadata |                    |
 |------------------|--------------------|
-| layout           | grid               |
-| areas            | preview actions    |
+| _layout          | grid               |
+| _areas           | preview actions    |
 |                  | preview metadata   |
-| columns          | 1.5fr 1fr          |
-| rows             | auto auto (opt)    |
-| gap              | 2rem (opt)         |
+| _columns         | 1.5fr 1fr          |
+| _rows            | auto auto (opt)    |
+| _gap             | 2rem (opt)         |
 
-- `areas` — one line per grid row (lines may also be separated by `/`, `\|`, or `,`). Repeat an
+- `_areas` — one line per grid row (lines may also be separated by `/`, `\|`, or `,`). Repeat an
   area name across cells to make a block span them. The example makes `preview` span both rows
   on the left, with `actions` over `metadata` on the right.
-- `columns` — optional track sizing. **If omitted, defaults to equal `1fr` columns** (`repeat(N,
+- `_columns` — optional track sizing. **If omitted, defaults to equal `1fr` columns** (`repeat(N,
   minmax(0,1fr))`) derived from the widest areas row.
-- `rows` — optional. **If omitted, defaults to `auto 1fr`** (first row content-sized, the rest
+- `_rows` — optional. **If omitted, defaults to `auto 1fr`** (first row content-sized, the rest
   flexible). A block spanning the full column height (like `preview`) crosses the flexible track,
   so the content rows stay content-sized and the other column's blocks **pack to the top** instead
-  of spacing evenly. Set `rows` explicitly to override.
-- `gap` — optional. A named token (`xs`|`s`|`m`|`l`|`xl`) maps to the theme `--spacing-*` scale; a
+  of spacing evenly. Set `_rows` explicitly to override.
+- `_gap` — optional. A named token (`xs`|`s`|`m`|`l`|`xl`) maps to the theme `--spacing-*` scale; a
   raw length (e.g. `1.5rem`) passes through.
 - Collapses to a single stacked column below 768px (named placement is dropped → source order).
 
-**Block placement** — each block claims a cell with an `area` config row:
+**Block placement** — each block claims a cell with a `_area` config row:
 
 ```
 | details-preview |         |
-| area            | preview |
+| _area           | preview |
 ```
 
-`scripts/section-grid.js` (called from `decorateMain`, before blocks render) reads the section
-metadata into `--grid-areas` / `--grid-columns` / `--grid-cols` / `--grid-rows` / `--grid-gap`
-custom properties, and **strips each block's `area` row** (so it never reaches the block's own
-config) onto the wrapper as `--grid-area`. `grid-layout.css` turns those into the grid.
+`scripts/section-grid.js` (called from `decorateMain`, before `decorateSections`) reads the
+section-metadata block directly for `_`-prefixed keys, removes them (so EDS never sees them),
+then writes `--grid-areas` / `--grid-columns` / `--grid-cols` / `--grid-rows` / `--grid-gap`
+custom properties on the section and `--grid-area` on each block wrapper.
+`grid-layout.css` turns those into the grid.
 
 ### Token Placeholders (`details-header`)
 
@@ -131,14 +139,16 @@ back to the text after `|`; dangling ` · ` separators are trimmed automatically
 
 ### Renditions Table Templates (`details-renditions`)
 
-The `details-renditions` block lists an asset's renditions as table rows with author-configurable
-columns. Authoring (da.live):
+The `details-renditions` block lists an asset's renditions as table rows or a card grid.
+On load it highlights the `original` rendition as active and dispatches `asc:rendition:activate`.
+Authoring (da.live):
 
 ```
 | details-renditions |                 |
-| renditions  | original, web         |   ← optional row list (by name); omit = all,
-|             |                       |     "original" first then A→Z
-| Name        | name                  |   ← column: Title | value
+| renditions  | original, web         |   ← optional row list (by name); omit/all = every
+|             |                       |     visible rendition, "original" first then A→Z
+| display     | cards                 |   ← optional: "cards" for card grid; default = table
+| Name        | name                  |   ← column: Title | value (table mode only)
 | File size   | file-size             |
 | W x H       | dimensions            |
 |             | download, share       |   ← value of action keyword(s) → icon buttons
@@ -148,13 +158,18 @@ columns. Authoring (da.live):
   `asset.…`. A value is either a bare path (`name`, `file-size`) or contains `{{ }}` tokens for
   mixed text (`{{ width }}×{{ height }}`).
 - **Rendition fields / aliases**: `name`, `label`, `url`, `format`, `file-type`, `file-size`
-  (formatted), `dimensions`, `width`, `height`, `mimeType`, `filename`.
+  (formatted), `dimensions`, `width`, `height`, `mimeType`, `filename`, `type`, `path`, `usecase`.
 - **Asset paths**: `asset.properties.title`, `asset.renditions['web'].url`, or a bare term →
   `asset.getProperty('…')`. Well-known asset sub-objects: `properties`, `renditions`.
 - **Path syntax**: dot (`a.b`), bracket (`a['b']`, `a[b]`), nesting combine.
-- **Action columns**: a column whose value is one or more known action keywords
-  (`download`, `share`) renders icon buttons (right-aligned) instead of text — `download` is a
-  rendition download link; `share` dispatches `asc:rendition:share`.
+- **Action columns**: a column whose value is one or more known action keywords renders icon
+  buttons (right-aligned) instead of text:
+  - `download` — rendition download link
+  - `copy-url` — copies rendition URL to clipboard
+  - `share` — dispatches `asc:rendition:share`
+  - `preview` — thumbnail image of the rendition (non-images fall back to asset thumbnail)
+- **Cards display** (`| display | cards |`): thumbnail bleeds to top/left/right card edges; footer
+  shows ghost icon buttons only (download + copy-url); title and meta use smaller type.
 
 ---
 
@@ -182,6 +197,8 @@ All ASC custom events follow `asc:{noun}:{verb}`. Dispatched on `document` unles
 | `asc:download:failed` | Downloads service | collection block | `{ jobId, error }` |
 | `asc:download:change` | Downloads service | (UI handlers) | `{ jobId, status }` |
 | `asc:blocks:loaded` | Init service | SearchService | `{ blocks }` |
+| `asc:rendition:activate` | `details-renditions` | `details-preview`, `details-actions`, `details-rendition-metadata` | `{ rendition, asset }` — sticky selection; dispatched on `document.body` |
+| `asc:rendition:preview` | `details-renditions` | `details-preview` | `{ rendition, asset }` — transient hover preview; `rendition: null` on mouseleave to restore sticky |
 
 `asc:search:complete` `results` shape:
 ```js
@@ -240,7 +257,29 @@ All search block inputs carry `form="asc-search-form"` so `SearchService.collect
 {groupNum}_group.{predicateName}.{paramKey}
 ```
 
-Where `groupNum` is the block's DOM position (1-based), `predicateName` is the QB predicate (e.g. `daterange`, `tagid`, `property`, `path`), and `paramKey` is the predicate parameter.
+Where `groupNum` is the block's **filter-block-index** — assigned in DOM order, counting only blocks that call `readBlockConfig` from `search.js` (i.e. actual filter blocks, not display blocks like `search-results`). This number is stable across page loads as long as the filter blocks on the page don't change, which makes it safe to use in shareable URLs.
+
+**Group number ranges:**
+- Filter blocks (DOM order, via `readBlockConfig` from `search.js`): groups `1`–`n`
+### Search config sheet (content-author static predicates)
+
+`configurations.search.sheet` points to the `/asc` workbook in da.live. `SearchService` fetches the `search-predicates` sheet (`/asc.json?sheet=search-predicates`) lazily on first search and merges it into every search (tier 2b, between `basePredicates` and live form data).
+
+Sheet format — two columns:
+
+| name | value |
+|------|-------|
+| `path` | `/content/dam/brand` |
+| `notexpired.property` | `jcr:content/metadata/dam:expirationDate` |
+| `1000_group.property` | `jcr:content/metadata/dam:status` |
+| `1000_group.property.value` | `approved` |
+
+- **`name`** — full QB predicate name; include group prefix (`1000_group.*`) when grouping is needed
+- **`value`** — predicate value
+
+Both QB and OpenAPI providers receive the merged sheet params through the normal `formData` Map; OpenAPI translates them via its existing two-pass scan.
+
+`SearchService.searchSilent(formData)` also applies sheet predicates, making it available to blocks like `details-similar` that run outside the search page's DOM.
 
 ### OpenAPI provider predicate mapping
 
@@ -375,13 +414,27 @@ The `Part` base class in `scripts/asc/parts/part.js` exists as documentation onl
 `scripts/asc/utils/search.js` exports helpers used by all search filter blocks:
 
 ### `readBlockConfig(block, transform, defaults)`
-Wraps the EDS `readBlockConfig` and adds search-specific context:
+Wraps the generic `readBlockConfig` and adds search-specific context:
 - `form` — the search form ID (`"asc-search-form"`)
-- `group` — the block's DOM position index (used for QB group numbering)
+- `group` — stable filter-block index (see "Form field naming convention" above)
 - `field` — the full QB field name for this block's predicate
 - `parameter(key, index?)` — builds a fully-qualified QB parameter name
 - `fieldset` — the fieldset ID for dependency grouping
-- `initial` — initial values parsed from the current URL's query params
+- `initial` — initial values for this group parsed from the current URL (used to restore state on page load / from a shared URL)
+
+**Only call this from actual filter blocks.** Display blocks (`search-results`, `search-statistics`) must NOT call this — it consumes a group slot and must not be wasted on blocks that produce no group-scoped predicates. Display blocks that need `SEARCH_FORM` should import it directly from `search.js`.
+
+### `SearchService.searchSilent(formData)`
+Background search that applies `basePredicates`, sheet predicates, and `accepts` rules — but does NOT update the browser URL, fire `asc:search:complete`, or block concurrent searches. Use for programmatic fetches from detail or non-search pages.
+
+```js
+// In details-similar or any block that needs a scoped background query:
+const results = await services.search.searchSilent(new Map([
+  ['similar', asset.path],
+  ['similar.fields', 'jcr:content/metadata/dc:tags'],
+  ['p.limit', '9'],
+]));
+```
 
 ### `addSearchEventListeners(block, config)`
 Wires all interactive inputs in a filter block (checkboxes, radios, date inputs, selects) to dispatch `asc:search:execute` on change. **All search filter blocks must use this** instead of writing their own change listeners.

@@ -26,17 +26,19 @@ export default async function decorate(block) {
   const collectionId = resolveCollectionId();
   await render(block, collectionId);
 
-  // Re-render on any collection change
   document.addEventListener(CollectionEvents.CHANGED, async (e) => {
-    // Avoid infinite loop if a rename/reorder dispatches CHANGED
     if (e.detail?.source === 'block') return;
     await render(block, collectionId);
   });
 
-  // Update download job status in the UI without full re-render
   document.addEventListener(DownloadEvents.CHANGED, () => refreshDownloadStatus(block));
   document.addEventListener(DownloadEvents.COMPLETE, () => refreshDownloadStatus(block));
   document.addEventListener(DownloadEvents.FAILED, () => refreshDownloadStatus(block));
+
+  // Close the actions menu on any outside click (survives re-renders).
+  document.addEventListener('click', (e) => {
+    if (!block.contains(e.target)) closeMenu(block);
+  });
 }
 
 // ─── Rendering ────────────────────────────────────────────────────────────────
@@ -66,7 +68,22 @@ function html(collection, isDefault, pendingJobs) {
     <header class="collection__header">
       <div class="collection__title-row">
         <h1 class="collection__name" data-collection-id="${collection.id}">${escHtml(collection.name)}</h1>
-        <button type="button" class="collection__rename-btn btn btn--secondary btn--sm">Rename</button>
+        <div class="collection__menu-wrap">
+          <button type="button" class="collection__menu-trigger btn btn--ghost btn--icon btn--sm"
+                  aria-label="Collection actions" aria-haspopup="true" aria-expanded="false">⋯</button>
+          <div class="collection__menu asc-panel asc-panel--no-pad" hidden>
+            <ul class="asc-ui-menu" role="menu">
+              <li role="none">
+                <button type="button" class="collection__rename-btn asc-ui-menu__item" role="menuitem">Rename</button>
+              </li>
+              ${!isDefault ? `
+              <li role="none"><hr class="asc-ui-menu__separator"></li>
+              <li role="none">
+                <button type="button" class="collection__delete-btn asc-ui-menu__item collection__menu-item--danger" role="menuitem">Delete collection</button>
+              </li>` : ''}
+            </ul>
+          </div>
+        </div>
       </div>
       <p class="collection__meta">
         <span class="collection__meta-count">${assets.length} asset${assets.length !== 1 ? 's' : ''}</span>
@@ -80,7 +97,6 @@ function html(collection, isDefault, pendingJobs) {
       <button type="button" class="collection__share-btn btn btn--secondary">Share</button>
       <button type="button" class="collection__download-btn btn btn--primary"
               ${assets.length === 0 ? 'disabled' : ''}>Download</button>
-      ${!isDefault ? '<button type="button" class="collection__delete-btn btn btn--danger">Delete collection</button>' : ''}
     </div>
 
     ${pendingJobs.length ? renderJobsStatus(pendingJobs) : ''}
@@ -139,12 +155,40 @@ function assetRow(asset, index) {
 // ─── Interactions ─────────────────────────────────────────────────────────────
 
 function initInteractions(block, collection, isDefault) {
+  initMenu(block);
   initRename(block, collection);
   initShare(block, collection);
   initDownload(block, collection);
   if (!isDefault) initDelete(block, collection);
   initReorder(block, collection);
   initJobActions(block);
+}
+
+// ── Actions menu ─────────────────────────────────────────────────────────────
+
+function closeMenu(block) {
+  block.querySelector('.collection__menu')?.setAttribute('hidden', '');
+  block.querySelector('.collection__menu-trigger')?.setAttribute('aria-expanded', 'false');
+}
+
+function initMenu(block) {
+  const trigger = block.querySelector('.collection__menu-trigger');
+  const menu = block.querySelector('.collection__menu');
+  if (!trigger || !menu) return;
+
+  trigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isOpen = !menu.hasAttribute('hidden');
+    if (isOpen) {
+      closeMenu(block);
+    } else {
+      menu.removeAttribute('hidden');
+      trigger.setAttribute('aria-expanded', 'true');
+    }
+  });
+
+  // Close on item selection
+  menu.addEventListener('click', () => closeMenu(block));
 }
 
 // ── Rename ────────────────────────────────────────────────────────────────────

@@ -38,6 +38,30 @@
         line-height: 1.2;
     }
 
+    /* ── Actions menu (⋯ trigger + dropdown) ─────────────────────────── */
+
+    .collection__menu-wrap {
+        position: relative;
+        flex-shrink: 0;
+    }
+
+    .collection__menu {
+        position: absolute;
+        inset-block-start: calc(100% + var(--spacing-xs));
+        inset-inline-end: 0;
+        min-width: 10rem;
+        z-index: var(--z-dropdown, 200);
+    }
+
+    .collection__menu-item--danger {
+        color: var(--color-destructive);
+
+        &:hover {
+            background: color-mix(in srgb, var(--color-destructive) 10%, transparent);
+            color: var(--color-destructive);
+        }
+    }
+
     .collection__name-input {
         flex: 1;
         min-width: min(100%, 12rem);

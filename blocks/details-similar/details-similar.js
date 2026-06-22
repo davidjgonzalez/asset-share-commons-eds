@@ -16,7 +16,9 @@
 import { readBlockConfig } from '../../scripts/aem.js';
 import assetTeaser from '../../scripts/asc/parts/asset-teaser/asset-teaser.js';
 import services from '../../scripts/asc/services/services.js';
-import Asset from '../../scripts/asc/models/asset.js';
+
+const SVG_ADD = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
+const SVG_REMOVE = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>`;
 
 const DEFAULTS = {
   description: '',
@@ -63,6 +65,16 @@ export default async function decorate(block) {
       ${similar.map((a) => assetTeaser(a, { mode: 'card' })).join('')}
     </div>`,
   );
+  injectCollectionToggleIcons(block);
+}
+
+function injectCollectionToggleIcons(block) {
+  block.querySelectorAll('.asc-collection-toggle__btn').forEach((btn) => {
+    const icon = btn.querySelector('.asc-collection-toggle__icon');
+    if (!icon) return;
+    if (btn.classList.contains('asc-collection-toggle__add')) icon.innerHTML = SVG_ADD;
+    else if (btn.classList.contains('asc-collection-toggle__remove')) icon.innerHTML = SVG_REMOVE;
+  });
 }
 
 function buildHtml(config, resultsHtml) {
@@ -75,41 +87,22 @@ function buildHtml(config, resultsHtml) {
 }
 
 /**
- * Fetch similar assets via the QueryBuilder similar predicate.
- * Compares dc:tags and dc:format; excludes the reference asset itself.
+ * Fetch similar assets via SearchService.searchSilent(), which automatically
+ * applies basePredicates and sheet-based scoping. QueryBuilder only — the
+ * `similar` predicate is not supported by the OpenAPI provider.
  *
  * @param {Asset} asset  The reference asset
  * @param {number} max   Maximum results to return
  * @returns {Promise<Asset[]>}
  */
 async function fetchSimilarAssets(asset, max) {
-  const searchUrl = services.aem.getUrl('/bin/querybuilder.json');
-  const headers = await services.aem.getHeaders();
+  const results = await services.search.searchSilent(new Map([
+    ['similar', asset.path],
+    ['similar.fields', 'jcr:content/metadata/dc:tags jcr:content/metadata/dc:format'],
+    ['p.limit', String(max + 1)],
+  ]));
 
-  const params = new URLSearchParams({
-    type: 'dam:Asset',
-    mainasset: 'true',
-    similar: asset.path,
-    'similar.fields': 'jcr:content/metadata/dc:tags jcr:content/metadata/dc:format',
-    'p.limit': max + 1, // fetch one extra in case we need to exclude self
-    'p.hits': 'full',
-    'p.nodedepth': '10',
-  });
-
-  try {
-    const response = await fetch(`${searchUrl}?${params}`, { headers });
-    if (!response.ok) return [];
-    const data = await response.json();
-
-    return (data.hits || [])
-      .filter((hit) => hit['jcr:uuid'] !== asset.uuid)
-      .slice(0, max)
-      .map((hit) => {
-        const a = new Asset(hit);
-        window.asc.cache.assets.set(a.uuid, a);
-        return a;
-      });
-  } catch {
-    return [];
-  }
+  return (results.assets || [])
+    .filter((a) => a.uuid !== asset.uuid)
+    .slice(0, max);
 }

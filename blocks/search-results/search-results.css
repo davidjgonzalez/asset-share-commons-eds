@@ -287,26 +287,29 @@
     }
 
     [data-asc-results][data-display="masonry"] {
-        display: block;
-        columns: 3;
-        column-gap: var(--spacing-md);
+        display: flex;
+        align-items: flex-start;
+        gap: var(--spacing-md);
 
-        .asc-asset-teaser {
-            break-inside: avoid;
-            margin-bottom: var(--spacing-md);
+        .search-results__masonry-col {
+            flex: 1 1 0;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-md);
         }
 
         /* Natural aspect ratio — override the card-mode forced aspect-ratio */
         .asc-asset-teaser__preview {
             aspect-ratio: unset;
-            min-height: 5rem;
+            min-height: 15rem;
         }
 
         .asc-asset-teaser__preview img,
         .asc-asset-teaser__preview picture {
             width: 100%;
-            height: auto;
-            object-fit: unset;
+            height: 100%;
+            object-fit: cover;
         }
 
         /* Meta overlay — hidden by default, revealed on hover */

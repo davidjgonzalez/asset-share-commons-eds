@@ -1,9 +1,12 @@
 /** @owner user */
-import { readBlockConfig } from '../../scripts/asc/utils/search.js';
+import { readBlockConfig } from '../../scripts/asc/utils/blocks.js';
+import { SEARCH_FORM } from '../../scripts/asc/utils/search.js';
 import assetTeaser from '../../scripts/asc/parts/asset-teaser/asset-teaser.js';
 import collectionToggle from '../../scripts/asc/parts/collection-toggle/collection-toggle.js';
 import services from '../../scripts/asc/services/services.js';
 import configurations from '../../scripts/configurations.js';
+
+const MASONRY_COLS = 3;
 
 // ── Default labels for built-in properties in list column headers ─────────
 const PROP_LABELS = {
@@ -63,6 +66,22 @@ function renderListActionsCell(asset, renditionId) {
         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       </button>
     </div>`;
+}
+
+function appendMasonryItems(container, assets) {
+  let cols = [...container.querySelectorAll('.search-results__masonry-col')];
+  if (!cols.length) {
+    cols = Array.from({ length: MASONRY_COLS }, () => {
+      const col = document.createElement('div');
+      col.className = 'search-results__masonry-col';
+      container.appendChild(col);
+      return col;
+    });
+  }
+  const start = cols.reduce((sum, col) => sum + col.children.length, 0);
+  assets.forEach((asset, i) => {
+    cols[(start + i) % cols.length].insertAdjacentHTML('beforeend', assetTeaser(asset, { mode: 'card', view: 'masonry' }));
+  });
 }
 
 function renderListRows(assets, cols, renditionId) {
@@ -175,24 +194,24 @@ function html(config) {
 
   return `
     <div class="search-results__toolbar">
-      <select name="asc.search-results.display" form="${config.form}" aria-label="View">
+      <select name="asc.search-results.display" form="${SEARCH_FORM}" aria-label="View">
         <option value="cards" ${sel(display, 'cards')}>Cards</option>
         <option value="list" ${sel(display, 'list')}>List</option>
         <option value="masonry" ${sel(display, 'masonry')}>Masonry</option>
       </select>
-      <select name="orderby" form="${config.form}" aria-label="Sort by">
+      <select name="orderby" form="${SEARCH_FORM}" aria-label="Sort by">
         <option value="@jcr:score" ${sel(orderby, '@jcr:score')}>Relevance</option>
         <option value="@jcr:content/metadata/dc:created" ${sel(orderby, '@jcr:content/metadata/dc:created')}>Created Date</option>
         <option value="@jcr:content/metadata/dc:title" ${sel(orderby, '@jcr:content/metadata/dc:title')}>Title</option>
       </select>
-      <select name="orderby.sort" form="${config.form}" aria-label="Order">
+      <select name="orderby.sort" form="${SEARCH_FORM}" aria-label="Order">
         <option value="desc" ${sel(orderbySort, 'desc')}>Descending</option>
         <option value="asc" ${sel(orderbySort, 'asc')}>Ascending</option>
       </select>
     </div>
 
-    <input type="hidden" name="p.limit" value="${config.limit || 24}" form="${config.form}"/>
-    <input type="hidden" name="p.offset" value="0" form="${config.form}"/>
+    <input type="hidden" name="p.limit" value="${config.limit || 24}" form="${SEARCH_FORM}"/>
+    <input type="hidden" name="p.offset" value="0" form="${SEARCH_FORM}"/>
     <input type="hidden" name="asc.search-results.more" value="true"/>
     <input type="hidden" name="asc.search-results.total" value="0"/>
 
@@ -268,6 +287,8 @@ async function addEventListeners(block, _config) {
       if (display === 'list') {
         resultsEl.querySelector('.asc-list-view__rows')
           ?.insertAdjacentHTML('beforeend', renderListRows(results.assets || [], getListCols(), quickDownloadRendition));
+      } else if (display === 'masonry') {
+        appendMasonryItems(resultsEl, results.assets || []);
       } else {
         resultsEl.insertAdjacentHTML('beforeend',
           results.assets?.map((asset) => assetTeaser(asset, { mode: 'card', view: display })).join('') || '');
@@ -281,6 +302,9 @@ async function addEventListeners(block, _config) {
         </div>`;
     } else if (display === 'list') {
       resultsEl.innerHTML = renderListView(results.assets, quickDownloadRendition);
+    } else if (display === 'masonry') {
+      resultsEl.innerHTML = '';
+      appendMasonryItems(resultsEl, results.assets || []);
     } else {
       resultsEl.innerHTML = results.assets
         .map((asset) => assetTeaser(asset, { mode: 'card', view: display })).join('') || '';

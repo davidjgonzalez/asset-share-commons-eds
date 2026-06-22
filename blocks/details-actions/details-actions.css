@@ -16,6 +16,20 @@
         align-items: flex-start;
     }
 
+    .asc-ui-action {
+        max-width: 5.5rem;
+    }
+
+    /* Pin <a> anchor so a:any-link overrides (color, text-decoration, overflow-wrap)
+       don't cause the download link to render differently from the <button> siblings. */
+    a.asc-ui-action:any-link,
+    a.asc-ui-action:any-link:visited {
+        color: var(--color-fg);
+        text-decoration: none;
+        overflow-wrap: normal;
+        line-height: inherit;
+    }
+
     /* Collection toggle → match .asc-ui-action: transparent column button, colored
        circle on the icon, label revealed below. Theming via the part's variables. */
     .asc-collection-toggle {

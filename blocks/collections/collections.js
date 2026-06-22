@@ -81,14 +81,14 @@ function collectionCard(collection, activeId, defaultId) {
   return `
     <li class="collections__card asc-ui-card asc-ui-card--interactive${isActive ? ' asc-ui-card--active' : ''}"
         data-collection-id="${collection.id}">
-      <div class="asc-ui-card__body">
-        <div class="asc-ui-card__header">
-          <h2 class="collections__card-name asc-ui-card__title">${escHtml(collection.name)}</h2>
-          <div class="collections__card-badges" role="presentation">
-            ${isActive ? '<span class="asc-ui-badge asc-ui-badge--primary">Active</span>' : ''}
-            ${isDefault ? '<span class="asc-ui-badge">Default</span>' : ''}
-          </div>
+      <div class="asc-ui-card__header">
+        <h2 class="collections__card-name asc-ui-card__title">${escHtml(collection.name)}</h2>
+        <div class="collections__card-badges" role="presentation">
+          ${isActive ? '<span class="asc-ui-badge asc-ui-badge--primary">Active</span>' : ''}
+          ${isDefault ? '<span class="asc-ui-badge">Default</span>' : ''}
         </div>
+      </div>
+      <div class="asc-ui-card__body">
         <p class="collections__card-count"><span class="collections__card-count-num">${count}</span> asset${count !== 1 ? 's' : ''}</p>
         ${updated
     ? `<p class="collections__card-updated"><time datetime="${escAttr(updated.iso)}">${escHtml(updated.label)}</time></p>`

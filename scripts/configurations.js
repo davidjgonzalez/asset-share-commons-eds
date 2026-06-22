@@ -26,6 +26,12 @@ const configurations = {
     // Which search API to use. 'querybuilder' (default) or 'openapi'.
     provider: 'querybuilder',
 
+    // The page to navigate to when a search-bar is used from a page that has
+    // no search results block (e.g. the site header). The query is appended as
+    // ?fulltext=<value>. Leave blank to disable cross-page redirect entirely.
+    // Individual search-bar blocks can override this with a `redirect` row.
+    page: '/',
+
     // ── QueryBuilder options (used when provider = 'querybuilder') ──
     // url: '/bin/querybuilder.json',
     // basePath: '/content/dam',         // Root DAM path to search within
@@ -63,6 +69,23 @@ const configurations = {
     //   'relativedaterange.property': 'jcr:content/jcr:lastModified',
     //   'relativedaterange.lowerBound': '-30d',
     // },
+
+    // ── Search config sheet (content-author-level static predicates) ──────
+    // Points to the /asc workbook in da.live. SearchService reads the sheet
+    // named "search-predicates" (/asc.json?sheet=search-predicates).
+    //
+    // Sheet columns: name | value
+    // Write full QB predicate names — include group prefixes if needed.
+    // Example:
+    //
+    //   name                                  | value
+    //   --------------------------------------|--------------------------------
+    //   path                                  | /content/dam/brand
+    //   notexpired.property                   | jcr:content/metadata/dam:expirationDate
+    //   1000_group.property                   | jcr:content/metadata/dam:status
+    //   1000_group.property.value             | approved
+    //
+    sheet: '/asc',
 
     // ── OpenAPI options (used when provider = 'openapi') ──
     // url: '/adobe/assets/search',
@@ -156,7 +179,14 @@ const configurations = {
     //   const brand = asset.getProperty('jcr:content/metadata/myco:brand');
     //   return brand === 'acme' ? '/details/acme' : '/details';
     // },
-    templates: () => '/details',
+    // Route PDFs to their own fragment page so details-pdf can be authored there.
+    // Create /details/pdf in da.live with a details-pdf block (and details-header,
+    // details-actions, details-renditions, etc. as needed).
+    templates: (asset) => {
+      if (asset.mimeType?.startsWith('image/'))    return '/details/image';
+      if (asset.mimeType === 'application/pdf')    return '/details/pdf';
+      return '/details';
+    },
   },
 
   // ─── Collections ─────────────────────────────────────────────────────────────
@@ -212,6 +242,40 @@ const configurations = {
   // ─── Asset Properties ────────────────────────────────────────────────────────
   properties: {
     custom: {
+      // Uploaded date → repo:createDate (OpenAPI) or jcr:created root (QueryBuilder).
+      'uploaded-date': (asset) => {
+        const raw = asset.getProperty('repo:createDate') || asset.getProperty('jcr:created');
+        if (!raw) return null;
+        return new Date(raw).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+      },
+
+      // Uploaded by → repo:createdBy (OpenAPI) or jcr:createdBy root (QueryBuilder).
+      'uploaded-by': (asset) => asset.getProperty('repo:createdBy') || asset.getProperty('jcr:createdBy') || null,
+
+      // Last modified by → repo:modifiedBy (OpenAPI) or jcr:lastModifiedBy root (QueryBuilder).
+      'last-modified-by': (asset) => asset.getProperty('repo:modifiedBy') || asset.getProperty('jcr:lastModifiedBy') || null,
+
+      // Author → dc:creator, may be multi-value.
+      'author': (asset) => {
+        const raw = asset.getProperty('jcr:content/metadata/dc:creator');
+        if (!raw) return null;
+        return Array.isArray(raw) ? raw.join(', ') : raw;
+      },
+
+      // Keywords → dc:subject values; multi-value, rendered as chips.
+      'keywords': (asset) => {
+        const raw = asset.getProperty('jcr:content/metadata/dc:subject');
+        if (!raw) return null;
+        return Array.isArray(raw) ? raw : [raw];
+      },
+
+      // Last modified date → repo:modifiedDate (OpenAPI) or jcr:lastModified root (QueryBuilder).
+      'last-modified-date': (asset) => {
+        const raw = asset.getProperty('repo:modifiedDate') || asset.getProperty('jcr:lastModified');
+        if (!raw) return null;
+        return new Date(raw).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+      },
+
       // Tags → array of leaf labels; the details-metadata block renders arrays
       // as .asc-ui-chip pills. Reads AEM's cq:tags (tag IDs like "ns:foo/bar").
       tags: (asset) => {
@@ -297,6 +361,11 @@ const configurations = {
   //                           Set false for internal-only renditions (e.g. thumbnail).
   //   description {string}    Optional. Shown as tooltip or sub-label.
   //   mimeType    {string}    Override MIME type for download filename hint.
+  //   fileType    {string}    Human-readable format label shown in the `file-type`
+  //                           column of details-renditions (e.g. 'JPEG', 'WebP 1200px').
+  //                           Defaults to the label derived from mimeType.
+  //   usecase     {string}    Arbitrary tag (e.g. 'thumbnail', 'web'). Exposed as
+  //                           the `usecase` column value in details-renditions.
   //
   // ── type: 'static' ───────────────────────────────────────────────────────────
   // Matches a rendition node from the asset's jcr:content/renditions/* tree.
@@ -323,16 +392,20 @@ const configurations = {
   //   params   {string}  Query string appended to the delivery URL
   //   format   {string}  File extension override (default: asset's extension)
   //
-  // renditions: {
-  //   // Exclude AEM rendition node names from all resolved renditions.
-  //   // Accepts exact strings or RegExps matched against the JCR node name.
-  //   // Use case: suppress thumbnail/template nodes you never want in the download list.
-  //   //
-  //   // Examples:
-  //   //   exclude: ['cq5dam.thumbnail.48.48.png', 'cq5dam.thumbnail.140.100.png']
-  //   //   exclude: [/^cq5dam\.thumbnail\.(?:48|96|140)\./]
-  //   //
-  //   exclude: [],
+  renditions: {
+    // Exclude AEM rendition node names from all resolved renditions.
+    // Accepts exact strings or RegExps matched against the JCR node name.
+    // Use case: suppress thumbnail/template nodes you never want in the download list.
+    //
+    // Examples:
+    //   exclude: ['cq5dam.thumbnail.48.48.png', 'cq5dam.thumbnail.140.100.png']
+    //   exclude: [/^cq5dam\.thumbnail\.(?:48|96|140)\./]
+    //
+    exclude: [
+      /^cq5dam\.thumbnail\./,  // cq5dam.thumbnail.48.48.png, cq5dam.thumbnail.319.319.png, etc.
+      /^cqdam\..+\.json$/,     // cqdam.text.json, cqdam.metadata.json, etc.
+      'cqdam.metadata.xml',
+    ],
   //   definitions: [
   //
   //     // ── Static renditions ─────────────────────────────────────────────────
@@ -409,7 +482,7 @@ const configurations = {
   //       accepts: (asset) => asset.mimeType?.startsWith('image/'),
   //     },
   //   ],
-  // },
+  },
 
   // ─── Init / Preloading ───────────────────────────────────────────────────────
   // init: {

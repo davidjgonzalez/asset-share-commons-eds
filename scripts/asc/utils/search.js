@@ -16,8 +16,15 @@ import { readBlockConfig as readGenericBlockConfig, getOptions as getGenericBloc
 
 export const SEARCH_FORM = 'asc-search-form';
 
+// Assigns stable group numbers to filter blocks in first-call order (DOM order,
+// since EDS decorates blocks top-to-bottom). Only blocks that call readBlockConfig
+// receive a number — non-filter blocks are never counted.
+const _groupMap = new WeakMap();
+let _groupCounter = 0;
+
 export function getGroup(block) {
-  return Array.from(document.querySelectorAll('.block')).indexOf(block) + 1;
+  if (!_groupMap.has(block)) _groupMap.set(block, ++_groupCounter);
+  return _groupMap.get(block);
 }
 
 export function getFieldName({group, name, parameter = ''}) {

@@ -16,6 +16,12 @@
         margin: 0;
     }
 
+    /* Active rendition indicator */
+    tr[data-asc-rendition].is-active td:first-child {
+        border-inline-start: 3px solid var(--color-primary);
+        padding-inline-start: calc(var(--spacing-sm) - 3px);
+    }
+
     /* Action columns: keep tight + right-aligned */
     .asc-ui-table th.details-renditions__action,
     .asc-ui-table td.details-renditions__action {
@@ -45,5 +51,62 @@
         display: inline-flex;
         gap: var(--spacing-xs);
         justify-content: flex-end;
+    }
+
+    /* ── Cards display ──────────────────────────────────────────────────── */
+    &.details-renditions--cards {
+        .details-renditions__cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: var(--spacing-md);
+        }
+
+        .details-renditions__cards > .asc-ui-card {
+            max-width: 280px;
+            cursor: pointer;
+        }
+
+        .details-renditions__cards > .asc-ui-card.is-active {
+            outline: 2px solid var(--color-primary);
+            outline-offset: 2px;
+        }
+
+        .details-renditions__card-preview {
+            aspect-ratio: 4 / 3;
+            overflow: hidden;
+            background: var(--color-muted);
+            border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+            margin-top: calc(-1 * var(--spacing-md));
+            margin-inline: calc(-1 * var(--spacing-md));
+        }
+
+        .details-renditions__card-thumb {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+
+        .asc-ui-card__title {
+            font-size: var(--body-font-size-s);
+        }
+
+        .asc-ui-copy {
+            font-size: var(--body-font-size-xs);
+        }
+
+        .details-renditions__card-meta {
+            display: flex;
+            flex-wrap: wrap;
+
+            span {
+                white-space: nowrap;
+            }
+        }
+
+        .asc-ui-card__footer {
+            margin-top: auto;
+            justify-content: flex-end;
+        }
     }
 }

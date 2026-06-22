@@ -180,7 +180,8 @@ Invoke the **building-blocks** skill, but use ASC references instead of Adobe's 
 
 **Block implementation checklist**:
 - [ ] `decorate(block)` exported as default
-- [ ] Content extracted via `readBlockConfig(block)` (details blocks) or `readBlockConfig(block, transform, defaults)` (search blocks)
+- [ ] Content extracted via `readBlockConfig(block)` (details blocks) or `readBlockConfig(block, transform, defaults)` (search filter blocks)
+- [ ] **Search filter blocks only**: imports `readBlockConfig` from `../../scripts/asc/utils/search.js` — this assigns a stable group number used for URL-serialised predicates. Display blocks (`search-results`, `search-statistics`) must NOT import from `search.js` `readBlockConfig` — they should use `blocks.js` or `aem.js` and import `SEARCH_FORM` directly.
 - [ ] CSS scoped to `main .{block-name}` root selector
 - [ ] All colors use `--color-*` tokens
 - [ ] All spacing uses `--spacing-*` tokens
@@ -250,6 +251,7 @@ Create a PR with:
 | Using `--text-color` or `--background-color` | Old EDS boilerplate tokens; not defined in ASC | Use `--color-fg` and `--color-bg` |
 | Creating a service for a simple display value | Over-engineering | Register a property handler in `configurations.properties.custom` |
 | Dispatching `asc:search:execute` manually inside a filter | Already handled by `addSearchEventListeners` | Call `addSearchEventListeners(block, config)` after setting `block.innerHTML` |
+| Calling `readBlockConfig` from `search.js` in a display block | Wastes a group slot; group numbers are URL keys for shared links — gaps break URL hydration for filter blocks | Display blocks use `readBlockConfig` from `blocks.js` / `aem.js` and import `SEARCH_FORM` directly |
 | Importing one block from another | Creates tight coupling | Use `data-asc-action` events for inter-block communication |
 
 ---
@@ -263,7 +265,9 @@ Create a PR with:
 | Route details by MIME type | `configurations.js` | `assetDetails.templates` |
 | Add DM smart crop | `configurations.js` | `renditions.definitions` (`type: 'asset-delivery'`) |
 | Add static rendition | `configurations.js` | `renditions.definitions` (`type: 'static'`) |
-| Add base search filter | `configurations.js` | `search.basePredicates` |
+| Add developer base filter | `configurations.js` | `search.basePredicates` — see [QB predicates](references/querybuilder-predicates.md) |
+| Add author-managed base filter | `/asc` workbook → `search-predicates` sheet + `configurations.search.sheet` | name/value rows; write full QB predicate names incl. group prefix if needed |
+| Background programmatic search | Any block | `services.search.searchSilent(formData)` |
 | Filter/transform results | `configurations.js` | `search.postprocessResults` / `search.accepts` |
 | Modify query before send | `configurations.js` | `search.preprocessQuery` |
 | Change theme colors | `styles/themes/{name}.css` | `--color-*` tokens only |
@@ -288,6 +292,7 @@ Create a PR with:
 | [references/fragments.md](references/fragments.md) | Loading fragment pages into blocks or modals |
 | [references/parts.md](references/parts.md) | Using or creating ASC Parts (assetTeaser, collectionToggle, picture) |
 | [references/services-api.md](references/services-api.md) | Calling ASC services (collections, search, renditions, etc.) |
+| [references/querybuilder-predicates.md](references/querybuilder-predicates.md) | Every OOTB QueryBuilder predicate with params, group logic, and ASC patterns |
 | [references/css-guidelines.md](references/css-guidelines.md) | CSS selectors, tokens, responsive patterns for ASC |
 | [references/js-guidelines.md](references/js-guidelines.md) | JS patterns, DOM re-use, event binding, async loading |
 | [templates/search-filter.md](templates/search-filter.md) | Step-by-step for a new search filter block |

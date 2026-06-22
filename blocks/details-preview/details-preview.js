@@ -31,11 +31,49 @@ export default async function decorate(block) {
     // Reflect the asset in the page/tab title
     document.title = `${asset.title} - Asset Details`;
 
+    const defaultRendition = asset.getRendition('original') || asset.getRendition('web');
+    let activeRendition = defaultRendition;
+
+    const srcFor = (r) => r?.url || asset.thumbnail;
+
     block.innerHTML = `
       <div class="asc-ui-detail__preview">
-        <img src="${asset.getRendition('web')?.url || asset.thumbnail}" alt="${asset.title}" loading="eager">
+        <img src="${srcFor(activeRendition)}" alt="${asset.title}" loading="eager">
       </div>
+      <span class="asc-ui-chip details-preview__rendition-label"></span>
     `;
+
+    const preview = block.querySelector('.asc-ui-detail__preview');
+    const img = block.querySelector('img');
+    const label = block.querySelector('.details-preview__rendition-label');
+
+    // Size the container to the most vertical rendition so switching renditions
+    // never causes a layout shift — landscape renditions just have more padding.
+    const withDims = asset.renditions.filter((r) => r.width && r.height);
+    if (withDims.length) {
+      const tallest = withDims.reduce((best, r) => (r.width / r.height < best.width / best.height ? r : best));
+      preview.style.aspectRatio = `${tallest.width} / ${tallest.height}`;
+    }
+
+    const setDisplay = (rendition, sticky) => {
+      img.src = srcFor(rendition);
+      label.textContent = rendition?.label ? `Rendition: ${rendition.label}` : '';
+      if (sticky) activeRendition = rendition;
+    };
+
+    setDisplay(activeRendition, false);
+
+    document.body.addEventListener('asc:rendition:activate', (e) => {
+      setDisplay(e.detail.rendition, true);
+    });
+
+    document.body.addEventListener('asc:rendition:preview', (e) => {
+      if (e.detail.rendition) {
+        setDisplay(e.detail.rendition, false);
+      } else {
+        setDisplay(activeRendition, false);
+      }
+    });
   } catch (error) {
     console.error('Failed to load asset:', error);
     block.innerHTML = `

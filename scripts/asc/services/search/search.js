@@ -29,6 +29,9 @@ class SearchService {
     }
     this.provider = new ProviderClass(config);
 
+    this._sheetPredicates = {};
+    this._sheetReady = null;
+
     this.init();
   }
 
@@ -52,6 +55,56 @@ class SearchService {
 
   getForm() {
     return this.form;
+  }
+
+  _requireSheet() {
+    if (!this._sheetReady) this._sheetReady = this._loadSheetPredicates();
+    return this._sheetReady;
+  }
+
+  async _loadSheetPredicates() {
+    const url = this.config.sheet;
+    if (!url) return;
+    try {
+      const resp = await fetch(`${url}.json?sheet=search-predicates`);
+      if (!resp.ok) return;
+      const { data = [] } = await resp.json();
+      this._sheetPredicates = this._parseSheetPredicates(data);
+    } catch { /* sheet missing or malformed — silently skip */ }
+  }
+
+  _parseSheetPredicates(rows) {
+    const result = {};
+    rows.forEach(({ name, value }) => {
+      if (name && value) result[name] = value;
+    });
+    return result;
+  }
+
+  /**
+   * Background search — inherits basePredicates and sheet predicates but does
+   * not update the browser URL, fire search events, or block concurrent searches.
+   * Use for programmatic fetches (similar assets, related content, etc.).
+   *
+   * @param {Map<string, string|string[]>} formData  QB-style params
+   * @returns {Promise<{assets: Asset[], total: number, size: number}>}
+   */
+  async searchSilent(formData) {
+    await this._requireSheet();
+    const withSheet = new Map([
+      ...Object.entries(this._sheetPredicates),
+      ...formData,
+    ]);
+    try {
+      const results = await this.provider.search(withSheet);
+      if (results?.assets && this.config.accepts) {
+        results.assets = results.assets.filter((a) => this.config.accepts(a));
+        results.size = results.assets.length;
+      }
+      return results ?? { assets: [], total: 0, size: 0 };
+    } catch {
+      return { assets: [], total: 0, size: 0 };
+    }
   }
 
   async executeSearchFromUrl(queryParams = window.location.search) {
@@ -104,13 +157,19 @@ class SearchService {
     if (this.searchInProgress) return undefined;
     this.searchInProgress = true;
 
+    await this._requireSheet();
+
     try {
       const cleaned = this.cleanFormData(formData);
       const adjusted = this.adjustFormData(cleaned);
+      const withSheet = new Map([
+        ...Object.entries(this._sheetPredicates),
+        ...adjusted,
+      ]);
 
-      this.updateBrowserUrl(this.provider.buildParams(adjusted));
+      this.updateBrowserUrl(this.provider.buildParams(withSheet));
 
-      const results = await this.provider.search(adjusted);
+      const results = await this.provider.search(withSheet);
 
       if (results && this.config.accepts) {
         const before = results.assets.length;

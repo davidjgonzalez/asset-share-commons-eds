@@ -15,11 +15,12 @@ export default class Asset {
       data["jcr:content"]["cq:name"] ||
       data["jcr:path"]?.split("/")?.pop() ||
       null;
+    const firstVal = (v) => (Array.isArray(v) ? v[0] : v);
     this.title =
-      data["jcr:content"]["metadata"]["dc:title"] ||
+      firstVal(data["jcr:content"]["metadata"]["dc:title"]) ||
       data["jcr:content"]["cq:name"] ||
       "Missing title";
-    this.description = data["jcr:content"]["metadata"]["dc:description"];
+    this.description = firstVal(data["jcr:content"]["metadata"]["dc:description"]);
     this.mimeType = data["jcr:content"]["metadata"]["dc:format"];
     this.sizeInBytes = data["jcr:content"]["metadata"]["dam:size"] || null;
     this.created = new Date(data["jcr:content"]["metadata"]["jcr:created"]);
@@ -81,9 +82,9 @@ export default class Asset {
     if (!this.sizeInBytes) return "Unknown size";
     const bytes = this.sizeInBytes;
     if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-    return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+    if (bytes < 1024 * 1024) return `${Math.ceil(bytes / 1024)} KB`;
+    if (bytes < 1024 * 1024 * 1024) return `${Math.ceil(bytes / (1024 * 1024))} MB`;
+    return `${(Math.ceil((bytes / (1024 * 1024 * 1024)) * 10) / 10).toFixed(1)} GB`;
   }
 
   get fileExtension() {

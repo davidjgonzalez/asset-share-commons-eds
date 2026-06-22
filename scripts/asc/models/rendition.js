@@ -1,17 +1,18 @@
 // ASC Core — do not edit. Customize via scripts/configurations.js
 class Rendition {
-  constructor({ asset, id, label, description, visible, mimeType, format, usecase, url, fileSize, width, height, type, path }) {
+  constructor({ asset, id, label, description, visible, mimeType, format, fileType, usecase, url, fileSize, width, height, type, path }) {
     // Simple data as direct properties
     this.asset = asset;
     this.id = id;
     this.name = id;
-    this.label = label;
+    this.label = Rendition.deriveLabel(label);
     this.description = description;
     this.visible = visible;
     this.mimeType = mimeType;
     this.format = format;
+    this.fileType = fileType;
     this.usecase = usecase;
-    this.url = url;
+    this.url = (id === 'original' && asset?.url) ? asset.url : url;
     this.fileSize = fileSize;
     this.width = width;
     this.height = height;
@@ -63,6 +64,25 @@ class Rendition {
    */
   toJSON() {
     return this.toObject();
+  }
+
+  /**
+   * Derive a human-readable display label from a raw JCR rendition node name.
+   *
+   * Rules (applied in order):
+   *  1. Strip the file extension
+   *  2. Strip AEM node-name prefixes: cq5dam. / cqdam.
+   *  3. Strip a trailing pair of numeric segments (e.g. .1280.1280, .48.48)
+   *
+   * Human-readable labels (e.g. "Web", "Smart Crop — Small") are returned unchanged.
+   */
+  static deriveLabel(raw) {
+    if (!raw) return raw;
+    let name = String(raw);
+    name = name.replace(/\.[a-zA-Z][a-zA-Z0-9]*$/, '');   // 1. strip extension
+    name = name.replace(/^cq5?dam\./, '');                  // 2. strip prefix
+    name = name.replace(/\.\d+\.\d+$/, '');                 // 3. strip trailing number pair
+    return name || raw;
   }
 
 }

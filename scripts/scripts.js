@@ -15,7 +15,7 @@ import {
 
 import './asc/services/services.js';
 import configurations from './configurations.js';
-import decorateGridLayouts from './section-grid.js';
+import { decorateASCSections } from './section-grid.js';
 import { resolvePageTokens } from './tokens.js';
 
 /**
@@ -68,9 +68,9 @@ export function decorateMain(main) {
   decorateSections(main);
   resolvePageTokens(main);
   decorateBlocks(main);
-  // Apply named-area grid layouts (layout: grid + areas) before blocks render,
-  // so each block's `area` row is pulled onto its wrapper first. See section-grid.js.
-  decorateGridLayouts(main);
+  // Runs after decorateBlocks: reads section.dataset (set by decorateSections),
+  // assigns grid areas to block wrappers, and groups co-area blocks into stacks.
+  decorateASCSections(main);
 }
 
 /**
