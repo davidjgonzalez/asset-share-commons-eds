@@ -1,4 +1,5 @@
 /** @owner user */
+import Asset from '../../scripts/asc/models/asset.js';
 import services from '../../scripts/asc/services/services.js';
 import { Events as CollectionEvents } from '../../scripts/asc/services/collections/collections.js';
 import { escHtml, escAttr, formatUpdated } from '../../scripts/html.js';
@@ -12,7 +13,8 @@ const COLLECTION_PATH = configurations.collections?.collectionPath || '/collecti
  * Page title and intro copy are authored in Universal Editor above this block.
  *
  * Features:
- *   - Grid of collection cards: name, asset count, last updated, Open / Delete buttons
+ *   - Grid of collection cards: mosaic of up to 4 asset thumbnails (lazy-loaded),
+ *     name, asset type counts, total count, last updated, Open / Delete buttons
  *   - Inline "New collection" form
  *   - Re-renders on any collection change event
  *   - Navigate to collection detail page at COLLECTION_PATH?id=<uuid>
@@ -40,6 +42,7 @@ async function render(block) {
 
   block.innerHTML = html(sorted, activeId, defaultId);
   initInteractions(block);
+  loadMosaics(block);
 }
 
 function html(collections, activeId, defaultId) {
@@ -77,36 +80,129 @@ function collectionCard(collection, activeId, defaultId) {
   const isActive = collection.id === activeId;
   const isDefault = collection.id === defaultId;
   const updated = formatUpdated(collection.modifiedAt);
+  const thumbIds = (collection.assetIds || []).slice(0, 20);
 
   return `
     <li class="collections__card asc-ui-card asc-ui-card--interactive${isActive ? ' asc-ui-card--active' : ''}"
-        data-collection-id="${collection.id}">
-      <div class="asc-ui-card__header">
-        <h2 class="collections__card-name asc-ui-card__title">${escHtml(collection.name)}</h2>
-        <div class="collections__card-badges" role="presentation">
-          ${isActive ? '<span class="asc-ui-badge asc-ui-badge--primary">Active</span>' : ''}
-          ${isDefault ? '<span class="asc-ui-badge">Default</span>' : ''}
-        </div>
-      </div>
-      <div class="asc-ui-card__body">
-        <p class="collections__card-count"><span class="collections__card-count-num">${count}</span> asset${count !== 1 ? 's' : ''}</p>
-        ${updated
+        data-collection-id="${escAttr(collection.id)}"
+        data-thumb-ids="${escAttr(thumbIds.join(','))}">
+      <a class="collections__card-link" href="${COLLECTION_PATH}?id=${escAttr(collection.id)}">
+        ${mosaicHtml(count, thumbIds)}
+        <div class="collections__card-content">
+          <div class="asc-ui-card__header">
+            <h2 class="collections__card-name asc-ui-card__title">${escHtml(collection.name)}</h2>
+          </div>
+          <div class="asc-ui-card__body">
+            ${typeCountsHtml(collection)}
+            <p class="collections__card-count"><span class="collections__card-count-num">${count}</span> asset${count !== 1 ? 's' : ''}</p>
+            ${updated
     ? `<p class="collections__card-updated"><time datetime="${escAttr(updated.iso)}">${escHtml(updated.label)}</time></p>`
     : ''}
-      </div>
+          </div>
+        </div>
+      </a>
+      ${!isActive || !isDefault ? `
       <div class="collections__card-actions asc-ui-card__footer">
-        <a class="collections__card-open btn btn--primary btn--sm"
-           href="${COLLECTION_PATH}?id=${collection.id}">Open</a>
         ${!isActive
     ? `<button type="button" class="collections__card-activate btn btn--secondary btn--sm"
-                 data-collection-id="${collection.id}">Set active</button>`
+               data-collection-id="${escAttr(collection.id)}">Set active</button>`
     : ''}
         ${!isDefault
     ? `<button type="button" class="collections__card-delete btn btn--ghost btn--sm"
-                 data-collection-id="${collection.id}">Delete</button>`
+               data-collection-id="${escAttr(collection.id)}">Delete</button>`
     : ''}
-      </div>
+      </div>` : ''}
     </li>`;
+}
+
+// Maps actual thumbnail count to a CSS grid layout group.
+// 1→1×1, 2→2×1, 3→3×1, 4→2×2, 5-10→5×2, 11-15→5×3, 16-20→5×4 (default)
+function mosaicLayout(n) {
+  if (n <= 4) return n;
+  if (n <= 10) return 10;
+  if (n <= 15) return 15;
+  return 20;
+}
+
+function mosaicHtml(count, thumbIds) {
+  if (count === 0) {
+    return `<div class="collections__card-mosaic collections__card-mosaic--empty" aria-hidden="true">
+      <span class="collections__card-mosaic-icon">📁</span>
+    </div>`;
+  }
+  const cells = thumbIds.map(() =>
+    `<div class="asc-ui-collection-card__thumb asc-ui-skeleton" aria-hidden="true"></div>`,
+  ).join('');
+  return `<div class="collections__card-mosaic" aria-hidden="true">
+    <div class="asc-ui-collection-card__thumbs" data-count="${mosaicLayout(thumbIds.length)}">${cells}</div>
+  </div>`;
+}
+
+function typeCountsHtml(collection) {
+  const assetItems = (collection.items || []).filter((i) => i.type === 'asset');
+  if (!assetItems.length) return '';
+  // Only show breakdown when every asset has a known mimeType
+  if (assetItems.some((i) => !i.mimeType)) return '';
+
+  const counts = { image: 0, video: 0, document: 0, other: 0 };
+  assetItems.forEach(({ mimeType }) => {
+    if (mimeType.startsWith('image/')) counts.image++;
+    else if (mimeType.startsWith('video/')) counts.video++;
+    else if (mimeType.startsWith('application/')) counts.document++;
+    else counts.other++;
+  });
+
+  const parts = [
+    counts.image && `${counts.image} ${counts.image === 1 ? 'image' : 'images'}`,
+    counts.video && `${counts.video} ${counts.video === 1 ? 'video' : 'videos'}`,
+    counts.document && `${counts.document} ${counts.document === 1 ? 'doc' : 'docs'}`,
+    counts.other && `${counts.other} other`,
+  ].filter(Boolean);
+
+  return parts.length
+    ? `<p class="collections__card-types">${escHtml(parts.join(' · '))}</p>`
+    : '';
+}
+
+// ─── Mosaic lazy-loading ───────────────────────────────────────────────────────
+
+function loadMosaics(block) {
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      observer.unobserve(entry.target);
+      loadCardMosaic(entry.target);
+    });
+  }, { rootMargin: '200px' });
+
+  block.querySelectorAll('.collections__card[data-thumb-ids]').forEach((card) => {
+    if (card.dataset.thumbIds) observer.observe(card);
+  });
+}
+
+async function loadCardMosaic(card) {
+  const assetIds = card.dataset.thumbIds?.split(',').filter(Boolean) || [];
+  if (!assetIds.length) return;
+
+  const thumbEls = [...card.querySelectorAll('.asc-ui-collection-card__thumb')];
+
+  await Promise.all(assetIds.map(async (assetId, i) => {
+    const el = thumbEls[i];
+    if (!el) return;
+    try {
+      const asset = await Asset.create(assetId);
+      if (!asset?.path) return;
+      const url = services.renditions.getThumbnailUrl(asset);
+      const img = document.createElement('img');
+      img.alt = '';
+      img.loading = 'lazy';
+      img.src = url;
+      el.classList.remove('asc-ui-skeleton');
+      el.appendChild(img);
+    } catch {
+      el.classList.remove('asc-ui-skeleton');
+    }
+  }));
 }
 
 // ─── Interactions ─────────────────────────────────────────────────────────────
@@ -152,4 +248,3 @@ function initInteractions(block) {
     });
   });
 }
-

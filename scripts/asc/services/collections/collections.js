@@ -16,20 +16,22 @@ export const Events = {
  * Collections storage schema (stored under storage key 'collections'):
  *
  * {
- *   defaultId: "uuid",          // ID of the permanent default collection; never deleted
+ *   defaultId: "uuid",
  *   items: {
  *     "uuid": {
  *       id:         string,
  *       name:       string,
  *       createdAt:  ISO string,
  *       modifiedAt: ISO string,
- *       assetIds:   string[]
+ *       items:      Array<AssetItem | SectionItem>
  *     }
  *   }
  * }
  *
- * The active collection ID is stored separately:
- *   storage.get(storage.ACTIVE_COLLECTION_ID) → UUID | null
+ * AssetItem:   { type: 'asset',   id: string, mimeType?: string }
+ * SectionItem: { type: 'section', id: string, title: string, body: string }
+ *
+ * Active collection ID: storage.get(storage.ACTIVE_COLLECTION_ID) → UUID | null
  * null means "use defaultId".
  */
 
@@ -69,7 +71,7 @@ class Collections {
             name: "My Collection",
             createdAt: now,
             modifiedAt: now,
-            assetIds: seedAssetIds,
+            items: seedAssetIds.map((id) => ({ type: "asset", id })),
           },
         },
       });
@@ -86,11 +88,28 @@ class Collections {
           name: "My Collection",
           createdAt: now,
           modifiedAt: now,
-          assetIds: [],
+          items: [],
         };
         this._setData(data);
       }
     }
+
+    // v1→v2: migrate assetIds[]+assetTypes{} → items[]
+    const d = this._getData();
+    let needsMigration = false;
+    Object.values(d.items || {}).forEach((c) => {
+      if (!Array.isArray(c.assetIds)) return;
+      needsMigration = true;
+      const types = c.assetTypes || {};
+      c.items = c.assetIds.map((id) => ({
+        type: "asset",
+        id,
+        ...(types[id] ? { mimeType: types[id] } : {}),
+      }));
+      delete c.assetIds;
+      delete c.assetTypes;
+    });
+    if (needsMigration) this._setData(d);
 
     // DOM event listeners (dispatched on document per AGENTS.md)
     document.addEventListener(Events.ASSET_ADDED, (event) => {
@@ -135,14 +154,45 @@ class Collections {
   }
 
   /**
+   * Adds computed backward-compat `assetIds` to a raw collection object.
+   * Call on every collection before returning it from a getter.
+   * @param {Object} collection - Raw collection from storage
+   * @returns {Object} Decorated collection with assetIds computed
+   */
+  _decorate(collection) {
+    return {
+      ...collection,
+      assetIds: (collection.items || [])
+        .filter((i) => i.type === "asset")
+        .map((i) => i.id),
+    };
+  }
+
+  /**
    * Hydrates a collection object with full Asset instances.
-   * @param {Object} collection - Plain collection object
-   * @returns {Promise<Object>} Collection with an `assets` array added
+   * Populates:
+   *   collection.hydratedItems — mixed array; asset items gain a `.asset` property
+   *   collection.assets        — flat array of Asset objects (backward compat)
+   * @param {Object} collection - Decorated collection object
+   * @returns {Promise<Object>}
    */
   async _hydrateAssets(collection) {
-    collection.assets = await Promise.all(
-      collection.assetIds.map((id) => Asset.create(id)),
+    const assetItemIds = (collection.items || [])
+      .filter((i) => i.type === "asset")
+      .map((i) => i.id);
+
+    const hydratedAssets = await Promise.all(
+      assetItemIds.map((id) => Asset.create(id)),
     );
+    const assetMap = new Map(hydratedAssets.map((a) => [a?.uuid, a]));
+
+    collection.hydratedItems = (collection.items || []).map((item) => {
+      if (item.type !== "asset") return item;
+      return { ...item, asset: assetMap.get(item.id) || null };
+    });
+
+    // Backward compat — callers like the download dialog use collection.assets
+    collection.assets = hydratedAssets.filter(Boolean);
     return collection;
   }
 
@@ -163,7 +213,7 @@ class Collections {
       name,
       createdAt: now,
       modifiedAt: now,
-      assetIds: [],
+      items: [],
     };
     const data = this._getData();
     data.items[id] = collection;
@@ -174,7 +224,7 @@ class Collections {
     document.dispatchEvent(
       new CustomEvent(Events.CHANGED, { detail: { action: "created", id } }),
     );
-    return { ...collection };
+    return this._decorate({ ...collection });
   }
 
   /**
@@ -242,7 +292,7 @@ class Collections {
    */
   async getAll(hydrateAssets = false) {
     const { items } = this._getData();
-    const collections = Object.values(items).map((c) => ({ ...c }));
+    const collections = Object.values(items).map((c) => this._decorate({ ...c }));
     if (!hydrateAssets) return collections;
     return Promise.all(collections.map((c) => this._hydrateAssets(c)));
   }
@@ -255,7 +305,7 @@ class Collections {
    */
   async get(id, hydrateAssets = false) {
     const { items } = this._getData();
-    const collection = items[id] ? { ...items[id] } : null;
+    const collection = items[id] ? this._decorate({ ...items[id] }) : null;
     if (!collection) return null;
     return hydrateAssets ? this._hydrateAssets(collection) : collection;
   }
@@ -325,14 +375,19 @@ class Collections {
    */
   async addAsset(assetId, collectionId) {
     const id = collectionId || this.getActiveId();
-    const collection = await this.get(id, false);
+    const data = this._getData();
+    const collection = data.items[id];
     if (!collection) {
       console.error(`Collection "${id}" not found`);
       return;
     }
-    if (collection.assetIds.includes(assetId)) return;
+    if ((collection.items || []).some((i) => i.type === "asset" && i.id === assetId)) return;
 
-    collection.assetIds.push(assetId);
+    const item = { type: "asset", id: assetId };
+    const cachedAsset = window.asc?.cache?.assets?.get(assetId);
+    if (cachedAsset?.mimeType) item.mimeType = cachedAsset.mimeType;
+
+    collection.items = [...(collection.items || []), item];
     this._saveCollection(collection);
 
     document.dispatchEvent(
@@ -354,14 +409,17 @@ class Collections {
    */
   async removeAsset(assetId, collectionId) {
     const id = collectionId || this.getActiveId();
-    const collection = await this.get(id, false);
+    const data = this._getData();
+    const collection = data.items[id];
     if (!collection) {
       console.error(`Collection "${id}" not found`);
       return;
     }
-    if (!collection.assetIds.includes(assetId)) return;
+    if (!(collection.items || []).some((i) => i.type === "asset" && i.id === assetId)) return;
 
-    collection.assetIds = collection.assetIds.filter((a) => a !== assetId);
+    collection.items = (collection.items || []).filter(
+      (i) => !(i.type === "asset" && i.id === assetId),
+    );
     this._saveCollection(collection);
 
     document.dispatchEvent(
@@ -385,33 +443,125 @@ class Collections {
    */
   async hasAsset(assetId, collectionId) {
     const id = collectionId || this.getActiveId();
-    const collection = await this.get(id, false);
-    return collection?.assetIds.includes(assetId) ?? false;
+    const data = this._getData();
+    const collection = data.items[id];
+    return (collection?.items || []).some((i) => i.type === "asset" && i.id === assetId);
   }
 
   // ---------------------------------------------------------------------------
-  // Asset reordering
+  // Item reordering
   // ---------------------------------------------------------------------------
 
   /**
-   * Replaces the asset order in a collection with a new ordered array.
-   * Only IDs already in the collection are accepted; unknowns are silently dropped.
+   * Replaces the full item order in a collection.
+   * Accepts a mixed array of asset and section items (as read from the DOM).
+   * For section items, title/body from the caller are saved (captures unsaved DOM edits).
+   * Unknown IDs are silently dropped.
    * @param {string} collectionId
-   * @param {string[]} newAssetIds - Full ordered array of asset IDs
+   * @param {Array<{type,id,title?,body?}>} newItems
    */
-  reorderAssets(collectionId, newAssetIds) {
+  reorder(collectionId, newItems) {
     const data = this._getData();
     const collection = data.items[collectionId];
     if (!collection) {
       console.error(`Collection "${collectionId}" not found`);
       return;
     }
-    const existing = new Set(collection.assetIds);
-    collection.assetIds = newAssetIds.filter((id) => existing.has(id));
+    const existingMap = new Map((collection.items || []).map((i) => [i.id, i]));
+    collection.items = newItems
+      .filter((item) => existingMap.has(item.id))
+      .map((item) => {
+        if (item.type !== "section") return existingMap.get(item.id);
+        const existing = existingMap.get(item.id);
+        return {
+          ...existing,
+          title: item.title !== undefined ? item.title : existing.title,
+          body: item.body !== undefined ? item.body : existing.body,
+        };
+      });
     this._saveCollection(collection);
     document.dispatchEvent(
       new CustomEvent(Events.CHANGED, {
         detail: { action: "reordered", id: collectionId },
+      }),
+    );
+  }
+
+  /**
+   * Backward-compat alias for reorder() that accepts an ordered array of asset IDs.
+   * @param {string} collectionId
+   * @param {string[]} newAssetIds
+   */
+  reorderAssets(collectionId, newAssetIds) {
+    this.reorder(collectionId, newAssetIds.map((id) => ({ type: "asset", id })));
+  }
+
+  // ---------------------------------------------------------------------------
+  // Section management
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Appends a new section widget to the end of a collection's items.
+   * @param {string} collectionId
+   * @param {{title?: string, body?: string}} [opts]
+   * @returns {Object|null} The new SectionItem, or null if collection not found
+   */
+  async addSection(collectionId, { title = "", body = "" } = {}) {
+    const id = collectionId || this.getActiveId();
+    const data = this._getData();
+    const collection = data.items[id];
+    if (!collection) {
+      console.error(`Collection "${id}" not found`);
+      return null;
+    }
+    const section = { type: "section", id: crypto.randomUUID(), title, body };
+    collection.items = [...(collection.items || []), section];
+    this._saveCollection(collection);
+    document.dispatchEvent(
+      new CustomEvent(Events.CHANGED, {
+        detail: { action: "sectionAdded", collectionId: id },
+      }),
+    );
+    return section;
+  }
+
+  /**
+   * Updates a section's title and/or body in place.
+   * Does NOT dispatch CHANGED to avoid re-rendering while the user is typing.
+   * @param {string} collectionId
+   * @param {string} sectionId
+   * @param {{title?: string, body?: string}} updates
+   */
+  updateSection(collectionId, sectionId, { title, body }) {
+    const data = this._getData();
+    const collection = data.items[collectionId];
+    if (!collection) return;
+    const section = (collection.items || []).find(
+      (i) => i.type === "section" && i.id === sectionId,
+    );
+    if (!section) return;
+    if (title !== undefined) section.title = title;
+    if (body !== undefined) section.body = body;
+    this._saveCollection(collection);
+  }
+
+  /**
+   * Removes a section by ID from a collection.
+   * @param {string} collectionId
+   * @param {string} sectionId
+   */
+  async removeSection(collectionId, sectionId) {
+    const id = collectionId || this.getActiveId();
+    const data = this._getData();
+    const collection = data.items[id];
+    if (!collection) return;
+    collection.items = (collection.items || []).filter(
+      (i) => !(i.type === "section" && i.id === sectionId),
+    );
+    this._saveCollection(collection);
+    document.dispatchEvent(
+      new CustomEvent(Events.CHANGED, {
+        detail: { action: "sectionRemoved", collectionId: id },
       }),
     );
   }
@@ -423,14 +573,6 @@ class Collections {
   /**
    * Merges the anonymous user's collections into the logged-in user's default
    * collection, then switches the active user context.
-   *
-   * - All assetIds from every anonymous collection are merged (deduplicated)
-   *   into the logged-in user's default collection.
-   * - Calls storage.mergeUserData('anonymous', userId) to migrate other
-   *   user-scoped data (e.g. recently viewed).
-   * - Calls storage._setCurrentUserId(userId) to switch the active user.
-   * - Dispatches CHANGED so subscribers re-render.
-   *
    * @param {string} userId - The authenticated user's ID
    */
   async loginAs(userId) {
@@ -440,7 +582,7 @@ class Collections {
       items: {},
     };
     const anonymousAssetIds = Object.values(anonymousData.items || {}).flatMap(
-      (c) => c.assetIds || [],
+      (c) => (c.items || []).filter((i) => i.type === "asset").map((i) => i.id),
     );
 
     // Merge other user-scoped data (e.g. recently viewed)
@@ -465,7 +607,7 @@ class Collections {
             name: "My Collection",
             createdAt: now,
             modifiedAt: now,
-            assetIds: [],
+            items: [],
           },
         },
       });
@@ -476,10 +618,15 @@ class Collections {
       const data = this._getData();
       const defaultCollection = data.items[data.defaultId];
       if (defaultCollection) {
-        const merged = [
-          ...new Set([...defaultCollection.assetIds, ...anonymousAssetIds]),
-        ];
-        defaultCollection.assetIds = merged;
+        const existingIds = new Set(
+          (defaultCollection.items || [])
+            .filter((i) => i.type === "asset")
+            .map((i) => i.id),
+        );
+        const newItems = anonymousAssetIds
+          .filter((id) => !existingIds.has(id))
+          .map((id) => ({ type: "asset", id }));
+        defaultCollection.items = [...(defaultCollection.items || []), ...newItems];
         defaultCollection.modifiedAt = new Date().toISOString();
         this._setData(data);
       }
@@ -498,8 +645,6 @@ class Collections {
 
   /**
    * Switches back to anonymous scope.
-   * Call this when the user signs out so collection state returns to anonymous.
-   * Dispatches CHANGED so all subscribers re-render.
    */
   logout() {
     storage._setCurrentUserId("anonymous");
