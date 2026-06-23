@@ -1,27 +1,29 @@
 /** @owner user */
 import services from '../../scripts/asc/services/services.js';
+import { escHtml } from '../../scripts/html.js';
 
 /**
  * Sheet block — a download/rendition selection page.
  *
- * Reads compressed asset IDs and rendition IDs from URL query parameters
- * (set by the collection-bar / stub block) and renders a per-asset download sheet.
+ * URL params (new format):
+ *   items      — compressed mixed array: plain UUID = asset; "~title|||body" = section heading
+ *   title      — page title (URL-encoded)
  *
- * URL params:
+ * URL params (legacy format, backward compat):
  *   assets     — compressed array of asset UUIDs
  *   renditions — compressed array of rendition definition IDs
  *
  * Each asset row shows a thumbnail, metadata, per-asset rendition switcher pills,
- * and a download button. The active rendition pill determines the download URL and
- * the asset dragged when the row is dragged to Finder / Photoshop / etc.
+ * and a download button. Section headings appear between assets with optional
+ * Markdown body text.
  */
 export default async function decorate(block) {
   const params = new URLSearchParams(window.location.search);
-  const { assets, renditionDefinitions } = await getDataFromSearchParams(params);
+  const { mixedItems, assetMap, renditionDefinitions } = await getDataFromSearchParams(params);
   const title = params.get('title') ? decodeURIComponent(params.get('title')) : '';
-  const description = params.get('description') ? decodeURIComponent(params.get('description')) : '';
 
-  block.innerHTML = html(assets, renditionDefinitions, title, description);
+  const assetCount = mixedItems.filter((i) => i.type === 'asset').length;
+  block.innerHTML = html(mixedItems, assetMap, renditionDefinitions, title, assetCount);
 
   initRenditionSwitcher(block);
   initDragAndDrop(block);
@@ -29,21 +31,29 @@ export default async function decorate(block) {
 
 // ─── HTML ────────────────────────────────────────────────────────────────────
 
-function html(assets, renditionDefinitions, title, description) {
-  const rows = assets
-    .filter(Boolean)
-    .map((asset) => assetRow(asset, renditionDefinitions))
-    .join('');
+function html(mixedItems, assetMap, renditionDefinitions, title, assetCount) {
+  const rows = mixedItems.map((item) => {
+    if (item.type === 'section') return sectionHeading(item);
+    const asset = assetMap.get(item.id);
+    return asset ? assetRow(asset, renditionDefinitions) : '';
+  }).join('');
 
   return `
     <a href="/" class="sheet__back">&#8592; Back to search</a>
-    <h1 class="sheet__title">${title || 'Download Sheet'}</h1>
-    ${description ? `<p class="sheet__description">${description}</p>` : ''}
-    <p class="sheet__count">${assets.length} asset${assets.length === 1 ? '' : 's'}</p>
+    <h1 class="sheet__title">${escHtml(title) || 'Download Sheet'}</h1>
+    <p class="sheet__count">${assetCount} asset${assetCount === 1 ? '' : 's'}</p>
     <div class="sheet__asset-list">
       ${rows || '<p class="sheet__empty">No assets selected.</p>'}
     </div>
   `;
+}
+
+function sectionHeading(item) {
+  return `
+    <div class="sheet__section">
+      <h2 class="sheet__section-title">${escHtml(item.title)}</h2>
+      ${item.body ? `<div class="sheet__section-body">${renderMarkdown(item.body)}</div>` : ''}
+    </div>`;
 }
 
 function assetRow(asset, renditionDefinitions) {
@@ -57,7 +67,7 @@ function assetRow(asset, renditionDefinitions) {
             data-rendition-id="${def.id}"
             aria-pressed="${def.id === defaultRenditionId}"
             type="button">
-      ${def.label || def.id}
+      ${escHtml(def.label || def.id)}
     </button>
   `).join('');
 
@@ -71,16 +81,16 @@ function assetRow(asset, renditionDefinitions) {
          draggable="true">
       <div class="asc-ui-thumb sheet__asset-thumb">
         <img src="${thumbnailUrl}"
-             alt="${asset.title}"
+             alt="${escHtml(asset.title)}"
              loading="lazy"
              onerror="this.parentElement.classList.add('sheet__asset-thumb--error')" />
         <span class="sheet__asset-thumb-fallback" aria-hidden="true">${getFileIcon(fileType)}</span>
       </div>
       <div class="sheet__asset-info">
-        <p class="asc-ui-asset-row__title">${asset.title}</p>
-        ${meta ? `<p class="asc-ui-asset-row__meta">${meta}</p>` : ''}
+        <p class="asc-ui-asset-row__title">${escHtml(asset.title)}</p>
+        ${meta ? `<p class="asc-ui-asset-row__meta">${escHtml(meta)}</p>` : ''}
       </div>
-      <div class="sheet__asset-renditions" role="group" aria-label="Select rendition for ${asset.title}">
+      <div class="sheet__asset-renditions" role="group" aria-label="Select rendition for ${escHtml(asset.title)}">
         ${pills || '<span class="sheet__no-renditions">—</span>'}
       </div>
       <div class="sheet__asset-actions">
@@ -110,13 +120,43 @@ function getFileIcon(fileType) {
   return icons[fileType] || '📄';
 }
 
+// ─── Markdown renderer (inline, no library) ───────────────────────────────────
+
+function renderMarkdown(md) {
+  if (!md) return '';
+
+  let html2 = md
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    // Links: [text](url)
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" rel="noopener noreferrer">$1</a>')
+    // Bold: **text**
+    .replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>')
+    // Italic: *text*
+    .replace(/\*([^*\n]+)\*/g, '<em>$1</em>');
+
+  // List items — collect runs of "- item" lines into <ul>
+  html2 = html2.replace(/((?:^- .+$\n?)+)/gm, (match) => {
+    const items = match.trim().split('\n').map((line) => `<li>${line.slice(2)}</li>`).join('');
+    return `<ul>${items}</ul>`;
+  });
+
+  // Paragraphs — split on blank lines, wrap non-block content in <p>
+  html2 = html2.split(/\n\n+/).map((chunk) => {
+    const trimmed = chunk.trim();
+    if (!trimmed || trimmed.startsWith('<ul>') || trimmed.startsWith('<li>')) return trimmed;
+    return `<p>${trimmed.replace(/\n/g, '<br>')}</p>`;
+  }).join('\n');
+
+  return html2;
+}
+
 // ─── Rendition switcher ───────────────────────────────────────────────────────
 
 function initRenditionSwitcher(block) {
-  // Set initial download hrefs
   block.querySelectorAll('[data-asc-asset][data-selected-rendition]').forEach(updateDownloadHref);
 
-  // Delegate pill clicks
   block.addEventListener('click', (event) => {
     const pill = event.target.closest('.sheet__rendition-pill');
     if (!pill) return;
@@ -176,9 +216,7 @@ function initDragAndDrop(block) {
     const filename = asset.filename || asset.title || 'asset';
 
     event.dataTransfer.effectAllowed = 'copy';
-    // Chrome/Edge: enables drag-to-Finder / drag-to-desktop
     event.dataTransfer.setData('DownloadURL', `${mimeType}:${filename}:${rendition.url}`);
-    // Fallback for Firefox/Safari and apps that accept URI drops
     event.dataTransfer.setData('text/uri-list', rendition.url);
     event.dataTransfer.setData('text/plain', rendition.url);
   });
@@ -187,22 +225,42 @@ function initDragAndDrop(block) {
 // ─── Data loading ─────────────────────────────────────────────────────────────
 
 async function getDataFromSearchParams(queryParameters) {
-  const assetsCompressed = queryParameters.get('assets');
   const renditionsCompressed = queryParameters.get('renditions');
-
-  const assetIds = assetsCompressed
-    ? await services.url.decompressToArray(assetsCompressed)
-    : [];
   const renditionIds = renditionsCompressed
     ? await services.url.decompressToArray(renditionsCompressed)
     : [];
-
-  const assets = await Promise.all(
-    assetIds.map((id) => services.search.getAssetById(id)),
-  );
   const renditionDefinitions = renditionIds
     .map((id) => services.renditions.getRenditionDefinition(id))
     .filter(Boolean);
 
-  return { assets, renditionDefinitions };
+  // New format: ?items= (mixed assets + section headings)
+  if (queryParameters.has('items')) {
+    const entries = await services.url.decompressToArray(queryParameters.get('items'));
+    const mixedItems = entries.map((entry) => {
+      if (entry.startsWith('~')) {
+        const sepIdx = entry.indexOf('|||', 1);
+        const title = sepIdx === -1 ? entry.slice(1) : entry.slice(1, sepIdx);
+        const body = sepIdx === -1 ? '' : entry.slice(sepIdx + 3);
+        return { type: 'section', title, body };
+      }
+      return { type: 'asset', id: entry };
+    });
+
+    const assetIds = mixedItems.filter((i) => i.type === 'asset').map((i) => i.id);
+    const fetchedAssets = await Promise.all(assetIds.map((id) => services.search.getAssetById(id)));
+    const assetMap = new Map(fetchedAssets.filter(Boolean).map((a) => [a.uuid, a]));
+
+    return { mixedItems, assetMap, renditionDefinitions };
+  }
+
+  // Legacy format: ?assets= (backward compat)
+  const assetsCompressed = queryParameters.get('assets');
+  const assetIds = assetsCompressed
+    ? await services.url.decompressToArray(assetsCompressed)
+    : [];
+  const assets = await Promise.all(assetIds.map((id) => services.search.getAssetById(id)));
+  const assetMap = new Map(assets.filter(Boolean).map((a) => [a.uuid, a]));
+  const mixedItems = assetIds.map((id) => ({ type: 'asset', id }));
+
+  return { mixedItems, assetMap, renditionDefinitions };
 }
