@@ -168,7 +168,7 @@
 
     .collection__asset-row {
         display: grid;
-        grid-template-columns: 18px 64px minmax(0, 1fr) auto;
+        grid-template-columns: 18px 120px minmax(0, 1fr) auto;
         align-items: center;
         gap: var(--collection-gap);
         padding: var(--spacing-sm) var(--spacing-md);
@@ -229,8 +229,8 @@
     }
 
     .collection__asset-thumb {
-        width: 64px;
-        height: 48px;
+        width: 120px;
+        height: 90px;
         border-radius: var(--border-radius-sm);
         overflow: hidden;
         flex-shrink: 0;
@@ -284,6 +284,167 @@
         border: 1px dashed var(--color-border);
         border-radius: var(--collection-radius);
         background: color-mix(in srgb, var(--color-muted) 45%, var(--color-bg));
+    }
+
+    /* ── Section widget ──────────────────────────────────────────────── */
+
+    .collection__section-widget {
+        display: grid;
+        grid-template-columns: 18px 1fr auto;
+        align-items: start;
+        gap: var(--collection-gap);
+        padding: var(--spacing-md);
+        background: color-mix(in srgb, var(--color-primary) 4%, var(--color-card));
+        border: 1px solid color-mix(in srgb, var(--color-primary) 20%, var(--color-border));
+        border-left: 3px solid var(--color-primary);
+        border-radius: var(--collection-radius);
+        cursor: default;
+
+        &.collection__section-widget--dragging {
+            opacity: 0.45;
+        }
+
+        &.collection__section-widget--over {
+            box-shadow: inset 0 3px 0 0 var(--color-primary);
+        }
+    }
+
+    .collection__section-content {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xs);
+    }
+
+    .collection__section-title {
+        margin: 0;
+        padding: var(--spacing-2xs) var(--spacing-xs);
+        font-size: var(--heading-font-size-s);
+        font-weight: 600;
+        color: var(--color-fg);
+        border: 1px solid transparent;
+        border-radius: var(--border-radius-sm);
+        background: transparent;
+        font-family: inherit;
+        width: 100%;
+        transition: border-color var(--transition-fast), background var(--transition-fast);
+
+        &:focus-visible {
+            outline: none;
+            border-color: var(--color-ring);
+            background: var(--color-input);
+            box-shadow: var(--focus-ring);
+        }
+
+        &::placeholder {
+            color: var(--color-muted-fg);
+            font-weight: 400;
+        }
+    }
+
+    .collection__section-body {
+        margin: 0;
+        padding: var(--spacing-2xs) var(--spacing-xs);
+        font-size: var(--body-font-size-s);
+        color: var(--color-fg);
+        border: 1px solid transparent;
+        border-radius: var(--border-radius-sm);
+        background: transparent;
+        font-family: inherit;
+        resize: vertical;
+        width: 100%;
+        transition: border-color var(--transition-fast), background var(--transition-fast);
+
+        &:focus-visible {
+            outline: none;
+            border-color: var(--color-ring);
+            background: var(--color-input);
+            box-shadow: var(--focus-ring);
+        }
+
+        &::placeholder {
+            color: var(--color-muted-fg);
+        }
+    }
+
+    .collection__section-delete {
+        color: var(--color-muted-fg);
+        flex-shrink: 0;
+        align-self: start;
+
+        &:hover {
+            color: var(--color-destructive);
+            background: color-mix(in srgb, var(--color-destructive) 10%, transparent);
+        }
+    }
+
+    /* ── Add section button ──────────────────────────────────────────── */
+
+    .collection__add-section {
+        width: 100%;
+        margin-block-start: var(--spacing-xs);
+        color: var(--color-muted-fg);
+        border: 1px dashed var(--color-border);
+        background: transparent;
+
+        &:hover {
+            color: var(--color-primary);
+            border-color: var(--color-primary);
+            background: color-mix(in srgb, var(--color-primary) 4%, transparent);
+        }
+    }
+
+    /* ── Share history ───────────────────────────────────────────────── */
+
+    .collection__share-history {
+        margin-block-start: var(--spacing-md);
+        border: 1px solid var(--color-border);
+        border-radius: var(--collection-radius);
+        overflow: hidden;
+    }
+
+    .collection__share-history summary {
+        padding: var(--spacing-sm) var(--spacing-md);
+        font-size: var(--body-font-size-xs);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--color-muted-fg);
+        cursor: pointer;
+        background: var(--color-muted);
+        list-style: none;
+
+        &::marker { display: none; }
+        &::-webkit-details-marker { display: none; }
+    }
+
+    .collection__share-history-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    .collection__share-history-item {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        padding: var(--spacing-xs) var(--spacing-md);
+        border-top: 1px solid var(--color-border);
+        font-size: var(--body-font-size-s);
+    }
+
+    .collection__share-history-title {
+        flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        color: var(--color-fg);
+    }
+
+    .collection__share-history-date {
+        color: var(--color-muted-fg);
+        font-size: var(--body-font-size-xs);
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
     }
 
     /* ── Dialog form fields (share / download) ───────────────────────── */
@@ -376,13 +537,14 @@
 
     @media (width <= 600px) {
         .collection__asset-row {
+            grid-template-columns: 18px 80px minmax(0, 1fr) auto;
             gap: var(--spacing-sm);
             padding: var(--spacing-xs) var(--spacing-sm);
         }
 
         .collection__asset-thumb {
-            width: 56px;
-            height: 42px;
+            width: 80px;
+            height: 60px;
         }
 
         .collection__asset-remove {

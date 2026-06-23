@@ -1,26 +1,31 @@
 /** @owner user */
 import services from '../../scripts/asc/services/services.js';
+import storage from '../../scripts/asc/services/storage/storage.js';
 import { Events as CollectionEvents } from '../../scripts/asc/services/collections/collections.js';
 import { Events as DownloadEvents, Status as DownloadStatus } from '../../scripts/asc/services/downloads/downloads.js';
 import { escHtml, escAttr, formatUpdated } from '../../scripts/html.js';
 
 const configurations = (await import('../../scripts/configurations.js')).default;
 
-// Sheet path for share URL generation (configurable, default /sheets/)
 const SHEET_PATH = configurations.collections?.sheetPath || '/sheets/';
+const SHARE_HISTORY_KEY = 'shareHistory';
+const MAX_SHARE_HISTORY = 20;
+
+// Tracks the section ID to focus after a re-render triggered by addSection
+let _pendingSectionFocus = null;
 
 /**
  * Collection block — detail/edit page for a single collection.
  *
  * Page URL: /collections/collection?id=<uuid>
- * The block reads the collection UUID from the `id` query parameter.
- * Falls back to the active collection when `id` is absent or unrecognised.
  *
  * Features:
- *   - Editable collection name (Rename → inline field; no icon-only control)
- *   - Asset list with Remove actions, drag handle (CSS dots), reorder
- *   - Share / Download / Delete collection using global .btn utilities
- *   - Dialogs use .asc-dialog shell (styles/styles.css)
+ *   - Editable collection name
+ *   - Mixed item list: asset rows (120×90 thumbnail) and inline section widgets
+ *   - Section widgets: editable h2 + Markdown textarea, saves on blur
+ *   - "Add section" button appends a new empty section
+ *   - Share / Download / Delete using global .btn utilities
+ *   - Dialogs use .asc-dialog shell
  */
 export default async function decorate(block) {
   const collectionId = resolveCollectionId();
@@ -35,7 +40,6 @@ export default async function decorate(block) {
   document.addEventListener(DownloadEvents.COMPLETE, () => refreshDownloadStatus(block));
   document.addEventListener(DownloadEvents.FAILED, () => refreshDownloadStatus(block));
 
-  // Close the actions menu on any outside click (survives re-renders).
   document.addEventListener('click', (e) => {
     if (!block.contains(e.target)) closeMenu(block);
   });
@@ -61,7 +65,8 @@ async function render(block, collectionId) {
 }
 
 function html(collection, isDefault, pendingJobs) {
-  const assets = collection.assets || [];
+  const items = collection.hydratedItems || [];
+  const assetCount = (collection.assetIds || []).length;
   const updated = formatUpdated(collection.modifiedAt);
   return `
     <section class="collection__shell" aria-label="Collection">
@@ -86,7 +91,7 @@ function html(collection, isDefault, pendingJobs) {
         </div>
       </div>
       <p class="collection__meta">
-        <span class="collection__meta-count">${assets.length} asset${assets.length !== 1 ? 's' : ''}</span>
+        <span class="collection__meta-count">${assetCount} asset${assetCount !== 1 ? 's' : ''}</span>
         ${updated
     ? `<span class="collection__meta-sep" aria-hidden="true">·</span><time class="collection__meta-updated" datetime="${escAttr(updated.iso)}">${escHtml(updated.label)}</time>`
     : ''}
@@ -96,15 +101,16 @@ function html(collection, isDefault, pendingJobs) {
     <div class="collection__toolbar">
       <button type="button" class="collection__share-btn btn btn--secondary">Share</button>
       <button type="button" class="collection__download-btn btn btn--primary"
-              ${assets.length === 0 ? 'disabled' : ''}>Download</button>
+              ${assetCount === 0 ? 'disabled' : ''}>Download</button>
     </div>
 
     ${pendingJobs.length ? renderJobsStatus(pendingJobs) : ''}
 
     <div class="collection__asset-list" data-collection-id="${collection.id}">
-      ${assets.length
-    ? assets.map((asset, i) => assetRow(asset, i)).join('')
+      ${items.length
+    ? items.map((item) => (item.type === 'section' ? sectionWidget(item) : assetRow(item))).join('')
     : '<p class="collection__empty">No assets in this collection yet.</p>'}
+      <button type="button" class="collection__add-section btn btn--ghost">+ Add section</button>
     </div>
     </section>`;
 }
@@ -130,13 +136,14 @@ function renderJobsStatus(jobs) {
     </div>`;
 }
 
-function assetRow(asset, index) {
+function assetRow(item) {
+  const { asset } = item;
   const thumbnailUrl = services.renditions.getThumbnailUrl(asset);
   return `
     <div class="collection__asset-row"
          draggable="true"
          data-asc-asset="${asset.uuid}"
-         data-index="${index}">
+         data-item-type="asset">
       <div class="collection__asset-drag" aria-hidden="true" title="Drag to reorder"></div>
       <div class="collection__asset-thumb">
         <img src="${thumbnailUrl}" alt="${escHtml(asset.title)}" loading="lazy" />
@@ -152,6 +159,31 @@ function assetRow(asset, index) {
     </div>`;
 }
 
+function sectionWidget(item) {
+  return `
+    <div class="collection__section-widget"
+         draggable="true"
+         data-section-id="${escAttr(item.id)}"
+         data-item-type="section">
+      <div class="collection__asset-drag" aria-hidden="true" title="Drag to reorder"></div>
+      <div class="collection__section-content">
+        <input type="text"
+               class="collection__section-title"
+               value="${escAttr(item.title)}"
+               placeholder="Section heading…"
+               aria-label="Section title" />
+        <textarea class="collection__section-body"
+                  placeholder="Optional description (Markdown supported)…"
+                  rows="2"
+                  aria-label="Section body">${escHtml(item.body)}</textarea>
+      </div>
+      <button type="button"
+              class="collection__section-delete btn btn--ghost btn--sm"
+              aria-label="Delete section"
+              data-section-id="${escAttr(item.id)}">✕</button>
+    </div>`;
+}
+
 // ─── Interactions ─────────────────────────────────────────────────────────────
 
 function initInteractions(block, collection, isDefault) {
@@ -161,7 +193,15 @@ function initInteractions(block, collection, isDefault) {
   initDownload(block, collection);
   if (!isDefault) initDelete(block, collection);
   initReorder(block, collection);
+  initSections(block, collection);
   initJobActions(block);
+
+  // Auto-focus a newly added section title after re-render
+  if (_pendingSectionFocus) {
+    const input = block.querySelector(`[data-section-id="${_pendingSectionFocus}"] .collection__section-title`);
+    input?.focus();
+    _pendingSectionFocus = null;
+  }
 }
 
 // ── Actions menu ─────────────────────────────────────────────────────────────
@@ -187,7 +227,6 @@ function initMenu(block) {
     }
   });
 
-  // Close on item selection
   menu.addEventListener('click', () => closeMenu(block));
 }
 
@@ -228,16 +267,80 @@ function initDelete(block, collection) {
   block.querySelector('.collection__delete-btn')?.addEventListener('click', () => {
     if (!window.confirm(`Delete "${collection.name}"? This cannot be undone.`)) return;
     services.collections.delete(collection.id);
-    // Navigate to collections index
     const managePath = configurations.collections?.managePath || '/collections/';
     window.location.href = managePath;
   });
 }
 
+// ── Sections ─────────────────────────────────────────────────────────────────
+
+function initSections(block, collection) {
+  // Add section button
+  block.querySelector('.collection__add-section')?.addEventListener('click', async () => {
+    const section = await services.collections.addSection(collection.id, { title: '', body: '' });
+    if (section) _pendingSectionFocus = section.id;
+    // CHANGED event from addSection triggers re-render → initInteractions picks up _pendingSectionFocus
+  });
+
+  // Section title blur → save (useCapture because blur doesn't bubble)
+  block.addEventListener('blur', (e) => {
+    const input = e.target.closest?.('.collection__section-title');
+    if (!input) return;
+    const widget = input.closest('[data-section-id]');
+    if (!widget) return;
+    services.collections.updateSection(collection.id, widget.dataset.sectionId, { title: input.value });
+  }, true);
+
+  // Section body blur → save
+  block.addEventListener('blur', (e) => {
+    const textarea = e.target.closest?.('.collection__section-body');
+    if (!textarea) return;
+    const widget = textarea.closest('[data-section-id]');
+    if (!widget) return;
+    services.collections.updateSection(collection.id, widget.dataset.sectionId, { body: textarea.value });
+  }, true);
+
+  // Section delete
+  block.querySelectorAll('.collection__section-delete').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      services.collections.removeSection(collection.id, btn.dataset.sectionId);
+    });
+  });
+}
+
 // ── Share ─────────────────────────────────────────────────────────────────────
 
+function saveShareHistory(entry) {
+  const history = storage.get(SHARE_HISTORY_KEY) || [];
+  history.unshift({ id: crypto.randomUUID(), ...entry, createdAt: new Date().toISOString() });
+  storage.set(SHARE_HISTORY_KEY, history.slice(0, MAX_SHARE_HISTORY));
+}
+
+function renderShareHistory() {
+  const history = storage.get(SHARE_HISTORY_KEY) || [];
+  if (!history.length) return '';
+
+  const items = history.map((entry) => {
+    const date = new Date(entry.createdAt);
+    const label = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    return `
+      <li class="collection__share-history-item">
+        <span class="collection__share-history-title" title="${escAttr(entry.url)}">${escHtml(entry.title || 'Untitled')}</span>
+        <span class="collection__share-history-date">${escHtml(label)}</span>
+        <button type="button" class="btn btn--ghost btn--sm collection__share-history-copy"
+                data-url="${escAttr(entry.url)}">Copy</button>
+      </li>`;
+  }).join('');
+
+  return `
+    <details class="collection__share-history">
+      <summary>Past shares (${history.length})</summary>
+      <ul class="collection__share-history-list">${items}</ul>
+    </details>`;
+}
+
 function initShare(block, collection) {
-  block.querySelector('.collection__share-btn')?.addEventListener('click', async () => {
+  block.querySelector('.collection__share-btn')?.addEventListener('click', () => {
     openShareDialog(block, collection);
   });
 }
@@ -245,7 +348,6 @@ function initShare(block, collection) {
 async function openShareDialog(block, collection) {
   block.querySelector('.collection__share-dialog')?.remove();
 
-  const assetIds = collection.assetIds || [];
   const dialog = document.createElement('dialog');
   dialog.className = 'asc-dialog asc-dialog--narrow collection__share-dialog';
   dialog.setAttribute('aria-labelledby', 'share-dialog-title');
@@ -265,10 +367,6 @@ async function openShareDialog(block, collection) {
         Sheet Title
         <input type="text" class="collection__share-title" value="${escHtml(collection.name)}" placeholder="Sheet title" />
       </label>
-      <label class="collection__dialog-label">
-        Description
-        <textarea class="collection__share-description" placeholder="Optional description" rows="3"></textarea>
-      </label>
       <div class="collection__share-url-wrap" hidden>
         <label class="collection__dialog-label">
           Share URL
@@ -284,6 +382,12 @@ async function openShareDialog(block, collection) {
       </div>
     </footer>`;
 
+  // Append share history panel to dialog body
+  const historyHtml = renderShareHistory();
+  if (historyHtml) {
+    dialog.querySelector('.asc-dialog__body').insertAdjacentHTML('beforeend', historyHtml);
+  }
+
   block.appendChild(dialog);
   dialog.showModal();
 
@@ -292,27 +396,55 @@ async function openShareDialog(block, collection) {
   });
   dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
 
+  // Generate link
   dialog.querySelector('.collection__share-generate').addEventListener('click', async () => {
-    const title = encodeURIComponent(dialog.querySelector('.collection__share-title').value.trim());
-    const description = encodeURIComponent(dialog.querySelector('.collection__share-description').value.trim());
-    const compressed = await services.url.compressArray(assetIds);
+    const title = dialog.querySelector('.collection__share-title').value.trim();
 
-    let url = `${window.location.origin}${SHEET_PATH}?assets=${compressed}`;
-    if (title) url += `&title=${title}`;
-    if (description) url += `&description=${description}`;
+    // Encode the full mixed items array — sections as ~title|||body, assets as plain UUIDs
+    const encodedItems = (collection.items || []).map((item) => {
+      if (item.type === 'section') return `~${item.title}|||${item.body}`;
+      return item.id;
+    });
+    const compressed = await services.url.compressArray(encodedItems);
+
+    let url = `${window.location.origin}${SHEET_PATH}?items=${compressed}`;
+    if (title) url += `&title=${encodeURIComponent(title)}`;
+
+    saveShareHistory({ title: title || collection.name, url, collectionId: collection.id });
 
     const wrap = dialog.querySelector('.collection__share-url-wrap');
     wrap.removeAttribute('hidden');
     wrap.querySelector('.collection__share-url-output').value = url;
     dialog.querySelector('.collection__share-copy')?.removeAttribute('hidden');
+
+    // Refresh history panel
+    const existingHistory = dialog.querySelector('.collection__share-history');
+    const newHistoryHtml = renderShareHistory();
+    if (existingHistory) {
+      existingHistory.outerHTML = newHistoryHtml;
+    } else if (newHistoryHtml) {
+      dialog.querySelector('.asc-dialog__body').insertAdjacentHTML('beforeend', newHistoryHtml);
+    }
   });
 
+  // Copy generated URL
   dialog.querySelector('.collection__share-copy')?.addEventListener('click', () => {
     const output = dialog.querySelector('.collection__share-url-output');
     navigator.clipboard.writeText(output.value).then(() => {
       const btn = dialog.querySelector('.collection__share-copy');
       btn.textContent = 'Copied!';
       setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+    });
+  });
+
+  // Copy history entry URLs (delegated — survives history refresh)
+  dialog.addEventListener('click', (e) => {
+    const copyBtn = e.target.closest('.collection__share-history-copy');
+    if (!copyBtn) return;
+    navigator.clipboard.writeText(copyBtn.dataset.url).then(() => {
+      const orig = copyBtn.textContent;
+      copyBtn.textContent = 'Copied!';
+      setTimeout(() => { copyBtn.textContent = orig; }, 2000);
     });
   });
 }
@@ -387,7 +519,6 @@ async function openDownloadDialog(block, collection) {
       return;
     }
 
-    // Build JCR asset paths from asset objects
     const assetPaths = assets.map((a) => a.path).filter(Boolean);
     if (!assetPaths.length) {
       alert('Asset paths could not be resolved. Ensure assets have a JCR path.');
@@ -410,6 +541,18 @@ async function openDownloadDialog(block, collection) {
 
 // ── Reorder (drag-and-drop) ───────────────────────────────────────────────────
 
+const ROW_SEL = '.collection__asset-row, .collection__section-widget';
+
+function serializeRow(el) {
+  if (el.dataset.ascAsset) return { type: 'asset', id: el.dataset.ascAsset };
+  return {
+    type: 'section',
+    id: el.dataset.sectionId,
+    title: el.querySelector('.collection__section-title')?.value || '',
+    body: el.querySelector('.collection__section-body')?.value || '',
+  };
+}
+
 function initReorder(block, collection) {
   const list = block.querySelector('.collection__asset-list');
   if (!list) return;
@@ -417,17 +560,23 @@ function initReorder(block, collection) {
   let dragging = null;
 
   list.addEventListener('dragstart', (e) => {
-    const row = e.target.closest('.collection__asset-row');
+    const row = e.target.closest(ROW_SEL);
     if (!row) return;
     dragging = row;
-    row.classList.add('collection__asset-row--dragging');
+    if (row.classList.contains('collection__asset-row')) {
+      row.classList.add('collection__asset-row--dragging');
+    } else {
+      row.classList.add('collection__section-widget--dragging');
+    }
     e.dataTransfer.effectAllowed = 'move';
   });
 
   list.addEventListener('dragend', () => {
-    dragging?.classList.remove('collection__asset-row--dragging');
-    list.querySelectorAll('.collection__asset-row--over').forEach((el) => {
-      el.classList.remove('collection__asset-row--over');
+    if (dragging) {
+      dragging.classList.remove('collection__asset-row--dragging', 'collection__section-widget--dragging');
+    }
+    list.querySelectorAll('.collection__asset-row--over, .collection__section-widget--over').forEach((el) => {
+      el.classList.remove('collection__asset-row--over', 'collection__section-widget--over');
     });
     dragging = null;
   });
@@ -435,33 +584,31 @@ function initReorder(block, collection) {
   list.addEventListener('dragover', (e) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    const target = e.target.closest('.collection__asset-row');
+    const target = e.target.closest(ROW_SEL);
     if (!target || target === dragging) return;
-    list.querySelectorAll('.collection__asset-row--over').forEach((el) => {
-      el.classList.remove('collection__asset-row--over');
+    list.querySelectorAll('.collection__asset-row--over, .collection__section-widget--over').forEach((el) => {
+      el.classList.remove('collection__asset-row--over', 'collection__section-widget--over');
     });
-    target.classList.add('collection__asset-row--over');
+    if (target.classList.contains('collection__asset-row')) {
+      target.classList.add('collection__asset-row--over');
+    } else {
+      target.classList.add('collection__section-widget--over');
+    }
   });
 
   list.addEventListener('drop', (e) => {
     e.preventDefault();
-    const target = e.target.closest('.collection__asset-row');
+    const target = e.target.closest(ROW_SEL);
     if (!target || !dragging || target === dragging) return;
 
-    // Reorder in DOM
-    const rows = [...list.querySelectorAll('.collection__asset-row')];
+    const rows = [...list.querySelectorAll(ROW_SEL)];
     const fromIdx = rows.indexOf(dragging);
     const toIdx = rows.indexOf(target);
-    if (fromIdx < toIdx) {
-      target.after(dragging);
-    } else {
-      target.before(dragging);
-    }
+    if (fromIdx < toIdx) target.after(dragging);
+    else target.before(dragging);
 
-    // Persist new order
-    const newOrder = [...list.querySelectorAll('.collection__asset-row')]
-      .map((r) => r.dataset.ascAsset);
-    services.collections.reorderAssets(collection.id, newOrder);
+    const newItems = [...list.querySelectorAll(ROW_SEL)].map(serializeRow);
+    services.collections.reorder(collection.id, newItems);
   });
 }
 
@@ -506,7 +653,6 @@ function refreshDownloadStatus(block) {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function resolveCollectionId() {
-  // Read UUID from ?id= query param (e.g. /collections/collection?id=<uuid>)
   const id = new URLSearchParams(window.location.search).get('id') || '';
   if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(id)) {
     return id;
@@ -515,7 +661,6 @@ function resolveCollectionId() {
 }
 
 function getVisibleRenditionDefs(assets) {
-  // Collect rendition definitions visible across at least one of the assets
   if (!assets.length) return [];
   const seen = new Map();
   assets.forEach((asset) => {
@@ -537,4 +682,3 @@ function jobStatusLabel(job) {
     default: return job.status;
   }
 }
-
