@@ -28,6 +28,14 @@
         display: grid;
             grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr));
         gap: var(--spacing-md);
+
+        /* Show full asset without cropping across all display modes.
+           Specificity bump via [data-asc-results] beats the ASC Core
+           .asc-asset-teaser--card / --list rules (loaded later). */
+        .asc-asset-teaser__preview img,
+        .asc-asset-teaser__preview picture {
+            object-fit: contain;
+        }
     }
 
     /* Empty state (asc-ui-empty-state) spans the whole results area */
@@ -268,7 +276,7 @@
         margin-block: 0.3125rem;
         border-radius: var(--border-radius-full);
         overflow: hidden;
-        object-fit: cover;
+        object-fit: contain;
         background: var(--color-muted);
     }
 
@@ -309,7 +317,7 @@
         .asc-asset-teaser__preview picture {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: contain;
         }
 
         /* Meta overlay — hidden by default, revealed on hover */

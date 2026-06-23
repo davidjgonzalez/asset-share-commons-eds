@@ -10,6 +10,12 @@
         margin-bottom: var(--spacing-md);
     }
 
+    .details-renditions__instructions {
+        font-size: var(--body-font-size-xs);
+        color: var(--color-muted-fg);
+        margin: 0 0 var(--spacing-xs);
+    }
+
     .details-renditions__description {
         font-size: var(--body-font-size-s);
         color: var(--color-muted-fg);
@@ -59,6 +65,7 @@
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
             gap: var(--spacing-md);
+            align-items: start;
         }
 
         .details-renditions__cards > .asc-ui-card {
@@ -72,7 +79,8 @@
         }
 
         .details-renditions__card-preview {
-            aspect-ratio: 4 / 3;
+            aspect-ratio: var(--renditions-card-ar, 4 / 3);
+            max-height: 12rem;
             overflow: hidden;
             background: var(--color-muted);
             border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;

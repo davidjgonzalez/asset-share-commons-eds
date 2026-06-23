@@ -62,6 +62,20 @@ import { delegateEvent } from '../../scripts/asc/utils/events.js';
 const KNOWN_ACTIONS = new Set(['download', 'share', 'copy-url']);
 const PREVIEW_KEYWORD = 'preview';
 
+// Allowed inline tags for the instructions field — block-level wrappers are
+// unwrapped (their text content is kept); disallowed inline tags are stripped.
+const INLINE_TAGS = new Set(['strong', 'em', 'b', 'i', 'u', 's', 'code', 'br', 'span']);
+
+function sanitizeInline(cell) {
+  const el = cell.cloneNode(true);
+  el.querySelectorAll('*').forEach((node) => {
+    if (!INLINE_TAGS.has(node.tagName.toLowerCase())) {
+      node.replaceWith(...node.childNodes);
+    }
+  });
+  return el.innerHTML.trim();
+}
+
 const DEFAULT_COLUMNS = [
   { title: 'Rendition', value: 'label' },
   { title: 'Format', value: 'format' },
@@ -72,6 +86,7 @@ const DEFAULT_COLUMNS = [
 export default async function decorate(block) {
   let renditionIds = [];
   let description = '';
+  let instructions = '';
   let display = 'table';
   const columns = [];
   [...block.children].forEach((row) => {
@@ -85,6 +100,8 @@ export default async function decorate(block) {
       display = val.toLowerCase() || 'table';
     } else if (lower === 'description') {
       description = val;
+    } else if (lower === 'instructions') {
+      instructions = cells[1] ? sanitizeInline(cells[1]) : '';
     } else if (cells.length === 1 && key) {
       // Single-cell row: da.live may collapse an empty first cell, so treat
       // the lone cell as the value with no title (e.g. | | download, share |).
@@ -111,15 +128,32 @@ export default async function decorate(block) {
     return;
   }
 
-  const descriptionHtml = description ? `
+  const headerHtml = (instructions || description) ? `
     <div class="details-renditions__header">
-      <p class="details-renditions__description">${esc(description)}</p>
+      ${instructions ? `<p class="details-renditions__instructions">${instructions}</p>` : ''}
+      ${description ? `<p class="details-renditions__description">${esc(description)}</p>` : ''}
     </div>` : '';
 
   if (display === 'cards') {
     block.classList.add('details-renditions--cards');
+    block.style.setProperty('--renditions-card-ar', asset.renditionsBoundingAspectRatio);
     const cards = renditions.map((rendition) => renditionCard(asset, rendition)).join('');
-    block.innerHTML = `${descriptionHtml}<div class="details-renditions__cards">${cards}</div>`;
+    block.innerHTML = `${headerHtml}<div class="details-renditions__cards">${cards}</div>`;
+
+    // Snap each card preview to its image's actual AR once it loads, eliminating
+    // top/bottom bars. Handles cached images (img.complete) and fresh loads alike.
+    block.querySelectorAll('.details-renditions__card-preview').forEach((preview) => {
+      const img = preview.querySelector('img');
+      if (!img) return;
+      const snapAR = () => {
+        if (img.naturalWidth && img.naturalHeight) {
+          preview.style.aspectRatio = `${img.naturalWidth} / ${img.naturalHeight}`;
+        }
+      };
+      if (img.complete) snapAR();
+      else img.addEventListener('load', snapAR, { once: true });
+    });
+
     wireRenditionInteractions(block, asset, renditions);
     wireCopyUrl(block);
     return;
@@ -142,7 +176,7 @@ export default async function decorate(block) {
   }).join('');
 
   block.innerHTML = `
-    ${descriptionHtml}
+    ${headerHtml}
     <div class="asc-ui-table-wrap">
       <table class="asc-ui-table">
         <thead>

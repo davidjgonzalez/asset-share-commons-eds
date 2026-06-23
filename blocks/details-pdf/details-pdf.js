@@ -84,6 +84,8 @@ export default async function decorate(block) {
       initEmbedApi(viewerId, url, asset, config);
     } else {
       block.innerHTML = iframeHtml(asset, url, config);
+      const iframe = block.querySelector('iframe');
+      iframe.addEventListener('error', () => { block.innerHTML = errorHtml(); });
     }
   } catch {
     block.innerHTML = errorHtml();
