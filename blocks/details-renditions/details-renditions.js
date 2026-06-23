@@ -58,6 +58,7 @@
 import Asset from '../../scripts/asc/models/asset.js';
 import services from '../../scripts/asc/services/services.js';
 import { delegateEvent } from '../../scripts/asc/utils/events.js';
+import { snapAspectRatio } from '../../scripts/asc/utils/images.js';
 
 const KNOWN_ACTIONS = new Set(['download', 'share', 'copy-url']);
 const PREVIEW_KEYWORD = 'preview';
@@ -140,18 +141,9 @@ export default async function decorate(block) {
     const cards = renditions.map((rendition) => renditionCard(asset, rendition)).join('');
     block.innerHTML = `${headerHtml}<div class="details-renditions__cards">${cards}</div>`;
 
-    // Snap each card preview to its image's actual AR once it loads, eliminating
-    // top/bottom bars. Handles cached images (img.complete) and fresh loads alike.
     block.querySelectorAll('.details-renditions__card-preview').forEach((preview) => {
       const img = preview.querySelector('img');
-      if (!img) return;
-      const snapAR = () => {
-        if (img.naturalWidth && img.naturalHeight) {
-          preview.style.aspectRatio = `${img.naturalWidth} / ${img.naturalHeight}`;
-        }
-      };
-      if (img.complete) snapAR();
-      else img.addEventListener('load', snapAR, { once: true });
+      if (img) snapAspectRatio(img, preview);
     });
 
     wireRenditionInteractions(block, asset, renditions);

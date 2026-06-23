@@ -31,6 +31,8 @@ export default class Asset {
     /* Object cache */
     this._renditions = null;
     this._staticRenditions = null;
+    this._boundingAR = null;
+    this._landscapeAR = null;
   }
 
   static async create(input) {
@@ -138,6 +140,55 @@ export default class Asset {
     if (this._renditions != null) return this._renditions;
     this._renditions = services.renditions.getRenditions(this) || [];
     return this._renditions;
+  }
+
+  // Rendition dimension candidates: all configured renditions + the asset's own
+  // TIFF dimensions. Width/height on rendition objects are already numeric; the
+  // tiff properties are coerced from strings here so the filter can use > 0.
+  _arCandidates() {
+    return [
+      ...this.renditions,
+      {
+        width: Number(this.getProperty('tiff:ImageWidth')),
+        height: Number(this.getProperty('tiff:ImageLength')),
+      },
+    ].filter((r) => r.width > 0 && r.height > 0);
+  }
+
+  /**
+   * CSS `aspect-ratio` string for the most-portrait rendition — the tallest
+   * container that can display every rendition without clipping (bars may appear
+   * for wider renditions). Falls back to "4 / 3" when no dimension data exists.
+   * Result is memoized after first access.
+   * @returns {string}  e.g. "1280 / 960"
+   */
+  get renditionsBoundingAspectRatio() {
+    if (this._boundingAR) return this._boundingAR;
+    const candidates = this._arCandidates();
+    if (!candidates.length) { this._boundingAR = '4 / 3'; return this._boundingAR; }
+    const narrowest = candidates.reduce((a, b) => (
+      b.width / b.height < a.width / a.height ? b : a
+    ));
+    this._boundingAR = `${Math.round(narrowest.width)} / ${Math.round(narrowest.height)}`;
+    return this._boundingAR;
+  }
+
+  /**
+   * CSS `aspect-ratio` string for the most-landscape rendition — the widest
+   * container that fits all renditions without top/bottom bars (narrower
+   * renditions may show side bars). Falls back to "16 / 9".
+   * Result is memoized after first access.
+   * @returns {string}  e.g. "1920 / 1080"
+   */
+  get renditionsLandscapeAspectRatio() {
+    if (this._landscapeAR) return this._landscapeAR;
+    const candidates = this._arCandidates();
+    if (!candidates.length) { this._landscapeAR = '16 / 9'; return this._landscapeAR; }
+    const widest = candidates.reduce((a, b) => (
+      b.width / b.height > a.width / a.height ? b : a
+    ));
+    this._landscapeAR = `${Math.round(widest.width)} / ${Math.round(widest.height)}`;
+    return this._landscapeAR;
   }
 
   getRendition(name) {

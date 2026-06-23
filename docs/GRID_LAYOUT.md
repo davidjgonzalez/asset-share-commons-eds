@@ -84,7 +84,7 @@ Raw lengths (e.g. `1.5rem`, `24px`) pass through unchanged.
 Each block claims its grid cell via an `area` config row in its authored block table:
 
 ```
-| details-preview |         |
+| details-image |         |
 | area            | preview |
 ```
 
@@ -132,9 +132,9 @@ The grid properties are only active at `@media (width >= 768px)`.
 | columns          | 1.5fr 1fr          |
 ```
 
-Block config for `details-preview`:
+Block config for `details-image`:
 ```
-| details-preview |         |
+| details-image |         |
 | area            | preview |
 ```
 

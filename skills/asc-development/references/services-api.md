@@ -167,6 +167,25 @@ const thumbUrl = services.renditions.getThumbnailUrl(asset);
 // thumbUrl = 'https://aem/.../cq5dam.thumbnail.jpeg'
 ```
 
+### Asset Model — Computed Rendition Property
+
+#### `asset.renditionsBoundingAspectRatio`
+
+CSS `aspect-ratio` string for the most-portrait (tallest) rendition across all configured renditions and the asset's TIFF dimensions. Use as the initial container AR so every rendition fits without clipping. Bars appear for wider renditions but nothing is cropped. Falls back to `"4 / 3"` when no dimension metadata is available.
+
+```js
+// Set initial container AR — fits the tallest rendition without clipping
+block.style.setProperty('--preview-ar', asset.renditionsBoundingAspectRatio);
+// e.g. "--preview-ar: 1280 / 960"
+
+// Then snap to the actual loaded image's natural dimensions
+img.addEventListener('load', () => {
+  if (img.naturalWidth && img.naturalHeight) {
+    container.style.aspectRatio = `${img.naturalWidth} / ${img.naturalHeight}`;
+  }
+}, { once: true });
+```
+
 ---
 
 ## Properties Service

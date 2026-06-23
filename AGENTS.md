@@ -39,10 +39,10 @@ Every file inside `scripts/asc/` starts with `// ASC Core — do not edit.` as a
 |-------|---------|
 | `details-modal` | Modal dialog shell; auto-injected by `AssetDetails` service. Close button floats top-right; the loaded fragment supplies its own header |
 | `details-header` | Title + meta-subtitle bar. Authored content is a **token template** — `{{ accessor }}` / `{{ accessor \| fallback }}` resolved against the asset (see Token Placeholders below) |
-| `details-preview` | Asset preview **media only** (image / video / PDF). Shows a rendition label chip below the preview. Container height is sized to the most-vertical rendition's aspect ratio (no layout shift on rendition switch). Responds to `asc:rendition:activate` (sticky) and `asc:rendition:preview` (hover/restore). |
+| `details-image` | Asset preview **media only** (image / video / PDF). Shows a rendition label chip. Initial container AR comes from `asset.renditionsBoundingAspectRatio` (tallest rendition), then snaps to the loaded image's natural dimensions. Unsupported renditions show an error overlay with a download link. Preview `<img>` carries `data-img-error="1"` so the global fallback (`setupImageFallback`) does not intercept its errors — the block's own handler runs instead. Responds to `asc:rendition:activate` (sticky) and `asc:rendition:preview` (hover/restore). |
 | `details-property` | Displays a single metadata property (label + value; `pill` variant → badge) |
 | `details-metadata` | A panel of property rows (`asc-ui-metadata`). Rows are `Label \| property-key`; `display: list\|grid`; array values (e.g. `tags`) render as `asc-ui-chip` pills |
-| `details-renditions` | Renditions as an `asc-ui-table` (default) or card grid (`\| display \| cards \|`). Author-configurable columns; highlights original rendition as active on load and dispatches `asc:rendition:activate`. See "Renditions Table Templates" below |
+| `details-renditions` | Renditions as an `asc-ui-table` (default) or card grid (`\| display \| cards \|`). Author-configurable columns; highlights original rendition as active on load and dispatches `asc:rendition:activate`. Optional `instructions` row accepts inline HTML (strong/em/code/br). Cards mode: initial card AR from `asset.renditionsBoundingAspectRatio`, snapped per-card to natural image dimensions after load; `max-height: 12rem` clamps portrait cards with side bars. See "Renditions Table Templates" below |
 | `details-actions` | Action buttons (`asc-ui-action` circle-icon + label). One row per action: `\| Label \| action-name \|`. Actions: `download`, `copy-url`, `share`, `collection`. Labels are used exactly as authored. Updates `href`/`data-copy-url` on `asc:rendition:activate`. |
 | `details-pdf` | Embeds a PDF via native `<object data="{url}" type="application/pdf">` (no client-id) or the Adobe PDF Embed API (with `client-id`). `height` row sets viewer height (default: `600px`). Route PDFs via `assetDetails.templates` in `configurations.js`. |
 | `details-office-doc` | Embeds Word/Excel/PowerPoint files using the Microsoft Office Online viewer (`view.officeapps.live.com`). `height` row sets iframe height (default: `600px`). **Asset URL must be publicly accessible** — the viewer fetches it from Microsoft's servers. Route Office MIME types via `assetDetails.templates` in `configurations.js`. |
@@ -120,7 +120,7 @@ declaring which cell it occupies — no per-layout CSS required.
 **Block placement** — each block claims a cell with a `_area` config row:
 
 ```
-| details-preview |         |
+| details-image |         |
 | _area           | preview |
 ```
 
@@ -149,6 +149,7 @@ Authoring (da.live):
 | renditions  | original, web         |   ← optional row list (by name); omit/all = every
 |             |                       |     visible rendition, "original" first then A→Z
 | display     | cards                 |   ← optional: "cards" for card grid; default = table
+| instructions | Select a format below. <strong>Web</strong> is recommended. |   ← inline HTML; shown above the table/cards
 | Name        | name                  |   ← column: Title | value (table mode only)
 | File size   | file-size             |
 | W x H       | dimensions            |
@@ -198,8 +199,8 @@ All ASC custom events follow `asc:{noun}:{verb}`. Dispatched on `document` unles
 | `asc:download:failed` | Downloads service | collection block | `{ jobId, error }` |
 | `asc:download:change` | Downloads service | (UI handlers) | `{ jobId, status }` |
 | `asc:blocks:loaded` | Init service | SearchService | `{ blocks }` |
-| `asc:rendition:activate` | `details-renditions` | `details-preview`, `details-actions`, `details-rendition-metadata` | `{ rendition, asset }` — sticky selection; dispatched on `document.body` |
-| `asc:rendition:preview` | `details-renditions` | `details-preview` | `{ rendition, asset }` — transient hover preview; `rendition: null` on mouseleave to restore sticky |
+| `asc:rendition:activate` | `details-renditions` | `details-image`, `details-actions`, `details-rendition-metadata` | `{ rendition, asset }` — sticky selection; dispatched on `document.body` |
+| `asc:rendition:preview` | `details-renditions` | `details-image` | `{ rendition, asset }` — transient hover preview; `rendition: null` on mouseleave to restore sticky |
 
 `asc:search:complete` `results` shape:
 ```js
@@ -641,6 +642,26 @@ services.renditions.getRendition(asset, 'web');    // single rendition by id
 services.renditions.getThumbnailUrl(asset);        // best thumbnail URL (with fallback)
 ```
 
+### Asset Model — Computed Rendition Properties
+
+```js
+// CSS `aspect-ratio` string for the most-portrait rendition across all renditions +
+// the asset's own TIFF dimensions. Use as the initial container AR so every rendition
+// can display without clipping; bars appear for wider renditions but nothing is cropped.
+// Falls back to "4 / 3" when no dimension metadata is available.
+asset.renditionsBoundingAspectRatio  // → e.g. "1280 / 960" or "4 / 3"
+
+// Typical usage in a details block
+block.style.setProperty('--preview-ar', asset.renditionsBoundingAspectRatio);
+
+// Snap to actual image dimensions after load (eliminates bars for exact matches)
+img.addEventListener('load', () => {
+  if (img.naturalWidth && img.naturalHeight) {
+    container.style.aspectRatio = `${img.naturalWidth} / ${img.naturalHeight}`;
+  }
+}, { once: true });
+```
+
 ---
 
 ## UI Kit (`.asc-ui-*`)
@@ -1035,6 +1056,14 @@ const values  = await url.decompressToArray(encoded);
 | Search events | `document` | `asc:search:execute`, `asc:search:complete` |
 | Cross-block / service events | `document.body` | `asc:asset:details:open`, `asc:collection:add`, etc. |
 | Block-local events | The block's `.block` element | Events that only affect one block instance |
+
+---
+
+## Global Image Fallback
+
+`scripts/asc/utils/images.js` exports `setupImageFallback()`, called once from `scripts/scripts.js` on page load. It installs a capture-phase `error` listener on `document` that replaces broken `<img>` `src` with `/styles/images/image-placeholder.svg` and stamps `data-img-error="1"` to prevent infinite loops.
+
+**Opt-out**: set `data-img-error="1"` on an image element to skip the fallback entirely. This is required for blocks that handle their own image errors (e.g. `details-image`) — the block's error handler runs in the bubble phase and would see the placeholder URL instead of the original broken URL if the fallback fires first.
 
 ---
 

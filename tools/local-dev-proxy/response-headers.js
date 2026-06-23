@@ -51,10 +51,15 @@ export function contentTypeMatches(headerValue, matcher) {
   return raw.includes(pattern) || mimeType === pattern;
 }
 
-export function transformResponseHeaders(incoming, pathname, { cors = false, headerOverrides = [] } = {}) {
+export function transformResponseHeaders(incoming, pathname, { cors = false, headerOverrides = [], targetOrigin = '', proxyOrigin = '' } = {}) {
   const out = Object.fromEntries(
     Object.entries(incoming).filter(([key]) => !HOP_BY_HOP.has(key)),
   );
+
+  // Rewrite redirect Location headers so the browser stays on the proxy
+  if (out.location && targetOrigin && proxyOrigin && out.location.startsWith(targetOrigin)) {
+    out.location = proxyOrigin + out.location.slice(targetOrigin.length);
+  }
 
   if (cors) {
     out['access-control-allow-origin'] = '*';
@@ -64,10 +69,14 @@ export function transformResponseHeaders(incoming, pathname, { cors = false, hea
     delete out['access-control-allow-credentials'];
   }
 
-  for (const { pathMatch, contentType, set } of headerOverrides) {
+  for (let i = 0; i < headerOverrides.length; i++) {
+    const { pathMatch, contentType, set } = headerOverrides[i];
     const pathOk = pathMatches(pathname, pathMatch);
     const ctOk = contentTypeMatches(out['content-type'], contentType);
     if (pathOk && ctOk) {
+      const conditions = [pathMatch || '(all)', contentType ? `type:${contentType}` : null].filter(Boolean).join(' ');
+      const headers = Object.entries(set).map(([k, v]) => `${k}: ${v}`).join('; ');
+      console.log(`  [override #${i + 1}] ${pathname}  [${conditions}]  →  ${headers}`);
       for (const [key, value] of Object.entries(set)) {
         out[key.toLowerCase()] = value;
       }

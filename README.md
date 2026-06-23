@@ -48,7 +48,7 @@ export default {
 
 **Search:** `search-bar` `search-property` `search-path` `search-date-range` `search-tags` `search-hidden` `search-statistics` `search-results`
 
-**Asset Details:** `details-modal` `details-preview` `details-property` `details-renditions` `details-actions`
+**Asset Details:** `details-modal` `details-image` `details-property` `details-renditions` `details-actions`
 
 **Collections:** `stub` `sheet` `collections` `collection`
 

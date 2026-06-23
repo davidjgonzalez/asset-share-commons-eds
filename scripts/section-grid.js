@@ -22,7 +22,7 @@
  *
  * Each block opts into a cell by declaring `_area` in its block config:
  *
- *   | details-preview |         |
+ *   | details-image |         |
  *   | _area           | preview |
  *
  * ## Execution order (see scripts.js)

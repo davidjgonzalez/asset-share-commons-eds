@@ -35,12 +35,13 @@ function resolveTarget(pathname) {
   return new URL(targets.aemUp ?? 'http://localhost:3000');
 }
 
-function forwardRequestHeaders(incoming, targetHost) {
+function forwardRequestHeaders(incoming, targetHost, targetOrigin) {
   const out = Object.fromEntries(
     Object.entries(incoming).filter(([k]) => !HOP_BY_HOP.has(k)),
   );
   delete out['accept-encoding'];
   out.host = targetHost;
+  out.origin = targetOrigin;
   return out;
 }
 
@@ -62,6 +63,7 @@ const server = http.createServer((req, res) => {
   }
 
   const target = resolveTarget(pathname);
+  const targetOrigin = `${target.protocol}//${target.host}`;
 
   const proxyReq = http.request(
     {
@@ -69,10 +71,11 @@ const server = http.createServer((req, res) => {
       port: Number(target.port) || 80,
       path: req.url,
       method: req.method,
-      headers: forwardRequestHeaders(req.headers, target.host),
+      headers: forwardRequestHeaders(req.headers, target.host, targetOrigin),
     },
     (proxyRes) => {
-      const outHeaders = transformResponseHeaders(proxyRes.headers, pathname, { cors, headerOverrides });
+      const proxyOrigin = `http://localhost:${port}`;
+      const outHeaders = transformResponseHeaders(proxyRes.headers, pathname, { cors, headerOverrides, targetOrigin, proxyOrigin });
       const htmlCsp = outHeaders['content-security-policy'];
 
       if (!htmlCsp || !isHtmlResponse(outHeaders)) {

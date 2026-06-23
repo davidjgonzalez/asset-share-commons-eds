@@ -151,7 +151,7 @@ A fragment page is a normal da.live page with `<main>` as the root:
       </div>
       
       <div class="section">
-        <div class="details-preview"></div>
+        <div class="details-image"></div>
       </div>
       
       <div class="section">

@@ -24,32 +24,6 @@ const DEFAULTS = {
   preload: 'metadata',
 };
 
-/**
- * Returns the widest (most landscape) aspect ratio across all renditions as a
- * CSS `aspect-ratio` string, e.g. "16 / 9". Falls back to "16 / 9" if no
- * renditions carry dimension metadata.
- *
- * Using the widest ratio means every rendition fits without top/bottom bars;
- * narrower renditions may get side bars instead (which is far less jarring).
- *
- * @param {import('../../scripts/asc/models/asset.js').default} asset
- * @returns {string}
- */
-function computeAspectRatio(asset) {
-  const candidates = [
-    ...asset.renditions,
-    { width: asset.getProperty('tiff:ImageWidth'), height: asset.getProperty('tiff:ImageLength') },
-  ].filter((r) => r.width > 0 && r.height > 0);
-
-  if (!candidates.length) return '16 / 9';
-
-  // Most landscape = highest w/h ratio
-  const best = candidates.reduce((a, b) => (b.width / b.height > a.width / a.height ? b : a));
-  // Simplify to small integers by scaling to width=100
-  const w = 100;
-  const h = Math.round((best.height / best.width) * 100);
-  return `${w} / ${h}`;
-}
 
 export default async function decorate(block) {
   const raw = readBlockConfig(block);
@@ -109,7 +83,7 @@ export default async function decorate(block) {
         <span class="details-video__loading asc-ui-skeleton details-video__loading--hidden"></span>` : '';
 
     block.innerHTML = `
-      <div class="details-video__viewer" style="--video-ar:${computeAspectRatio(asset)}">
+      <div class="details-video__viewer" style="--video-ar:${asset.renditionsLandscapeAspectRatio}">
         ${playerHtml}
         <span class="asc-ui-chip details-video__rendition-label"></span>
         <div class="details-video__unsupported details-video__unsupported--hidden asc-ui-empty-state">

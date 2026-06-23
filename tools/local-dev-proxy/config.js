@@ -40,20 +40,17 @@ export default {
   // contentType supports substrings, wildcard MIME patterns like image/* or */*,
   // and RegExp values because this file is regular JavaScript.
   headerOverrides: [
-    // HTML pages: relax the local CSP so same-origin PDF <object> embeds work.
-    // The proxy mirrors this header into any CSP <meta http-equiv> tag it finds.
-    {
-      pathMatch: '/',
-      contentType: 'text/html',
-      set: {
-        'content-security-policy': "script-src 'nonce-aem' 'strict-dynamic' 'unsafe-inline' http: https:; base-uri 'self'; object-src 'self' blob: data:;",
-      },
-    },
-
     // PDFs: force inline rendering instead of download
     {
       pathMatch:   '/content/dam',
       contentType: 'application/pdf',
+      set: { 'content-disposition': 'inline' },
+    },
+
+    // Videos: force inline rendering instead of download
+    {
+      pathMatch:   '/content/dam',
+      contentType: 'video/*',
       set: { 'content-disposition': 'inline' },
     },
 

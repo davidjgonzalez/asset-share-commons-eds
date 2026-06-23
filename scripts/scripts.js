@@ -17,6 +17,9 @@ import './asc/services/services.js';
 import configurations from './configurations.js';
 import { decorateASCSections } from './section-grid.js';
 import { resolvePageTokens } from './tokens.js';
+import { setupImageFallback } from './asc/utils/images.js';
+
+setupImageFallback();
 
 /**
  * Builds hero block and prepends to main in a new section.

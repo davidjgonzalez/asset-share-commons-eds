@@ -1,4 +1,57 @@
 {
+  "hooks": {
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "\"/Users/davidg/.local/bin/scout\" hook subagent",
+            "type": "command"
+          }
+        ],
+        "matcher": "Task|Agent"
+      },
+      {
+        "hooks": [
+          {
+            "command": "\"/Users/davidg/.local/bin/scout\" hook bash-compress || echo {}",
+            "type": "command"
+          }
+        ],
+        "matcher": "Bash"
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "command": "\"/Users/davidg/.local/bin/scout\" hook compact",
+            "type": "command"
+          }
+        ],
+        "matcher": "compact"
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "command": "\"/Users/davidg/.local/bin/scout\" hook reflect",
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "command": "\"/Users/davidg/.local/bin/scout\" hook session",
+            "type": "command"
+          }
+        ]
+      }
+    ]
+  },
   "permissions": {
     "allow": [
       "Bash(find /Users/davidg/Code/asset-share-commons-eds -maxdepth 1 -type f -name *.md -o -name *.json -o -name .*rc*)",
@@ -67,7 +120,69 @@
       "Bash(cp /tmp/figma_extract/images/db92abeb3fa17a374da2375be8bf7d51173a261e /tmp/slothui_4.jpg)",
       "Bash(sips -z 400 200 /tmp/slothui_overview.png --out /tmp/slothui_overview_sm.png)",
       "Bash(sips -z 300 533 /tmp/slothui_1.jpg --out /tmp/slothui_1_sm.jpg)",
-      "Bash(sips -z 300 533 /tmp/slothui_2.jpg --out /tmp/slothui_2_sm.jpg)"
+      "Bash(sips -z 300 533 /tmp/slothui_2.jpg --out /tmp/slothui_2_sm.jpg)",
+      "mcp__scout__search",
+      "mcp__scout__semantic_doc_search",
+      "mcp__scout__keyword_search",
+      "mcp__scout__regex_search",
+      "mcp__scout__go_to_definition",
+      "mcp__scout__find_references",
+      "mcp__scout__call_graph",
+      "mcp__scout__impact",
+      "mcp__scout__deep_search",
+      "mcp__scout__file_outline",
+      "mcp__scout__explain_symbol",
+      "mcp__scout__top_symbols",
+      "mcp__scout__list_repositories",
+      "mcp__scout__investigate",
+      "mcp__scout__investigate_expand",
+      "mcp__scout__investigate_hydrate",
+      "mcp__scout__changes_detect",
+      "mcp__scout__changes_affected_tests",
+      "mcp__scout__list_flows",
+      "mcp__scout__affected_flows",
+      "mcp__scout__architecture_overview",
+      "mcp__scout__dead_code",
+      "mcp__scout__docs_broken_links",
+      "mcp__scout__docs_orphan_documents",
+      "mcp__scout__docs_topic_clusters",
+      "mcp__scout__docs_tag_graph",
+      "mcp__scout__docs_stats",
+      "mcp__scout__file_read",
+      "mcp__scout__peer_register",
+      "mcp__scout__peer_update_status",
+      "mcp__scout__peer_list",
+      "mcp__scout__peer_broadcast",
+      "mcp__scout__peer_send_message",
+      "mcp__scout__peer_read_messages",
+      "mcp__scout__peer_wait",
+      "mcp__scout__peer_inbox",
+      "mcp__scout__peer_claim_files",
+      "mcp__scout__peer_release_files",
+      "mcp__scout__peer_reset",
+      "Bash(scout search:*)",
+      "Bash(scout keyword-search:*)",
+      "Bash(scout regex-search:*)",
+      "Bash(scout deep-search:*)",
+      "Bash(scout go-to-definition:*)",
+      "Bash(scout find-references:*)",
+      "Bash(scout call-graph:*)",
+      "Bash(scout explain-symbol:*)",
+      "Bash(scout file-outline:*)",
+      "Bash(scout top-symbols:*)",
+      "Bash(scout list:*)",
+      "Bash(scout status:*)",
+      "Bash(scout doctor:*)",
+      "Bash(scout coderank:*)",
+      "Bash(scout usage:*)",
+      "Bash(scout token show:*)",
+      "Bash(scout broken-links:*)",
+      "Bash(scout orphan-documents:*)",
+      "Bash(scout topic-clusters:*)",
+      "Bash(scout tag-graph:*)",
+      "Bash(scout doc-stats:*)",
+      "Bash(scout evaluate:*)",
+      "Bash(scout board:*)"
     ]
   }
 }

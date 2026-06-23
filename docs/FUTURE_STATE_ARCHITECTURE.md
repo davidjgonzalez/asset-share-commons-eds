@@ -126,7 +126,7 @@ box-shadow: var(--shadow-md);
 
 **Examples**:
 - Modify search-results to show asset ratings
-- Create a variant of details-preview for video-only preview
+- Create a variant of details-image for video-only preview
 - Change search-statistics to show facet counts instead of total
 
 **Effort**: 2–4 hours

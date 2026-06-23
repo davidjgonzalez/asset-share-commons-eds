@@ -69,14 +69,16 @@ export default async function decorate(block) {
       showUnsupported(loadingRendition);
     });
 
-    // Resize the container to the actual image dimensions after load so we use
-    // the real output AR, not the rendition's configured max-dimension bounds.
-    // Only update for the active rendition — hover loads must not cause reflow.
-    img.addEventListener('load', () => {
+    // Snap the container to the real output AR after load (rendition width/height
+    // metadata are max-dimension bounds, not actual output dimensions). Only update
+    // for the active rendition — hover loads must not cause layout reflow.
+    const snapActiveAR = () => {
       if (img.naturalWidth && img.naturalHeight && img.src === srcFor(activeRendition)) {
         preview.style.aspectRatio = `${img.naturalWidth} / ${img.naturalHeight}`;
       }
-    });
+    };
+    img.addEventListener('load', snapActiveAR);
+    if (img.complete) snapActiveAR();
 
     const setDisplay = (rendition, sticky) => {
       const url = srcFor(rendition);
@@ -102,11 +104,7 @@ export default async function decorate(block) {
     });
 
     document.body.addEventListener('asc:rendition:preview', (e) => {
-      if (e.detail.rendition) {
-        setDisplay(e.detail.rendition, false);
-      } else {
-        setDisplay(activeRendition, false);
-      }
+      setDisplay(e.detail.rendition || activeRendition, false);
     });
   } catch (error) {
     console.error('details-image: Failed to load asset', error);

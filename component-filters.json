@@ -23,7 +23,7 @@
       "search-statistics",
       "search-results",
       "details-modal",
-      "details-preview",
+      "details-image",
       "details-video",
       "details-property",
       "details-renditions",
@@ -51,7 +51,7 @@
   {
     "id": "asc-details-page",
     "components": [
-      "details-preview",
+      "details-image",
       "details-video",
       "details-property",
       "details-renditions",
