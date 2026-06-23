@@ -272,6 +272,75 @@
   },
 
   {
+    "id": "details-video",
+    "fields": [
+      {
+        "component": "text",
+        "name": "height",
+        "label": "Height",
+        "value": "600px",
+        "valueType": "string",
+        "description": "Video viewport height as any CSS length (for example: 600px, 70vh)."
+      },
+      {
+        "component": "checkbox",
+        "name": "controls",
+        "label": "Show Controls",
+        "value": true,
+        "valueType": "boolean"
+      },
+      {
+        "component": "checkbox",
+        "name": "autoplay",
+        "label": "Autoplay",
+        "value": false,
+        "valueType": "boolean"
+      },
+      {
+        "component": "checkbox",
+        "name": "muted",
+        "label": "Muted",
+        "value": false,
+        "valueType": "boolean"
+      },
+      {
+        "component": "checkbox",
+        "name": "loop",
+        "label": "Loop",
+        "value": false,
+        "valueType": "boolean"
+      },
+      {
+        "component": "checkbox",
+        "name": "playsinline",
+        "label": "Play Inline",
+        "value": true,
+        "valueType": "boolean"
+      },
+      {
+        "component": "select",
+        "name": "preload",
+        "label": "Preload",
+        "value": "metadata",
+        "valueType": "string",
+        "options": [
+          { "name": "Metadata", "value": "metadata" },
+          { "name": "Auto", "value": "auto" },
+          { "name": "None", "value": "none" }
+        ]
+      },
+      {
+        "component": "text",
+        "name": "poster",
+        "label": "Poster Image URL",
+        "value": "",
+        "valueType": "string",
+        "description": "Optional URL shown before playback starts."
+      }
+    ]
+  },
+
+  {
     "id": "details-property",
     "fields": [
       {

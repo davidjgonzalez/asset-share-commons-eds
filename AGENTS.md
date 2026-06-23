@@ -44,7 +44,8 @@ Every file inside `scripts/asc/` starts with `// ASC Core — do not edit.` as a
 | `details-metadata` | A panel of property rows (`asc-ui-metadata`). Rows are `Label \| property-key`; `display: list\|grid`; array values (e.g. `tags`) render as `asc-ui-chip` pills |
 | `details-renditions` | Renditions as an `asc-ui-table` (default) or card grid (`\| display \| cards \|`). Author-configurable columns; highlights original rendition as active on load and dispatches `asc:rendition:activate`. See "Renditions Table Templates" below |
 | `details-actions` | Action buttons (`asc-ui-action` circle-icon + label). One row per action: `\| Label \| action-name \|`. Actions: `download`, `copy-url`, `share`, `collection`. Labels are used exactly as authored. Updates `href`/`data-copy-url` on `asc:rendition:activate`. |
-| `details-pdf` | Embeds a PDF rendition inline via native `<iframe>`. `rendition` row selects which rendition (default: `original`); `height` row sets iframe height (default: `75vh`). Includes a download fallback button. Route PDFs here via `assetDetails.templates` in `configurations.js`. |
+| `details-pdf` | Embeds a PDF via native `<object data="{url}" type="application/pdf">` (no client-id) or the Adobe PDF Embed API (with `client-id`). `height` row sets viewer height (default: `600px`). Route PDFs via `assetDetails.templates` in `configurations.js`. |
+| `details-office-doc` | Embeds Word/Excel/PowerPoint files using the Microsoft Office Online viewer (`view.officeapps.live.com`). `height` row sets iframe height (default: `600px`). **Asset URL must be publicly accessible** — the viewer fetches it from Microsoft's servers. Route Office MIME types via `assetDetails.templates` in `configurations.js`. |
 
 ### Collections / cart blocks
 | Block | Purpose |

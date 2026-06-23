@@ -13,7 +13,7 @@ const configurations = {
   aem: {
     // The hostname of your AEM author or publish instance.
     // In production this is typically your publish host; locally it's your AEM SDK.
-    host: 'http://localhost:4503',
+    host: 'http://localhost:3002',
 
     // AEM Asset Delivery host (AEM as a Cloud Service only).
     // Required when using renditions of type 'asset-delivery'.
@@ -180,11 +180,19 @@ const configurations = {
     //   return brand === 'acme' ? '/details/acme' : '/details';
     // },
     // Route PDFs to their own fragment page so details-pdf can be authored there.
-    // Create /details/pdf in da.live with a details-pdf block (and details-header,
-    // details-actions, details-renditions, etc. as needed).
+    // Create template pages in da.live and map MIME types here.
     templates: (asset) => {
       if (asset.mimeType?.startsWith('image/'))    return '/details/image';
+      if (asset.mimeType?.startsWith('video/'))    return '/details/video';
       if (asset.mimeType === 'application/pdf')    return '/details/pdf';
+      if ([
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        'application/vnd.ms-powerpoint',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.ms-excel',
+      ].includes(asset.mimeType))                  return '/details/office';
       return '/details';
     },
   },

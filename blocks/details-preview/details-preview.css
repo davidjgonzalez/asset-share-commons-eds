@@ -7,11 +7,6 @@
  */
 
 .block.details-preview {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: var(--spacing-sm);
-
     .asc-ui-detail__preview {
         width: 100%;
         position: relative;
@@ -23,6 +18,14 @@
         height: 100%;
         object-fit: contain;
         max-height: unset;
+    }
+
+    .details-preview__rendition-label {
+        position: absolute;
+        bottom: var(--spacing-md);
+        right: var(--spacing-md);
+        font-size: var(--body-font-size-s);
+        padding: var(--spacing-xs) var(--spacing-sm);
     }
 
     .details-preview__rendition-label:empty {

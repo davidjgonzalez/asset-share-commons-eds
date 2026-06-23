@@ -1,0 +1,28 @@
+/*
+ * details-video — native HTML video viewer.
+ * Height is author-configured; the viewer container holds the video element.
+ */
+
+.block.details-video {
+    .details-video__viewer {
+        border-radius: var(--border-radius-md);
+        overflow: hidden;
+        border: 1px solid var(--color-border);
+        background: var(--color-muted);
+        min-height: 20rem;
+    }
+
+    .details-video__viewer--loading {
+        display: flex;
+        align-items: stretch;
+    }
+
+    .details-video__player {
+        display: block;
+        width: 100%;
+        min-height: 20rem;
+        border: none;
+        background: #000;
+        object-fit: contain;
+    }
+}

@@ -1,0 +1,26 @@
+/*
+ * details-office-doc — Microsoft Office Online viewer iframe.
+ * Height is author-configured; the viewer container holds the iframe.
+ */
+
+.block.details-office-doc {
+    .details-office-doc__viewer {
+        border-radius: var(--border-radius-md);
+        overflow: hidden;
+        border: 1px solid var(--color-border);
+        background: var(--color-muted);
+        min-height: 20rem;
+    }
+
+    .details-office-doc__viewer--loading {
+        display: flex;
+        align-items: stretch;
+    }
+
+    .details-office-doc__frame {
+        display: block;
+        width: 100%;
+        min-height: 20rem;
+        border: none;
+    }
+}

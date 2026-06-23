@@ -24,6 +24,7 @@
       "search-results",
       "details-modal",
       "details-preview",
+      "details-video",
       "details-property",
       "details-renditions",
       "details-actions",
@@ -51,6 +52,7 @@
     "id": "asc-details-page",
     "components": [
       "details-preview",
+      "details-video",
       "details-property",
       "details-renditions",
       "details-actions"

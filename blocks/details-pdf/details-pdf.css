@@ -28,8 +28,8 @@
         min-height: 20rem;
     }
 
-    /* Native iframe fallback */
-    .details-pdf__frame {
+    /* Native object fallback */
+    .details-pdf__object {
         display: block;
         width: 100%;
         min-height: 20rem;

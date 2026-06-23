@@ -5,7 +5,7 @@
  * Requires a free API key from:
  *   https://acrobatservices.adobe.com/dc-integration-creation-app-cdn/main.html
  *
- * Without a client-id the block falls back to a native <iframe>, which works
+ * Without a client-id the block falls back to a native <object>, which works
  * in all modern browsers but lacks the full toolbar, annotation, and view-mode
  * controls of the Embed API.
  *
@@ -46,6 +46,8 @@ const DEFAULTS = {
   defaultViewMode: 'FIT_WIDTH',
 };
 
+const FALLBACK_PDF_FRAGMENT = 'view=Fit&zoom=page-fit&toolbar=1&navpanes=0';
+
 export default async function decorate(block) {
   const raw = readBlockConfig(block);
 
@@ -66,7 +68,6 @@ export default async function decorate(block) {
     enableLinearization: bool('enable-linearization', false),
   };
 
-  const viewerId = `details-pdf-viewer-${crypto.randomUUID()}`;
 
   block.innerHTML = `<div class="details-pdf__viewer details-pdf__viewer--loading">
     <span class="asc-ui-skeleton" style="width:100%;height:${escAttr(config.height)}"></span>
@@ -77,6 +78,8 @@ export default async function decorate(block) {
     const url = asset.url;
 
     if (config.clientId) {
+      const viewerId = `details-pdf-viewer-${crypto.randomUUID()}`;
+
       block.innerHTML = embedHtml(viewerId, config);
       initEmbedApi(viewerId, url, asset, config);
     } else {
@@ -135,26 +138,30 @@ function initEmbedApi(viewerId, url, asset, config) {
 
 // ─── Native <iframe> fallback (no client-id) ─────────────────────────────────
 
+function buildFallbackPdfUrl(url) {
+  const [base, existingFragment] = url.split('#', 2);
+  const params = new URLSearchParams(existingFragment || '');
+  if (!params.has('view')) params.set('view', 'Fit');
+  if (!params.has('zoom')) params.set('zoom', 'page-fit');
+  if (!params.has('toolbar')) params.set('toolbar', '1');
+  if (!params.has('navpanes')) params.set('navpanes', '0');
+
+  return `${base}#${params.toString() || FALLBACK_PDF_FRAGMENT}`;
+}
+
 function iframeHtml(asset, url, config) {
-  const src = `${url}#toolbar=1&navpanes=1`;
+  const iframeUrl = buildFallbackPdfUrl(url);
+
   return `
     <div class="details-pdf__viewer">
       <iframe
-        class="details-pdf__frame"
-        src="${escAttr(src)}"
-        title="${escAttr(asset.title)}"
-        style="height:${escAttr(config.height)}"
-        loading="lazy">
-        <p class="details-pdf__no-iframe">
-          <a href="${escAttr(url)}" class="btn btn--primary btn--sm"
-             target="_blank" rel="noopener">Open PDF</a>
-        </p>
+        class="details-pdf__object"
+        src="${escAttr(iframeUrl)}"
+        title="${escAttr(asset.filename || asset.title || 'PDF preview')}"
+        style="height:${escAttr(config.height)}">
+        <a href="${escAttr(url)}" class="btn btn--primary btn--sm"
+           target="_blank" rel="noopener">Open PDF</a>
       </iframe>
-    </div>
-    <div class="details-pdf__actions">
-      <a class="btn btn--ghost btn--sm" href="${escAttr(url)}"
-         download="${escAttr(asset.filename || asset.title)}"
-         rel="noopener">Download ${escHtml(asset.title)}</a>
     </div>`;
 }
 

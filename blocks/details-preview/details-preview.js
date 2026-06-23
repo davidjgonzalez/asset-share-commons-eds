@@ -39,8 +39,8 @@ export default async function decorate(block) {
     block.innerHTML = `
       <div class="asc-ui-detail__preview">
         <img src="${srcFor(activeRendition)}" alt="${asset.title}" loading="eager">
+        <span class="asc-ui-chip details-preview__rendition-label"></span>
       </div>
-      <span class="asc-ui-chip details-preview__rendition-label"></span>
     `;
 
     const preview = block.querySelector('.asc-ui-detail__preview');
