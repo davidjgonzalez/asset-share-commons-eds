@@ -165,7 +165,7 @@ function boardHtml(items) {
       <div class="board__canvas">
         ${assetItems.map((item, index) => boardCard(item, index)).join('')}
       </div>
-      <button type="button" class="board__reset-view btn btn--ghost btn--sm">Reset view</button>
+      <button type="button" class="board__reset-view btn btn--ghost btn--sm">Fit view</button>
     </div>`;
 }
 
@@ -308,12 +308,52 @@ function initModeToggle(block, collectionId) {
   });
 }
 
+function computeFitViewport(cards, viewport) {
+  if (!cards.length) return { panX: 0, panY: 0, zoom: 1 };
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  cards.forEach((card) => {
+    const x = parseFloat(card.style.left) || 0;
+    const y = parseFloat(card.style.top) || 0;
+    const w = card.offsetWidth || 160;
+    const h = card.offsetHeight || 200;
+    minX = Math.min(minX, x);
+    minY = Math.min(minY, y);
+    maxX = Math.max(maxX, x + w);
+    maxY = Math.max(maxY, y + h);
+  });
+  const PADDING = 0.10;
+  const contentW = maxX - minX;
+  const contentH = maxY - minY;
+  const vw = viewport.clientWidth;
+  const vh = viewport.clientHeight;
+  if (!contentW || !contentH) return { panX: 0, panY: 0, zoom: 1 };
+  const zoom = Math.min(
+    (vw * (1 - 2 * PADDING)) / contentW,
+    (vh * (1 - 2 * PADDING)) / contentH,
+    1.0,
+  );
+  const panX = (vw - contentW * zoom) / 2 - minX * zoom;
+  const panY = (vh - contentH * zoom) / 2 - minY * zoom;
+  return { panX, panY, zoom };
+}
+
 function initBoard(block, collection) {
   const viewport = block.querySelector('.board__viewport');
   const canvas = block.querySelector('.board__canvas');
   if (!viewport || !canvas) return;
 
+  const hasSavedViewport = localStorage.getItem(VIEWPORT_KEY(collection.id)) !== null;
   let { panX, panY, zoom } = getViewport(collection.id);
+
+  if (!hasSavedViewport) {
+    const allCards = [...canvas.querySelectorAll('.board__card, .board__text-element')];
+    const fit = computeFitViewport(allCards, viewport);
+    ({ panX, panY, zoom } = fit);
+    setViewport(collection.id, fit);
+  }
   canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
 
   let panning = false;
@@ -369,9 +409,11 @@ function initBoard(block, collection) {
   }, { passive: false });
 
   block.querySelector('.board__reset-view')?.addEventListener('click', () => {
-    panX = 0; panY = 0; zoom = 1;
-    canvas.style.transform = 'translate(0px, 0px) scale(1)';
-    setViewport(collection.id, { panX: 0, panY: 0, zoom: 1 });
+    const allCards = [...canvas.querySelectorAll('.board__card, .board__text-element')];
+    const fit = computeFitViewport(allCards, viewport);
+    ({ panX, panY, zoom } = fit);
+    canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
+    setViewport(collection.id, fit);
   });
 }
 
