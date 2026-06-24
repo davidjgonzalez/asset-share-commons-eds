@@ -456,11 +456,21 @@ function initBoard(block, collection) {
         selRect.style.cssText = `left:${left}px;top:${top}px;width:${width}px;height:${height}px`;
       }
 
-      function onUp() {
+      const teardown = () => {
+        viewport.releasePointerCapture(e.pointerId);
         viewport.removeEventListener('pointermove', onMove);
         viewport.removeEventListener('pointerup', onUp);
-        const rectBounds = selRect.getBoundingClientRect();
+        viewport.removeEventListener('pointercancel', onUp);
         selRect.remove();
+      };
+
+      function onUp(uev) {
+        if (uev.type === 'pointercancel') {
+          teardown();
+          return;
+        }
+        const rectBounds = selRect.getBoundingClientRect();
+        teardown();
         deselectAll();
         canvas.querySelectorAll('.board__card, .board__text-element').forEach((item) => {
           const b = item.getBoundingClientRect();
@@ -472,6 +482,7 @@ function initBoard(block, collection) {
 
       viewport.addEventListener('pointermove', onMove);
       viewport.addEventListener('pointerup', onUp);
+      viewport.addEventListener('pointercancel', onUp);
       return;
     }
 
@@ -552,7 +563,7 @@ function initCardDrag(block, collection) {
     const { zoom } = getViewport(collection.id);
 
     const isInGroup = _selectedItems.has(card) && _selectedItems.size > 1;
-    const dragGroup = isInGroup ? [..._selectedItems].filter((el) => el.dataset.ascAsset) : [card];
+    const dragGroup = isInGroup ? [..._selectedItems] : [card];
 
     const startPositions = dragGroup.map((c) => ({
       el: c,
@@ -581,9 +592,13 @@ function initCardDrag(block, collection) {
       dragGroup.forEach((c) => c.classList.remove('board__card--dragging'));
       if (_cardDragMoved) {
         startPositions.forEach(({ el }) => {
-          const x = Math.round(parseFloat(el.style.left));
-          const y = Math.round(parseFloat(el.style.top));
-          services.collections.updateItem(collection.id, el.dataset.ascAsset, { x, y });
+          if (el.dataset.textId) {
+            saveTextItem(collection.id, el);
+          } else if (el.dataset.ascAsset) {
+            const x = Math.round(parseFloat(el.style.left));
+            const y = Math.round(parseFloat(el.style.top));
+            services.collections.updateItem(collection.id, el.dataset.ascAsset, { x, y });
+          }
         });
       }
     }
