@@ -199,6 +199,7 @@ function boardHtml(items, textItems) {
         ${textItems.map((t) => boardTextElement(t)).join('')}
       </div>
       <button type="button" class="board__reset-view btn btn--ghost btn--sm">Fit view</button>
+      <button type="button" class="board__clean-up btn btn--ghost btn--sm">Clean up</button>
       <button type="button" class="board__add-text btn btn--ghost btn--sm">+ Text</button>
     </div>`;
 }
@@ -557,6 +558,39 @@ function initBoard(block, collection) {
     setViewport(collection.id, fit);
     repositionOpenPanel();
   });
+
+  block.querySelector('.board__clean-up')?.addEventListener('click', () => {
+    const cards = [...canvas.querySelectorAll('.board__card')];
+    if (!cards.length) return;
+
+    const CARD_W = 160;
+    const GAP = 24;
+    const cols = Math.max(1, Math.ceil(Math.sqrt(cards.length)));
+    const rowH = Math.max(...cards.map((c) => c.offsetHeight || 250)) + GAP;
+
+    cards.forEach((c) => { c.style.transition = 'left 0.35s ease, top 0.35s ease'; });
+
+    cards.forEach((card, i) => {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const x = GAP + col * (CARD_W + GAP);
+      const y = GAP + row * rowH;
+      card.style.left = `${x}px`;
+      card.style.top = `${y}px`;
+      const uuid = card.dataset.ascAsset;
+      if (uuid) services.collections.updateItem(collection.id, uuid, { x, y });
+    });
+
+    setTimeout(() => {
+      cards.forEach((c) => { c.style.transition = ''; });
+      const allItems = [...canvas.querySelectorAll('.board__card, .board__text-element')];
+      const fit = computeFitViewport(allItems, viewport);
+      ({ panX, panY, zoom } = fit);
+      canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
+      setViewport(collection.id, fit);
+      repositionOpenPanel();
+    }, 380);
+  });
 }
 
 function initCardDrag(block, collection) {
@@ -810,6 +844,9 @@ function initTextElement(el, collection) {
   el.addEventListener('pointerdown', (ev) => {
     if (el.dataset.editing) return;
     if (ev.target.closest('.board__text-remove')) return;
+    // Bail if pointer is on the native CSS resize handle (bottom-right 16×16px)
+    const elRect = el.getBoundingClientRect();
+    if (ev.clientX > elRect.right - 16 && ev.clientY > elRect.bottom - 16) return;
     ev.stopPropagation();
 
     const startX = ev.clientX;
