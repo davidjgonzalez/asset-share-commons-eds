@@ -16,6 +16,8 @@ let _pendingSectionFocus = null;
 
 let _cardDragMoved = false;
 
+let _openPanelState = null;
+
 // ─── Mode & viewport state ─────────────────────────────────────────────────────
 
 const MODE_KEY = (id) => `asc:collectionMode:${id}`;
@@ -376,6 +378,7 @@ function initBoard(block, collection) {
     lastX = e.clientX;
     lastY = e.clientY;
     canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
+    repositionOpenPanel();
   });
 
   viewport.addEventListener('pointerup', () => {
@@ -406,6 +409,7 @@ function initBoard(block, collection) {
     zoom = newZoom;
     canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
     setViewport(collection.id, { panX, panY, zoom });
+    repositionOpenPanel();
   }, { passive: false });
 
   block.querySelector('.board__reset-view')?.addEventListener('click', () => {
@@ -414,6 +418,7 @@ function initBoard(block, collection) {
     ({ panX, panY, zoom } = fit);
     canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
     setViewport(collection.id, fit);
+    repositionOpenPanel();
   });
 }
 
@@ -464,8 +469,28 @@ function initCardDrag(block, collection) {
   });
 }
 
+function positionPanel(panel, card, viewport) {
+  const cardRect = card.getBoundingClientRect();
+  const viewportRect = viewport.getBoundingClientRect();
+  const panelWidth = panel.offsetWidth || 220;
+  const leftCandidate = cardRect.right - viewportRect.left + 8;
+  const left = leftCandidate + panelWidth > viewportRect.width
+    ? cardRect.left - viewportRect.left - panelWidth - 8
+    : leftCandidate;
+  panel.style.left = `${Math.max(4, left)}px`;
+  panel.style.top = `${Math.max(4, cardRect.top - viewportRect.top)}px`;
+}
+
+function repositionOpenPanel() {
+  if (!_openPanelState) return;
+  const { panel, card, viewport } = _openPanelState;
+  if (!document.contains(panel)) { _openPanelState = null; return; }
+  positionPanel(panel, card, viewport);
+}
+
 function openNotesPanel(block, collection, card) {
   block.querySelector('.board__notes-panel')?.remove();
+  _openPanelState = null;
 
   const assetId = card.dataset.ascAsset;
   const currentNotes = card.querySelector('.board__card-notes-preview')?.textContent || '';
@@ -482,16 +507,8 @@ function openNotesPanel(block, collection, card) {
 
   const viewport = block.querySelector('.board__viewport');
   viewport.appendChild(panel);
-
-  const cardRect = card.getBoundingClientRect();
-  const viewportRect = viewport.getBoundingClientRect();
-  const panelWidth = 220;
-  const leftCandidate = cardRect.right - viewportRect.left + 8;
-  const left = leftCandidate + panelWidth > viewportRect.width
-    ? cardRect.left - viewportRect.left - panelWidth - 8
-    : leftCandidate;
-  panel.style.left = `${Math.max(4, left)}px`;
-  panel.style.top = `${Math.max(4, cardRect.top - viewportRect.top)}px`;
+  positionPanel(panel, card, viewport);
+  _openPanelState = { panel, card, viewport };
 
   const textarea = panel.querySelector('.board__notes-textarea');
   textarea.focus();
@@ -505,6 +522,7 @@ function openNotesPanel(block, collection, card) {
     updateCardNotes(card, notes);
     removeOutsideClick();
     panel.remove();
+    _openPanelState = null;
   }
 
   panel.querySelector('.board__notes-done').addEventListener('click', saveAndClose);
