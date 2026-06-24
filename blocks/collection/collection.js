@@ -192,7 +192,7 @@ function listHtml(items) {
 function boardHtml(items, textItems) {
   const assetItems = items.filter((i) => i.type === 'asset' && i.asset);
   return `
-    <div class="board__viewport">
+    <div class="board__viewport" tabindex="0">
       <div class="board__canvas">
         ${assetItems.map((item, index) => boardCard(item, index)).join('')}
         ${textItems.map((t) => boardTextElement(t)).join('')}
@@ -427,71 +427,90 @@ function initBoard(block, collection) {
   canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
 
   let panning = false;
+  let spaceHeld = false;
   let lastX = 0;
   let lastY = 0;
+
+  viewport.addEventListener('keydown', (e) => {
+    if (e.code === 'Space') {
+      e.preventDefault();
+      spaceHeld = true;
+      viewport.classList.add('board__viewport--space');
+    }
+  });
+  viewport.addEventListener('keyup', (e) => {
+    if (e.code === 'Space') {
+      spaceHeld = false;
+      viewport.classList.remove('board__viewport--space');
+    }
+  });
 
   viewport.addEventListener('pointerdown', (e) => {
     if (e.target.closest('.board__card, .board__text-element')) return;
     if (e.target.closest('.board__notes-panel, .board__reset-view, .board__add-text')) return;
 
-    if (e.ctrlKey || e.metaKey) {
-      // Rubber-band selection
-      e.preventDefault();
-      const viewportRect = viewport.getBoundingClientRect();
-      const startX = e.clientX - viewportRect.left;
-      const startY = e.clientY - viewportRect.top;
-
-      const selRect = document.createElement('div');
-      selRect.className = 'board__selection-rect';
-      viewport.appendChild(selRect);
+    if (spaceHeld || e.button === 1) {
+      // Space+drag or middle-mouse = pan
+      panning = true;
+      lastX = e.clientX;
+      lastY = e.clientY;
       viewport.setPointerCapture(e.pointerId);
-
-      function onMove(ev) {
-        const curX = ev.clientX - viewportRect.left;
-        const curY = ev.clientY - viewportRect.top;
-        const left = Math.min(startX, curX);
-        const top = Math.min(startY, curY);
-        const width = Math.abs(curX - startX);
-        const height = Math.abs(curY - startY);
-        selRect.style.cssText = `left:${left}px;top:${top}px;width:${width}px;height:${height}px`;
-      }
-
-      const teardown = () => {
-        viewport.releasePointerCapture(e.pointerId);
-        viewport.removeEventListener('pointermove', onMove);
-        viewport.removeEventListener('pointerup', onUp);
-        viewport.removeEventListener('pointercancel', onUp);
-        selRect.remove();
-      };
-
-      function onUp(uev) {
-        if (uev.type === 'pointercancel') {
-          teardown();
-          return;
-        }
-        const rectBounds = selRect.getBoundingClientRect();
-        teardown();
-        deselectAll();
-        canvas.querySelectorAll('.board__card, .board__text-element').forEach((item) => {
-          const b = item.getBoundingClientRect();
-          const overlaps = !(b.right < rectBounds.left || b.left > rectBounds.right
-            || b.bottom < rectBounds.top || b.top > rectBounds.bottom);
-          if (overlaps) selectItem(item);
-        });
-      }
-
-      viewport.addEventListener('pointermove', onMove);
-      viewport.addEventListener('pointerup', onUp);
-      viewport.addEventListener('pointercancel', onUp);
+      viewport.classList.add('board__viewport--panning');
       return;
     }
 
-    // Pan
-    panning = true;
-    lastX = e.clientX;
-    lastY = e.clientY;
+    // Plain drag on empty canvas = rubber-band selection
+    e.preventDefault();
+    const viewportRect = viewport.getBoundingClientRect();
+    const startX = e.clientX - viewportRect.left;
+    const startY = e.clientY - viewportRect.top;
+
+    const selRect = document.createElement('div');
+    selRect.className = 'board__selection-rect';
+    viewport.appendChild(selRect);
     viewport.setPointerCapture(e.pointerId);
-    viewport.classList.add('board__viewport--panning');
+
+    function onMove(ev) {
+      const curX = ev.clientX - viewportRect.left;
+      const curY = ev.clientY - viewportRect.top;
+      const left = Math.min(startX, curX);
+      const top = Math.min(startY, curY);
+      const width = Math.abs(curX - startX);
+      const height = Math.abs(curY - startY);
+      selRect.style.cssText = `left:${left}px;top:${top}px;width:${width}px;height:${height}px`;
+    }
+
+    const teardown = () => {
+      viewport.releasePointerCapture(e.pointerId);
+      viewport.removeEventListener('pointermove', onMove);
+      viewport.removeEventListener('pointerup', onUp);
+      viewport.removeEventListener('pointercancel', onUp);
+      selRect.remove();
+    };
+
+    function onUp(uev) {
+      if (uev.type === 'pointercancel') {
+        teardown();
+        return;
+      }
+      const rectBounds = selRect.getBoundingClientRect();
+      teardown();
+      if (rectBounds.width < 4 && rectBounds.height < 4) {
+        deselectAll();
+        return;
+      }
+      deselectAll();
+      canvas.querySelectorAll('.board__card, .board__text-element').forEach((item) => {
+        const b = item.getBoundingClientRect();
+        const overlaps = !(b.right < rectBounds.left || b.left > rectBounds.right
+          || b.bottom < rectBounds.top || b.top > rectBounds.bottom);
+        if (overlaps) selectItem(item);
+      });
+    }
+
+    viewport.addEventListener('pointermove', onMove);
+    viewport.addEventListener('pointerup', onUp);
+    viewport.addEventListener('pointercancel', onUp);
   });
 
   viewport.addEventListener('pointermove', (e) => {

@@ -594,9 +594,14 @@
             0 0 / 24px 24px;
         border: 1px solid var(--color-border);
         border-radius: var(--collection-radius);
-        cursor: grab;
+        cursor: crosshair;
         touch-action: none;
         user-select: none;
+        outline: none;
+
+        &.board__viewport--space {
+            cursor: grab;
+        }
 
         &.board__viewport--panning {
             cursor: grabbing;
