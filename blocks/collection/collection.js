@@ -127,12 +127,12 @@ function html(collection, isDefault, pendingJobs, mode) {
     </header>
 
     <div class="collection__toolbar">
-      <div class="collection__mode-toggle" role="group" aria-label="Display mode">
+      <div class="asc-ui-segmented asc-ui-segmented--sm collection__mode-toggle" role="group" aria-label="Display mode">
         <button type="button"
-                class="collection__mode-btn${mode === 'list' ? ' collection__mode-btn--active' : ''}"
+                class="asc-ui-segmented__option${mode === 'list' ? ' is-active' : ''}"
                 data-mode="list" aria-pressed="${mode === 'list'}">&#9776; List</button>
         <button type="button"
-                class="collection__mode-btn${mode === 'board' ? ' collection__mode-btn--active' : ''}"
+                class="asc-ui-segmented__option${mode === 'board' ? ' is-active' : ''}"
                 data-mode="board" aria-pressed="${mode === 'board'}">&#8862; Board</button>
       </div>
       <div class="collection__toolbar-end">
@@ -175,24 +175,29 @@ function boardCard(item, index) {
   const y = item.y !== undefined ? item.y : 80 + Math.floor(index / 10) * 160;
   const thumbnailUrl = services.renditions.getThumbnailUrl(asset);
   return `
-    <div class="board__card"
-         style="left: ${x}px; top: ${y}px"
-         data-asc-asset="${escAttr(asset.uuid)}">
-      <button type="button"
-              class="board__card-remove"
-              data-asc-asset="${escAttr(asset.uuid)}"
-              aria-label="Remove ${escHtml(asset.title)} from collection">&#x2715;</button>
-      <div class="board__card-thumb">
-        <img src="${thumbnailUrl}" alt="${escHtml(asset.title)}" loading="lazy" />
+    <article class="asc-ui-asset-card board__card"
+             style="left: ${x}px; top: ${y}px"
+             data-asc-asset="${escAttr(asset.uuid)}">
+      <div class="asc-ui-asset-card__thumb">
+        <span class="asc-ui-asset-card__badge">
+          ${notes ? '<span class="board__notes-indicator" title="Has notes">&#128221;</span>' : ''}
+        </span>
+        <div class="asc-ui-asset-card__overlay">
+          <button type="button"
+                  class="asc-ui-icon-btn board__card-remove"
+                  data-asc-asset="${escAttr(asset.uuid)}"
+                  aria-label="Remove ${escHtml(asset.title)} from collection">&#x2715;</button>
+        </div>
+        <img src="${thumbnailUrl}" alt="${escHtml(asset.title)}" loading="lazy" draggable="false" />
       </div>
-      <div class="board__card-body">
-        <p class="board__card-title">${escHtml(asset.title)}</p>
+      <div class="asc-ui-asset-card__body">
+        <p class="asc-ui-asset-card__title">${escHtml(asset.title)}</p>
         ${notes ? `<p class="board__card-notes-preview">${escHtml(notes)}</p>` : ''}
         <button type="button"
-                class="board__card-notes-btn"
-                data-asc-asset="${escAttr(asset.uuid)}">${notes ? '&#128221;' : '+ note'}</button>
+                class="btn btn--ghost btn--sm board__notes-btn"
+                data-asc-asset="${escAttr(asset.uuid)}">${notes ? 'Edit note' : '+ Note'}</button>
       </div>
-    </div>`;
+    </article>`;
 }
 
 function renderJobsStatus(jobs) {
@@ -295,7 +300,7 @@ function initInteractions(block, collection, isDefault, mode) {
 }
 
 function initModeToggle(block, collectionId) {
-  block.querySelectorAll('.collection__mode-btn').forEach((btn) => {
+  block.querySelectorAll('.asc-ui-segmented__option[data-mode]').forEach((btn) => {
     btn.addEventListener('click', async () => {
       setMode(collectionId, btn.dataset.mode);
       await render(block, collectionId);
@@ -377,7 +382,7 @@ function initCardDrag(block, collection) {
   viewport.addEventListener('pointerdown', (e) => {
     const card = e.target.closest('.board__card');
     if (!card) return;
-    if (e.target.closest('.board__card-remove, .board__card-notes-btn')) return;
+    if (e.target.closest('.board__card-remove, .board__notes-btn')) return;
 
     e.stopPropagation();
 
@@ -477,19 +482,26 @@ function openNotesPanel(block, collection, card) {
 }
 
 function updateCardNotes(card, notes) {
-  let preview = card.querySelector('.board__card-notes-preview');
-  const notesBtn = card.querySelector('.board__card-notes-btn');
+  const preview = card.querySelector('.board__card-notes-preview');
+  const notesBtn = card.querySelector('.board__notes-btn');
+  const badge = card.querySelector('.asc-ui-asset-card__badge');
+
   if (notes) {
     if (!preview) {
-      preview = document.createElement('p');
-      preview.className = 'board__card-notes-preview';
-      card.querySelector('.board__card-body').insertBefore(preview, notesBtn);
+      const p = document.createElement('p');
+      p.className = 'board__card-notes-preview';
+      if (notesBtn) notesBtn.before(p);
     }
-    preview.textContent = notes;
-    if (notesBtn) notesBtn.textContent = '📝';
+    const p2 = card.querySelector('.board__card-notes-preview');
+    if (p2) p2.textContent = notes;
+    if (notesBtn) notesBtn.textContent = 'Edit note';
+    if (badge && !badge.querySelector('.board__notes-indicator')) {
+      badge.innerHTML = '<span class="board__notes-indicator" title="Has notes">&#128221;</span>';
+    }
   } else {
     preview?.remove();
-    if (notesBtn) notesBtn.textContent = '+ note';
+    if (notesBtn) notesBtn.textContent = '+ Note';
+    if (badge) badge.innerHTML = '';
   }
 }
 
@@ -504,7 +516,7 @@ function initBoardClicks(block, collection) {
       return;
     }
 
-    const notesBtn = e.target.closest('.board__card-notes-btn');
+    const notesBtn = e.target.closest('.board__notes-btn');
     if (notesBtn) {
       const card = notesBtn.closest('.board__card');
       if (card) openNotesPanel(block, collection, card);

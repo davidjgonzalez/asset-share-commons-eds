@@ -568,39 +568,12 @@
         line-height: 1.45;
     }
 
-    /* ── Mode toggle ─────────────────────────────────────────────────────── */
+    /* ── Mode toggle — visual styles from asc-ui-segmented in ui-kit.css ─── */
 
     .collection__toolbar-end {
         display: flex;
         align-items: center;
         gap: var(--spacing-sm);
-    }
-
-    .collection__mode-toggle {
-        display: flex;
-        border: 1px solid var(--color-border);
-        border-radius: var(--border-radius-sm);
-        overflow: hidden;
-    }
-
-    .collection__mode-btn {
-        padding: var(--spacing-xs) var(--spacing-sm);
-        border: none;
-        font-size: var(--body-font-size-s);
-        font-family: inherit;
-        background: var(--color-card);
-        color: var(--color-muted-fg);
-        cursor: pointer;
-        transition: background var(--transition-fast), color var(--transition-fast);
-
-        &:hover:not(.collection__mode-btn--active) {
-            background: var(--color-muted);
-        }
-
-        &.collection__mode-btn--active {
-            background: var(--color-primary);
-            color: var(--color-primary-fg);
-        }
     }
 
     /* ── Board viewport & canvas ─────────────────────────────────────────── */
@@ -741,19 +714,16 @@
         }
     }
 
-    /* ── Board cards ─────────────────────────────────────────────────────── */
+    /* ── Board cards — visual base from asc-ui-asset-card in ui-kit.css ─── */
 
-    .board__card {
+    .board__card.asc-ui-asset-card {
         position: absolute;
         width: 160px;
-        background: var(--color-card);
-        border: 1px solid var(--color-border);
-        border-radius: var(--border-radius-md);
-        box-shadow: var(--shadow-sm);
-        user-select: none;
-        transition: box-shadow var(--transition-fast);
+        cursor: default;
 
-        &:hover {
+        &.board__card--selected {
+            outline: 2px solid var(--color-primary);
+            outline-offset: 2px;
             box-shadow: var(--shadow-md);
         }
 
@@ -763,62 +733,20 @@
             cursor: grabbing;
             z-index: 100;
         }
-    }
 
-    .board__card-remove {
-        position: absolute;
-        top: var(--spacing-2xs);
-        right: var(--spacing-2xs);
-        display: none;
-        width: 20px;
-        height: 20px;
-        padding: 0;
-        border: none;
-        border-radius: 50%;
-        background: var(--color-destructive);
-        color: var(--color-destructive-fg);
-        font-size: 10px;
-        line-height: 1;
-        cursor: pointer;
-        z-index: 1;
-
-        .board__card:hover & {
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .asc-ui-asset-card__overlay {
+            opacity: 0;
+            transition: opacity var(--transition-fast);
         }
-    }
 
-    .board__card-thumb {
-        width: 160px;
-        height: 120px;
-        border-radius: var(--border-radius-md) var(--border-radius-md) 0 0;
-        overflow: hidden;
-
-        img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
+        &:hover .asc-ui-asset-card__overlay,
+        &.board__card--selected .asc-ui-asset-card__overlay {
+            opacity: 1;
         }
-    }
-
-    .board__card-body {
-        padding: var(--spacing-xs) var(--spacing-sm) var(--spacing-sm);
-    }
-
-    .board__card-title {
-        margin: 0 0 var(--spacing-2xs);
-        font-size: var(--body-font-size-xs);
-        font-weight: 500;
-        color: var(--color-fg);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
     }
 
     .board__card-notes-preview {
-        margin: 0 0 var(--spacing-2xs);
+        margin: 0;
         font-size: var(--body-font-size-2xs);
         font-style: italic;
         color: var(--color-muted-fg);
@@ -827,20 +755,27 @@
         text-overflow: ellipsis;
     }
 
-    .board__card-notes-btn {
-        display: block;
-        appearance: none;
-        background: none;
-        border: none;
-        padding: 0;
-        font-size: var(--body-font-size-2xs);
-        color: transparent;
-        cursor: pointer;
-        font-family: inherit;
+    .board__notes-btn {
+        width: 100%;
+        justify-content: flex-start;
+        opacity: 0;
+        transition: opacity var(--transition-fast);
 
         .board__card:hover & {
-            color: var(--color-muted-fg);
+            opacity: 1;
         }
+    }
+
+    .board__notes-indicator {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.5rem;
+        height: 1.5rem;
+        border-radius: var(--border-radius-sm);
+        background: color-mix(in srgb, var(--color-primary) 15%, var(--color-card));
+        border: 1px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
+        font-size: 0.7rem;
     }
 
     @media (width <= 600px) {
