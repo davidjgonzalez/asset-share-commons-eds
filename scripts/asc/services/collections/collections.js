@@ -546,6 +546,27 @@ class Collections {
   }
 
   /**
+   * Partially updates x, y, and/or notes on an asset item.
+   * Does NOT dispatch CHANGED — callers update the DOM in real time.
+   * @param {string} collectionId
+   * @param {string} itemId - asset UUID
+   * @param {{ x?: number, y?: number, notes?: string }} updates
+   */
+  updateItem(collectionId, itemId, updates) {
+    const data = this._getData();
+    const collection = data.items[collectionId];
+    if (!collection) return;
+    const item = (collection.items || []).find(
+      (i) => i.type === "asset" && i.id === itemId,
+    );
+    if (!item) return;
+    if (updates.x !== undefined) item.x = updates.x;
+    if (updates.y !== undefined) item.y = updates.y;
+    if (updates.notes !== undefined) item.notes = updates.notes;
+    this._saveCollection(collection);
+  }
+
+  /**
    * Removes a section by ID from a collection.
    * @param {string} collectionId
    * @param {string} sectionId
