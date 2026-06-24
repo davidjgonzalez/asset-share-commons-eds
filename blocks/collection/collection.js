@@ -445,7 +445,6 @@ function initBoard(block, collection) {
     }
 
     // Plain drag on empty canvas = rubber-band selection
-    e.preventDefault();
     const viewportRect = viewport.getBoundingClientRect();
     const startX = e.clientX - viewportRect.left;
     const startY = e.clientY - viewportRect.top;
@@ -455,35 +454,27 @@ function initBoard(block, collection) {
     const selRect = document.createElement('div');
     selRect.className = 'board__selection-rect';
     viewport.appendChild(selRect);
-    viewport.setPointerCapture(e.pointerId);
 
-    function onMove(ev) {
+    const rbMove = (ev) => {
       endX = ev.clientX - viewportRect.left;
       endY = ev.clientY - viewportRect.top;
       const left = Math.min(startX, endX);
       const top = Math.min(startY, endY);
-      const width = Math.abs(endX - startX);
-      const height = Math.abs(endY - startY);
-      selRect.style.cssText = `left:${left}px;top:${top}px;width:${width}px;height:${height}px`;
-    }
-
-    const teardown = () => {
-      viewport.releasePointerCapture(e.pointerId);
-      viewport.removeEventListener('pointermove', onMove);
-      viewport.removeEventListener('pointerup', onUp);
-      viewport.removeEventListener('pointercancel', onUp);
-      selRect.remove();
+      selRect.style.left = `${left}px`;
+      selRect.style.top = `${top}px`;
+      selRect.style.width = `${Math.abs(endX - startX)}px`;
+      selRect.style.height = `${Math.abs(endY - startY)}px`;
     };
 
-    function onUp(uev) {
-      teardown();
-      if (uev.type === 'pointercancel') return;
+    const rbUp = () => {
+      document.removeEventListener('pointermove', rbMove);
+      document.removeEventListener('pointerup', rbUp);
+      selRect.remove();
 
       const rbW = Math.abs(endX - startX);
       const rbH = Math.abs(endY - startY);
       if (rbW < 4 && rbH < 4) { deselectAll(); return; }
 
-      // Rubber-band bounds in viewport-local px
       const rbLeft = Math.min(startX, endX);
       const rbTop = Math.min(startY, endY);
       const rbRight = rbLeft + rbW;
@@ -491,22 +482,21 @@ function initBoard(block, collection) {
 
       deselectAll();
       canvas.querySelectorAll('.board__card, .board__text-element').forEach((item) => {
-        // Convert card canvas-space position to viewport-local px
         const cx = parseFloat(item.style.left) || 0;
         const cy = parseFloat(item.style.top) || 0;
-        const vpLeft = cx * zoom + panX;
-        const vpTop = cy * zoom + panY;
-        const vpRight = vpLeft + item.offsetWidth * zoom;
-        const vpBottom = vpTop + item.offsetHeight * zoom;
-        const overlaps = !(vpRight < rbLeft || vpLeft > rbRight
-          || vpBottom < rbTop || vpTop > rbBottom);
-        if (overlaps) selectItem(item);
+        const itemVpLeft = cx * zoom + panX;
+        const itemVpTop = cy * zoom + panY;
+        const itemVpRight = itemVpLeft + item.offsetWidth * zoom;
+        const itemVpBottom = itemVpTop + item.offsetHeight * zoom;
+        if (itemVpRight > rbLeft && itemVpLeft < rbRight
+          && itemVpBottom > rbTop && itemVpTop < rbBottom) {
+          selectItem(item);
+        }
       });
-    }
+    };
 
-    viewport.addEventListener('pointermove', onMove);
-    viewport.addEventListener('pointerup', onUp);
-    viewport.addEventListener('pointercancel', onUp);
+    document.addEventListener('pointermove', rbMove);
+    document.addEventListener('pointerup', rbUp);
   });
 
   viewport.addEventListener('pointermove', (e) => {
