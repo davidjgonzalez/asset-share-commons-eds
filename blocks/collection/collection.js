@@ -192,7 +192,7 @@ function listHtml(items) {
 function boardHtml(items, textItems) {
   const assetItems = items.filter((i) => i.type === 'asset' && i.asset);
   return `
-    <div class="board__viewport" tabindex="0">
+    <div class="board__viewport">
       <div class="board__canvas">
         ${assetItems.map((item, index) => boardCard(item, index)).join('')}
         ${textItems.map((t) => boardTextElement(t)).join('')}
@@ -427,30 +427,15 @@ function initBoard(block, collection) {
   canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
 
   let panning = false;
-  let spaceHeld = false;
   let lastX = 0;
   let lastY = 0;
-
-  viewport.addEventListener('keydown', (e) => {
-    if (e.code === 'Space') {
-      e.preventDefault();
-      spaceHeld = true;
-      viewport.classList.add('board__viewport--space');
-    }
-  });
-  viewport.addEventListener('keyup', (e) => {
-    if (e.code === 'Space') {
-      spaceHeld = false;
-      viewport.classList.remove('board__viewport--space');
-    }
-  });
 
   viewport.addEventListener('pointerdown', (e) => {
     if (e.target.closest('.board__card, .board__text-element')) return;
     if (e.target.closest('.board__notes-panel, .board__reset-view, .board__add-text')) return;
 
-    if (spaceHeld || e.button === 1) {
-      // Space+drag or middle-mouse = pan
+    if (e.button === 1) {
+      // Middle-mouse = pan
       panning = true;
       lastX = e.clientX;
       lastY = e.clientY;
@@ -541,14 +526,21 @@ function initBoard(block, collection) {
 
   viewport.addEventListener('wheel', (e) => {
     e.preventDefault();
-    const rect = viewport.getBoundingClientRect();
-    const cursorX = e.clientX - rect.left;
-    const cursorY = e.clientY - rect.top;
-    const factor = e.deltaY < 0 ? 1.1 : 0.9;
-    const newZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom * factor));
-    panX = cursorX - (cursorX - panX) * (newZoom / zoom);
-    panY = cursorY - (cursorY - panY) * (newZoom / zoom);
-    zoom = newZoom;
+    if (e.ctrlKey || e.metaKey) {
+      // Ctrl+scroll or pinch-to-zoom
+      const rect = viewport.getBoundingClientRect();
+      const cursorX = e.clientX - rect.left;
+      const cursorY = e.clientY - rect.top;
+      const factor = e.deltaY < 0 ? 1.1 : 0.9;
+      const newZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom * factor));
+      panX = cursorX - (cursorX - panX) * (newZoom / zoom);
+      panY = cursorY - (cursorY - panY) * (newZoom / zoom);
+      zoom = newZoom;
+    } else {
+      // Scroll / two-finger trackpad swipe = pan
+      panX -= e.deltaX;
+      panY -= e.deltaY;
+    }
     canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
     setViewport(collection.id, { panX, panY, zoom });
     repositionOpenPanel();
