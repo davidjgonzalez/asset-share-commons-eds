@@ -449,6 +449,8 @@ function initBoard(block, collection) {
     const viewportRect = viewport.getBoundingClientRect();
     const startX = e.clientX - viewportRect.left;
     const startY = e.clientY - viewportRect.top;
+    let endX = startX;
+    let endY = startY;
 
     const selRect = document.createElement('div');
     selRect.className = 'board__selection-rect';
@@ -456,12 +458,12 @@ function initBoard(block, collection) {
     viewport.setPointerCapture(e.pointerId);
 
     function onMove(ev) {
-      const curX = ev.clientX - viewportRect.left;
-      const curY = ev.clientY - viewportRect.top;
-      const left = Math.min(startX, curX);
-      const top = Math.min(startY, curY);
-      const width = Math.abs(curX - startX);
-      const height = Math.abs(curY - startY);
+      endX = ev.clientX - viewportRect.left;
+      endY = ev.clientY - viewportRect.top;
+      const left = Math.min(startX, endX);
+      const top = Math.min(startY, endY);
+      const width = Math.abs(endX - startX);
+      const height = Math.abs(endY - startY);
       selRect.style.cssText = `left:${left}px;top:${top}px;width:${width}px;height:${height}px`;
     }
 
@@ -474,21 +476,30 @@ function initBoard(block, collection) {
     };
 
     function onUp(uev) {
-      if (uev.type === 'pointercancel') {
-        teardown();
-        return;
-      }
-      const rectBounds = selRect.getBoundingClientRect();
       teardown();
-      if (rectBounds.width < 4 && rectBounds.height < 4) {
-        deselectAll();
-        return;
-      }
+      if (uev.type === 'pointercancel') return;
+
+      const rbW = Math.abs(endX - startX);
+      const rbH = Math.abs(endY - startY);
+      if (rbW < 4 && rbH < 4) { deselectAll(); return; }
+
+      // Rubber-band bounds in viewport-local px
+      const rbLeft = Math.min(startX, endX);
+      const rbTop = Math.min(startY, endY);
+      const rbRight = rbLeft + rbW;
+      const rbBottom = rbTop + rbH;
+
       deselectAll();
       canvas.querySelectorAll('.board__card, .board__text-element').forEach((item) => {
-        const b = item.getBoundingClientRect();
-        const overlaps = !(b.right < rectBounds.left || b.left > rectBounds.right
-          || b.bottom < rectBounds.top || b.top > rectBounds.bottom);
+        // Convert card canvas-space position to viewport-local px
+        const cx = parseFloat(item.style.left) || 0;
+        const cy = parseFloat(item.style.top) || 0;
+        const vpLeft = cx * zoom + panX;
+        const vpTop = cy * zoom + panY;
+        const vpRight = vpLeft + item.offsetWidth * zoom;
+        const vpBottom = vpTop + item.offsetHeight * zoom;
+        const overlaps = !(vpRight < rbLeft || vpLeft > rbRight
+          || vpBottom < rbTop || vpTop > rbBottom);
         if (overlaps) selectItem(item);
       });
     }
