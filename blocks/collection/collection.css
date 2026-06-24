@@ -280,7 +280,7 @@
         padding: var(--spacing-3xl) var(--spacing-md);
         color: var(--color-muted-fg);
         font-size: var(--body-font-size-s);
-        line-height: 1.5;
+        line-height: var(--line-height-base, 1.5);
         border: 1px dashed var(--color-border);
         border-radius: var(--collection-radius);
         background: color-mix(in srgb, var(--color-muted) 45%, var(--color-bg));
@@ -671,7 +671,7 @@
         }
 
         &.board__card--dragging {
-            opacity: 0.85;
+            opacity: var(--opacity-dragging, 0.85);
             cursor: grabbing;
             z-index: 100;
         }
@@ -682,7 +682,7 @@
         min-height: 1.5em;
         font-size: var(--body-font-size-s);
         color: var(--color-fg);
-        line-height: 1.5;
+        line-height: var(--line-height-base, 1.5);
         outline: none;
         white-space: pre-wrap;
         overflow-wrap: break-word;
@@ -813,7 +813,7 @@
         }
 
         &.board__card--dragging {
-            opacity: 0.85;
+            opacity: var(--opacity-dragging, 0.85);
             box-shadow: var(--shadow-lg);
             cursor: grabbing;
             z-index: 100;

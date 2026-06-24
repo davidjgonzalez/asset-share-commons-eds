@@ -741,9 +741,7 @@ function initTextElement(el, collection) {
   const ro = new ResizeObserver(() => saveTextItem(collection.id, el));
   ro.observe(el);
 
-  // Double-click → enter edit mode
-  el.addEventListener('dblclick', (ev) => {
-    ev.stopPropagation();
+  const enterEditMode = () => {
     content.contentEditable = 'true';
     el.dataset.editing = 'true';
     content.focus();
@@ -752,7 +750,9 @@ function initTextElement(el, collection) {
     const sel = window.getSelection();
     sel.removeAllRanges();
     sel.addRange(range);
-  });
+  };
+
+  el.addEventListener('dblclick', (ev) => { ev.stopPropagation(); enterEditMode(); });
 
   // Blur content → exit edit and save
   content.addEventListener('blur', () => {
@@ -876,16 +876,7 @@ function initAddText(block, collection) {
     canvas.appendChild(textEl);
     initTextElement(textEl, collection);
 
-    // Auto-enter edit mode on the new element
-    const content = textEl.querySelector('.board__text-content');
-    content.contentEditable = 'true';
-    textEl.dataset.editing = 'true';
-    content.focus();
-    const range = document.createRange();
-    range.selectNodeContents(content);
-    const sel = window.getSelection();
-    sel.removeAllRanges();
-    sel.addRange(range);
+    textEl.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
   });
 }
 
