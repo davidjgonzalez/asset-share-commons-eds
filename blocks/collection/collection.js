@@ -651,7 +651,6 @@ function initBoardClicks(block, collection) {
   if (!viewport) return;
 
   viewport.addEventListener('click', (e) => {
-    // Deselect when clicking empty board area
     if (!e.target.closest('.board__card, .board__notes-panel, .board__reset-view, .board__add-text, .board__text-element')) {
       deselectAll();
     }
