@@ -720,21 +720,31 @@ async function openShareDialog(block, collection) {
   const dialog = document.createElement('dialog');
   dialog.className = 'asc-dialog asc-dialog--narrow collection__share-dialog';
   dialog.setAttribute('aria-labelledby', 'share-dialog-title');
-  dialog.setAttribute('aria-describedby', 'share-dialog-description');
   dialog.innerHTML = `
     <header class="asc-dialog__header">
       <div class="asc-dialog__header-main">
         <h2 class="asc-dialog__title" id="share-dialog-title">Share Collection</h2>
-        <p class="asc-dialog__description" id="share-dialog-description">
+        <p class="asc-dialog__description">
           Create a shareable link to this collection as a download sheet.
         </p>
       </div>
-      <button type="button" class="btn btn--ghost btn--icon asc-dialog__close" aria-label="Close" data-dialog-close>✕</button>
+      <button type="button" class="btn btn--ghost btn--icon asc-dialog__close" aria-label="Close" data-dialog-close>&#x2715;</button>
     </header>
     <div class="asc-dialog__body">
       <label class="collection__dialog-label">
         Sheet Title
         <input type="text" class="collection__share-title" value="${escHtml(collection.name)}" placeholder="Sheet title" />
+      </label>
+      <label class="collection__dialog-label">
+        Description
+        <textarea class="collection__share-description" rows="3" placeholder="Optional context or usage guidance for recipients&#8230;"></textarea>
+      </label>
+      <label class="collection__dialog-label">
+        Expires in
+        <div class="collection__share-expires-wrap">
+          <input type="number" class="collection__share-expires" min="1" max="365" placeholder="No expiry" />
+          <span class="collection__share-expires-unit">days</span>
+        </div>
       </label>
       <div class="collection__share-url-wrap" hidden>
         <label class="collection__dialog-label">
@@ -751,7 +761,6 @@ async function openShareDialog(block, collection) {
       </div>
     </footer>`;
 
-  // Append share history panel to dialog body
   const historyHtml = renderShareHistory();
   if (historyHtml) {
     dialog.querySelector('.asc-dialog__body').insertAdjacentHTML('beforeend', historyHtml);
@@ -765,28 +774,34 @@ async function openShareDialog(block, collection) {
   });
   dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
 
-  // Generate link
   dialog.querySelector('.collection__share-generate').addEventListener('click', async () => {
     const title = dialog.querySelector('.collection__share-title').value.trim();
+    const description = dialog.querySelector('.collection__share-description').value.trim();
+    const days = parseInt(dialog.querySelector('.collection__share-expires').value, 10);
 
-    // Encode the full mixed items array — sections as ~title|||body, assets as plain UUIDs
     const encodedItems = (collection.items || []).map((item) => {
       if (item.type === 'section') return `~${item.title}|||${item.body}`;
-      return item.id;
+      return item.notes ? `${item.id}|||${item.notes}` : item.id;
     });
-    const compressed = await services.url.compressArray(encodedItems);
 
-    let url = `${window.location.origin}${SHEET_PATH}?items=${compressed}`;
-    if (title) url += `&title=${encodeURIComponent(title)}`;
+    const payload = {
+      title: title || collection.name,
+      ...(description && { description }),
+      // eslint-disable-next-line no-underscore-dangle
+      ...(days > 0 && { expiresAt: new Date(Date.now() + days * 86_400_000).toISOString() }),
+      items: encodedItems,
+    };
 
-    saveShareHistory({ title: title || collection.name, url, collectionId: collection.id });
+    const compressed = await services.url.compressArray([JSON.stringify(payload)]);
+    const url = `${window.location.origin}${SHEET_PATH}?sheet=${compressed}`;
+
+    saveShareHistory({ title: payload.title, url, collectionId: collection.id });
 
     const wrap = dialog.querySelector('.collection__share-url-wrap');
     wrap.removeAttribute('hidden');
     wrap.querySelector('.collection__share-url-output').value = url;
     dialog.querySelector('.collection__share-copy')?.removeAttribute('hidden');
 
-    // Refresh history panel
     const existingHistory = dialog.querySelector('.collection__share-history');
     const newHistoryHtml = renderShareHistory();
     if (existingHistory) {
@@ -796,7 +811,6 @@ async function openShareDialog(block, collection) {
     }
   });
 
-  // Copy generated URL
   dialog.querySelector('.collection__share-copy')?.addEventListener('click', () => {
     const output = dialog.querySelector('.collection__share-url-output');
     navigator.clipboard.writeText(output.value).then(() => {
@@ -806,7 +820,6 @@ async function openShareDialog(block, collection) {
     });
   });
 
-  // Copy history entry URLs (delegated — survives history refresh)
   dialog.addEventListener('click', (e) => {
     const copyBtn = e.target.closest('.collection__share-history-copy');
     if (!copyBtn) return;

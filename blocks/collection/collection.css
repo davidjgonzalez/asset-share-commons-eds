@@ -497,6 +497,39 @@
         }
     }
 
+    .collection__share-expires-wrap {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+        margin-block-start: var(--spacing-2xs);
+
+        input[type="number"] {
+            width: 80px;
+            padding: var(--input-padding-y) var(--input-padding-x);
+            border: 1px solid var(--color-border);
+            border-radius: var(--input-border-radius);
+            font-size: var(--body-font-size-s);
+            font-weight: 400;
+            text-transform: none;
+            letter-spacing: normal;
+            background: var(--color-input);
+            color: var(--color-fg);
+            font-family: inherit;
+            transition: var(--input-transition);
+
+            &:focus-visible {
+                outline: none;
+                border-color: var(--color-ring);
+                box-shadow: var(--focus-ring);
+            }
+        }
+    }
+
+    .collection__share-expires-unit {
+        font-size: var(--body-font-size-s);
+        color: var(--color-fg);
+    }
+
     .collection__download-renditions {
         border: 1px solid var(--color-border);
         border-radius: var(--collection-radius);
