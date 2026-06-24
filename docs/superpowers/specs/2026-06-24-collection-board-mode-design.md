@@ -184,7 +184,7 @@ y = 80 + Math.floor(index / 10) * 160
 
 ## Share URL — Single Compressed Payload
 
-All sheet metadata is encoded into one compressed param `?sheet=<compressed>`, replacing the previous `?items=` and `?title=` params.
+All sheet metadata is encoded into one compressed param `?sheet=<compressed>`. This is the only supported format — no backward compat with `?items=`, `?assets=`, or `?title=` params.
 
 ### Payload
 
@@ -192,6 +192,7 @@ All sheet metadata is encoded into one compressed param `?sheet=<compressed>`, r
 {
   title: string,          // sheet title (pre-filled from collection name)
   description?: string,   // optional collection-level context note
+  expiresAt?: string,     // ISO timestamp — absent means no expiry
   items: string[]         // mixed encoded entries (see below)
 }
 ```
@@ -205,7 +206,7 @@ const url = `${origin}${SHEET_PATH}?sheet=${compressed}`;
 Decompressed:
 ```js
 const [json] = await services.url.decompressToArray(params.get('sheet'));
-const { title, description, items } = JSON.parse(json);
+const { title, description, expiresAt, items } = JSON.parse(json);
 ```
 
 ### Items encoding
@@ -218,17 +219,38 @@ const { title, description, items } = JSON.parse(json);
 
 The sheet parser checks `~` prefix first (section), then `|||` presence (asset with notes), otherwise plain asset UUID.
 
-### Backward compat
+### Expiry
 
-The sheet block checks `?sheet=` first, then falls back to `?items=` (previous format), then `?assets=` (legacy format). Existing share links continue to work.
+The share dialog has an **"Expires in: [__] days"** number input (blank = no expiry).
 
-### Share dialog changes
+On generate:
+```js
+expiresAt = days
+  ? new Date(Date.now() + days * 86_400_000).toISOString()
+  : undefined;
+```
 
-Fields:
+The sheet block checks on load — before rendering any content:
+```js
+if (payload.expiresAt && Date.now() > new Date(payload.expiresAt).getTime()) {
+  // render expired message
+}
+```
+
+Expired state renders a simple message instead of the asset list:
+```
+This link expired on [formatted date].
+```
+
+Expiry is client-side only — no server check, no redirect.
+
+### Share dialog fields
+
 - **Title** — pre-filled from `collection.name`
 - **Description** — optional, free-text, renders below `<h1>` on the sheet
+- **Expires in** — number input (days); blank means no expiry
 
-The description field returns here as a collection-level context field, distinct from per-section bodies and per-asset notes.
+The description is a collection-level context field, distinct from per-section bodies and per-asset notes.
 
 ---
 
