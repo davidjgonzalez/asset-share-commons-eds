@@ -15,6 +15,7 @@ const MAX_SHARE_HISTORY = 20;
 let _pendingSectionFocus = null;
 
 let _cardDragMoved = false;
+let _rubberBandJustSelected = false;
 
 let _openPanelState = null;
 
@@ -493,6 +494,7 @@ function initBoard(block, collection) {
           selectItem(item);
         }
       });
+      if (_selectedItems.size > 0) _rubberBandJustSelected = true;
     };
 
     document.addEventListener('pointermove', rbMove);
@@ -723,6 +725,7 @@ function initBoardClicks(block, collection) {
 
   viewport.addEventListener('click', (e) => {
     if (!e.target.closest('.board__card, .board__notes-panel, .board__reset-view, .board__add-text, .board__text-element')) {
+      if (_rubberBandJustSelected) { _rubberBandJustSelected = false; return; }
       deselectAll();
     }
 
