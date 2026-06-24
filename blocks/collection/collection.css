@@ -615,6 +615,14 @@
         border-color: var(--color-border);
     }
 
+    .board__selection-rect {
+        position: absolute;
+        border: 1px solid var(--color-primary);
+        background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+        pointer-events: none;
+        z-index: 50;
+    }
+
     /* ── Board notes panel ───────────────────────────────────────────────── */
 
     .board__notes-panel {

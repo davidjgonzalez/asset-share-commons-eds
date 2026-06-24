@@ -18,6 +18,8 @@ let _cardDragMoved = false;
 
 let _openPanelState = null;
 
+const _selectedItems = new Set();
+
 // ─── Mode & viewport state ─────────────────────────────────────────────────────
 
 const MODE_KEY = (id) => `asc:collectionMode:${id}`;
@@ -310,6 +312,26 @@ function initModeToggle(block, collectionId) {
   });
 }
 
+function selectItem(el) {
+  el.classList.add('board__card--selected');
+  _selectedItems.add(el);
+}
+
+function deselectItem(el) {
+  el.classList.remove('board__card--selected');
+  _selectedItems.delete(el);
+}
+
+function deselectAll() {
+  _selectedItems.forEach((el) => el.classList.remove('board__card--selected'));
+  _selectedItems.clear();
+}
+
+function toggleItem(el) {
+  if (_selectedItems.has(el)) deselectItem(el);
+  else selectItem(el);
+}
+
 function computeFitViewport(cards, viewport) {
   if (!cards.length) return { panX: 0, panY: 0, zoom: 1 };
   let minX = Infinity;
@@ -347,6 +369,8 @@ function initBoard(block, collection) {
   const canvas = block.querySelector('.board__canvas');
   if (!viewport || !canvas) return;
 
+  _selectedItems.clear();
+
   const hasSavedViewport = localStorage.getItem(VIEWPORT_KEY(collection.id)) !== null;
   let { panX, panY, zoom } = getViewport(collection.id);
 
@@ -363,7 +387,51 @@ function initBoard(block, collection) {
   let lastY = 0;
 
   viewport.addEventListener('pointerdown', (e) => {
-    if (e.target.closest('.board__card')) return;
+    if (e.target.closest('.board__card, .board__text-element')) return;
+    if (e.target.closest('.board__notes-panel, .board__reset-view, .board__add-text')) return;
+
+    if (e.ctrlKey || e.metaKey) {
+      // Rubber-band selection
+      e.preventDefault();
+      const viewportRect = viewport.getBoundingClientRect();
+      const startX = e.clientX - viewportRect.left;
+      const startY = e.clientY - viewportRect.top;
+
+      const selRect = document.createElement('div');
+      selRect.className = 'board__selection-rect';
+      viewport.appendChild(selRect);
+      viewport.setPointerCapture(e.pointerId);
+
+      function onMove(ev) {
+        const curX = ev.clientX - viewportRect.left;
+        const curY = ev.clientY - viewportRect.top;
+        const left = Math.min(startX, curX);
+        const top = Math.min(startY, curY);
+        const width = Math.abs(curX - startX);
+        const height = Math.abs(curY - startY);
+        selRect.style.cssText = `left:${left}px;top:${top}px;width:${width}px;height:${height}px`;
+      }
+
+      function onUp() {
+        viewport.removeEventListener('pointermove', onMove);
+        viewport.removeEventListener('pointerup', onUp);
+        const rectBounds = selRect.getBoundingClientRect();
+        selRect.remove();
+        deselectAll();
+        canvas.querySelectorAll('.board__card, .board__text-element').forEach((item) => {
+          const b = item.getBoundingClientRect();
+          const overlaps = !(b.right < rectBounds.left || b.left > rectBounds.right
+            || b.bottom < rectBounds.top || b.top > rectBounds.bottom);
+          if (overlaps) selectItem(item);
+        });
+      }
+
+      viewport.addEventListener('pointermove', onMove);
+      viewport.addEventListener('pointerup', onUp);
+      return;
+    }
+
+    // Pan
     panning = true;
     lastX = e.clientX;
     lastY = e.clientY;
@@ -435,31 +503,44 @@ function initCardDrag(block, collection) {
 
     const startX = e.clientX;
     const startY = e.clientY;
-    const startLeft = parseFloat(card.style.left) || 0;
-    const startTop = parseFloat(card.style.top) || 0;
     _cardDragMoved = false;
 
     const { zoom } = getViewport(collection.id);
+
+    const isInGroup = _selectedItems.has(card) && _selectedItems.size > 1;
+    const dragGroup = isInGroup ? [..._selectedItems].filter((el) => el.dataset.ascAsset) : [card];
+
+    const startPositions = dragGroup.map((c) => ({
+      el: c,
+      left: parseFloat(c.style.left) || 0,
+      top: parseFloat(c.style.top) || 0,
+    }));
+
     card.setPointerCapture(e.pointerId);
-    card.classList.add('board__card--dragging');
+    dragGroup.forEach((c) => c.classList.add('board__card--dragging'));
 
     function onMove(ev) {
       const dx = ev.clientX - startX;
       const dy = ev.clientY - startY;
       if (Math.abs(dx) > 5 || Math.abs(dy) > 5) _cardDragMoved = true;
       if (!_cardDragMoved) return;
-      card.style.left = `${startLeft + dx / zoom}px`;
-      card.style.top = `${startTop + dy / zoom}px`;
+      startPositions.forEach(({ el, left, top }) => {
+        el.style.left = `${left + dx / zoom}px`;
+        el.style.top = `${top + dy / zoom}px`;
+      });
     }
 
     function onUp() {
-      card.classList.remove('board__card--dragging');
       card.removeEventListener('pointermove', onMove);
       card.removeEventListener('pointerup', onUp);
+      card.removeEventListener('pointercancel', onUp);
+      dragGroup.forEach((c) => c.classList.remove('board__card--dragging'));
       if (_cardDragMoved) {
-        const x = Math.round(parseFloat(card.style.left));
-        const y = Math.round(parseFloat(card.style.top));
-        services.collections.updateItem(collection.id, card.dataset.ascAsset, { x, y });
+        startPositions.forEach(({ el }) => {
+          const x = Math.round(parseFloat(el.style.left));
+          const y = Math.round(parseFloat(el.style.top));
+          services.collections.updateItem(collection.id, el.dataset.ascAsset, { x, y });
+        });
       }
     }
 
@@ -570,6 +651,11 @@ function initBoardClicks(block, collection) {
   if (!viewport) return;
 
   viewport.addEventListener('click', (e) => {
+    // Deselect when clicking empty board area
+    if (!e.target.closest('.board__card, .board__notes-panel, .board__reset-view, .board__add-text, .board__text-element')) {
+      deselectAll();
+    }
+
     const removeBtn = e.target.closest('.board__card-remove');
     if (removeBtn) {
       services.collections.removeAsset(collection.id, removeBtn.dataset.ascAsset);
@@ -586,12 +672,18 @@ function initBoardClicks(block, collection) {
     const card = e.target.closest('.board__card');
     if (card) {
       if (!_cardDragMoved) {
-        // AssetDetails reads event.detail.data.ascAsset
-        const assetId = card.dataset.ascAsset;
-        document.body.dispatchEvent(new CustomEvent('asc:asset:details:open', {
-          bubbles: true,
-          detail: { data: { ascAsset: assetId } },
-        }));
+        if (e.shiftKey) {
+          toggleItem(card);
+        } else if (_selectedItems.size > 1 && _selectedItems.has(card)) {
+          // Click within a multi-selection → open asset details
+          document.body.dispatchEvent(new CustomEvent('asc:asset:details:open', {
+            bubbles: true,
+            detail: { data: { ascAsset: card.dataset.ascAsset } },
+          }));
+        } else {
+          deselectAll();
+          selectItem(card);
+        }
       }
       _cardDragMoved = false;
     }
