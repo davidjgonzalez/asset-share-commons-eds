@@ -14,6 +14,31 @@ const MAX_SHARE_HISTORY = 20;
 // Tracks the section ID to focus after a re-render triggered by addSection
 let _pendingSectionFocus = null;
 
+// ─── Mode & viewport state ─────────────────────────────────────────────────────
+
+const MODE_KEY = (id) => `asc:collectionMode:${id}`;
+const VIEWPORT_KEY = (id) => `asc:boardViewport:${id}`;
+
+function getMode(collectionId) {
+  return localStorage.getItem(MODE_KEY(collectionId)) || 'list';
+}
+
+function setMode(collectionId, mode) {
+  localStorage.setItem(MODE_KEY(collectionId), mode);
+}
+
+function getViewport(collectionId) {
+  try {
+    return JSON.parse(localStorage.getItem(VIEWPORT_KEY(collectionId))) || { panX: 0, panY: 0, zoom: 1 };
+  } catch {
+    return { panX: 0, panY: 0, zoom: 1 };
+  }
+}
+
+function setViewport(collectionId, state) {
+  localStorage.setItem(VIEWPORT_KEY(collectionId), JSON.stringify(state));
+}
+
 /**
  * Collection block — detail/edit page for a single collection.
  *
@@ -59,12 +84,13 @@ async function render(block, collectionId) {
     (j) => j.collectionId === collection.id
       && (j.status === DownloadStatus.RUNNING || j.status === DownloadStatus.PENDING),
   );
+  const mode = getMode(collectionId);
 
-  block.innerHTML = html(collection, isDefault, pendingJobs);
-  initInteractions(block, collection, isDefault);
+  block.innerHTML = html(collection, isDefault, pendingJobs, mode);
+  initInteractions(block, collection, isDefault, mode);
 }
 
-function html(collection, isDefault, pendingJobs) {
+function html(collection, isDefault, pendingJobs, mode) {
   const items = collection.hydratedItems || [];
   const assetCount = (collection.assetIds || []).length;
   const updated = formatUpdated(collection.modifiedAt);
@@ -75,7 +101,7 @@ function html(collection, isDefault, pendingJobs) {
         <h1 class="collection__name" data-collection-id="${collection.id}">${escHtml(collection.name)}</h1>
         <div class="collection__menu-wrap">
           <button type="button" class="collection__menu-trigger btn btn--ghost btn--icon btn--sm"
-                  aria-label="Collection actions" aria-haspopup="true" aria-expanded="false">⋯</button>
+                  aria-label="Collection actions" aria-haspopup="true" aria-expanded="false">&#8943;</button>
           <div class="collection__menu asc-panel asc-panel--no-pad" hidden>
             <ul class="asc-ui-menu" role="menu">
               <li role="none">
@@ -93,27 +119,56 @@ function html(collection, isDefault, pendingJobs) {
       <p class="collection__meta">
         <span class="collection__meta-count">${assetCount} asset${assetCount !== 1 ? 's' : ''}</span>
         ${updated
-    ? `<span class="collection__meta-sep" aria-hidden="true">·</span><time class="collection__meta-updated" datetime="${escAttr(updated.iso)}">${escHtml(updated.label)}</time>`
+    ? `<span class="collection__meta-sep" aria-hidden="true">&#183;</span><time class="collection__meta-updated" datetime="${escAttr(updated.iso)}">${escHtml(updated.label)}</time>`
     : ''}
       </p>
     </header>
 
     <div class="collection__toolbar">
-      <button type="button" class="collection__share-btn btn btn--secondary">Share</button>
-      <button type="button" class="collection__download-btn btn btn--primary"
-              ${assetCount === 0 ? 'disabled' : ''}>Download</button>
+      <div class="collection__mode-toggle" role="group" aria-label="Display mode">
+        <button type="button"
+                class="collection__mode-btn${mode === 'list' ? ' collection__mode-btn--active' : ''}"
+                data-mode="list" aria-pressed="${mode === 'list'}">&#9776; List</button>
+        <button type="button"
+                class="collection__mode-btn${mode === 'board' ? ' collection__mode-btn--active' : ''}"
+                data-mode="board" aria-pressed="${mode === 'board'}">&#8862; Board</button>
+      </div>
+      <div class="collection__toolbar-end">
+        <button type="button" class="collection__share-btn btn btn--secondary">Share</button>
+        <button type="button" class="collection__download-btn btn btn--primary"
+                ${assetCount === 0 ? 'disabled' : ''}>Download</button>
+      </div>
     </div>
 
     ${pendingJobs.length ? renderJobsStatus(pendingJobs) : ''}
 
-    <div class="collection__asset-list" data-collection-id="${collection.id}">
+    ${mode === 'board' ? boardHtml(items) : listHtml(items)}
+    </section>`;
+}
+
+function listHtml(items) {
+  return `
+    <div class="collection__asset-list">
       ${items.length
     ? items.map((item) => (item.type === 'section' ? sectionWidget(item) : assetRow(item))).join('')
     : '<p class="collection__empty">No assets in this collection yet.</p>'}
       <button type="button" class="collection__add-section btn btn--ghost">+ Add section</button>
-    </div>
-    </section>`;
+    </div>`;
 }
+
+function boardHtml(items) {
+  const assetItems = items.filter((i) => i.type === 'asset' && i.asset);
+  return `
+    <div class="board__viewport">
+      <div class="board__canvas">
+        ${assetItems.map((item, index) => boardCard(item, index)).join('')}
+      </div>
+      <button type="button" class="board__reset-view btn btn--ghost btn--sm">Reset view</button>
+    </div>`;
+}
+
+// Placeholder — replaced in Task 3
+function boardCard() { return ''; }
 
 function renderJobsStatus(jobs) {
   return `
@@ -186,22 +241,96 @@ function sectionWidget(item) {
 
 // ─── Interactions ─────────────────────────────────────────────────────────────
 
-function initInteractions(block, collection, isDefault) {
+function initInteractions(block, collection, isDefault, mode) {
   initMenu(block);
   initRename(block, collection);
   initShare(block, collection);
   initDownload(block, collection);
   if (!isDefault) initDelete(block, collection);
-  initReorder(block, collection);
-  initSections(block, collection);
+  initModeToggle(block, collection.id);
   initJobActions(block);
 
-  // Auto-focus a newly added section title after re-render
-  if (_pendingSectionFocus) {
-    const input = block.querySelector(`[data-section-id="${_pendingSectionFocus}"] .collection__section-title`);
-    input?.focus();
-    _pendingSectionFocus = null;
+  if (mode === 'board') {
+    initBoard(block, collection);
+  } else {
+    initReorder(block, collection);
+    initSections(block, collection);
+    if (_pendingSectionFocus) {
+      const input = block.querySelector(`[data-section-id="${_pendingSectionFocus}"] .collection__section-title`);
+      input?.focus();
+      _pendingSectionFocus = null;
+    }
   }
+}
+
+function initModeToggle(block, collectionId) {
+  block.querySelectorAll('.collection__mode-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      setMode(collectionId, btn.dataset.mode);
+      await render(block, collectionId);
+    });
+  });
+}
+
+function initBoard(block, collection) {
+  const viewport = block.querySelector('.board__viewport');
+  const canvas = block.querySelector('.board__canvas');
+  if (!viewport || !canvas) return;
+
+  let { panX, panY, zoom } = getViewport(collection.id);
+  canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
+
+  let panning = false;
+  let lastX = 0;
+  let lastY = 0;
+
+  viewport.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('.board__card')) return;
+    panning = true;
+    lastX = e.clientX;
+    lastY = e.clientY;
+    viewport.setPointerCapture(e.pointerId);
+    viewport.classList.add('board__viewport--panning');
+  });
+
+  viewport.addEventListener('pointermove', (e) => {
+    if (!panning) return;
+    panX += e.clientX - lastX;
+    panY += e.clientY - lastY;
+    lastX = e.clientX;
+    lastY = e.clientY;
+    canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
+  });
+
+  viewport.addEventListener('pointerup', () => {
+    if (!panning) return;
+    panning = false;
+    viewport.classList.remove('board__viewport--panning');
+    setViewport(collection.id, { panX, panY, zoom });
+  });
+
+  const MIN_ZOOM = 0.2;
+  const MAX_ZOOM = 3.0;
+
+  viewport.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const rect = viewport.getBoundingClientRect();
+    const cursorX = e.clientX - rect.left;
+    const cursorY = e.clientY - rect.top;
+    const factor = e.deltaY < 0 ? 1.1 : 0.9;
+    const newZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom * factor));
+    panX = cursorX - (cursorX - panX) * (newZoom / zoom);
+    panY = cursorY - (cursorY - panY) * (newZoom / zoom);
+    zoom = newZoom;
+    canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
+    setViewport(collection.id, { panX, panY, zoom });
+  }, { passive: false });
+
+  block.querySelector('.board__reset-view')?.addEventListener('click', () => {
+    panX = 0; panY = 0; zoom = 1;
+    canvas.style.transform = 'translate(0px, 0px) scale(1)';
+    setViewport(collection.id, { panX: 0, panY: 0, zoom: 1 });
+  });
 }
 
 // ── Actions menu ─────────────────────────────────────────────────────────────

@@ -100,7 +100,7 @@
     .collection__toolbar {
         display: flex;
         flex-wrap: wrap;
-        justify-content: flex-end;
+        justify-content: space-between;
         align-items: center;
         gap: var(--spacing-sm);
         margin-block-end: var(--spacing-xl);
@@ -533,6 +533,80 @@
         color: var(--color-muted-fg);
         margin-block: var(--spacing-sm) 0;
         line-height: 1.45;
+    }
+
+    /* ── Mode toggle ─────────────────────────────────────────────────────── */
+
+    .collection__toolbar-end {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+    }
+
+    .collection__mode-toggle {
+        display: flex;
+        border: 1px solid var(--color-border);
+        border-radius: var(--border-radius-sm);
+        overflow: hidden;
+    }
+
+    .collection__mode-btn {
+        padding: var(--spacing-xs) var(--spacing-sm);
+        border: none;
+        font-size: var(--body-font-size-s);
+        font-family: inherit;
+        background: var(--color-card);
+        color: var(--color-muted-fg);
+        cursor: pointer;
+        transition: background var(--transition-fast), color var(--transition-fast);
+
+        &:hover:not(.collection__mode-btn--active) {
+            background: var(--color-muted);
+        }
+
+        &.collection__mode-btn--active {
+            background: var(--color-primary);
+            color: var(--color-primary-fg);
+        }
+    }
+
+    /* ── Board viewport & canvas ─────────────────────────────────────────── */
+
+    .board__viewport {
+        position: relative;
+        width: 100%;
+        height: 70vh;
+        min-height: 500px;
+        overflow: hidden;
+        background:
+            radial-gradient(circle, var(--color-border) 1px, transparent 1px)
+            0 0 / 24px 24px;
+        border: 1px solid var(--color-border);
+        border-radius: var(--collection-radius);
+        cursor: grab;
+        touch-action: none;
+        user-select: none;
+
+        &.board__viewport--panning {
+            cursor: grabbing;
+        }
+    }
+
+    .board__canvas {
+        position: absolute;
+        inset: 0;
+        width: 0;
+        height: 0;
+        transform-origin: 0 0;
+    }
+
+    .board__reset-view {
+        position: absolute;
+        bottom: var(--spacing-sm);
+        right: var(--spacing-sm);
+        z-index: 10;
+        background: var(--color-card);
+        border-color: var(--color-border);
     }
 
     @media (width <= 600px) {
