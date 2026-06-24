@@ -140,8 +140,11 @@ function renderMarkdown(md) {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    // Links: [text](url)
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" rel="noopener noreferrer">$1</a>')
+    // Links: [text](url) — only allow safe schemes
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, text, url) => {
+      const safe = /^https?:\/\//i.test(url) || url.startsWith('/') || url.startsWith('#');
+      return safe ? `<a href="${url}" rel="noopener noreferrer">${text}</a>` : escHtml(text);
+    })
     // Bold: **text**
     .replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>')
     // Italic: *text*
@@ -252,7 +255,8 @@ async function getDataFromSearchParams(queryParameters) {
     };
   }
 
-  const [json] = await services.url.decompressToArray(sheetParam);
+  const parts = await services.url.decompressToArray(sheetParam);
+  const json = parts.join(',');
   const {
     title = '', description = '', expiresAt = null, items = [],
   } = JSON.parse(json);
