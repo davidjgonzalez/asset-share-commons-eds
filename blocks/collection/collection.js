@@ -450,10 +450,13 @@ function openNotesPanel(block, collection, card) {
   textarea.focus();
   textarea.select();
 
+  let removeOutsideClick = () => {};
+
   function saveAndClose() {
     const notes = textarea.value.trim();
     services.collections.updateItem(collection.id, assetId, { notes });
     updateCardNotes(card, notes);
+    removeOutsideClick();
     panel.remove();
   }
 
@@ -466,10 +469,10 @@ function openNotesPanel(block, collection, card) {
     function onOutsideClick(e) {
       if (!panel.contains(e.target) && !card.contains(e.target)) {
         saveAndClose();
-        document.removeEventListener('click', onOutsideClick);
       }
     }
     document.addEventListener('click', onOutsideClick);
+    removeOutsideClick = () => document.removeEventListener('click', onOutsideClick);
   }, 0);
 }
 
@@ -628,6 +631,9 @@ function initSections(block, collection) {
 }
 
 function initListNotes(block, collection) {
+  if (block.dataset.listNotesInit) return;
+  block.dataset.listNotesInit = '1';
+
   block.addEventListener('click', (e) => {
     const target = e.target.closest('.collection__asset-note, .collection__asset-add-note');
     if (!target) return;
