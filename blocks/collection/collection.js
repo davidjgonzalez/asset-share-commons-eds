@@ -167,7 +167,6 @@ function boardHtml(items) {
     </div>`;
 }
 
-// Placeholder — replaced in Task 3
 function boardCard() { return ''; }
 
 function renderJobsStatus(jobs) {
@@ -307,6 +306,12 @@ function initBoard(block, collection) {
     panning = false;
     viewport.classList.remove('board__viewport--panning');
     setViewport(collection.id, { panX, panY, zoom });
+  });
+
+  viewport.addEventListener('pointercancel', () => {
+    if (!panning) return;
+    panning = false;
+    viewport.classList.remove('board__viewport--panning');
   });
 
   const MIN_ZOOM = 0.2;
