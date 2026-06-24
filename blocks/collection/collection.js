@@ -217,7 +217,7 @@ function renderJobsStatus(jobs) {
 }
 
 function assetRow(item) {
-  const { asset } = item;
+  const { asset, notes } = item;
   const thumbnailUrl = services.renditions.getThumbnailUrl(asset);
   return `
     <div class="collection__asset-row"
@@ -231,6 +231,9 @@ function assetRow(item) {
       <div class="collection__asset-info">
         <div class="collection__asset-title">${escHtml(asset.title)}</div>
         <div class="collection__asset-meta">${escHtml(asset.getProperty('file-type') || '')}</div>
+        ${notes
+    ? `<div class="collection__asset-note" data-asc-asset="${escAttr(asset.uuid)}">${escHtml(notes)}</div>`
+    : `<button type="button" class="collection__asset-add-note" data-asc-asset="${escAttr(asset.uuid)}">+ add note</button>`}
       </div>
       <button type="button" class="collection__asset-remove btn btn--ghost btn--sm"
               aria-label="Remove ${escHtml(asset.title)} from collection"
@@ -282,6 +285,7 @@ function initInteractions(block, collection, isDefault, mode) {
   } else {
     initReorder(block, collection);
     initSections(block, collection);
+    initListNotes(block, collection);
     if (_pendingSectionFocus) {
       const input = block.querySelector(`[data-section-id="${_pendingSectionFocus}"] .collection__section-title`);
       input?.focus();
@@ -413,7 +417,78 @@ function initCardDrag(block, collection) {
   });
 }
 
-function openNotesPanel(block, collection, card) {} // eslint-disable-line no-unused-vars
+function openNotesPanel(block, collection, card) {
+  block.querySelector('.board__notes-panel')?.remove();
+
+  const assetId = card.dataset.ascAsset;
+  const currentNotes = card.querySelector('.board__card-notes-preview')?.textContent || '';
+
+  const panel = document.createElement('div');
+  panel.className = 'board__notes-panel';
+  panel.innerHTML = `
+    <textarea class="board__notes-textarea"
+              placeholder="Add a note about this asset…"
+              rows="4">${escHtml(currentNotes)}</textarea>
+    <div class="board__notes-actions">
+      <button type="button" class="board__notes-done btn btn--primary btn--sm">Done</button>
+    </div>`;
+
+  const viewport = block.querySelector('.board__viewport');
+  viewport.appendChild(panel);
+
+  const cardRect = card.getBoundingClientRect();
+  const viewportRect = viewport.getBoundingClientRect();
+  const panelWidth = 220;
+  const leftCandidate = cardRect.right - viewportRect.left + 8;
+  const left = leftCandidate + panelWidth > viewportRect.width
+    ? cardRect.left - viewportRect.left - panelWidth - 8
+    : leftCandidate;
+  panel.style.left = `${Math.max(4, left)}px`;
+  panel.style.top = `${Math.max(4, cardRect.top - viewportRect.top)}px`;
+
+  const textarea = panel.querySelector('.board__notes-textarea');
+  textarea.focus();
+  textarea.select();
+
+  function saveAndClose() {
+    const notes = textarea.value.trim();
+    services.collections.updateItem(collection.id, assetId, { notes });
+    updateCardNotes(card, notes);
+    panel.remove();
+  }
+
+  panel.querySelector('.board__notes-done').addEventListener('click', saveAndClose);
+  textarea.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { textarea.value = currentNotes; saveAndClose(); }
+  });
+
+  setTimeout(() => {
+    function onOutsideClick(e) {
+      if (!panel.contains(e.target) && !card.contains(e.target)) {
+        saveAndClose();
+        document.removeEventListener('click', onOutsideClick);
+      }
+    }
+    document.addEventListener('click', onOutsideClick);
+  }, 0);
+}
+
+function updateCardNotes(card, notes) {
+  let preview = card.querySelector('.board__card-notes-preview');
+  const notesBtn = card.querySelector('.board__card-notes-btn');
+  if (notes) {
+    if (!preview) {
+      preview = document.createElement('p');
+      preview.className = 'board__card-notes-preview';
+      card.querySelector('.board__card-body').insertBefore(preview, notesBtn);
+    }
+    preview.textContent = notes;
+    if (notesBtn) notesBtn.textContent = '📝';
+  } else {
+    preview?.remove();
+    if (notesBtn) notesBtn.textContent = '+ note';
+  }
+}
 
 function initBoardClicks(block, collection) {
   const viewport = block.querySelector('.board__viewport');
@@ -548,6 +623,50 @@ function initSections(block, collection) {
   block.querySelectorAll('.collection__section-delete').forEach((btn) => {
     btn.addEventListener('click', () => {
       services.collections.removeSection(collection.id, btn.dataset.sectionId);
+    });
+  });
+}
+
+function initListNotes(block, collection) {
+  block.addEventListener('click', (e) => {
+    const target = e.target.closest('.collection__asset-note, .collection__asset-add-note');
+    if (!target) return;
+
+    const assetId = target.dataset.ascAsset;
+    const currentValue = target.classList.contains('collection__asset-note')
+      ? target.textContent
+      : '';
+
+    const textarea = document.createElement('textarea');
+    textarea.className = 'collection__asset-note-edit';
+    textarea.value = currentValue;
+    textarea.rows = 2;
+    textarea.placeholder = 'Add a note about this asset…';
+    target.replaceWith(textarea);
+    textarea.focus();
+
+    function save() {
+      const val = textarea.value.trim();
+      services.collections.updateItem(collection.id, assetId, { notes: val });
+      let replacement;
+      if (val) {
+        replacement = document.createElement('div');
+        replacement.className = 'collection__asset-note';
+        replacement.dataset.ascAsset = assetId;
+        replacement.textContent = val;
+      } else {
+        replacement = document.createElement('button');
+        replacement.type = 'button';
+        replacement.className = 'collection__asset-add-note';
+        replacement.dataset.ascAsset = assetId;
+        replacement.textContent = '+ add note';
+      }
+      textarea.replaceWith(replacement);
+    }
+
+    textarea.addEventListener('blur', save);
+    textarea.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Escape') { textarea.value = currentValue; save(); }
     });
   });
 }
