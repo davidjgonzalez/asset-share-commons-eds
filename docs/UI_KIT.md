@@ -340,6 +340,20 @@ Shimmer placeholder. Modifiers: `--text` `--title` `--thumb` `--circle`.
 <span class="asc-ui-skeleton asc-ui-skeleton--text"></span>
 ```
 
+### Bubble — `@kit bubble` · `styles/ui-kit.css`
+Speech / message bubble with rounded corners and a directional tail. Default tail: bottom-left.
+Modifiers: `--bl` (same as default) `--br` `--tl` `--tr`.
+```html
+<!-- Bottom-left tail (default) -->
+<div class="asc-ui-bubble">Looks good — approved for campaign use.</div>
+
+<!-- Bottom-right tail -->
+<div class="asc-ui-bubble asc-ui-bubble--br">Reply from the right side.</div>
+
+<!-- Top-left tail (annotation above a target) -->
+<div class="asc-ui-bubble asc-ui-bubble--tl">Note attached below this bubble.</div>
+```
+
 ### Panel — `.asc-panel` · `styles/styles.css`
 Floating popover/sheet. Modifiers: `--scroll` `--no-pad`. Slots: `__header` `__body` `__footer`.
 

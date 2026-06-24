@@ -11,21 +11,19 @@ const SHEET_PATH = configurations.collections?.sheetPath || '/sheets/';
 const SHARE_HISTORY_KEY = 'shareHistory';
 const MAX_SHARE_HISTORY = 20;
 
-// Tracks the section ID to focus after a re-render triggered by addSection
-let _pendingSectionFocus = null;
-
 let _cardDragMoved = false;
 let _rubberBandJustSelected = false;
 
 let _openPanelState = null;
+let _noteHoverTimer = null;
 
 const _selectedItems = new Set();
 
-// ─── Mode & viewport state ─────────────────────────────────────────────────────
+// ─── Viewport & board state ────────────────────────────────────────────────────
 
-const MODE_KEY = (id) => `asc:collectionMode:${id}`;
 const VIEWPORT_KEY = (id) => `asc:boardViewport:${id}`;
 const BOARD_TEXT_KEY = (id) => `asc:boardText:${id}`;
+const EXPAND_KEY = (id) => `asc:boardExpanded:${id}`;
 
 function getBoardTextItems(collectionId) {
   try {
@@ -42,23 +40,18 @@ function setBoardTextItems(collectionId, items) {
 function saveTextItem(collectionId, el) {
   const { textId } = el.dataset;
   if (!textId) return;
+  const w = el.offsetWidth;
+  const h = el.offsetHeight;
+  if (!w || !h) return; // element removed from DOM — ResizeObserver fires 0×0, don't clobber stored size
   const items = getBoardTextItems(collectionId);
   const item = items.find((t) => t.id === textId);
   if (!item) return;
   item.x = Math.round(parseFloat(el.style.left) || 0);
   item.y = Math.round(parseFloat(el.style.top) || 0);
-  item.w = el.offsetWidth;
-  item.h = el.offsetHeight;
+  item.w = w;
+  item.h = h;
   item.content = el.querySelector('.board__text-content')?.innerText?.trim() || '';
   setBoardTextItems(collectionId, items);
-}
-
-function getMode(collectionId) {
-  return localStorage.getItem(MODE_KEY(collectionId)) || 'list';
-}
-
-function setMode(collectionId, mode) {
-  localStorage.setItem(MODE_KEY(collectionId), mode);
 }
 
 function getViewport(collectionId) {
@@ -118,13 +111,11 @@ async function render(block, collectionId) {
     (j) => j.collectionId === collection.id
       && (j.status === DownloadStatus.RUNNING || j.status === DownloadStatus.PENDING),
   );
-  const mode = getMode(collectionId);
-
-  block.innerHTML = html(collection, isDefault, pendingJobs, mode);
-  initInteractions(block, collection, isDefault, mode);
+  block.innerHTML = html(collection, isDefault, pendingJobs);
+  initInteractions(block, collection, isDefault);
 }
 
-function html(collection, isDefault, pendingJobs, mode) {
+function html(collection, isDefault, pendingJobs) {
   const items = collection.hydratedItems || [];
   const assetCount = (collection.assetIds || []).length;
   const updated = formatUpdated(collection.modifiedAt);
@@ -159,15 +150,8 @@ function html(collection, isDefault, pendingJobs, mode) {
     </header>
 
     <div class="collection__toolbar">
-      <div class="asc-ui-segmented asc-ui-segmented--sm collection__mode-toggle" role="group" aria-label="Display mode">
-        <button type="button"
-                class="asc-ui-segmented__option${mode === 'list' ? ' is-active' : ''}"
-                data-mode="list" aria-pressed="${mode === 'list'}">&#9776; List</button>
-        <button type="button"
-                class="asc-ui-segmented__option${mode === 'board' ? ' is-active' : ''}"
-                data-mode="board" aria-pressed="${mode === 'board'}">&#8862; Board</button>
-      </div>
       <div class="collection__toolbar-end">
+        <div class="collection__past-shares">${renderShareHistory()}</div>
         <button type="button" class="collection__share-btn btn btn--secondary">Share</button>
         <button type="button" class="collection__download-btn btn btn--primary"
                 ${assetCount === 0 ? 'disabled' : ''}>Download</button>
@@ -176,18 +160,8 @@ function html(collection, isDefault, pendingJobs, mode) {
 
     ${pendingJobs.length ? renderJobsStatus(pendingJobs) : ''}
 
-    ${mode === 'board' ? boardHtml(items, getBoardTextItems(collection.id)) : listHtml(items)}
+    ${boardHtml(items, getBoardTextItems(collection.id))}
     </section>`;
-}
-
-function listHtml(items) {
-  return `
-    <div class="collection__asset-list">
-      ${items.length
-    ? items.map((item) => (item.type === 'section' ? sectionWidget(item) : assetRow(item))).join('')
-    : '<p class="collection__empty">No assets in this collection yet.</p>'}
-      <button type="button" class="collection__add-section btn btn--ghost">+ Add section</button>
-    </div>`;
 }
 
 function boardHtml(items, textItems) {
@@ -198,10 +172,26 @@ function boardHtml(items, textItems) {
         ${assetItems.map((item, index) => boardCard(item, index)).join('')}
         ${textItems.map((t) => boardTextElement(t)).join('')}
       </div>
-      <button type="button" class="board__reset-view btn btn--ghost btn--sm">Fit view</button>
-      <button type="button" class="board__clean-up btn btn--ghost btn--sm">Clean up</button>
-      <button type="button" class="board__add-text btn btn--ghost btn--sm">+ Text</button>
+      <div class="asc-ui-segmented asc-ui-segmented--xl board__toolbar" role="toolbar" aria-label="Board tools">
+        <button type="button" class="asc-ui-segmented__option board__reset-view">Fit view</button>
+        <button type="button" class="asc-ui-segmented__option board__align-grid">Align to grid</button>
+        <button type="button" class="asc-ui-segmented__option board__add-text">+ Text</button>
+        <button type="button" class="asc-ui-segmented__option board__expand">Expand</button>
+      </div>
     </div>`;
+}
+
+function assetTypeLabel(mimeType) {
+  if (!mimeType) return 'Asset';
+  if (mimeType.startsWith('image/')) return 'Image';
+  if (mimeType.startsWith('video/')) return 'Video';
+  if (mimeType.startsWith('audio/')) return 'Audio';
+  if (mimeType === 'application/pdf') return 'PDF';
+  if (mimeType.includes('word') || mimeType.includes('document')) return 'Document';
+  if (mimeType.includes('sheet') || mimeType.includes('excel')) return 'Spreadsheet';
+  if (mimeType.includes('presentation') || mimeType.includes('powerpoint')) return 'Presentation';
+  const ext = services.fileType.getExtension(mimeType);
+  return ext ? ext.toUpperCase() : 'Asset';
 }
 
 function boardCard(item, index) {
@@ -210,27 +200,28 @@ function boardCard(item, index) {
   const y = item.y !== undefined ? item.y : 80 + Math.floor(index / 10) * 160;
   const thumbnailUrl = services.renditions.getThumbnailUrl(asset);
   return `
-    <article class="asc-ui-asset-card board__card"
+    <article class="asc-ui-asset-card board__card${notes ? ' board__card--has-note' : ''}"
              style="left: ${x}px; top: ${y}px"
-             data-asc-asset="${escAttr(asset.uuid)}">
+             data-asc-asset="${escAttr(asset.uuid)}"
+             data-asc-notes="${escAttr(notes || '')}">
       <div class="asc-ui-asset-card__thumb">
-        <span class="asc-ui-asset-card__badge">
-          ${notes ? '<span class="board__notes-indicator" title="Has notes">&#128221;</span>' : ''}
-        </span>
         <div class="asc-ui-asset-card__overlay">
           <button type="button"
-                  class="asc-ui-icon-btn board__card-remove"
+                  class="asc-ui-icon-btn asc-ui-icon-btn--sm board__card-remove"
                   data-asc-asset="${escAttr(asset.uuid)}"
                   aria-label="Remove ${escHtml(asset.title)} from collection">&#x2715;</button>
         </div>
         <img src="${thumbnailUrl}" alt="${escHtml(asset.title)}" loading="lazy" draggable="false" />
       </div>
       <div class="asc-ui-asset-card__body">
-        <p class="asc-ui-asset-card__title">${escHtml(asset.title)}</p>
-        ${notes ? `<p class="board__card-notes-preview">${escHtml(notes)}</p>` : ''}
+        <p class="asc-ui-asset-card__title" title="${escHtml(asset.title)}">${escHtml(assetTypeLabel(asset.mimeType))}</p>
+      </div>
+      <div class="asc-ui-asset-card__footer">
         <button type="button"
-                class="btn btn--ghost btn--sm board__notes-btn"
-                data-asc-asset="${escAttr(asset.uuid)}">${notes ? 'Edit note' : '+ Note'}</button>
+                class="asc-ui-icon-btn asc-ui-icon-btn--sm board__notes-btn"
+                data-asc-asset="${escAttr(asset.uuid)}"
+                aria-label="Notes"
+                title="Notes">&#9998;</button>
       </div>
     </article>`;
 }
@@ -269,93 +260,20 @@ function renderJobsStatus(jobs) {
     </div>`;
 }
 
-function assetRow(item) {
-  const { asset, notes } = item;
-  const thumbnailUrl = services.renditions.getThumbnailUrl(asset);
-  return `
-    <div class="collection__asset-row"
-         draggable="true"
-         data-asc-asset="${asset.uuid}"
-         data-item-type="asset">
-      <div class="collection__asset-drag" aria-hidden="true" title="Drag to reorder"></div>
-      <div class="collection__asset-thumb">
-        <img src="${thumbnailUrl}" alt="${escHtml(asset.title)}" loading="lazy" />
-      </div>
-      <div class="collection__asset-info">
-        <div class="collection__asset-title">${escHtml(asset.title)}</div>
-        <div class="collection__asset-meta">${escHtml(asset.getProperty('file-type') || '')}</div>
-        ${notes
-    ? `<div class="collection__asset-note" data-asc-asset="${escAttr(asset.uuid)}">${escHtml(notes)}</div>`
-    : `<button type="button" class="collection__asset-add-note" data-asc-asset="${escAttr(asset.uuid)}">+ add note</button>`}
-      </div>
-      <button type="button" class="collection__asset-remove btn btn--ghost btn--sm"
-              aria-label="Remove ${escHtml(asset.title)} from collection"
-              data-asc-action="collection:remove@click"
-              data-asc-asset="${asset.uuid}">Remove</button>
-    </div>`;
-}
-
-function sectionWidget(item) {
-  return `
-    <div class="collection__section-widget"
-         draggable="true"
-         data-section-id="${escAttr(item.id)}"
-         data-item-type="section">
-      <div class="collection__asset-drag" aria-hidden="true" title="Drag to reorder"></div>
-      <div class="collection__section-content">
-        <input type="text"
-               class="collection__section-title"
-               value="${escAttr(item.title)}"
-               placeholder="Section heading…"
-               aria-label="Section title" />
-        <textarea class="collection__section-body"
-                  placeholder="Optional description (Markdown supported)…"
-                  rows="2"
-                  aria-label="Section body">${escHtml(item.body)}</textarea>
-      </div>
-      <button type="button"
-              class="collection__section-delete btn btn--ghost btn--sm"
-              aria-label="Delete section"
-              data-section-id="${escAttr(item.id)}">✕</button>
-    </div>`;
-}
-
 // ─── Interactions ─────────────────────────────────────────────────────────────
 
-function initInteractions(block, collection, isDefault, mode) {
+function initInteractions(block, collection, isDefault) {
   initMenu(block);
   initRename(block, collection);
   initShare(block, collection);
   initDownload(block, collection);
   if (!isDefault) initDelete(block, collection);
-  initModeToggle(block, collection.id);
   initJobActions(block);
-
-  if (mode === 'board') {
-    initBoard(block, collection);
-    initCardDrag(block, collection);
-    initBoardClicks(block, collection);
-    initTextElements(block, collection);
-    initAddText(block, collection);
-  } else {
-    initReorder(block, collection);
-    initSections(block, collection);
-    initListNotes(block, collection);
-    if (_pendingSectionFocus) {
-      const input = block.querySelector(`[data-section-id="${_pendingSectionFocus}"] .collection__section-title`);
-      input?.focus();
-      _pendingSectionFocus = null;
-    }
-  }
-}
-
-function initModeToggle(block, collectionId) {
-  block.querySelectorAll('.asc-ui-segmented__option[data-mode]').forEach((btn) => {
-    btn.addEventListener('click', async () => {
-      setMode(collectionId, btn.dataset.mode);
-      await render(block, collectionId);
-    });
-  });
+  initBoard(block, collection);
+  initCardDrag(block, collection);
+  initBoardClicks(block, collection);
+  initTextElements(block, collection);
+  initAddText(block, collection);
 }
 
 function selectItem(el) {
@@ -394,19 +312,19 @@ function computeFitViewport(cards, viewport) {
     maxX = Math.max(maxX, x + w);
     maxY = Math.max(maxY, y + h);
   });
-  const PADDING = 0.10;
+  const PAD = 72; // 3 × --spacing-lg (4.5rem)
   const contentW = maxX - minX;
   const contentH = maxY - minY;
   const vw = viewport.clientWidth;
   const vh = viewport.clientHeight;
   if (!contentW || !contentH) return { panX: 0, panY: 0, zoom: 1 };
   const zoom = Math.min(
-    (vw * (1 - 2 * PADDING)) / contentW,
-    (vh * (1 - 2 * PADDING)) / contentH,
+    (vw - 2 * PAD) / contentW,
+    (vh - 2 * PAD) / contentH,
     1.0,
   );
   const panX = (vw - contentW * zoom) / 2 - minX * zoom;
-  const panY = (vh - contentH * zoom) / 2 - minY * zoom;
+  const panY = PAD - minY * zoom;
   return { panX, panY, zoom };
 }
 
@@ -417,16 +335,31 @@ function initBoard(block, collection) {
 
   _selectedItems.clear();
 
+  // Restore expand state before measuring the viewport
+  if (localStorage.getItem(EXPAND_KEY(collection.id)) === 'true') {
+    block.setAttribute('data-board-expanded', '');
+    const expandBtn = block.querySelector('.board__expand');
+    if (expandBtn) expandBtn.textContent = 'Collapse';
+  }
+
   const hasSavedViewport = localStorage.getItem(VIEWPORT_KEY(collection.id)) !== null;
   let { panX, panY, zoom } = getViewport(collection.id);
 
-  if (!hasSavedViewport) {
-    const allCards = [...canvas.querySelectorAll('.board__card, .board__text-element')];
-    const fit = computeFitViewport(allCards, viewport);
+  function applyFit(fit) {
     ({ panX, panY, zoom } = fit);
+    canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
     setViewport(collection.id, fit);
   }
+
   canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
+
+  if (!hasSavedViewport) {
+    // RAF ensures the expanded CSS dimensions are applied before measuring
+    requestAnimationFrame(() => {
+      const allCards = [...canvas.querySelectorAll('.board__card, .board__text-element')];
+      applyFit(computeFitViewport(allCards, viewport));
+    });
+  }
 
   let panning = false;
   let lastX = 0;
@@ -434,7 +367,7 @@ function initBoard(block, collection) {
 
   viewport.addEventListener('pointerdown', (e) => {
     if (e.target.closest('.board__card, .board__text-element')) return;
-    if (e.target.closest('.board__notes-panel, .board__reset-view, .board__add-text')) return;
+    if (e.target.closest('.board__notes-panel, .board__toolbar')) return;
 
     if (e.button === 1) {
       // Middle-mouse = pan
@@ -512,18 +445,14 @@ function initBoard(block, collection) {
     repositionOpenPanel();
   });
 
-  viewport.addEventListener('pointerup', () => {
+  function endPan(save) {
     if (!panning) return;
     panning = false;
     viewport.classList.remove('board__viewport--panning');
-    setViewport(collection.id, { panX, panY, zoom });
-  });
-
-  viewport.addEventListener('pointercancel', () => {
-    if (!panning) return;
-    panning = false;
-    viewport.classList.remove('board__viewport--panning');
-  });
+    if (save) setViewport(collection.id, { panX, panY, zoom });
+  }
+  viewport.addEventListener('pointerup', () => endPan(true));
+  viewport.addEventListener('pointercancel', () => endPan(false));
 
   const MIN_ZOOM = 0.2;
   const MAX_ZOOM = 3.0;
@@ -552,44 +481,88 @@ function initBoard(block, collection) {
 
   block.querySelector('.board__reset-view')?.addEventListener('click', () => {
     const allCards = [...canvas.querySelectorAll('.board__card, .board__text-element')];
-    const fit = computeFitViewport(allCards, viewport);
-    ({ panX, panY, zoom } = fit);
-    canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
-    setViewport(collection.id, fit);
+    applyFit(computeFitViewport(allCards, viewport));
     repositionOpenPanel();
   });
 
-  block.querySelector('.board__clean-up')?.addEventListener('click', () => {
-    const cards = [...canvas.querySelectorAll('.board__card')];
-    if (!cards.length) return;
+  block.querySelector('.board__expand')?.addEventListener('click', () => {
+    const expandBtn = block.querySelector('.board__expand');
+    const isExpanded = block.hasAttribute('data-board-expanded');
+    if (isExpanded) {
+      block.removeAttribute('data-board-expanded');
+      expandBtn.textContent = 'Expand';
+      localStorage.setItem(EXPAND_KEY(collection.id), 'false');
+    } else {
+      block.setAttribute('data-board-expanded', '');
+      expandBtn.textContent = 'Collapse';
+      localStorage.setItem(EXPAND_KEY(collection.id), 'true');
+    }
+    requestAnimationFrame(() => {
+      const allCards = [...canvas.querySelectorAll('.board__card, .board__text-element')];
+      applyFit(computeFitViewport(allCards, viewport));
+      repositionOpenPanel();
+    });
+  });
 
-    const CARD_W = 160;
-    const GAP = 24;
-    const cols = Math.max(1, Math.ceil(Math.sqrt(cards.length)));
-    const rowH = Math.max(...cards.map((c) => c.offsetHeight || 250)) + GAP;
+  block.querySelector('.board__align-grid')?.addEventListener('click', () => {
+    const allItems = [...canvas.querySelectorAll('.board__card, .board__text-element')];
+    if (!allItems.length) return;
 
-    cards.forEach((c) => { c.style.transition = 'left 0.35s ease, top 0.35s ease'; });
+    const SNAP = 24; // matches the dot-grid spacing
+    const MIN_GAP = 16;
 
-    cards.forEach((card, i) => {
-      const col = i % cols;
-      const row = Math.floor(i / cols);
-      const x = GAP + col * (CARD_W + GAP);
-      const y = GAP + row * rowH;
-      card.style.left = `${x}px`;
-      card.style.top = `${y}px`;
-      const uuid = card.dataset.ascAsset;
-      if (uuid) services.collections.updateItem(collection.id, uuid, { x, y });
+    // Snapshot current positions + dimensions before touching the DOM
+    const layout = allItems.map((el) => ({
+      el,
+      x: Math.round((parseFloat(el.style.left) || 0) / SNAP) * SNAP,
+      y: Math.round((parseFloat(el.style.top) || 0) / SNAP) * SNAP,
+      w: el.offsetWidth || 160,
+      h: el.offsetHeight || 200,
+    }));
+
+    // Resolve overlaps: up to n passes, push the later element the shortest distance
+    for (let pass = 0; pass < layout.length; pass++) {
+      let changed = false;
+      layout.sort((a, b) => (Math.abs(a.y - b.y) > 2 ? a.y - b.y : a.x - b.x));
+      for (let i = 0; i < layout.length; i++) {
+        for (let j = i + 1; j < layout.length; j++) {
+          const a = layout[i];
+          const b = layout[j];
+          if (a.x < b.x + b.w + MIN_GAP && a.x + a.w + MIN_GAP > b.x
+              && a.y < b.y + b.h + MIN_GAP && a.y + a.h + MIN_GAP > b.y) {
+            const pushRight = Math.ceil((a.x + a.w + MIN_GAP) / SNAP) * SNAP;
+            const pushDown = Math.ceil((a.y + a.h + MIN_GAP) / SNAP) * SNAP;
+            if (Math.abs(pushRight - b.x) <= Math.abs(pushDown - b.y)) {
+              b.x = pushRight;
+            } else {
+              b.y = pushDown;
+            }
+            changed = true;
+          }
+        }
+      }
+      if (!changed) break;
+    }
+
+    // Animate to snapped positions
+    allItems.forEach((el) => { el.style.transition = 'left 0.2s ease, top 0.2s ease'; });
+    layout.forEach(({ el, x, y }) => {
+      el.style.left = `${x}px`;
+      el.style.top = `${y}px`;
     });
 
     setTimeout(() => {
-      cards.forEach((c) => { c.style.transition = ''; });
-      const allItems = [...canvas.querySelectorAll('.board__card, .board__text-element')];
-      const fit = computeFitViewport(allItems, viewport);
-      ({ panX, panY, zoom } = fit);
-      canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
-      setViewport(collection.id, fit);
+      allItems.forEach((el) => { el.style.transition = ''; });
+      layout.forEach(({ el, x, y }) => {
+        if (el.dataset.ascAsset) {
+          services.collections.updateItem(collection.id, el.dataset.ascAsset, { x, y });
+        } else if (el.dataset.textId) {
+          saveTextItem(collection.id, el);
+        }
+      });
+      applyFit(computeFitViewport(allItems, viewport));
       repositionOpenPanel();
-    }, 380);
+    }, 230);
   });
 }
 
@@ -612,6 +585,9 @@ function initCardDrag(block, collection) {
 
     const isInGroup = _selectedItems.has(card) && _selectedItems.size > 1;
     const dragGroup = isInGroup ? [..._selectedItems] : [card];
+
+    const zVal = Date.now();
+    dragGroup.forEach((c) => { c.style.zIndex = zVal; });
 
     const startPositions = dragGroup.map((c) => ({
       el: c,
@@ -657,50 +633,109 @@ function initCardDrag(block, collection) {
   });
 }
 
-function positionPanel(panel, card, viewport) {
-  const cardRect = card.getBoundingClientRect();
-  const viewportRect = viewport.getBoundingClientRect();
-  const panelWidth = panel.offsetWidth || 220;
-  const leftCandidate = cardRect.right - viewportRect.left + 8;
-  const left = leftCandidate + panelWidth > viewportRect.width
-    ? cardRect.left - viewportRect.left - panelWidth - 8
-    : leftCandidate;
-  panel.style.left = `${Math.max(4, left)}px`;
-  panel.style.top = `${Math.max(4, cardRect.top - viewportRect.top)}px`;
+function positionPanel(panel, btn, viewport) {
+  const btnRect = btn.getBoundingClientRect();
+  const vRect = viewport.getBoundingClientRect();
+  const pw = panel.offsetWidth || 220;
+  const ph = panel.offsetHeight || 160;
+  const gap = 10;
+  // Tail square is 12px wide at left/right: 20px → center is 26px from edge
+  const tailCenter = 26;
+
+  // Align tail center with button center
+  const btnCX = btnRect.left - vRect.left + btnRect.width / 2;
+  let left = btnCX - tailCenter;
+  let useRightTail = false;
+
+  if (left + pw > vRect.width - 4) {
+    left = btnCX - (pw - tailCenter);
+    useRightTail = true;
+  }
+  left = Math.max(4, left);
+
+  // Prefer above the button; fall back to below
+  const aboveTop = btnRect.top - vRect.top - ph - gap;
+  const belowTop = btnRect.bottom - vRect.top + gap;
+  const goAbove = aboveTop >= 4;
+  const top = goAbove ? aboveTop : belowTop;
+
+  panel.classList.remove('asc-ui-bubble--br', 'asc-ui-bubble--tl', 'asc-ui-bubble--tr');
+  if (goAbove) {
+    if (useRightTail) panel.classList.add('asc-ui-bubble--br');
+    // else: default --bl, no extra class needed
+  } else {
+    panel.classList.add(useRightTail ? 'asc-ui-bubble--tr' : 'asc-ui-bubble--tl');
+  }
+
+  panel.style.left = `${left}px`;
+  panel.style.top = `${top}px`;
 }
 
 function repositionOpenPanel() {
   if (!_openPanelState) return;
-  const { panel, card, viewport } = _openPanelState;
+  const { panel, btn, viewport } = _openPanelState;
   if (!document.contains(panel)) { _openPanelState = null; return; }
-  positionPanel(panel, card, viewport);
+  positionPanel(panel, btn, viewport);
 }
 
-function openNotesPanel(block, collection, card) {
+function openNotePanel(block, card, btn, className, html, mode) {
   block.querySelector('.board__notes-panel')?.remove();
   _openPanelState = null;
-
-  const assetId = card.dataset.ascAsset;
-  const currentNotes = card.querySelector('.board__card-notes-preview')?.textContent || '';
-
   const panel = document.createElement('div');
-  panel.className = 'board__notes-panel';
-  panel.innerHTML = `
-    <textarea class="board__notes-textarea"
-              placeholder="Add a note about this asset…"
-              rows="4">${escHtml(currentNotes)}</textarea>
-    <div class="board__notes-actions">
-      <button type="button" class="board__notes-done btn btn--primary btn--sm">Done</button>
-    </div>`;
-
+  panel.className = className;
+  panel.innerHTML = html;
   const viewport = block.querySelector('.board__viewport');
   viewport.appendChild(panel);
-  positionPanel(panel, card, viewport);
-  _openPanelState = { panel, card, viewport };
+  positionPanel(panel, btn, viewport);
+  _openPanelState = { panel, card, btn, viewport, mode };
+  return { panel, viewport };
+}
+
+function openNotePreview(block, card, btn) {
+  const notes = card.dataset.ascNotes || '';
+  if (!notes) return;
+
+  const { panel } = openNotePanel(
+    block, card, btn,
+    'asc-ui-bubble board__notes-panel board__notes-panel--preview',
+    `<p class="board__notes-preview-text">${escHtml(notes)}</p>`,
+    'preview',
+  );
+
+  panel.addEventListener('mouseenter', () => clearTimeout(_noteHoverTimer));
+  panel.addEventListener('mouseleave', () => {
+    if (_openPanelState?.mode === 'preview') {
+      _noteHoverTimer = setTimeout(() => {
+        if (_openPanelState?.mode === 'preview') {
+          _openPanelState.panel.remove();
+          _openPanelState = null;
+        }
+      }, 150);
+    }
+  });
+}
+
+function openNoteEdit(block, collection, card) {
+  const assetId = card.dataset.ascAsset;
+  const currentNotes = card.dataset.ascNotes || '';
+  const btn = card.querySelector('.board__notes-btn');
+
+  const { panel } = openNotePanel(
+    block, card, btn,
+    'asc-ui-bubble board__notes-panel',
+    `<div class="asc-ui-field">
+      <textarea class="board__notes-textarea"
+                placeholder="Add a note about this asset…"
+                rows="4">${escHtml(currentNotes)}</textarea>
+    </div>
+    <div class="board__notes-actions">
+      <button type="button" class="board__notes-done btn btn--secondary btn--sm">Done</button>
+    </div>`,
+    'edit',
+  );
 
   const textarea = panel.querySelector('.board__notes-textarea');
   textarea.focus();
-  textarea.select();
 
   let removeOutsideClick = () => {};
 
@@ -730,27 +765,8 @@ function openNotesPanel(block, collection, card) {
 }
 
 function updateCardNotes(card, notes) {
-  const preview = card.querySelector('.board__card-notes-preview');
-  const notesBtn = card.querySelector('.board__notes-btn');
-  const badge = card.querySelector('.asc-ui-asset-card__badge');
-
-  if (notes) {
-    if (!preview) {
-      const p = document.createElement('p');
-      p.className = 'board__card-notes-preview';
-      if (notesBtn) notesBtn.before(p);
-    }
-    const p2 = card.querySelector('.board__card-notes-preview');
-    if (p2) p2.textContent = notes;
-    if (notesBtn) notesBtn.textContent = 'Edit note';
-    if (badge && !badge.querySelector('.board__notes-indicator')) {
-      badge.innerHTML = '<span class="board__notes-indicator" title="Has notes">&#128221;</span>';
-    }
-  } else {
-    preview?.remove();
-    if (notesBtn) notesBtn.textContent = '+ Note';
-    if (badge) badge.innerHTML = '';
-  }
+  card.classList.toggle('board__card--has-note', !!notes);
+  card.dataset.ascNotes = notes || '';
 }
 
 function initBoardClicks(block, collection) {
@@ -758,7 +774,7 @@ function initBoardClicks(block, collection) {
   if (!viewport) return;
 
   viewport.addEventListener('click', (e) => {
-    if (!e.target.closest('.board__card, .board__notes-panel, .board__reset-view, .board__add-text, .board__text-element')) {
+    if (!e.target.closest('.board__card, .board__notes-panel, .board__toolbar, .board__text-element')) {
       if (_rubberBandJustSelected) { _rubberBandJustSelected = false; return; }
       deselectAll();
     }
@@ -772,7 +788,14 @@ function initBoardClicks(block, collection) {
     const notesBtn = e.target.closest('.board__notes-btn');
     if (notesBtn) {
       const card = notesBtn.closest('.board__card');
-      if (card) openNotesPanel(block, collection, card);
+      if (card) {
+        clearTimeout(_noteHoverTimer);
+        if (_openPanelState?.mode === 'preview') {
+          _openPanelState.panel.remove();
+          _openPanelState = null;
+        }
+        openNoteEdit(block, collection, card);
+      }
       return;
     }
 
@@ -781,8 +804,7 @@ function initBoardClicks(block, collection) {
       if (!_cardDragMoved) {
         if (e.shiftKey) {
           toggleItem(card);
-        } else if (_selectedItems.size > 1 && _selectedItems.has(card)) {
-          // Click within a multi-selection → open asset details
+        } else if (card.dataset.ascAsset) {
           document.body.dispatchEvent(new CustomEvent('asc:asset:details:open', {
             bubbles: true,
             detail: { data: { ascAsset: card.dataset.ascAsset } },
@@ -793,6 +815,30 @@ function initBoardClicks(block, collection) {
         }
       }
       _cardDragMoved = false;
+    }
+  });
+
+  // Hover preview: show note on button hover, close when leaving btn+panel
+  viewport.addEventListener('mouseover', (e) => {
+    const btn = e.target.closest('.board__notes-btn');
+    if (!btn) return;
+    clearTimeout(_noteHoverTimer);
+    const card = btn.closest('.board__card');
+    if (card?.classList.contains('board__card--has-note') && !_openPanelState) {
+      openNotePreview(block, card, btn);
+    }
+  });
+
+  viewport.addEventListener('mouseout', (e) => {
+    if (!e.target.closest('.board__notes-btn')) return;
+    if (e.relatedTarget?.closest('.board__notes-panel')) return;
+    if (_openPanelState?.mode === 'preview') {
+      _noteHoverTimer = setTimeout(() => {
+        if (_openPanelState?.mode === 'preview') {
+          _openPanelState.panel.remove();
+          _openPanelState = null;
+        }
+      }, 150);
     }
   });
 }
@@ -1017,87 +1063,6 @@ function initDelete(block, collection) {
 
 // ── Sections ─────────────────────────────────────────────────────────────────
 
-function initSections(block, collection) {
-  // Add section button
-  block.querySelector('.collection__add-section')?.addEventListener('click', async () => {
-    const section = await services.collections.addSection(collection.id, { title: '', body: '' });
-    if (section) _pendingSectionFocus = section.id;
-    // CHANGED event from addSection triggers re-render → initInteractions picks up _pendingSectionFocus
-  });
-
-  // Section title blur → save (useCapture because blur doesn't bubble)
-  block.addEventListener('blur', (e) => {
-    const input = e.target.closest?.('.collection__section-title');
-    if (!input) return;
-    const widget = input.closest('[data-section-id]');
-    if (!widget) return;
-    services.collections.updateSection(collection.id, widget.dataset.sectionId, { title: input.value });
-  }, true);
-
-  // Section body blur → save
-  block.addEventListener('blur', (e) => {
-    const textarea = e.target.closest?.('.collection__section-body');
-    if (!textarea) return;
-    const widget = textarea.closest('[data-section-id]');
-    if (!widget) return;
-    services.collections.updateSection(collection.id, widget.dataset.sectionId, { body: textarea.value });
-  }, true);
-
-  // Section delete
-  block.querySelectorAll('.collection__section-delete').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      services.collections.removeSection(collection.id, btn.dataset.sectionId);
-    });
-  });
-}
-
-function initListNotes(block, collection) {
-  if (block.dataset.listNotesInit) return;
-  block.dataset.listNotesInit = '1';
-
-  block.addEventListener('click', (e) => {
-    const target = e.target.closest('.collection__asset-note, .collection__asset-add-note');
-    if (!target) return;
-
-    const assetId = target.dataset.ascAsset;
-    const currentValue = target.classList.contains('collection__asset-note')
-      ? target.textContent
-      : '';
-
-    const textarea = document.createElement('textarea');
-    textarea.className = 'collection__asset-note-edit';
-    textarea.value = currentValue;
-    textarea.rows = 2;
-    textarea.placeholder = 'Add a note about this asset…';
-    target.replaceWith(textarea);
-    textarea.focus();
-
-    function save() {
-      const val = textarea.value.trim();
-      services.collections.updateItem(collection.id, assetId, { notes: val });
-      let replacement;
-      if (val) {
-        replacement = document.createElement('div');
-        replacement.className = 'collection__asset-note';
-        replacement.dataset.ascAsset = assetId;
-        replacement.textContent = val;
-      } else {
-        replacement = document.createElement('button');
-        replacement.type = 'button';
-        replacement.className = 'collection__asset-add-note';
-        replacement.dataset.ascAsset = assetId;
-        replacement.textContent = '+ add note';
-      }
-      textarea.replaceWith(replacement);
-    }
-
-    textarea.addEventListener('blur', save);
-    textarea.addEventListener('keydown', (ev) => {
-      if (ev.key === 'Escape') { textarea.value = currentValue; save(); }
-    });
-  });
-}
-
 // ── Share ─────────────────────────────────────────────────────────────────────
 
 function saveShareHistory(entry) {
@@ -1111,27 +1076,68 @@ function renderShareHistory() {
   if (!history.length) return '';
 
   const items = history.map((entry) => {
-    const date = new Date(entry.createdAt);
-    const label = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    const label = new Date(entry.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
     return `
-      <li class="collection__share-history-item">
-        <span class="collection__share-history-title" title="${escAttr(entry.url)}">${escHtml(entry.title || 'Untitled')}</span>
-        <span class="collection__share-history-date">${escHtml(label)}</span>
+      <li class="collection__past-share-row">
+        <span class="asc-ui-menu__item-label" title="${escAttr(entry.url)}">${escHtml(entry.title || 'Untitled')}</span>
+        <span class="asc-ui-menu__item-meta">${escHtml(label)}</span>
         <button type="button" class="btn btn--ghost btn--sm collection__share-history-copy"
                 data-url="${escAttr(entry.url)}">Copy</button>
+        <a href="${escAttr(entry.url)}" target="_blank" rel="noopener noreferrer"
+           class="btn btn--ghost btn--sm">Open</a>
       </li>`;
   }).join('');
 
   return `
-    <details class="collection__share-history">
-      <summary>Past shares (${history.length})</summary>
-      <ul class="collection__share-history-list">${items}</ul>
-    </details>`;
+    <div class="asc-ui-dropdown collection__past-shares-dropdown">
+      <button type="button"
+              class="btn btn--ghost collection__past-shares-trigger"
+              aria-expanded="false"
+              aria-haspopup="true">
+        Past Shares <span class="asc-ui-count asc-ui-count--muted">${history.length}</span>
+      </button>
+      <div class="asc-ui-dropdown__panel collection__past-shares-panel" hidden>
+        <ul class="asc-ui-menu">${items}</ul>
+      </div>
+    </div>`;
 }
 
 function initShare(block, collection) {
   block.querySelector('.collection__share-btn')?.addEventListener('click', () => {
     openShareDialog(block, collection);
+  });
+
+  block.addEventListener('click', (e) => {
+    const trigger = e.target.closest('.collection__past-shares-trigger');
+    if (trigger) {
+      const panel = trigger.closest('.collection__past-shares-dropdown')
+        ?.querySelector('.collection__past-shares-panel');
+      if (!panel) return;
+      const expanded = trigger.getAttribute('aria-expanded') === 'true';
+      panel.hidden = expanded;
+      trigger.setAttribute('aria-expanded', String(!expanded));
+      return;
+    }
+
+    const copyBtn = e.target.closest('.collection__share-history-copy');
+    if (copyBtn) {
+      navigator.clipboard.writeText(copyBtn.dataset.url).then(() => {
+        const orig = copyBtn.textContent;
+        copyBtn.textContent = 'Copied!';
+        setTimeout(() => { copyBtn.textContent = orig; }, 2000);
+      });
+      return;
+    }
+
+    if (!e.target.closest('.collection__past-shares-dropdown')) {
+      const openDropdown = block.querySelector('.collection__past-shares-panel:not([hidden])');
+      if (openDropdown) {
+        openDropdown.hidden = true;
+        openDropdown.closest('.collection__past-shares-dropdown')
+          ?.querySelector('.collection__past-shares-trigger')
+          ?.setAttribute('aria-expanded', 'false');
+      }
+    }
   });
 }
 
@@ -1172,20 +1178,15 @@ async function openShareDialog(block, collection) {
           Share URL
           <input type="text" class="collection__share-url-output" readonly />
         </label>
-        <button type="button" class="btn btn--secondary collection__share-copy" hidden>Copy</button>
       </div>
     </div>
     <footer class="asc-dialog__footer">
       <button type="button" class="btn btn--secondary" data-dialog-close>Cancel</button>
       <div class="asc-dialog__footer-end">
-        <button type="button" class="btn btn--primary collection__share-generate">Generate Link</button>
+        <button type="button" class="btn btn--secondary collection__share-generate">Generate Link</button>
+        <button type="button" class="btn btn--primary collection__share-copy" hidden>Copy Share Link</button>
       </div>
     </footer>`;
-
-  const historyHtml = renderShareHistory();
-  if (historyHtml) {
-    dialog.querySelector('.asc-dialog__body').insertAdjacentHTML('beforeend', historyHtml);
-  }
 
   block.appendChild(dialog);
   dialog.showModal();
@@ -1200,17 +1201,32 @@ async function openShareDialog(block, collection) {
     const description = dialog.querySelector('.collection__share-description').value.trim();
     const days = parseInt(dialog.querySelector('.collection__share-expires').value, 10);
 
-    const encodedItems = (collection.items || []).map((item) => {
+    // Re-read from storage so drag-updated x/y positions are current (the block's
+    // collection reference is a snapshot from initial load).
+    const fresh = await services.collections.get(collection.id);
+    const liveItems = (fresh || collection).items || [];
+    const encodedItems = liveItems.map((item) => {
       if (item.type === 'section') return `~${item.title}|||${item.body}`;
-      return item.notes ? `${item.id}|||${item.notes}` : item.id;
+      const pos = (item.x != null && item.y != null)
+        ? `@${Math.round(item.x)},${Math.round(item.y)}`
+        : '';
+      return item.notes ? `${item.id}${pos}|||${item.notes}` : `${item.id}${pos}`;
     });
 
+    const textItems = getBoardTextItems(collection.id);
     const payload = {
       title: title || collection.name,
       ...(description && { description }),
       // eslint-disable-next-line no-underscore-dangle
       ...(days > 0 && { expiresAt: new Date(Date.now() + days * 86_400_000).toISOString() }),
       items: encodedItems,
+      ...(textItems.length && {
+        textElements: textItems.map(({
+          x, y, w, h, content,
+        }) => ({
+          x, y, w, h, content,
+        })),
+      }),
     };
 
     const compressed = await services.url.compressArray([JSON.stringify(payload)]);
@@ -1223,13 +1239,8 @@ async function openShareDialog(block, collection) {
     wrap.querySelector('.collection__share-url-output').value = url;
     dialog.querySelector('.collection__share-copy')?.removeAttribute('hidden');
 
-    const existingHistory = dialog.querySelector('.collection__share-history');
-    const newHistoryHtml = renderShareHistory();
-    if (existingHistory) {
-      existingHistory.outerHTML = newHistoryHtml;
-    } else if (newHistoryHtml) {
-      dialog.querySelector('.asc-dialog__body').insertAdjacentHTML('beforeend', newHistoryHtml);
-    }
+    const pastSharesEl = block.querySelector('.collection__past-shares');
+    if (pastSharesEl) pastSharesEl.innerHTML = renderShareHistory();
   });
 
   dialog.querySelector('.collection__share-copy')?.addEventListener('click', () => {
@@ -1241,15 +1252,6 @@ async function openShareDialog(block, collection) {
     });
   });
 
-  dialog.addEventListener('click', (e) => {
-    const copyBtn = e.target.closest('.collection__share-history-copy');
-    if (!copyBtn) return;
-    navigator.clipboard.writeText(copyBtn.dataset.url).then(() => {
-      const orig = copyBtn.textContent;
-      copyBtn.textContent = 'Copied!';
-      setTimeout(() => { copyBtn.textContent = orig; }, 2000);
-    });
-  });
 }
 
 // ── Download ──────────────────────────────────────────────────────────────────
@@ -1339,79 +1341,6 @@ async function openDownloadDialog(block, collection) {
 
     submitBtn.textContent = 'Job submitted — download will start automatically';
     setTimeout(() => dialog.close(), 3000);
-  });
-}
-
-// ── Reorder (drag-and-drop) ───────────────────────────────────────────────────
-
-const ROW_SEL = '.collection__asset-row, .collection__section-widget';
-
-function serializeRow(el) {
-  if (el.dataset.ascAsset) return { type: 'asset', id: el.dataset.ascAsset };
-  return {
-    type: 'section',
-    id: el.dataset.sectionId,
-    title: el.querySelector('.collection__section-title')?.value || '',
-    body: el.querySelector('.collection__section-body')?.value || '',
-  };
-}
-
-function initReorder(block, collection) {
-  const list = block.querySelector('.collection__asset-list');
-  if (!list) return;
-
-  let dragging = null;
-
-  list.addEventListener('dragstart', (e) => {
-    const row = e.target.closest(ROW_SEL);
-    if (!row) return;
-    dragging = row;
-    if (row.classList.contains('collection__asset-row')) {
-      row.classList.add('collection__asset-row--dragging');
-    } else {
-      row.classList.add('collection__section-widget--dragging');
-    }
-    e.dataTransfer.effectAllowed = 'move';
-  });
-
-  list.addEventListener('dragend', () => {
-    if (dragging) {
-      dragging.classList.remove('collection__asset-row--dragging', 'collection__section-widget--dragging');
-    }
-    list.querySelectorAll('.collection__asset-row--over, .collection__section-widget--over').forEach((el) => {
-      el.classList.remove('collection__asset-row--over', 'collection__section-widget--over');
-    });
-    dragging = null;
-  });
-
-  list.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    const target = e.target.closest(ROW_SEL);
-    if (!target || target === dragging) return;
-    list.querySelectorAll('.collection__asset-row--over, .collection__section-widget--over').forEach((el) => {
-      el.classList.remove('collection__asset-row--over', 'collection__section-widget--over');
-    });
-    if (target.classList.contains('collection__asset-row')) {
-      target.classList.add('collection__asset-row--over');
-    } else {
-      target.classList.add('collection__section-widget--over');
-    }
-  });
-
-  list.addEventListener('drop', (e) => {
-    e.preventDefault();
-    const target = e.target.closest(ROW_SEL);
-    if (!target || !dragging || target === dragging) return;
-
-    const rows = [...list.querySelectorAll(ROW_SEL)];
-    const fromIdx = rows.indexOf(dragging);
-    const toIdx = rows.indexOf(target);
-    if (fromIdx < toIdx) target.after(dragging);
-    else target.before(dragging);
-
-    const newItems = [...list.querySelectorAll(ROW_SEL)].map(serializeRow);
-    services.collections.reorder(collection.id, newItems);
   });
 }
 

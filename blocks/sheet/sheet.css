@@ -17,6 +17,12 @@
         }
     }
 
+    /* ── Header ─────────────────────────────────────────────────────── */
+
+    .sheet__header {
+        margin-bottom: var(--spacing-lg, 24px);
+    }
+
     .sheet__title {
         font-size: var(--heading-font-size-l, 1.75rem);
         font-weight: 700;
@@ -26,7 +32,7 @@
     .sheet__count {
         color: var(--color-muted-fg);
         font-size: var(--body-font-size-s, 0.875rem);
-        margin-bottom: var(--spacing-lg, 24px);
+        margin-bottom: 0;
     }
 
     .sheet__empty {
@@ -35,193 +41,13 @@
         text-align: center;
     }
 
-    /* ── Asset rows ──────────────────────────────────────────────────── */
-
-    .sheet__asset-list {
-        display: flex;
-        flex-direction: column;
-        gap: var(--spacing-sm, 8px);
-    }
-
-    .sheet__asset-row {
-        display: grid;
-        grid-template-columns: 88px 1fr auto auto;
-        gap: var(--spacing-md, 16px);
-        align-items: center;
-        padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
-        border: 1px solid var(--color-border);
-        border-radius: var(--border-radius-md);
-        background: var(--color-bg);
-        cursor: grab;
-        transition: box-shadow var(--transition-fast), border-color var(--transition-fast);
-
-        &:hover {
-            border-color: var(--color-primary);
-            box-shadow: var(--shadow-sm);
-        }
-
-        &:active {
-            cursor: grabbing;
-        }
-    }
-
-    /* ── Thumbnail — .asc-ui-thumb provides base; size override here ── */
-
-    .asc-ui-thumb.sheet__asset-thumb {
-        --asc-ui-thumb-size: 88px;
-
-        position: relative;
-        height: 66px;
-        border-radius: var(--border-radius-sm);
-        flex-shrink: 0;
-
-        img {
-            border-radius: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-
-        .sheet__asset-thumb-fallback {
-            display: none;
-            position: absolute;
-            inset: 0;
-            align-items: center;
-            justify-content: center;
-            font-size: var(--heading-font-size-xl);
-        }
-
-        &.sheet__asset-thumb--error {
-            img {
-                display: none;
-            }
-
-            .sheet__asset-thumb-fallback {
-                display: flex;
-            }
-        }
-    }
-
-    /* ── Asset info — .asc-ui-asset-row__title/meta provide text styles */
-
-    .sheet__asset-info {
-        min-width: 0;
-
-        .asc-ui-asset-row__title {
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .asc-ui-asset-row__meta {
-            margin-top: var(--spacing-2xs);
-        }
-    }
-
-    /* ── Rendition switcher ──────────────────────────────────────────── */
-
-    .sheet__asset-renditions {
-        display: flex;
-        gap: var(--spacing-xs, 4px);
-        flex-wrap: wrap;
-        align-items: center;
-    }
-
-    .sheet__rendition-pill--active,
-    .sheet__rendition-pill--active:hover {
-        background: var(--color-primary);
-        border-color: var(--color-primary);
-        color: var(--color-primary-fg);
-    }
-
-    .sheet__no-renditions {
-        font-size: var(--body-font-size-s, 0.875rem);
-        color: var(--color-muted-fg);
-    }
-
-    /* ── Download button ─────────────────────────────────────────────── */
-
-    .sheet__asset-actions {
-        flex-shrink: 0;
-    }
-
-
-    /* ── Responsive ──────────────────────────────────────────────────── */
-
-    @media (width < 700px) {
-        .sheet__asset-row {
-            grid-template-columns: 72px 1fr;
-            grid-template-rows: auto auto auto;
-            gap: var(--spacing-sm, 8px);
-        }
-
-        .sheet__asset-renditions,
-        .sheet__asset-actions {
-            grid-column: 1 / -1;
-        }
-    }
-
-    /* ── Section headings ────────────────────────────────────────────── */
-
-    .sheet__section {
-        margin-block: var(--spacing-xl) var(--spacing-sm);
-        padding-block-end: var(--spacing-sm);
-        border-bottom: 1px solid var(--color-border);
-    }
-
-    .sheet__section-title {
-        margin: 0 0 var(--spacing-xs);
-        font-size: var(--heading-font-size-m);
-        font-weight: 600;
-        color: var(--color-fg);
-    }
-
-    .sheet__section-body {
-        margin: 0;
-        color: var(--color-muted-fg);
-        font-size: var(--body-font-size-s);
-        line-height: 1.6;
-
-        p {
-            margin: 0 0 var(--spacing-xs);
-
-            &:last-child {
-                margin-bottom: 0;
-            }
-        }
-
-        ul {
-            margin: var(--spacing-xs) 0;
-            padding-inline-start: 1.4em;
-        }
-
-        li {
-            margin-block: var(--spacing-2xs);
-        }
-
-        a {
-            color: var(--color-primary);
-        }
-    }
-
     /* ── Collection description ──────────────────────────────────────────── */
 
     .sheet__description {
         color: var(--color-muted-fg);
         font-size: var(--body-font-size-s);
         line-height: 1.6;
-        margin-block: calc(-1 * var(--spacing-xs)) var(--spacing-lg, 24px);
-    }
-
-    /* ── Per-asset notes ─────────────────────────────────────────────────── */
-
-    .sheet__asset-note {
-        margin-block: var(--spacing-2xs) 0;
-        font-size: var(--body-font-size-xs);
-        font-style: italic;
-        color: var(--color-muted-fg);
-        line-height: 1.4;
+        margin: 0 0 var(--spacing-xs);
     }
 
     /* ── Expired link ────────────────────────────────────────────────────── */
@@ -242,5 +68,104 @@
         margin: 0;
         color: var(--color-muted-fg);
         font-size: var(--body-font-size-s);
+    }
+
+    /* ── Board view — infinite canvas ───────────────────────────────────── */
+
+    .sheet__board-viewport {
+        position: relative;
+        width: 100%;
+        height: 70vh;
+        min-height: 500px;
+        overflow: hidden;
+        background:
+            radial-gradient(circle, var(--color-border) 1px, transparent 1px)
+            0 0 / 24px 24px;
+        border: 1px solid var(--color-border);
+        border-radius: var(--border-radius-md);
+        touch-action: none;
+        user-select: none;
+        cursor: default;
+    }
+
+    .sheet__board-canvas {
+        position: absolute;
+        inset: 0;
+        width: 0;
+        height: 0;
+        transform-origin: 0 0;
+    }
+
+    .sheet__board-empty {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--color-muted-fg);
+        pointer-events: none;
+    }
+
+    .sheet__board-toolbar {
+        position: absolute;
+        top: var(--spacing-sm, 8px);
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10;
+        background: var(--color-card, var(--color-bg));
+        box-shadow: var(--shadow-sm);
+    }
+
+    /* ── Expand mode — break out of max-width container ─────────────────── */
+
+    &[data-expanded] .sheet__board-viewport {
+        width: calc(100vw - 4rem);
+        position: relative;
+        left: 50%;
+        transform: translateX(-50%);
+        height: 80vh;
+    }
+
+    /* ── Board text elements (read-only) ────────────────────────────────── */
+
+    .sheet__board-text {
+        position: absolute;
+        white-space: pre-wrap;
+        overflow-wrap: break-word;
+        pointer-events: none;
+        padding: var(--spacing-sm, 8px);
+        background: var(--color-card, var(--color-bg));
+        border: 1px solid var(--color-border);
+        border-radius: var(--border-radius-sm);
+        font-size: var(--body-font-size-s, 0.875rem);
+        line-height: 1.5;
+        color: var(--color-fg);
+        box-sizing: border-box;
+    }
+
+    /* ── Board cards ─────────────────────────────────────────────────────── */
+
+    .sheet__board-card {
+        position: absolute;
+        width: 160px;
+        cursor: pointer;
+    }
+
+    .sheet__board-note-dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--color-primary);
+        box-shadow: 0 0 0 2px var(--color-card);
+    }
+
+    .sheet__board-card-note {
+        margin: 0;
+        font-size: var(--body-font-size-xs);
+        font-style: italic;
+        color: var(--color-muted-fg);
+        line-height: 1.4;
+        overflow-wrap: break-word;
     }
 }
