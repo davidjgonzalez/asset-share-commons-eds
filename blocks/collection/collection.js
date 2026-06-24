@@ -14,6 +14,8 @@ const MAX_SHARE_HISTORY = 20;
 // Tracks the section ID to focus after a re-render triggered by addSection
 let _pendingSectionFocus = null;
 
+let _cardDragMoved = false;
+
 // ─── Mode & viewport state ─────────────────────────────────────────────────────
 
 const MODE_KEY = (id) => `asc:collectionMode:${id}`;
@@ -167,7 +169,31 @@ function boardHtml(items) {
     </div>`;
 }
 
-function boardCard() { return ''; }
+function boardCard(item, index) {
+  const { asset, notes } = item;
+  const x = item.x !== undefined ? item.x : 80 + (index % 10) * 180;
+  const y = item.y !== undefined ? item.y : 80 + Math.floor(index / 10) * 160;
+  const thumbnailUrl = services.renditions.getThumbnailUrl(asset);
+  return `
+    <div class="board__card"
+         style="left: ${x}px; top: ${y}px"
+         data-asc-asset="${escAttr(asset.uuid)}">
+      <button type="button"
+              class="board__card-remove"
+              data-asc-asset="${escAttr(asset.uuid)}"
+              aria-label="Remove ${escHtml(asset.title)} from collection">&#x2715;</button>
+      <div class="board__card-thumb">
+        <img src="${thumbnailUrl}" alt="${escHtml(asset.title)}" loading="lazy" />
+      </div>
+      <div class="board__card-body">
+        <p class="board__card-title">${escHtml(asset.title)}</p>
+        ${notes ? `<p class="board__card-notes-preview">${escHtml(notes)}</p>` : ''}
+        <button type="button"
+                class="board__card-notes-btn"
+                data-asc-asset="${escAttr(asset.uuid)}">${notes ? '&#128221;' : '+ note'}</button>
+      </div>
+    </div>`;
+}
 
 function renderJobsStatus(jobs) {
   return `
@@ -251,6 +277,8 @@ function initInteractions(block, collection, isDefault, mode) {
 
   if (mode === 'board') {
     initBoard(block, collection);
+    initCardDrag(block, collection);
+    initBoardClicks(block, collection);
   } else {
     initReorder(block, collection);
     initSections(block, collection);
@@ -335,6 +363,90 @@ function initBoard(block, collection) {
     panX = 0; panY = 0; zoom = 1;
     canvas.style.transform = 'translate(0px, 0px) scale(1)';
     setViewport(collection.id, { panX: 0, panY: 0, zoom: 1 });
+  });
+}
+
+function initCardDrag(block, collection) {
+  const viewport = block.querySelector('.board__viewport');
+  if (!viewport) return;
+
+  viewport.addEventListener('pointerdown', (e) => {
+    const card = e.target.closest('.board__card');
+    if (!card) return;
+    if (e.target.closest('.board__card-remove, .board__card-notes-btn')) return;
+
+    e.stopPropagation();
+
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startLeft = parseFloat(card.style.left) || 0;
+    const startTop = parseFloat(card.style.top) || 0;
+    _cardDragMoved = false;
+
+    const { zoom } = getViewport(collection.id);
+    card.setPointerCapture(e.pointerId);
+    card.classList.add('board__card--dragging');
+
+    function onMove(ev) {
+      const dx = ev.clientX - startX;
+      const dy = ev.clientY - startY;
+      if (Math.abs(dx) > 5 || Math.abs(dy) > 5) _cardDragMoved = true;
+      if (!_cardDragMoved) return;
+      card.style.left = `${startLeft + dx / zoom}px`;
+      card.style.top = `${startTop + dy / zoom}px`;
+    }
+
+    function onUp() {
+      card.classList.remove('board__card--dragging');
+      card.removeEventListener('pointermove', onMove);
+      card.removeEventListener('pointerup', onUp);
+      if (_cardDragMoved) {
+        const x = Math.round(parseFloat(card.style.left));
+        const y = Math.round(parseFloat(card.style.top));
+        services.collections.updateItem(collection.id, card.dataset.ascAsset, { x, y });
+      }
+    }
+
+    card.addEventListener('pointermove', onMove);
+    card.addEventListener('pointerup', onUp);
+  });
+}
+
+// Forward reference — defined in Task 4
+// eslint-disable-next-line no-unused-vars
+function openNotesPanel() {}
+
+function initBoardClicks(block, collection) {
+  const viewport = block.querySelector('.board__viewport');
+  if (!viewport) return;
+
+  viewport.addEventListener('click', (e) => {
+    const removeBtn = e.target.closest('.board__card-remove');
+    if (removeBtn) {
+      services.collections.removeAsset(collection.id, removeBtn.dataset.ascAsset);
+      return;
+    }
+
+    const notesBtn = e.target.closest('.board__card-notes-btn');
+    if (notesBtn) {
+      const card = notesBtn.closest('.board__card');
+      if (card) openNotesPanel(block, collection, card);
+      return;
+    }
+
+    const card = e.target.closest('.board__card');
+    if (card) {
+      if (!_cardDragMoved) {
+        // Open asset details — event shape verified against AGENTS.md and asset-details.js line 50
+        // detail.data.ascAsset is what AssetDetails._attachListeners destructures
+        const assetId = card.dataset.ascAsset;
+        document.body.dispatchEvent(new CustomEvent('asc:asset:details:open', {
+          bubbles: true,
+          detail: { data: { ascAsset: assetId } },
+        }));
+      }
+      _cardDragMoved = false;
+    }
   });
 }
 
