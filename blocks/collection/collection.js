@@ -409,12 +409,11 @@ function initCardDrag(block, collection) {
 
     card.addEventListener('pointermove', onMove);
     card.addEventListener('pointerup', onUp);
+    card.addEventListener('pointercancel', onUp);
   });
 }
 
-// Forward reference — defined in Task 4
-// eslint-disable-next-line no-unused-vars
-function openNotesPanel() {}
+function openNotesPanel(block, collection, card) {} // eslint-disable-line no-unused-vars
 
 function initBoardClicks(block, collection) {
   const viewport = block.querySelector('.board__viewport');
@@ -437,8 +436,7 @@ function initBoardClicks(block, collection) {
     const card = e.target.closest('.board__card');
     if (card) {
       if (!_cardDragMoved) {
-        // Open asset details — event shape verified against AGENTS.md and asset-details.js line 50
-        // detail.data.ascAsset is what AssetDetails._attachListeners destructures
+        // AssetDetails reads event.detail.data.ascAsset
         const assetId = card.dataset.ascAsset;
         document.body.dispatchEvent(new CustomEvent('asc:asset:details:open', {
           bubbles: true,

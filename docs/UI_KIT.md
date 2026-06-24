@@ -179,7 +179,33 @@ Slots: `__header` `__title` `__body` `__footer`.
 ```
 
 ### Collection card — `@kit collection-card` · `styles/ui-kit.css`
-Preview tile with name row + 4-up thumb grid. Children: `__row` `__meta` `__thumbs` `__thumb`.
+Adaptive mosaic for collection preview. `__thumbs` drives a responsive grid via `data-count`:
+- `1` → single full image
+- `2` → 2×1
+- `3` → 3×1
+- `4` → 2×2
+- `10` → 5×2 (up to 10 thumbnails)
+- `15` → 5×3 (up to 15 thumbnails)
+- `20` / default → 5×4 (up to 20 thumbnails)
+
+Cells are `asc-ui-skeleton` while loading; remove the class and append an `<img>` once the thumbnail URL is available.
+Children: `__thumbs[data-count]` `__thumb`.
+```html
+<!-- 4-asset mosaic (loading state) -->
+<div class="asc-ui-collection-card__thumbs" data-count="4">
+  <div class="asc-ui-collection-card__thumb asc-ui-skeleton"></div>
+  <div class="asc-ui-collection-card__thumb asc-ui-skeleton"></div>
+  <div class="asc-ui-collection-card__thumb asc-ui-skeleton"></div>
+  <div class="asc-ui-collection-card__thumb asc-ui-skeleton"></div>
+</div>
+
+<!-- 3-asset mosaic (loaded) -->
+<div class="asc-ui-collection-card__thumbs" data-count="3">
+  <div class="asc-ui-collection-card__thumb"><img src="…" alt=""></div>
+  <div class="asc-ui-collection-card__thumb"><img src="…" alt=""></div>
+  <div class="asc-ui-collection-card__thumb"><img src="…" alt=""></div>
+</div>
+```
 
 ### Asset row — `@kit asset-row` · `styles/ui-kit.css`
 Compact horizontal asset row (list view). Children: `__thumb` `__title` `__meta`.

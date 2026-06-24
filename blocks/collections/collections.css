@@ -1,11 +1,12 @@
 /*
  * Collections index — composed from UI Kit primitives (see docs/UI_KIT.md):
- *   card        → .asc-ui-card / --interactive / --active
- *   badge       → .asc-ui-badge / --primary
- *   empty state → .asc-ui-empty-state
- *   name field  → .asc-ui-field + global input baseline
- *   buttons     → .btn
- * This file only holds collections-specific layout (grid, toolbar, count/updated meta).
+ *   card          → .asc-ui-card / --interactive / --active
+ *   card mosaic   → .asc-ui-collection-card__thumbs / __thumb (adaptive grid)
+ *   badge         → .asc-ui-badge / --primary
+ *   empty state   → .asc-ui-empty-state
+ *   name field    → .asc-ui-field + global input baseline
+ *   buttons       → .btn
+ * This file only holds collections-specific layout and the mosaic wrapper.
  */
 
 .block.collections {
@@ -68,7 +69,7 @@
 
     .collections__grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
         gap: var(--collections-gap);
         margin: 0;
         padding: 0;
@@ -83,17 +84,58 @@
 
     /* ── Card composition ────────────────────────────────────────────── */
 
-    /* min height keeps short cards aligned in the grid */
+    /*
+     * Flush mosaic: override asc-ui-card padding so the thumbnail mosaic
+     * sits edge-to-edge at the top of the card. Content uses its own padding.
+     */
     .collections__card {
-        min-height: 11rem;
+        padding: 0;
+        overflow: hidden;
     }
 
-    .collections__card-badges {
+    /* ── Card link (wraps mosaic + content, makes the card clickable) ── */
+
+    .collections__card-link {
+        display: block;
+        text-decoration: none;
+        color: inherit;
+    }
+
+    /* ── Mosaic (thumbnail preview at the top of the card) ───────────── */
+
+    .collections__card-mosaic {
+        /* asc-ui-collection-card__thumbs handles sizing; no extra CSS needed */
+    }
+
+    /* Empty-state mosaic for 0-asset collections */
+    .collections__card-mosaic--empty {
         display: flex;
-        flex-wrap: wrap;
-        gap: var(--spacing-2xs);
-        justify-content: flex-end;
-        flex-shrink: 0;
+        align-items: center;
+        justify-content: center;
+        height: 280px;
+        background: var(--color-muted);
+    }
+
+    .collections__card-mosaic-icon {
+        font-size: 2rem;
+        opacity: 0.4;
+    }
+
+    /* ── Card content (padded area below the mosaic) ─────────────────── */
+
+    .collections__card-content {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-sm);
+        padding: var(--spacing-md);
+        flex: 1;
+    }
+
+    /* Asset type breakdown: "5 images · 2 videos · 3 docs" */
+    .collections__card-types {
+        margin: 0;
+        font-size: var(--body-font-size-xs);
+        color: var(--color-muted-fg);
     }
 
     .collections__card-count {

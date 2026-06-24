@@ -675,16 +675,66 @@
     font-size: var(--body-font-size-xs);
 }
 
+/*
+ * Adaptive mosaic — data-count drives the grid layout.
+ * Layout groups: 1 | 2 | 3 | 4 (2×2) | 10 (5×2) | 15 (5×3) | 20 (5×4, default)
+ */
 .asc-ui-collection-card__thumbs {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: var(--spacing-xs);
+    height: 200px;
+    gap: 2px;
+    background: var(--color-muted);
+    overflow: hidden;
+    grid-template-columns: repeat(5, 1fr);
+    grid-template-rows: repeat(4, 1fr);
 }
 
 .asc-ui-collection-card__thumb {
-    aspect-ratio: 1;
-    border-radius: var(--border-radius-sm);
-    background: linear-gradient(145deg, color-mix(in srgb, var(--color-primary) 25%, white), color-mix(in srgb, var(--color-accent) 70%, white));
+    overflow: hidden;
+    background: var(--color-muted);
+}
+
+.asc-ui-collection-card__thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.asc-ui-collection-card__thumbs[data-count="1"] {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+    height: 280px;
+}
+
+.asc-ui-collection-card__thumbs[data-count="2"] {
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: 1fr;
+    height: 220px;
+}
+
+.asc-ui-collection-card__thumbs[data-count="3"] {
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: 1fr;
+    height: 180px;
+}
+
+.asc-ui-collection-card__thumbs[data-count="4"] {
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    height: 240px;
+}
+
+.asc-ui-collection-card__thumbs[data-count="10"] {
+    grid-template-columns: repeat(5, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    height: 200px;
+}
+
+.asc-ui-collection-card__thumbs[data-count="15"] {
+    grid-template-columns: repeat(5, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    height: 200px;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
