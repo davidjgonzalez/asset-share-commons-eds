@@ -24,6 +24,33 @@ const _selectedItems = new Set();
 
 const MODE_KEY = (id) => `asc:collectionMode:${id}`;
 const VIEWPORT_KEY = (id) => `asc:boardViewport:${id}`;
+const BOARD_TEXT_KEY = (id) => `asc:boardText:${id}`;
+
+function getBoardTextItems(collectionId) {
+  try {
+    return JSON.parse(localStorage.getItem(BOARD_TEXT_KEY(collectionId))) || [];
+  } catch {
+    return [];
+  }
+}
+
+function setBoardTextItems(collectionId, items) {
+  localStorage.setItem(BOARD_TEXT_KEY(collectionId), JSON.stringify(items));
+}
+
+function saveTextItem(collectionId, el) {
+  const { textId } = el.dataset;
+  if (!textId) return;
+  const items = getBoardTextItems(collectionId);
+  const item = items.find((t) => t.id === textId);
+  if (!item) return;
+  item.x = Math.round(parseFloat(el.style.left) || 0);
+  item.y = Math.round(parseFloat(el.style.top) || 0);
+  item.w = el.offsetWidth;
+  item.h = el.offsetHeight;
+  item.content = el.querySelector('.board__text-content')?.innerText?.trim() || '';
+  setBoardTextItems(collectionId, items);
+}
 
 function getMode(collectionId) {
   return localStorage.getItem(MODE_KEY(collectionId)) || 'list';
@@ -148,7 +175,7 @@ function html(collection, isDefault, pendingJobs, mode) {
 
     ${pendingJobs.length ? renderJobsStatus(pendingJobs) : ''}
 
-    ${mode === 'board' ? boardHtml(items) : listHtml(items)}
+    ${mode === 'board' ? boardHtml(items, getBoardTextItems(collection.id)) : listHtml(items)}
     </section>`;
 }
 
@@ -162,14 +189,16 @@ function listHtml(items) {
     </div>`;
 }
 
-function boardHtml(items) {
+function boardHtml(items, textItems) {
   const assetItems = items.filter((i) => i.type === 'asset' && i.asset);
   return `
     <div class="board__viewport">
       <div class="board__canvas">
         ${assetItems.map((item, index) => boardCard(item, index)).join('')}
+        ${textItems.map((t) => boardTextElement(t)).join('')}
       </div>
       <button type="button" class="board__reset-view btn btn--ghost btn--sm">Fit view</button>
+      <button type="button" class="board__add-text btn btn--ghost btn--sm">+ Text</button>
     </div>`;
 }
 
@@ -202,6 +231,19 @@ function boardCard(item, index) {
                 data-asc-asset="${escAttr(asset.uuid)}">${notes ? 'Edit note' : '+ Note'}</button>
       </div>
     </article>`;
+}
+
+function boardTextElement(t) {
+  return `
+    <div class="board__text-element"
+         style="left:${t.x}px;top:${t.y}px;width:${t.w}px;height:${t.h}px"
+         data-text-id="${escAttr(t.id)}">
+      <button type="button"
+              class="btn btn--ghost btn--icon btn--sm board__text-remove"
+              data-text-id="${escAttr(t.id)}"
+              aria-label="Remove text element">&#x2715;</button>
+      <div class="board__text-content" contenteditable="false">${escHtml(t.content)}</div>
+    </div>`;
 }
 
 function renderJobsStatus(jobs) {
@@ -291,6 +333,8 @@ function initInteractions(block, collection, isDefault, mode) {
     initBoard(block, collection);
     initCardDrag(block, collection);
     initBoardClicks(block, collection);
+    initTextElements(block, collection);
+    initAddText(block, collection);
   } else {
     initReorder(block, collection);
     initSections(block, collection);
@@ -686,6 +730,162 @@ function initBoardClicks(block, collection) {
       }
       _cardDragMoved = false;
     }
+  });
+}
+
+function initTextElement(el, collection) {
+  const content = el.querySelector('.board__text-content');
+  const { textId } = el.dataset;
+
+  // ResizeObserver — save when user drags resize handle
+  const ro = new ResizeObserver(() => saveTextItem(collection.id, el));
+  ro.observe(el);
+
+  // Double-click → enter edit mode
+  el.addEventListener('dblclick', (ev) => {
+    ev.stopPropagation();
+    content.contentEditable = 'true';
+    el.dataset.editing = 'true';
+    content.focus();
+    const range = document.createRange();
+    range.selectNodeContents(content);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  });
+
+  // Blur content → exit edit and save
+  content.addEventListener('blur', () => {
+    content.contentEditable = 'false';
+    delete el.dataset.editing;
+    saveTextItem(collection.id, el);
+  });
+
+  // Escape key exits edit
+  content.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape') { ev.preventDefault(); content.blur(); }
+  });
+
+  // Remove button
+  el.querySelector('.board__text-remove')?.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    const items = getBoardTextItems(collection.id).filter((t) => t.id !== textId);
+    setBoardTextItems(collection.id, items);
+    deselectItem(el);
+    ro.disconnect();
+    el.remove();
+  });
+
+  // Drag to move (only when not editing)
+  el.addEventListener('pointerdown', (ev) => {
+    if (el.dataset.editing) return;
+    if (ev.target.closest('.board__text-remove')) return;
+    ev.stopPropagation();
+
+    const startX = ev.clientX;
+    const startY = ev.clientY;
+    let moved = false;
+
+    const { zoom } = getViewport(collection.id);
+
+    // Group drag: if this element is in selection, move all selected items
+    const isInGroup = _selectedItems.has(el) && _selectedItems.size > 1;
+    const dragGroup = isInGroup ? [..._selectedItems] : [el];
+    const startPositions = dragGroup.map((item) => ({
+      item,
+      left: parseFloat(item.style.left) || 0,
+      top: parseFloat(item.style.top) || 0,
+    }));
+
+    el.setPointerCapture(ev.pointerId);
+    dragGroup.forEach((item) => item.classList.add('board__card--dragging'));
+
+    function onMove(mev) {
+      const dx = mev.clientX - startX;
+      const dy = mev.clientY - startY;
+      if (Math.abs(dx) > 5 || Math.abs(dy) > 5) moved = true;
+      if (!moved) return;
+      startPositions.forEach(({ item, left, top }) => {
+        item.style.left = `${left + dx / zoom}px`;
+        item.style.top = `${top + dy / zoom}px`;
+      });
+    }
+
+    function onUp(uev) {
+      el.removeEventListener('pointermove', onMove);
+      el.removeEventListener('pointerup', onUp);
+      el.removeEventListener('pointercancel', onUp);
+      dragGroup.forEach((item) => item.classList.remove('board__card--dragging'));
+
+      if (moved) {
+        startPositions.forEach(({ item }) => {
+          if (item.dataset.textId) saveTextItem(collection.id, item);
+          if (item.dataset.ascAsset) {
+            const x = Math.round(parseFloat(item.style.left));
+            const y = Math.round(parseFloat(item.style.top));
+            services.collections.updateItem(collection.id, item.dataset.ascAsset, { x, y });
+          }
+        });
+      } else if (!uev.target.closest('.board__text-remove')) {
+        // click (no drag) → select
+        if (uev.shiftKey) toggleItem(el);
+        else { deselectAll(); selectItem(el); }
+      }
+    }
+
+    el.addEventListener('pointermove', onMove);
+    el.addEventListener('pointerup', onUp);
+    el.addEventListener('pointercancel', onUp);
+  });
+}
+
+function initTextElements(block, collection) {
+  const canvas = block.querySelector('.board__canvas');
+  if (!canvas) return;
+  canvas.querySelectorAll('.board__text-element').forEach((el) => {
+    initTextElement(el, collection);
+  });
+}
+
+function initAddText(block, collection) {
+  block.querySelector('.board__add-text')?.addEventListener('click', () => {
+    const viewport = block.querySelector('.board__viewport');
+    const canvas = block.querySelector('.board__canvas');
+    if (!viewport || !canvas) return;
+
+    const { panX, panY, zoom } = getViewport(collection.id);
+    const x = Math.round((viewport.clientWidth / 2 - panX) / zoom - 100);
+    const y = Math.round((viewport.clientHeight / 2 - panY) / zoom - 40);
+
+    const newItem = {
+      id: crypto.randomUUID(),
+      x,
+      y,
+      w: 200,
+      h: 80,
+      content: 'New text',
+    };
+
+    const items = getBoardTextItems(collection.id);
+    items.push(newItem);
+    setBoardTextItems(collection.id, items);
+
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = boardTextElement(newItem);
+    const textEl = wrapper.firstElementChild;
+    canvas.appendChild(textEl);
+    initTextElement(textEl, collection);
+
+    // Auto-enter edit mode on the new element
+    const content = textEl.querySelector('.board__text-content');
+    content.contentEditable = 'true';
+    textEl.dataset.editing = 'true';
+    content.focus();
+    const range = document.createRange();
+    range.selectNodeContents(content);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
   });
 }
 

@@ -623,6 +623,83 @@
         z-index: 50;
     }
 
+    /* ── Add text button ──────────────────────────────────────────────── */
+
+    .board__add-text {
+        position: absolute;
+        bottom: var(--spacing-sm);
+        left: var(--spacing-sm);
+        z-index: 10;
+        background: var(--color-card);
+        border-color: var(--color-border);
+    }
+
+    /* ── Board text elements ──────────────────────────────────────────── */
+
+    .board__text-element {
+        position: absolute;
+        min-width: 100px;
+        min-height: 40px;
+        padding: var(--spacing-sm);
+        box-sizing: border-box;
+        background: color-mix(in srgb, var(--color-accent) 5%, var(--color-card));
+        border: 1px dashed color-mix(in srgb, var(--color-border) 80%, var(--color-accent));
+        border-radius: var(--border-radius-md);
+        resize: both;
+        overflow: auto;
+        cursor: default;
+        user-select: none;
+        transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+
+        &:hover {
+            border-style: solid;
+            border-color: var(--color-border);
+        }
+
+        &[data-editing] {
+            border-style: solid;
+            border-color: var(--color-ring);
+            box-shadow: var(--focus-ring);
+            cursor: text;
+            user-select: text;
+        }
+
+        &.board__card--selected {
+            outline: 2px solid var(--color-primary);
+            outline-offset: 2px;
+            border-color: var(--color-primary);
+        }
+
+        &.board__card--dragging {
+            opacity: 0.85;
+            cursor: grabbing;
+            z-index: 100;
+        }
+    }
+
+    .board__text-content {
+        width: 100%;
+        min-height: 1.5em;
+        font-size: var(--body-font-size-s);
+        color: var(--color-fg);
+        line-height: 1.5;
+        outline: none;
+        white-space: pre-wrap;
+        overflow-wrap: break-word;
+    }
+
+    .board__text-remove {
+        position: absolute;
+        top: var(--spacing-2xs);
+        right: var(--spacing-2xs);
+        opacity: 0;
+        transition: opacity var(--transition-fast);
+
+        .board__text-element:hover & {
+            opacity: 1;
+        }
+    }
+
     /* ── Board notes panel ───────────────────────────────────────────────── */
 
     .board__notes-panel {
