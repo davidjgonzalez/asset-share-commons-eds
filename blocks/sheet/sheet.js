@@ -5,25 +5,23 @@ import { escHtml } from '../../scripts/html.js';
 /**
  * Sheet block — a download/rendition selection page.
  *
- * URL params (new format):
- *   items      — compressed mixed array: plain UUID = asset; "~title|||body" = section heading
- *   title      — page title (URL-encoded)
- *
- * URL params (legacy format, backward compat):
- *   assets     — compressed array of asset UUIDs
- *   renditions — compressed array of rendition definition IDs
- *
- * Each asset row shows a thumbnail, metadata, per-asset rendition switcher pills,
- * and a download button. Section headings appear between assets with optional
- * Markdown body text.
+ * URL params:
+ *   sheet      — compressed payload: { title, description?, expiresAt?, items[] }
+ *   renditions — compressed array of rendition definition IDs (still supported)
  */
 export default async function decorate(block) {
   const params = new URLSearchParams(window.location.search);
-  const { mixedItems, assetMap, renditionDefinitions } = await getDataFromSearchParams(params);
-  const title = params.get('title') ? decodeURIComponent(params.get('title')) : '';
+  const {
+    mixedItems, assetMap, renditionDefinitions, title, description, expiresAt,
+  } = await getDataFromSearchParams(params);
+
+  if (expiresAt && Date.now() > new Date(expiresAt).getTime()) {
+    block.innerHTML = expiredHtml(expiresAt);
+    return;
+  }
 
   const assetCount = mixedItems.filter((i) => i.type === 'asset').length;
-  block.innerHTML = html(mixedItems, assetMap, renditionDefinitions, title, assetCount);
+  block.innerHTML = html(mixedItems, assetMap, renditionDefinitions, title, description, assetCount);
 
   initRenditionSwitcher(block);
   initDragAndDrop(block);
@@ -31,16 +29,28 @@ export default async function decorate(block) {
 
 // ─── HTML ────────────────────────────────────────────────────────────────────
 
-function html(mixedItems, assetMap, renditionDefinitions, title, assetCount) {
+function expiredHtml(expiresAt) {
+  const date = new Date(expiresAt).toLocaleDateString(undefined, {
+    year: 'numeric', month: 'long', day: 'numeric',
+  });
+  return `
+    <div class="sheet__expired">
+      <p class="sheet__expired-title">This link has expired</p>
+      <p class="sheet__expired-message">The link you followed expired on ${date}.</p>
+    </div>`;
+}
+
+function html(mixedItems, assetMap, renditionDefinitions, title, description, assetCount) {
   const rows = mixedItems.map((item) => {
     if (item.type === 'section') return sectionHeading(item);
     const asset = assetMap.get(item.id);
-    return asset ? assetRow(asset, renditionDefinitions) : '';
+    return asset ? assetRow(asset, renditionDefinitions, item.notes) : '';
   }).join('');
 
   return `
     <a href="/" class="sheet__back">&#8592; Back to search</a>
     <h1 class="sheet__title">${escHtml(title) || 'Download Sheet'}</h1>
+    ${description ? `<p class="sheet__description">${escHtml(description)}</p>` : ''}
     <p class="sheet__count">${assetCount} asset${assetCount === 1 ? '' : 's'}</p>
     <div class="sheet__asset-list">
       ${rows || '<p class="sheet__empty">No assets selected.</p>'}
@@ -56,7 +66,7 @@ function sectionHeading(item) {
     </div>`;
 }
 
-function assetRow(asset, renditionDefinitions) {
+function assetRow(asset, renditionDefinitions, notes) {
   const thumbnailUrl = services.renditions.getThumbnailUrl(asset);
   const fileType = asset.getProperty('file-type') || '';
   const fileSize = asset.getProperty('file-size') || '';
@@ -89,9 +99,10 @@ function assetRow(asset, renditionDefinitions) {
       <div class="sheet__asset-info">
         <p class="asc-ui-asset-row__title">${escHtml(asset.title)}</p>
         ${meta ? `<p class="asc-ui-asset-row__meta">${escHtml(meta)}</p>` : ''}
+        ${notes ? `<p class="sheet__asset-note">${escHtml(notes)}</p>` : ''}
       </div>
       <div class="sheet__asset-renditions" role="group" aria-label="Select rendition for ${escHtml(asset.title)}">
-        ${pills || '<span class="sheet__no-renditions">—</span>'}
+        ${pills || '<span class="sheet__no-renditions">&#8212;</span>'}
       </div>
       <div class="sheet__asset-actions">
         <a class="btn btn--primary btn--sm sheet__download-btn"
@@ -233,34 +244,40 @@ async function getDataFromSearchParams(queryParameters) {
     .map((id) => services.renditions.getRenditionDefinition(id))
     .filter(Boolean);
 
-  // New format: ?items= (mixed assets + section headings)
-  if (queryParameters.has('items')) {
-    const entries = await services.url.decompressToArray(queryParameters.get('items'));
-    const mixedItems = entries.map((entry) => {
-      if (entry.startsWith('~')) {
-        const sepIdx = entry.indexOf('|||', 1);
-        const title = sepIdx === -1 ? entry.slice(1) : entry.slice(1, sepIdx);
-        const body = sepIdx === -1 ? '' : entry.slice(sepIdx + 3);
-        return { type: 'section', title, body };
-      }
-      return { type: 'asset', id: entry };
-    });
-
-    const assetIds = mixedItems.filter((i) => i.type === 'asset').map((i) => i.id);
-    const fetchedAssets = await Promise.all(assetIds.map((id) => services.search.getAssetById(id)));
-    const assetMap = new Map(fetchedAssets.filter(Boolean).map((a) => [a.uuid, a]));
-
-    return { mixedItems, assetMap, renditionDefinitions };
+  const sheetParam = queryParameters.get('sheet');
+  if (!sheetParam) {
+    return {
+      mixedItems: [], assetMap: new Map(), renditionDefinitions,
+      title: '', description: '', expiresAt: null,
+    };
   }
 
-  // Legacy format: ?assets= (backward compat)
-  const assetsCompressed = queryParameters.get('assets');
-  const assetIds = assetsCompressed
-    ? await services.url.decompressToArray(assetsCompressed)
-    : [];
-  const assets = await Promise.all(assetIds.map((id) => services.search.getAssetById(id)));
-  const assetMap = new Map(assets.filter(Boolean).map((a) => [a.uuid, a]));
-  const mixedItems = assetIds.map((id) => ({ type: 'asset', id }));
+  const [json] = await services.url.decompressToArray(sheetParam);
+  const {
+    title = '', description = '', expiresAt = null, items = [],
+  } = JSON.parse(json);
 
-  return { mixedItems, assetMap, renditionDefinitions };
+  const mixedItems = items.map((entry) => {
+    if (entry.startsWith('~')) {
+      const sepIdx = entry.indexOf('|||', 1);
+      return {
+        type: 'section',
+        title: sepIdx === -1 ? entry.slice(1) : entry.slice(1, sepIdx),
+        body: sepIdx === -1 ? '' : entry.slice(sepIdx + 3),
+      };
+    }
+    const sepIdx = entry.indexOf('|||');
+    if (sepIdx !== -1) {
+      return { type: 'asset', id: entry.slice(0, sepIdx), notes: entry.slice(sepIdx + 3) };
+    }
+    return { type: 'asset', id: entry };
+  });
+
+  const assetIds = mixedItems.filter((i) => i.type === 'asset').map((i) => i.id);
+  const fetchedAssets = await Promise.all(assetIds.map((id) => services.search.getAssetById(id)));
+  const assetMap = new Map(fetchedAssets.filter(Boolean).map((a) => [a.uuid, a]));
+
+  return {
+    mixedItems, assetMap, renditionDefinitions, title, description, expiresAt,
+  };
 }

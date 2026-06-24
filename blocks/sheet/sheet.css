@@ -204,4 +204,43 @@
             color: var(--color-primary);
         }
     }
+
+    /* ── Collection description ──────────────────────────────────────────── */
+
+    .sheet__description {
+        color: var(--color-muted-fg);
+        font-size: var(--body-font-size-s);
+        line-height: 1.6;
+        margin-block: calc(-1 * var(--spacing-xs)) var(--spacing-lg, 24px);
+    }
+
+    /* ── Per-asset notes ─────────────────────────────────────────────────── */
+
+    .sheet__asset-note {
+        margin-block: var(--spacing-2xs) 0;
+        font-size: var(--body-font-size-xs);
+        font-style: italic;
+        color: var(--color-muted-fg);
+        line-height: 1.4;
+    }
+
+    /* ── Expired link ────────────────────────────────────────────────────── */
+
+    .sheet__expired {
+        text-align: center;
+        padding: var(--spacing-3xl) var(--spacing-md);
+    }
+
+    .sheet__expired-title {
+        font-size: var(--heading-font-size-l);
+        font-weight: 700;
+        margin: 0 0 var(--spacing-sm);
+        color: var(--color-fg);
+    }
+
+    .sheet__expired-message {
+        margin: 0;
+        color: var(--color-muted-fg);
+        font-size: var(--body-font-size-s);
+    }
 }
