@@ -775,7 +775,7 @@
         border-radius: var(--border-radius-sm);
         background: color-mix(in srgb, var(--color-primary) 15%, var(--color-card));
         border: 1px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
-        font-size: 0.7rem;
+        font-size: var(--body-font-size-2xs, 0.7rem);
     }
 
     @media (width <= 600px) {
