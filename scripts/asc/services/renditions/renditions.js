@@ -14,7 +14,21 @@
 // limitations under the License.
 
 import serviceConfigurations from '../configurations.js';
-import Rendition from '../../models/rendition.js';
+import staticResolver from './resolvers/static.js';
+import dmSmartcropResolver from './resolvers/dm-smartcrop.js';
+import urlResolver from './resolvers/url.js';
+import urlTemplateResolver from './resolvers/url-template.js';
+import dmOpenApiResolver from './resolvers/dm-openapi.js';
+import webOptimizedDeliveryResolver from './resolvers/web-optimized-delivery.js';
+
+const BUILT_IN_RESOLVERS = [
+  staticResolver,
+  dmSmartcropResolver,
+  urlResolver,
+  urlTemplateResolver,
+  dmOpenApiResolver,
+  webOptimizedDeliveryResolver,
+];
 
 /**
  * Default rendition definitions — usable for any AEM instance that runs standard
@@ -46,9 +60,23 @@ const DEFAULT_DEFINITIONS = [
 ];
 
 /**
- * Renditions service — client-side equivalent of ASC v1's AssetRenditionDispatcher.
+ * Renditions service — resolves rendition URLs for an asset.
  *
- * Resolves rendition URLs for an asset based on definitions in configurations.js.
+ * Resolution is driven by a resolver registry. Each resolver handles one
+ * rendition type and implements up to two paths:
+ *
+ *   fromDefinition(def, asset, aemConfig) → Rendition | null
+ *     Used by explicit definitions in configurations.renditions.definitions.
+ *
+ *   acceptsNode(name, node) → boolean
+ *   fromNode(name, node, asset, aemConfig) → Rendition | null
+ *     Used when scanning jcr:content/renditions/* nodes (autoDetect and 'all' mode).
+ *
+ * Built-in resolvers: static, dm-smartcrop, url, url-template, dm-openapi,
+ * web-optimized-delivery.
+ *
+ * Add custom resolvers via configurations.renditions.resolvers (object keyed by type).
+ * Custom resolvers override built-ins of the same type.
  *
  * ## Rendition types
  *
@@ -59,37 +87,72 @@ const DEFAULT_DEFINITIONS = [
  *
  * ### `type: 'url'`
  * `url` is a function (asset) => string that returns the full URL.
- * Use for Dynamic Media / Scene7 presets and smart crops — call
- * asset.getProperty('dam:scene7APIServer') etc. directly.
+ * Use for fully custom URL construction with arbitrary JS logic.
  *
- * ### `type: 'asset-delivery'`
- * Constructs an AEM Asset Delivery API URL (AEM as a Cloud Service only).
- * Requires aem.deliveryHost in configurations.js.
- * The `params` property is appended as query string.
+ * ### `type: 'url-template'`
+ * `template` is a string with `${variable}` tokens resolved at runtime.
+ * Returns null automatically if any token is absent on the asset.
+ *
+ * Supported tokens:
+ *   ${asset.path}       Full JCR path
+ *   ${asset.name}       Filename (node name, e.g. "photo.jpg")
+ *   ${asset.extension}  File extension (e.g. "jpg")
+ *   ${rendition.name}   This definition's id
+ *   ${dm.name}          dam:scene7Name
+ *   ${dm.id}            dam:scene7ID
+ *   ${dm.file}          dam:scene7File  (e.g. "CompanyFolder/photo")
+ *   ${dm.folder}        dam:scene7Folder
+ *   ${dm.domain}        dam:scene7Domain  ← IS/IR delivery CDN host
+ *   ${dm.api-server}    dam:scene7APIServer  ← Scene7 management API (not delivery)
+ *
+ * ### `type: 'dm-smartcrop'`
+ * Classic Dynamic Media (Scene7) IS-protocol smart crop.
+ * URL: {dam:scene7Domain}/is/image/{dam:scene7File}:{def.id}
+ * Auto-detected from jcr:content/renditions nodes with
+ * sling:resourceType "dam/rendition/smartcrop" — no definitions needed.
+ *
+ * ### `type: 'dm-openapi'`
+ * AEM Asset Delivery API (AEMaaCS). Requires aem.deliveryHost in configurations.js.
+ *
+ * ### `type: 'web-optimized-delivery'`
+ * Web-optimized delivery via dm-aid-- prefix (AEMaaCS). Requires aem.deliveryHost.
  */
 class RenditionsService {
   constructor(config, aemConfig) {
     this.definitions = config.definitions || DEFAULT_DEFINITIONS;
-    this._excludePatterns = config.exclude || [];  // NEW
+    this._thumbnailDefs = config.thumbnails || [];
+    this._excludePatterns = config.exclude || [];
     this._aemConfig = aemConfig || {};
+
+    // Built-in resolvers, optionally overridden/extended by user-provided ones
+    this._resolvers = new Map(BUILT_IN_RESOLVERS.map((r) => [r.type, r]));
+    Object.entries(config.resolvers || {}).forEach(([type, resolver]) => {
+      this._resolvers.set(type, resolver);
+    });
   }
 
   /**
-   * Get all renditions for an asset (includes non-visible ones like thumbnails).
+   * Get all renditions for an asset.
+   * Returns definition-resolved renditions + any auto-detected node-backed renditions
+   * (resolvers with autoDetect: true) not already covered by a definition.
    * @param {Asset} asset
    * @returns {Rendition[]}
    */
   getRenditions(asset) {
-    return this.definitions
-      .map((def) => this._resolve(def, asset))
+    const defined = this.definitions
+      .map((def) => this._resolveFromDef(def, asset))
       .filter(Boolean);
+
+    const definedUrls = new Set(defined.map((r) => r.url).filter(Boolean));
+    const auto = this._resolveFromNodes(asset, true)
+      .filter((r) => !definedUrls.has(r.url));
+
+    return [...defined, ...auto];
   }
 
   /**
    * Get a single rendition by definition ID.
-   * If multiple definitions share the same ID (e.g. 'thumbnail' for image vs video),
-   * returns the first one whose accepts() check passes for this asset.
-   * Returns null if no matching definition accepts this asset or can be resolved.
+   * Returns the first definition with this ID whose resolver succeeds for this asset.
    * @param {Asset} asset
    * @param {string} id
    * @returns {Rendition|null}
@@ -97,7 +160,7 @@ class RenditionsService {
   getRendition(asset, id) {
     for (const def of this.definitions) {
       if (def.id !== id) continue;
-      const resolved = this._resolve(def, asset);
+      const resolved = this._resolveFromDef(def, asset);
       if (resolved) return resolved;
     }
     return null;
@@ -105,8 +168,6 @@ class RenditionsService {
 
   /**
    * Get a raw rendition definition by ID (not resolved — no asset needed).
-   * Returns null if no definition with that ID exists.
-   * Used by the sheet block to read label/description without a specific asset.
    * @param {string} id
    * @returns {object|null}
    */
@@ -115,10 +176,7 @@ class RenditionsService {
   }
 
   /**
-   * Get the best thumbnail URL for an asset. Used by teasers and previews.
-   * Falls back to a best-guess static URL if the thumbnail rendition isn't in
-   * the asset's rendition data (common for search result assets which don't
-   * fetch the full renditions tree).
+   * Get the best thumbnail URL for an asset.
    * @param {Asset} asset
    * @returns {string|null}
    */
@@ -126,134 +184,98 @@ class RenditionsService {
     const resolved = this.getRendition(asset, 'thumbnail');
     if (resolved?.url) return resolved.url;
 
-    // Fallback: construct the thumbnail URL directly when rendition nodes weren't fetched.
-    // Assumes .png — the most common output from AEM processing profiles.
-    // If your profiles generate .jpeg thumbnails, override the 'thumbnail' definition
-    // in configurations.js; this fallback only fires for search-result assets that
-    // haven't had their full renditions tree loaded yet.
+    const srcset = this.getThumbnailSrcset(asset);
+    if (srcset.length) {
+      return srcset[Math.floor(srcset.length / 2)].url;
+    }
+
     const aemHost = this._aemConfig.host || '';
     return `${aemHost}${asset.path}/_jcr_content/renditions/cq5dam.thumbnail.319.319.png`;
   }
 
-  // ─── Private ──────────────────────────────────────────────────────────────
-
-  _resolve(def, asset) {
-    if (!this._accepts(def, asset)) return null;
-
-    switch (def.type) {
-      case 'static': return this._resolveStatic(def, asset);
-      case 'url': return this._resolveUrl(def, asset);
-      case 'asset-delivery': return this._resolveAssetDelivery(def, asset);
-      default:
-        console.warn(`[ASC] Unknown rendition type: "${def.type}" on definition "${def.id}"`);
-        return null;
-    }
+  /**
+   * Get all sized thumbnail renditions sorted smallest to largest.
+   * @param {Asset} asset
+   * @returns {Rendition[]}
+   */
+  getThumbnailSrcset(asset) {
+    return this._thumbnailDefs
+      .filter((def) => def.size?.width)
+      .map((def) => this._resolveFromDef(def, asset))
+      .filter(Boolean)
+      .sort((a, b) => (a.size?.width || 0) - (b.size?.width || 0));
   }
 
   /**
-   * Check whether a rendition definition applies to the given asset.
-   * `accepts` must be a function (asset) => boolean, or omitted to match all assets.
+   * Scan every jcr:content/renditions/* node through registered resolvers and
+   * return one Rendition per matching node. Used by the details-renditions block's
+   * `renditions: all` mode. Exclude patterns from configurations.renditions.exclude
+   * are applied; invisible definition-matched renditions are not filtered here —
+   * the block is responsible for that.
+   * @param {Asset} asset
+   * @returns {Rendition[]}
    */
+  resolveAllNodes(asset) {
+    return this._resolveFromNodes(asset, false)
+      .filter((r) => !this._isExcluded(r.id));
+  }
+
+  // ─── Private ──────────────────────────────────────────────────────────────
+
+  _resolveFromDef(def, asset) {
+    if (!this._accepts(def, asset)) return null;
+    const resolver = this._resolvers.get(def.type);
+    if (!resolver) {
+      console.warn(`[ASC] Unknown rendition type: "${def.type}" on definition "${def.id}"`);
+      return null;
+    }
+    const rendition = resolver.fromDefinition?.(def, asset, this._aemConfig) ?? null;
+    if (rendition && def.filename) {
+      rendition.filename = typeof def.filename === 'function'
+        ? def.filename(rendition, asset)
+        : def.filename;
+    }
+    return rendition;
+  }
+
   _accepts(def, asset) {
     if (!def.accepts) return true;
     return def.accepts(asset);
   }
 
   /**
-   * Resolve a static rendition by matching the definition's `name` against
-   * the asset's JCR rendition nodes.
-   * `name` may be:
-   *   - string  → exact match against node id
-   *   - RegExp  → pattern match against node id
-   *   - (asset) => string → called with the asset, result used as exact match
+   * Iterate jcr:content/renditions/* and route each object-valued node through the
+   * first resolver whose acceptsNode() returns true.
+   * @param {Asset} asset
+   * @param {boolean} autoOnly  When true, skip resolvers with autoDetect !== true.
+   * @returns {Rendition[]}
    */
-  _resolveStatic(def, asset) {
-    const nodes = asset.staticRenditions;
-    const nameValue = typeof def.name === 'function' ? def.name(asset) : def.name;
-    const match = nameValue instanceof RegExp
-      ? nodes.find((r) => nameValue.test(r.id))
-      : nodes.find((r) => r.id === nameValue);
+  _resolveFromNodes(asset, autoOnly) {
+    const nodes = asset.data?.['jcr:content']?.['renditions'];
+    if (!nodes || typeof nodes !== 'object') return [];
 
-    if (!match) return null;
-    if (this._isExcluded(match.id)) return null;
-
-    return new Rendition({
-      id: def.id,
-      label: def.label,
-      description: def.description ?? `Static rendition (${match.id})`,
-      visible: def.visible ?? true,
-      mimeType: match.mimeType ?? def.mimeType ?? null,
-      fileSize: match.fileSize ?? null,
-      width: match.width ?? null,
-      height: match.height ?? null,
-      url: match.url,
-      path: match.path,
-    });
-  }
-
-  /**
-   * Resolve a URL rendition by calling def.url(asset).
-   * Used for Dynamic Media / Scene7 presets and smart crops.
-   * The function receives the full Asset model — call asset.getProperty() for metadata.
-   */
-  _resolveUrl(def, asset) {
-    if (typeof def.url !== 'function') {
-      console.warn(`[ASC] Rendition "${def.id}" has type "url" but url is not a function.`);
-      return null;
+    const results = [];
+    for (const [name, node] of Object.entries(nodes)) {
+      if (typeof node !== 'object' || node === null) continue;
+      for (const resolver of this._resolvers.values()) {
+        if (!resolver.acceptsNode) continue;
+        if (autoOnly && !resolver.autoDetect) continue;
+        if (resolver.acceptsNode(name, node)) {
+          const r = resolver.fromNode?.(name, node, asset, this._aemConfig);
+          if (r) results.push(r);
+          break;
+        }
+      }
     }
-
-    const url = def.url(asset);
-    if (!url) return null;
-
-    return new Rendition({
-      id: def.id,
-      label: def.label,
-      description: def.description ?? null,
-      visible: def.visible ?? true,
-      mimeType: def.mimeType ?? null,
-      url,
-    });
+    return results;
   }
 
-  /**
-   * Resolve an AEM Asset Delivery rendition.
-   * URL format: {deliveryHost}/adobe/dynamicmedia/deliver/{uuid}/{filename}.{ext}?{params}
-   * AEM as a Cloud Service only — requires aem.deliveryHost in configurations.js.
-   */
-  _resolveAssetDelivery(def, asset) {
-    const { deliveryHost } = this._aemConfig;
-    if (!deliveryHost) {
-      console.warn('[ASC] Rendition type "asset-delivery" requires aem.deliveryHost in configurations.js');
-      return null;
-    }
-
-    const ext = def.format || asset.fileExtension || 'jpg';
-    const name = asset.path?.split('/').pop() ?? 'asset';
-    const params = def.params ? `?${def.params}` : '';
-    const url = `${deliveryHost}/adobe/dynamicmedia/deliver/${asset.uuid}/${name}.${ext}${params}`;
-
-    return new Rendition({
-      id: def.id,
-      label: def.label,
-      description: def.description ?? null,
-      visible: def.visible ?? true,
-      mimeType: def.mimeType ?? null,
-      url,
-    });
-  }
-
-  /**
-   * Check whether a static rendition node name matches any exclude pattern.
-   * @param {string} nodeName  Raw JCR rendition node name (e.g. 'cq5dam.thumbnail.48.48.png')
-   * @returns {boolean}
-   */
   _isExcluded(nodeName) {
     if (!nodeName || !this._excludePatterns.length) return false;
     return this._excludePatterns.some((pattern) =>
       pattern instanceof RegExp ? pattern.test(nodeName) : pattern === nodeName,
     );
   }
-
 }
 
 export default new RenditionsService(

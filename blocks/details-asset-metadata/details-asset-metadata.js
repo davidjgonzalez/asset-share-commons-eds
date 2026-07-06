@@ -25,8 +25,10 @@
  */
 
 import Asset from '../../scripts/asc/models/asset.js';
+import { escHtml, renderPropertyValue } from '../../scripts/html.js';
 
 const MULTI_VALUE_LIMIT = 10;
+
 
 export default async function decorate(block) {
   const fields = blockFields(block);
@@ -39,9 +41,9 @@ export default async function decorate(block) {
 
   const rows = fields
     .map(([label, property]) => {
-      const value = asset.getProperty(property);
-      if (value == null || value === '') return '';
-      return metadataRow(label, value);
+      const pv = asset.getProperty(property);
+      if (!pv.html) return '';
+      return metadataRow(label, pv);
     })
     .filter(Boolean)
     .join('');
@@ -73,37 +75,10 @@ function blockFields(block) {
   }, []);
 }
 
-function metadataRow(label, value) {
+function metadataRow(label, pv) {
   return `
     <div class="asc-ui-metadata__row">
       <dt class="asc-ui-metadata__term">${escHtml(label)}</dt>
-      <dd class="asc-ui-metadata__value">${renderValue(value)}</dd>
+      <dd class="asc-ui-metadata__value">${renderPropertyValue(pv, { limit: MULTI_VALUE_LIMIT })}</dd>
     </div>`;
-}
-
-function renderValue(value) {
-  if (Array.isArray(value)) {
-    const chips = (items) => items.map((v) => `<span class="asc-ui-chip">${escHtml(String(v))}</span>`).join('');
-    if (value.length > MULTI_VALUE_LIMIT) {
-      const count = value.length - MULTI_VALUE_LIMIT;
-      return `<span class="asc-ui-chip-list">${chips(value.slice(0, MULTI_VALUE_LIMIT))}<span class="asc-ui-chip-extras is-hidden">${chips(value.slice(MULTI_VALUE_LIMIT))}</span></span>`
-        + `<button class="asc-view-more-btn" type="button" aria-expanded="false" data-extras-count="${count}">View more (${count})</button>`;
-    }
-    return `<span class="asc-ui-chip-list">${chips(value)}</span>`;
-  }
-  // Already-rendered HTML (e.g. colors swatch from configurations.js)
-  if (typeof value === 'string' && value.trim().startsWith('<')) return value;
-  if (typeof value === 'object' && value !== null) {
-    if (value.width != null && value.height != null) return escHtml(`${value.width} × ${value.height}`);
-    return '';
-  }
-  return escHtml(String(value));
-}
-
-function escHtml(str) {
-  return String(str ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
 }

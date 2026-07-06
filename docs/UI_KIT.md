@@ -44,6 +44,7 @@ Use this table as the first lookup before reading the full catalog.
 | Asset details modal | `.asc-dialog --wide` + `asc-ui-detail` + `asc-ui-actions` + `asc-ui-metadata` |
 | Switcher / popover menu | `asc-ui-dropdown` + `asc-ui-menu` + `asc-ui-count` |
 | Download sheet rows | `asc-ui-asset-row` + `.btn` |
+| Board canvas | `asc-ui-asset-card` (cards) + `asc-ui-segmented` (toolbar — default size, no modifier); search `<input>` lives inside the segmented as the last child, styled via block-scoped `.board__search` |
 
 ---
 
@@ -123,6 +124,8 @@ Single-choice toggle. Sizes: `--sm` / (default) / `--lg`. Mark the active option
   <button class="asc-ui-segmented__option" type="button" aria-pressed="false">List</button>
 </div>
 ```
+
+**Embedding an input** — place a bare `<input>` as the last child of the segmented container (no `asc-ui-segmented__option`). Style it with `border: none; border-left: 1px solid var(--color-border); background: transparent` so it reads as part of the bar. The board block uses this pattern for its inline search field (`.board__search`).
 
 ### Popover menu — `@kit menu` · `styles/ui-kit.css`
 Menu of selectable rows / actions. Drop inside an `.asc-panel --no-pad` or

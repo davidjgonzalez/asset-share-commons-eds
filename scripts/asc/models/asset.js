@@ -1,6 +1,7 @@
 // ASC Core — do not edit. Customize via scripts/configurations.js
 import services from "../services/services.js";
 import Rendition from "./rendition.js";
+import { toPropertyValue } from "../../html.js";
 
 export default class Asset {
   constructor(data) {
@@ -31,6 +32,7 @@ export default class Asset {
     /* Object cache */
     this._renditions = null;
     this._staticRenditions = null;
+    this._smartCropRenditions = null;
     this._boundingAR = null;
     this._landscapeAR = null;
   }
@@ -105,11 +107,11 @@ export default class Asset {
 
   getProperty(property, options = {}) {
     if (!property) {
-      return null;
+      return toPropertyValue(null);
     }
 
     if (services?.properties?.[property]) {
-      return services.properties[property](this, options);
+      return toPropertyValue(services.properties[property](this, options));
     }
 
     // If property starts with metadata then add jcr:content to the beginning, so the next logic block can be used to follow the relative path
@@ -124,15 +126,15 @@ export default class Asset {
       for (const part of parts) {
         value = value[part];
       }
-      return value;
+      return toPropertyValue(value ?? null);
     }
 
     // Else its probably a property on the metadata, jcr:content, or dam:Asset resource
-    return (
+    return toPropertyValue(
       this.metadata[property] ||
       this.data["jcr:content"][property] ||
       this.data[property] ||
-      null
+      null,
     );
   }
 
@@ -149,8 +151,8 @@ export default class Asset {
     return [
       ...this.renditions,
       {
-        width: Number(this.getProperty('tiff:ImageWidth')),
-        height: Number(this.getProperty('tiff:ImageLength')),
+        width: Number(this.getProperty('tiff:ImageWidth').data),
+        height: Number(this.getProperty('tiff:ImageLength').data),
       },
     ].filter((r) => r.width > 0 && r.height > 0);
   }
@@ -233,8 +235,8 @@ export default class Asset {
             staticRendition = {
               mimeType: this.mimeType || null,
               fileSize: this.sizeInBytes || null,
-              width: this.getProperty("tiff:ImageWidth") || null,
-              height: this.getProperty("tiff:ImageLength") || null,
+              width: this.getProperty("tiff:ImageWidth").data || null,
+              height: this.getProperty("tiff:ImageLength").data || null,
             };
           } else {
             // given a key like cq5dam.thumbnail.319.319.png, parse the mime type and dimensions
@@ -273,6 +275,39 @@ export default class Asset {
     }
     this._staticRenditions = staticRenditions;
     return this._staticRenditions;
+  }
+
+  /**
+   * Raw smart crop entries from the asset's JCR renditions tree.
+   * Each entry is a plain object { name, width, height } derived from nodes
+   * whose sling:resourceType is "dam/rendition/smartcrop".
+   * Used by RenditionsService to auto-generate DM IS smart crop renditions.
+   * @returns {{ name: string, width: number|null, height: number|null }[]}
+   */
+  get smartCropRenditions() {
+    if (this._smartCropRenditions != null) return this._smartCropRenditions;
+
+    const resource = this.data['jcr:content']['renditions'];
+    const crops = [];
+
+    if (resource && typeof resource === 'object') {
+      Object.entries(resource).forEach(([name, value]) => {
+        if (
+          typeof value === 'object'
+          && value['sling:resourceType'] === 'dam/rendition/smartcrop'
+          && value['jcr:content']
+        ) {
+          crops.push({
+            name,
+            width: value['jcr:content'].width ?? null,
+            height: value['jcr:content'].height ?? null,
+          });
+        }
+      });
+    }
+
+    this._smartCropRenditions = crops;
+    return this._smartCropRenditions;
   }
 
   /**

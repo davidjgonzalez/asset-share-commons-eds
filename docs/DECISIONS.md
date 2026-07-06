@@ -292,54 +292,104 @@ document.body.addEventListener('click', (e) => {
 
 ---
 
-## D007: Rendition Type Abstraction (static/url/asset-delivery)
+## D007: Rendition Type Abstraction (static/dm-smartcrop/url-template/url/web-optimized-delivery/dm-openapi)
 
 **Status**: Active (v1.0+)  
 **Date**: 2026-01-XX
 
 ### Decision
-Three rendition types support different AEM deployment models:
-- **static**: JCR rendition nodes (any AEM)
-- **url**: Legacy Scene7/IS-IR URLs (AEM 6.5, classic Dynamic Media)
-- **asset-delivery**: Next-gen Dynamic Media OpenAPI (AEMaaCS only)
+Six rendition types support different AEM deployment models:
+- **static**: JCR rendition nodes (`nt:file`, any AEM)
+- **dm-smartcrop**: Classic DM (Scene7) IS-protocol smart crops — **auto-detected** from `sling:resourceType: dam/rendition/smartcrop` JCR nodes; no definitions needed. URL: `{dam:scene7Domain}/is/image/{dam:scene7File}:{cropName}`
+- **url-template**: IS/IR protocol URLs using declarative `${variable}` token strings — preferred for DM presets
+- **url**: IS/IR or arbitrary URLs via a JS function `(asset) => string` — for cases where token strings are insufficient
+- **web-optimized-delivery**: AEMaaCS publish delivery via `dm-aid--{uuid}` URL prefix — no DM OpenAPI required
+- **dm-openapi**: DM with OpenAPI — full transform/smart-crop/preset support (AEMaaCS + DM OpenAPI enabled)
+
+Additionally, `renditions.thumbnails` is a separate array for srcset-only renditions (never shown in download lists).
 
 ### Rationale
 - **Deployment flexibility**: Single configuration supports multiple AEM versions
-- **Future-proof**: Asset Delivery is new DM standard; static/url are legacy but still in use
-- **Template-driven**: Each rendition stores URL pattern; resolved at runtime via variable substitution
+- **`dm-smartcrop` auto-detection**: Smart crop nodes (`sling:OrderedFolder`) are not `nt:file` so `static` can't match them; they have no JCR path so `static` URL construction is wrong. `dm-smartcrop` scans `jcr:content/renditions/*` for smartcrop nodes and builds IS URLs from `dam:scene7Domain` + `dam:scene7File` + crop node name. Explicit definitions are only needed to override labels or add `accepts` guards.
+- **`dam:scene7Domain` not `dam:scene7APIServer`**: `dam:scene7Domain` is the IS/IR delivery CDN host (e.g. `https://s7d1.scene7.com/`). `dam:scene7APIServer` is the Scene7 management API — not used for delivery.
+- **`url-template` vs `url`**: `url-template` is declarative and degrades safely — returns `null` if any token is absent. `url` is a function for cases requiring JS logic. Prefer `url-template` for IS/IR preset URLs.
+- **`web-optimized-delivery` vs `dm-openapi`**: Web-optimized delivery works on any AEMaaCS publish without DM OpenAPI — the right default for thumbnails. `dm-openapi` is for smart crops, named presets, and format transforms on instances that have DM OpenAPI enabled.
+- **`thumbnails` array**: Clean separation between downloadable renditions (`definitions`) and srcset-only renditions (`thumbnails`). No `visible: false` hacks needed.
 - **Provider isolation**: Search provider doesn't need to know about renditions
 
 ### Alternatives Considered
+- **`url-template` for smart crops** (prior approach):
+  - Pro: No new type needed
+  - Con: Required explicit definitions for every crop name; wrong host property (`dam:scene7APIServer`) was easy to use by mistake; no auto-detection from JCR
 - **Single hardcoded type**:
   - Pro: Simplest implementation
   - Con: Breaks for deployments using different DM strategy
-- **Separate configurations per AEM version**:
-  - Pro: Explicit control
-  - Con: Duplicated config; users confused which to use
-- **Auto-detection at runtime**:
-  - Pro: Zero config
-  - Con: Magic behavior; unpredictable if asset metadata is inconsistent
+- **`thumbnail: true` flag on definitions entries**:
+  - Pro: One array
+  - Con: Requires per-entry flag; srcset entries pollute the download list unless marked `visible: false`
 
 ### Implementation
 ```js
 // scripts/configurations.js
 renditions: {
+  // Thumbnail srcset — AEMaaCS publish, no DM OpenAPI required
+  thumbnails: [
+    { type: 'web-optimized-delivery', size: { width: 250  }, params: 'width=250&preferwebp=true&quality=85',  accepts: (asset) => asset.mimeType?.startsWith('image/') },
+    { type: 'web-optimized-delivery', size: { width: 1000 }, params: 'width=1000&preferwebp=true&quality=60', accepts: (asset) => asset.mimeType?.startsWith('image/') },
+    { type: 'web-optimized-delivery', size: { width: 1600 }, params: 'width=1600&preferwebp=true&quality=60', accepts: (asset) => asset.mimeType?.startsWith('image/') },
+  ],
   definitions: [
     // Static JCR renditions (any AEM)
     { id: 'web', type: 'static', name: /^cq5dam\.web\./ },
-    
-    // Legacy Dynamic Media (AEM 6.5)
-    { id: 'dm-preset', type: 'url', url: '${dm.apiServer}is/image/${dm.file}?$web$' },
-    
-    // Next-gen Dynamic Media (AEMaaCS)
-    { id: 'web-optimized', type: 'asset-delivery', params: 'format=webp&width=1200' },
-  ]
+
+    // Classic DM smart crops are auto-detected — no definitions needed.
+    // Add an explicit definition only to customise label or restrict to a specific asset type:
+    // { id: 'Banner', label: 'Banner Crop', type: 'dm-smartcrop', accepts: (a) => a.mimeType?.startsWith('image/') },
+
+    // IS/IR preset — use ${dm.domain} (delivery CDN), not ${dm.api-server} (management API)
+    { id: 'dm-preset', type: 'url-template', template: '${dm.domain}is/image/${dm.file}?$web$' },
+
+    // DM with OpenAPI (AEMaaCS + DM OpenAPI enabled) — smart crops, presets
+    { id: 'web-optimized', type: 'dm-openapi', params: 'format=webp&width=1200' },
+  ],
 }
 ```
 
 ### Relevant Docs
 - [AGENTS.md](../AGENTS.md#rendition-system) — Rendition reference
-- [extension-decision.md](asc-development/references/extension-decision.md) — Adding custom renditions
+
+---
+
+## D008a: Rendition Resolver Registry
+
+**Status**: Active  
+**Date**: 2026-07-06
+
+### Decision
+The rendition type switch is replaced by a named resolver registry. Each resolver is an object keyed by type string and implements up to three methods:
+
+```js
+{
+  fromDefinition(def, asset, aemConfig): Rendition | null,  // explicit definitions path
+  autoDetect: boolean,     // true → also runs in getRenditions() default auto-scan
+  acceptsNode(name, node): boolean,  // for JCR node scanning
+  fromNode(name, node, asset, aemConfig): Rendition | null,
+}
+```
+
+Built-in resolvers live in `scripts/asc/services/renditions/resolvers/`. Users register custom resolvers via `configurations.renditions.resolvers` (an object keyed by type string). Custom resolvers override built-ins of the same type.
+
+Two scan modes:
+- **`getRenditions(asset)`** — definitions + auto-detected nodes (`autoDetect: true` resolvers only, deduped by URL). Smart crops use `autoDetect: true`; static uses `false`.
+- **`resolveAllNodes(asset)`** — every JCR node through every resolver. Used by `details-renditions` block's `renditions: all` authoring option.
+
+### Rationale
+- **Extensibility**: Adding a new JCR-backed rendition type requires only a new resolver file; no core switch modification
+- **`autoDetect` flag**: Smart crops should appear in the default rendition list without definitions; static nodes should only appear when `renditions: all` is requested. The flag separates these behaviors cleanly
+- **Dedup by URL**: When explicit definitions and auto-detection both resolve the same node, the definition-based rendition takes precedence (it appears first; auto-detected duplicate is filtered by URL match)
+
+### Relevant Docs
+- [AGENTS.md](../AGENTS.md#rendition-system) — Resolver interface reference
 
 ---
 

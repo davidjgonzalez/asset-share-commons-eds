@@ -6,22 +6,22 @@ import { escHtml, escAttr } from '../../scripts/html.js';
  * Sheet block — a download/rendition selection page.
  *
  * URL params:
- *   sheet      — compressed payload: { title, description?, expiresAt?, items[] }
- *   renditions — compressed array of rendition definition IDs (still supported)
+ *   sheet — compressed payload: { title, description?, expiresAt?, items[] }
  */
 export default async function decorate(block) {
-  const params = new URLSearchParams(window.location.search);
+  const sheetParam = new URLSearchParams(window.location.search).get('sheet');
+
   const {
-    mixedItems, assetMap, title, description, expiresAt, textElements,
-  } = await getDataFromSearchParams(params);
+    title, description, expiresAt, items, textElements,
+  } = await parseSheetMeta(sheetParam);
 
   if (expiresAt && Date.now() > new Date(expiresAt).getTime()) {
     block.innerHTML = expiredHtml(expiresAt);
     return;
   }
 
-  const assetCount = mixedItems.filter((i) => i.type === 'asset').length;
-  block.innerHTML = html(mixedItems, assetMap, title, description, assetCount, textElements);
+  const { mixedItems, assetMap } = await loadSheetItems(items);
+  block.innerHTML = html(mixedItems, assetMap, title, description, textElements);
   initSheetBoard(block);
 }
 
@@ -38,7 +38,8 @@ function expiredHtml(expiresAt) {
     </div>`;
 }
 
-function html(mixedItems, assetMap, title, description, assetCount, textElements = []) {
+function html(mixedItems, assetMap, title, description, textElements = []) {
+  const assetCount = mixedItems.filter((i) => i.type === 'asset').length;
   return `
     <a href="/" class="sheet__back">&#8592; Back to search</a>
     <div class="sheet__header">
@@ -55,6 +56,9 @@ function html(mixedItems, assetMap, title, description, assetCount, textElements
 const BOARD_CARD_W = 160;
 const BOARD_CARD_H = 210;
 const BOARD_GAP = 24;
+const BOARD_TEXT_W = 160;
+const BOARD_TEXT_H = 60;
+const EXPAND_KEY = 'asc:sheetBoardExpanded';
 
 function boardHtml(mixedItems, assetMap, textElements = []) {
   const assets = mixedItems.filter((item) => item.type === 'asset');
@@ -64,16 +68,11 @@ function boardHtml(mixedItems, assetMap, textElements = []) {
   const cards = assets.map((item, i) => {
     const asset = assetMap.get(item.id);
     if (!asset) return '';
-    let x;
-    let y;
-    if (item.x != null && Number.isFinite(item.x) && item.y != null && Number.isFinite(item.y)) {
-      ({ x, y } = item);
-    } else {
-      const col = i % cols;
-      const row = Math.floor(i / cols);
-      x = BOARD_GAP + col * (BOARD_CARD_W + BOARD_GAP);
-      y = BOARD_GAP + row * (BOARD_CARD_H + BOARD_GAP);
-    }
+    const hasPos = item.x != null && Number.isFinite(item.x) && item.y != null && Number.isFinite(item.y);
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    const x = hasPos ? item.x : BOARD_GAP + col * (BOARD_CARD_W + BOARD_GAP);
+    const y = hasPos ? item.y : BOARD_GAP + row * (BOARD_CARD_H + BOARD_GAP);
     return boardCard(asset, item.notes, x, y);
   }).join('');
 
@@ -87,7 +86,7 @@ function boardHtml(mixedItems, assetMap, textElements = []) {
         ${textEls}
       </div>
       ${isEmpty ? '<p class="sheet__board-empty">No assets selected.</p>' : ''}
-      <div class="asc-ui-segmented asc-ui-segmented--xl sheet__board-toolbar" role="toolbar" aria-label="Board tools">
+      <div class="asc-ui-segmented asc-ui-segmented--lg sheet__board-toolbar" role="toolbar" aria-label="Board tools">
         <button type="button" class="asc-ui-segmented__option sheet__board-fit">Fit view</button>
         <button type="button" class="asc-ui-segmented__option sheet__board-expand">Expand</button>
       </div>
@@ -132,8 +131,8 @@ function fitSheetBoard(block) {
     const x = parseFloat(card.style.left) || 0;
     const y = parseFloat(card.style.top) || 0;
     const isText = card.classList.contains('sheet__board-text');
-    const w = card.offsetWidth || (isText ? 160 : BOARD_CARD_W);
-    const h = card.offsetHeight || (isText ? 60 : BOARD_CARD_H);
+    const w = card.offsetWidth || (isText ? BOARD_TEXT_W : BOARD_CARD_W);
+    const h = card.offsetHeight || (isText ? BOARD_TEXT_H : BOARD_CARD_H);
     minX = Math.min(minX, x);
     minY = Math.min(minY, y);
     maxX = Math.max(maxX, x + w);
@@ -166,24 +165,11 @@ function initSheetBoard(block) {
   const canvas = block.querySelector('.sheet__board-canvas');
   if (!viewport || !canvas) return;
 
-  function getState() {
-    return {
-      panX: parseFloat(canvas.dataset.panX) || 0,
-      panY: parseFloat(canvas.dataset.panY) || 0,
-      zoom: parseFloat(canvas.dataset.zoom) || 1,
-    };
-  }
-
-  function applyTransform(panX, panY, zoom) {
-    canvas.dataset.panX = panX;
-    canvas.dataset.panY = panY;
-    canvas.dataset.zoom = zoom;
-    canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
-  }
-
   viewport.addEventListener('wheel', (e) => {
     e.preventDefault();
-    let { panX, panY, zoom } = getState();
+    let panX = parseFloat(canvas.dataset.panX) || 0;
+    let panY = parseFloat(canvas.dataset.panY) || 0;
+    let zoom = parseFloat(canvas.dataset.zoom) || 1;
     if (e.ctrlKey || e.metaKey) {
       const rect = viewport.getBoundingClientRect();
       const cx = e.clientX - rect.left;
@@ -197,7 +183,10 @@ function initSheetBoard(block) {
       panX -= e.deltaX;
       panY -= e.deltaY;
     }
-    applyTransform(panX, panY, zoom);
+    canvas.dataset.panX = panX;
+    canvas.dataset.panY = panY;
+    canvas.dataset.zoom = zoom;
+    canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
   }, { passive: false });
 
   block.querySelector('.sheet__board-fit')?.addEventListener('click', () => {
@@ -214,24 +203,17 @@ function initSheetBoard(block) {
   });
 
   // Restore expand state before the initial fit so viewport dimensions are correct
-  if (localStorage.getItem('asc:sheetBoardExpanded') === 'true') {
+  const expandBtn = block.querySelector('.sheet__board-expand');
+  if (localStorage.getItem(EXPAND_KEY) === 'true') {
     block.setAttribute('data-expanded', '');
-    const expandBtn = block.querySelector('.sheet__board-expand');
     if (expandBtn) expandBtn.textContent = 'Collapse';
   }
 
-  block.querySelector('.sheet__board-expand')?.addEventListener('click', () => {
-    const isExpanded = block.hasAttribute('data-expanded');
-    const expandBtn = block.querySelector('.sheet__board-expand');
-    if (isExpanded) {
-      block.removeAttribute('data-expanded');
-      expandBtn.textContent = 'Expand';
-      localStorage.setItem('asc:sheetBoardExpanded', 'false');
-    } else {
-      block.setAttribute('data-expanded', '');
-      expandBtn.textContent = 'Collapse';
-      localStorage.setItem('asc:sheetBoardExpanded', 'true');
-    }
+  expandBtn?.addEventListener('click', () => {
+    const nowExpanded = !block.hasAttribute('data-expanded');
+    block.toggleAttribute('data-expanded', nowExpanded);
+    expandBtn.textContent = nowExpanded ? 'Collapse' : 'Expand';
+    localStorage.setItem(EXPAND_KEY, String(nowExpanded));
     requestAnimationFrame(() => fitSheetBoard(block));
   });
 
@@ -241,53 +223,50 @@ function initSheetBoard(block) {
 
 // ─── Data loading ─────────────────────────────────────────────────────────────
 
-async function getDataFromSearchParams(queryParameters) {
-  const sheetParam = queryParameters.get('sheet');
-  if (!sheetParam) {
-    return {
-      mixedItems: [], assetMap: new Map(),
-      title: '', description: '', expiresAt: null, textElements: [],
-    };
-  }
-
+async function parseSheetMeta(sheetParam) {
+  if (!sheetParam) return { title: '', description: '', expiresAt: null, items: [], textElements: [] };
   const parts = await services.url.decompressToArray(sheetParam);
-  const json = parts.join(',');
   const {
     title = '', description = '', expiresAt = null, items = [], textElements = [],
-  } = JSON.parse(json);
+  } = JSON.parse(parts.join(','));
+  return { title, description, expiresAt, items, textElements };
+}
 
-  const mixedItems = items.map((entry) => {
-    if (entry.startsWith('~')) {
-      const sepIdx = entry.indexOf('|||', 1);
-      return {
-        type: 'section',
-        title: sepIdx === -1 ? entry.slice(1) : entry.slice(1, sepIdx),
-        body: sepIdx === -1 ? '' : entry.slice(sepIdx + 3),
-      };
-    }
-    const sepIdx = entry.indexOf('|||');
-    const base = sepIdx !== -1 ? entry.slice(0, sepIdx) : entry;
-    const notes = sepIdx !== -1 ? entry.slice(sepIdx + 3) : undefined;
-    const atIdx = base.indexOf('@');
-    const id = atIdx !== -1 ? base.slice(0, atIdx) : base;
-    const result = { type: 'asset', id };
-    if (notes) result.notes = notes;
-    if (atIdx !== -1) {
-      const posStr = base.slice(atIdx + 1);
-      const comma = posStr.indexOf(',');
-      if (comma !== -1) {
-        result.x = parseInt(posStr.slice(0, comma), 10);
-        result.y = parseInt(posStr.slice(comma + 1), 10);
-      }
-    }
-    return result;
-  });
-
+async function loadSheetItems(items) {
+  const mixedItems = items.map(parseEntry);
   const assetIds = mixedItems.filter((i) => i.type === 'asset').map((i) => i.id);
   const fetchedAssets = await Promise.all(assetIds.map((id) => services.search.getAssetById(id)));
   const assetMap = new Map(fetchedAssets.filter(Boolean).map((a) => [a.uuid, a]));
+  return { mixedItems, assetMap };
+}
 
+function parseSectionEntry(entry) {
+  const sep = entry.indexOf('|||', 1);
   return {
-    mixedItems, assetMap, title, description, expiresAt, textElements,
+    type: 'section',
+    title: sep === -1 ? entry.slice(1) : entry.slice(1, sep),
+    body: sep === -1 ? '' : entry.slice(sep + 3),
   };
+}
+
+function parseAssetEntry(entry) {
+  const sep = entry.indexOf('|||');
+  const base = sep !== -1 ? entry.slice(0, sep) : entry;
+  const notes = sep !== -1 ? entry.slice(sep + 3) : undefined;
+  const at = base.indexOf('@');
+  const id = at !== -1 ? base.slice(0, at) : base;
+  const item = { type: 'asset', id };
+  if (notes) item.notes = notes;
+  if (at !== -1) {
+    const [xStr, yStr] = base.slice(at + 1).split(',');
+    if (yStr !== undefined) {
+      item.x = parseInt(xStr, 10);
+      item.y = parseInt(yStr, 10);
+    }
+  }
+  return item;
+}
+
+function parseEntry(entry) {
+  return entry.startsWith('~') ? parseSectionEntry(entry) : parseAssetEntry(entry);
 }

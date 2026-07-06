@@ -18,6 +18,7 @@
  * - `display: grid` switches to the responsive cell layout (term over value).
  */
 import Asset from '../../scripts/asc/models/asset.js';
+import { escHtml as esc } from '../../scripts/html.js';
 
 const RESERVED = new Set(['display', 'layout']);
 
@@ -45,7 +46,14 @@ export default async function decorate(block) {
   }
 
   const rows = fields
-    .map(({ label, key }) => renderRow(asset, label, key))
+    .map(({ label, key }) => {
+      const pv = asset.getProperty(key);
+      if (!pv.html) return '';
+      return `<div class="asc-ui-metadata__row">
+      <dt class="asc-ui-metadata__term">${esc(label)}</dt>
+      <dd class="asc-ui-metadata__value">${pv.html}</dd>
+    </div>`;
+    })
     .filter(Boolean)
     .join('');
 
@@ -58,47 +66,3 @@ export default async function decorate(block) {
   block.innerHTML = `<dl class="asc-ui-metadata${variant}">${rows}</dl>`;
 }
 
-function renderRow(asset, label, key) {
-  const raw = key ? asset.getProperty(key) : null;
-  const value = renderValue(raw);
-  if (!value) return '';
-  return `<div class="asc-ui-metadata__row">
-      <dt class="asc-ui-metadata__term">${esc(label)}</dt>
-      <dd class="asc-ui-metadata__value">${value}</dd>
-    </div>`;
-}
-
-/** Arrays → chips; {width,height} → "W × H"; scalars → escaped text; empty → '' (row skipped). */
-function renderValue(raw) {
-  if (raw == null) return '';
-  if (Array.isArray(raw)) {
-    const chips = raw
-      .map((t) => String(t).trim())
-      .filter(Boolean)
-      .map((t) => `<span class="asc-ui-chip">${esc(t)}</span>`)
-      .join('');
-    return `<span class="asc-ui-chip-list">${chips}</span>`;
-  }
-  const str = stringifyValue(raw);
-  if (!str) return '';
-  // Custom property functions (e.g. `colors`) may return a trusted HTML string.
-  // Strings that begin with '<' are passed through unescaped.
-  if (str.startsWith('<')) return str;
-  return esc(str);
-}
-
-/** Coerce a property value to a display string, formatting known object shapes. */
-function stringifyValue(raw) {
-  if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
-    if (raw.width != null && raw.height != null) return `${raw.width} × ${raw.height}`;
-    return '';
-  }
-  return String(raw).trim();
-}
-
-function esc(str) {
-  return String(str ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}

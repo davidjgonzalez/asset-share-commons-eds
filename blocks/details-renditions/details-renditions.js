@@ -36,7 +36,7 @@
  *   height           pixel height (number)
  *   dimensions       "width × height" string
  *   filename         suggested download filename (base + ext)
- *   type             rendition type: "static" | "url" | "asset-delivery"
+ *   type             rendition type: "static" | "url" | "dm-openapi"
  *   path             JCR node path (static renditions only)
  *   usecase          usecase string from the definition (if authored)
  *
@@ -223,8 +223,7 @@ function renditionCard(asset, rendition) {
         ${meta ? `<p class="asc-ui-copy details-renditions__card-meta">${meta}</p>` : ''}
       </div>
       <div class="asc-ui-card__footer">
-        <a class="btn btn--ghost btn--icon btn--sm" href="${esc(rendition.url)}"
-           download="${esc(buildFilename(asset, rendition))}"
+        <a class="btn btn--ghost btn--icon btn--sm" ${downloadAttrs(asset, rendition)}
            title="Download" aria-label="Download"
            data-asc-action="rendition:download@click" ${ref}>${ICONS.download}</a>
         <button class="btn btn--ghost btn--icon btn--sm" type="button" title="Copy URL" aria-label="Copy URL"
@@ -237,8 +236,8 @@ function renderAction(asset, rendition, action) {
   const ref = `data-asc-asset="${asset.uuid}" data-asc-rendition="${rendition.id}"`;
   switch (action) {
     case 'download':
-      return `<a class="btn btn--ghost btn--icon btn--sm" href="${esc(rendition.url)}"
-           download="${esc(buildFilename(asset, rendition))}" title="Download" aria-label="Download"
+      return `<a class="btn btn--ghost btn--icon btn--sm" ${downloadAttrs(asset, rendition)}
+           title="Download" aria-label="Download"
            data-asc-action="rendition:download@click" ${ref}>${ICONS.download}</a>`;
     case 'share':
       return `<button class="btn btn--ghost btn--icon btn--sm" type="button" title="Share" aria-label="Share"
@@ -289,6 +288,43 @@ function wireRenditionInteractions(block, asset, renditions) {
     e.target.closest('[data-asc-rendition]').classList.add('is-active');
     dispatch('asc:rendition:activate', rendition);
   });
+
+  // Intercept every download click so we control the filename.
+  // Native <a href download> is unreliable: cross-origin ignores the download attr,
+  // and same-origin AEM responses can override it with Content-Disposition.
+  // Blob download always wins. For CDN/DM URLs omit credentials so the request
+  // stays a simple CORS request compatible with Access-Control-Allow-Origin: *.
+  delegateEvent(block, 'a[data-asc-action~="rendition:download@click"]', 'click', async (e) => {
+    const renditionId = e.target.closest('[data-asc-rendition]')?.dataset?.ascRendition;
+    const rendition = renditionId && byId.get(renditionId);
+    if (!rendition) return;
+
+    e.preventDefault();
+
+    if (rendition.downloadUrl) {
+      window.location.href = rendition.downloadUrl;
+      return;
+    }
+
+    const filename = buildFilename(asset, rendition);
+    try {
+      const isAemUrl = rendition.url.startsWith(services.aem.getHost());
+      const headers = isAemUrl ? await services.aem.getHeaders() : {};
+      const res = await fetch(rendition.url, {
+        credentials: 'omit',
+        headers,
+      });
+      if (!res.ok) throw new Error(res.status);
+      const blobUrl = URL.createObjectURL(await res.blob());
+      const a = Object.assign(document.createElement('a'), { href: blobUrl, download: filename });
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('[ASC] rendition blob download failed, falling back to open:', err);
+      window.open(rendition.url, '_blank');
+    }
+  }, { stopPropagation: false });
 }
 
 function wireCopyUrl(block) {
@@ -320,17 +356,12 @@ function resolveRenditions(asset, ids) {
   };
 
   if (ids.length === 1 && ids[0].toLowerCase() === 'all') {
-    // Collect URLs of invisible definition-resolved renditions (e.g. thumbnail)
-    // so we can filter those physical nodes out of the raw list.
+    // Suppress nodes whose URL matches a definition-invisible rendition (e.g. thumbnail).
     const invisibleUrls = new Set(
       asset.renditions.filter((r) => r.visible === false).map((r) => r.url),
     );
-    const excludePatterns = services.renditions._excludePatterns || [];
-    const isExcluded = (name) => excludePatterns.some(
-      (p) => (p instanceof RegExp ? p.test(name) : p === name),
-    );
-    return asset.staticRenditions
-      .filter((r) => !isExcluded(r.id) && !invisibleUrls.has(r.url))
+    return services.renditions.resolveAllNodes(asset)
+      .filter((r) => !invisibleUrls.has(r.url))
       .sort(sortFn);
   }
 
@@ -388,7 +419,7 @@ function resolveAssetPath(segments, asset) {
   if (!segments.length) return null;
   const [head, ...rest] = segments;
   if (head === 'properties') {
-    return rest.length ? walk(asset.getProperty(rest[0]), rest.slice(1)) : null;
+    return rest.length ? walk(asset.getProperty(rest[0]).data, rest.slice(1)) : null;
   }
   if (head === 'renditions') {
     if (!rest.length) return null;
@@ -396,7 +427,7 @@ function resolveAssetPath(segments, asset) {
       || asset.renditions.find((r) => r.id === rest[0] || r.name === rest[0]);
     return walk(rend, rest.slice(1));
   }
-  return walk(asset.getProperty(head), rest);
+  return walk(asset.getProperty(head).data, rest);
 }
 
 /** Walk remaining segments into a value (object/array navigation). */
@@ -447,10 +478,22 @@ function parseList(cell) {
   return String(text).split(/[\s,]+/).map((v) => v.trim()).filter(Boolean);
 }
 
+function downloadAttrs(asset, rendition) {
+  if (rendition.downloadUrl) {
+    return `href="${esc(rendition.downloadUrl)}"`;
+  }
+  return `href="${esc(rendition.url)}" download="${esc(buildFilename(asset, rendition))}"`;
+}
+
 function buildFilename(asset, rendition) {
+  if (rendition.filename) return rendition.filename;
   const base = asset.filename ? asset.filename.replace(/\.[^.]+$/, '') : asset.title;
   const ext = mimeToExt(rendition.mimeType) || asset.fileExtension || '';
-  return ext ? `${base}.${ext}` : base;
+  // Strip any file extension from the rendition id — JCR node names include
+  // extensions (e.g. "fpo.png") but the ext is already derived from mimeType.
+  const idBase = (rendition.id || '').replace(/\.[a-zA-Z0-9]+$/, '');
+  const suffix = idBase && idBase !== 'original' ? `-${idBase}` : '';
+  return ext ? `${base}${suffix}.${ext}` : `${base}${suffix}`;
 }
 
 function mimeToExt(mimeType) {

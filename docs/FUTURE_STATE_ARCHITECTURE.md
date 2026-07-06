@@ -263,7 +263,7 @@ window.asc.extensions = {
     'brand': { handler: (asset) => {...}, source: 'configurations.js' }
   },
   renditions: {
-    'web-optimized': { id: 'web-optimized', label: 'Web Optimized', type: 'asset-delivery', source: 'configurations.js' },
+    'web-optimized': { id: 'web-optimized', label: 'Web Optimized', type: 'dm-openapi', source: 'configurations.js' },
     'smart-crop-small': { ... }
   },
   searchHooks: {

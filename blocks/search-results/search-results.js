@@ -49,9 +49,15 @@ function renderListCell(col, asset) {
 
   const { property } = col;
   if (property === 'thumbnail') {
-    return `<img class="asc-list-view__thumb" src="${esc(asset.thumbnail)}" alt="" loading="lazy">`;
+    const alt = esc(asset.description || asset.title || asset.name || '');
+    const srcset = services.renditions.getThumbnailSrcset(asset);
+    if (srcset.length) {
+      const srcsetAttr = srcset.map((r) => `${r.url} ${r.size.width}w`).join(', ');
+      return `<img class="asc-list-view__thumb" src="${esc(srcset[0].url)}" srcset="${srcsetAttr}" sizes="88px" alt="${alt}" loading="lazy">`;
+    }
+    return `<img class="asc-list-view__thumb" src="${esc(asset.thumbnail)}" alt="${alt}" loading="lazy">`;
   }
-  return esc(valToText(asset.getProperty(property)));
+  return esc(asset.getProperty(property).text || '—');
 }
 
 function renderListActionsCell(asset, renditionId) {

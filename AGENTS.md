@@ -51,10 +51,96 @@ Every file inside `scripts/asc/` starts with `// ASC Core — do not edit.` as a
 | Block | Purpose |
 |-------|---------|
 | `stub` | Cart bar — shows active collection count and link to download sheet |
-| `sheet` | Full download sheet page (reads assets + renditions from URL params; also accepts `title` and `description` params) |
+| `sheet` | Legacy all-in-one sheet page — reads `?sheet=`, renders header + board. Kept for backward compat; new pages use `board` instead |
 | `collections` | Collections index/management page — list, create, delete, activate |
-| `collection` | Collection detail/edit page — rename, reorder assets, remove assets, share URL, download |
+| `collection` | Collection header — editable name, asset count, Share / Download buttons, jobs indicator; pair with `board` (source: collection, mode: interactive) on the same page |
+| `board` | Reusable board canvas — pan/zoom, client-side search, details navigation override; `source: collection\|sheet`, `mode: view\|interactive`, `search-properties`, `details` |
 | `collection-switcher` | Persistent header widget — active collection dropdown, inline create, navigate to /collections |
+
+### Board block — authoring reference
+
+The `board` block is a standalone canvas that can be placed on any page. It is authored as a
+property table (one row per property, key | value).
+
+#### Properties
+
+| Property | Values | Default | Notes |
+|----------|--------|---------|-------|
+| `source` | `collection` \| `sheet` | `sheet` | Where to load assets from |
+| `mode` | `view` \| `interactive` | `view` | `view` = pan/zoom + search only; `interactive` = drag, rubber-band, text elements, notes, Align to grid, + Text button |
+| `notes` | `true` \| `false` | `true` | When `false`, hides notes button and footer from every card and omits `data-asc-notes` from the DOM entirely |
+| `search-properties` | Comma-separated property names | _(none)_ | Which asset properties to stash in `data-filter` for client-side filtering. E.g. `title, file-type`. Omit to hide the search input entirely. |
+| `display-properties` | `·`-delimited property names | _(none)_ | Properties to render in the card body section. Accepts any registered property name (`title`, `file-type`, `dimensions`, `file-size`, custom properties, etc.). When omitted, the card shows the asset type label (Image, Video, PDF…). |
+| `details` | Path prefix | _(none)_ | Override the default ASC modal. When set, clicking a card navigates to `{details}?asset={uuid}`. MIME-type routing uses the same template patterns from `configurations.assetDetails.templates`, stripping the first path segment (e.g. `image/*` maps `/details/image` → `/sheet/my-details/image`). Falls back to `details` itself if no template matches. |
+
+#### Source: collection
+
+Reads the `?id=` URL parameter and calls `services.collections.get(id, true)` to get the
+hydrated collection. Re-renders on `CollectionEvents.CHANGED` (filtered to the same collection
+ID). Persists viewport pan/zoom and expand state to localStorage under `asc:boardViewport:{id}`
+and `asc:boardExpanded:{id}`.
+
+#### Source: sheet
+
+Reads the `?sheet=` URL parameter, decompresses the payload via `services.url.decompressToArray`,
+and checks the `expiresAt` field before fetching assets. Expired sheets render an expiry notice
+instead of the canvas. Expand state is persisted under `asc:sheetBoardExpanded`.
+
+#### Page patterns
+
+**Collection page** — pair `collection` (header) + `board` (source: collection, mode: interactive) in two sections:
+
+```html
+<!-- Section 1: collection header (name, share, download, jobs) -->
+<div>
+  <div class="collection"></div>
+</div>
+
+<!-- Section 2: interactive board canvas -->
+<div>
+  <div class="board">
+    <div><div>source</div><div>collection</div></div>
+    <div><div>mode</div><div>interactive</div></div>
+    <div><div>search-properties</div><div>title, file-type</div></div>
+    <div><div>display-properties</div><div>title · file-type</div></div>
+    <div><div>notes</div><div>true</div></div>
+  </div>
+</div>
+```
+
+**Sheet page** — standalone board with `source: sheet` and optional `details` override:
+
+```html
+<div>
+  <div class="board">
+    <div><div>source</div><div>sheet</div></div>
+    <div><div>mode</div><div>view</div></div>
+    <div><div>search-properties</div><div>title, file-type</div></div>
+    <div><div>details</div><div>/sheet/my-details</div></div>
+  </div>
+</div>
+```
+
+#### Client-side search
+
+When `search-properties` is set, a search input appears as the last item in the toolbar segmented control. Filtering works client-side — no server round-trip.
+
+**DOM storage** — each card gets `data-filter="…"` containing the joined, lowercased values of all configured properties (e.g. `title` + `file-type` → `"mountain landscape image/jpeg"`).
+
+**Match behavior** — the haystack is `data-filter` + `data-asc-notes` joined. Non-matching cards dim to low opacity; matching cards get a primary-color ring highlight. Clearing the input restores all cards.
+
+**Fit-to-matches** — after each keystroke, the viewport automatically pans and zooms to frame the matching cards. Clearing the query restores the full-board fit.
+
+#### Details routing
+
+When `details` is set, clicking a card resolves the final path via `resolveDetailsPath(detailsBase, mime)`:
+
+1. Iterates `configurations.assetDetails.templates` entries (skipping `"default"`).
+2. For the first pattern that matches the asset's MIME type, strips the first path segment from the template path and appends the remainder to `detailsBase`. E.g. if `image/*` → `/details/image` and `detailsBase` is `/sheet/my-details`, the resolved path is `/sheet/my-details/image`.
+3. Falls back to `detailsBase` (with the `default` template's sub-path appended, if present).
+4. Navigates to `{resolvedPath}?asset={uuid}`.
+
+The details page itself is a normal EDS page; add a `details-modal` block and the same details fragments used on your main details pages.
 
 ---
 
@@ -160,7 +246,8 @@ Authoring (da.live):
   `asset.…`. A value is either a bare path (`name`, `file-size`) or contains `{{ }}` tokens for
   mixed text (`{{ width }}×{{ height }}`).
 - **Rendition fields / aliases**: `name`, `label`, `url`, `format`, `file-type`, `file-size`
-  (formatted), `dimensions`, `width`, `height`, `mimeType`, `filename`, `type`, `path`, `usecase`.
+  (formatted), `dimensions`, `width`, `height`, `mimeType`, `filename` (download filename),
+  `downloadUrl`, `type`, `path`, `usecase`.
 - **Asset paths**: `asset.properties.title`, `asset.renditions['web'].url`, or a bare term →
   `asset.getProperty('…')`. Well-known asset sub-objects: `properties`, `renditions`.
 - **Path syntax**: dot (`a.b`), bracket (`a['b']`, `a[b]`), nesting combine.
@@ -480,9 +567,9 @@ All built-in names are also valid in `searchResults.views` (see below).
 // scripts/configurations.js
 properties: {
   custom: {
-    'brand': (asset) => asset.getProperty('jcr:content/metadata/myco:brand'),
+    'brand': (asset) => asset.getProperty('jcr:content/metadata/myco:brand').data,
     'approval-status': (asset) => {
-      const s = asset.getProperty('jcr:content/metadata/dam:status');
+      const s = asset.getProperty('jcr:content/metadata/dam:status').data;
       return s ? s.charAt(0).toUpperCase() + s.slice(1) : null;
     },
   }
@@ -516,7 +603,7 @@ searchResults: {
       // Any registered custom property:
       { property: 'brand',      label: 'Brand', width: '120px' },
       // Escape hatch for complex rendering:
-      { label: 'Status', width: '80px', render: (asset) => asset.getProperty('dam:status') || '—' },
+      { label: 'Status', width: '80px', render: (asset) => asset.getProperty('dam:status').html || '—' },
     ],
   },
 },
@@ -531,104 +618,191 @@ searchResults: {
 
 ## Rendition System
 
-The renditions system is the client-side equivalent of ASC v1's `AssetRenditionDispatcher`. It resolves download URLs for each asset based on definitions in `configurations.js`. Three rendition types map to the AEM delivery patterns:
+The renditions system is the client-side equivalent of ASC v1's `AssetRenditionDispatcher`. It resolves download URLs for each asset through a **resolver registry**. Each resolver handles one rendition type and covers two paths: resolving an explicit definition from `configurations.js`, and (for node-backed types) auto-detecting renditions by scanning `jcr:content/renditions/*` nodes.
+
+Six built-in resolver types map to AEM delivery patterns:
 
 | Type | AEM v1 equivalent | When to use |
 |------|------------------|-------------|
-| `static` | `StaticRenditionDispatcher` | JCR rendition nodes (`jcr:content/renditions/*`); works on any AEM |
-| `url` | `ExternalRedirectRenderer` | **Legacy DM / Scene7 IS/IR protocol** (`is/image/` URLs); AEM 6.5 or classic DM |
-| `asset-delivery` | `AssetDeliveryRenditionDispatcher` | **DM with OpenAPI** — plain transforms, smart crops (`?smartcrop=`), named presets (`?imagePreset=`); AEMaaCS only |
+| `static` | `StaticRenditionDispatcher` | JCR rendition nodes (`jcr:content/renditions/*`, `nt:file`); works on any AEM |
+| `dm-smartcrop` | `DynamicMediaSmartCropRenderer` | **Classic DM (Scene7) smart crops** — IS-protocol URL; **auto-detected** from `sling:resourceType: dam/rendition/smartcrop` JCR nodes; no definitions needed |
+| `url-template` | `ExternalRedirectRenderer` | **Legacy DM / Scene7 IS/IR protocol** — declarative `${variable}` template string; preferred for DM presets |
+| `url` | `ExternalRedirectRenderer` | **Custom URL construction** — arbitrary JS function `(asset) => string`; use when `url-template` tokens are not enough |
+| `web-optimized-delivery` | — | **Web-optimized delivery** — `dm-aid--{uuid}` URL prefix; AEMaaCS publish without full DM OpenAPI |
+| `dm-openapi` | `DmOpenApiRenditionDispatcher` | **DM with OpenAPI** — plain transforms, smart crops (`?smartcrop=`), named presets (`?imagePreset=`); AEMaaCS + DM OpenAPI |
 
-**Key distinction — two different DM delivery systems:**
+**Key distinction — three different DM delivery patterns:**
 
-| | Legacy DM (Scene7 / IS-IR) | DM with OpenAPI (Next Gen) |
-|---|---|---|
-| **AEM version** | AEM 6.5 or AEMaaCS with classic DM | AEMaaCS only |
-| **Rendition type** | `url` with `${dm.*}` variables | `asset-delivery` with `params` |
-| **URL pattern** | `{dm.apiServer}is/image/{dm.file}:CropName` | `{deliveryHost}/adobe/dynamicmedia/deliver/{uuid}/file.jpg?smartcrop=CropName` |
-| **Asset identifier** | `dam:scene7File` metadata property | UUID |
-| **Smart crop syntax** | `:CropName` (IS/IR path segment) | `?smartcrop=CropName` (query param) |
-| **Named preset syntax** | `?$presetName$` | `?imagePreset=presetName` |
+| | Classic DM (Scene7 / IS-IR) | Web-optimized delivery | DM with OpenAPI |
+|---|---|---|---|
+| **AEM version** | AEM 6.5 or AEMaaCS + classic DM | AEMaaCS publish | AEMaaCS + DM OpenAPI enabled |
+| **Rendition type** | `dm-smartcrop`, `url-template`, or `url` | `web-optimized-delivery` | `dm-openapi` |
+| **URL prefix** | `{dam:scene7Domain}/is/image/` | `{host}/adobe/dynamicmedia/deliver/dm-aid--{uuid}/` | `{deliveryHost}/adobe/dynamicmedia/deliver/{uuid}/` |
+| **Asset identifier** | `dam:scene7File` metadata | UUID (with `dm-aid--` prefix) | UUID |
+| **Requires DM OpenAPI** | No | No | Yes |
+| **Smart crop / presets** | `:CropName` / `?$preset$` | No | `?smartcrop=Name` / `?imagePreset=name` |
 
-### Template variables for `type: 'url'`
+> **`dam:scene7Domain` vs `dam:scene7APIServer`** — `dam:scene7Domain` is the IS/IR delivery CDN host used in all image URLs (e.g. `https://s7d1.scene7.com/`). `dam:scene7APIServer` is the Scene7 management API endpoint — **not** used for delivery. Use `${dm.domain}` in `url-template` strings for IS/IR URLs.
+
+### Template variables for `type: 'url-template'`
+
+`url-template` uses a `template` string with `${variable}` tokens resolved at runtime. The resolver returns `null` automatically if any referenced token has no value on the asset — so an `accepts` guard is optional (it degrades safely without one).
 
 | Variable | Resolves to | JCR metadata path |
 |----------|------------|-------------------|
 | `${asset.path}` | JCR path | — |
 | `${asset.name}` | Node name (filename) | — |
-| `${asset.id}` | UUID | — |
 | `${asset.extension}` | File extension | — |
-| `${asset.title}` | Display title | `dc:title` |
+| `${rendition.name}` | This definition's `id` | — |
 | `${dm.name}` | Scene7 asset name | `dam:scene7Name` |
 | `${dm.id}` | Scene7 asset ID | `dam:scene7ID` |
 | `${dm.file}` | Scene7 file path | `dam:scene7File` |
 | `${dm.folder}` | Scene7 folder | `dam:scene7Folder` |
-| `${dm.domain}` | Scene7 domain | `dam:scene7Domain` |
-| `${dm.apiServer}` | Scene7 API server URL | `dam:scene7APIServer` |
+| `${dm.domain}` | **IS/IR delivery CDN host** (use this for image URLs) | `dam:scene7Domain` |
+| `${dm.api-server}` | Scene7 management API (not for delivery) | `dam:scene7APIServer` |
+
+`${rendition.name}` equals the definition's `id` field — useful for DM IS/IR presets where the preset name must appear in the URL.
+
+> **Smart crops** — use `type: 'dm-smartcrop'` instead of `url-template`. The resolver auto-detects all `sling:resourceType: dam/rendition/smartcrop` nodes from the asset's JCR renditions tree so no definitions are needed. Use explicit definitions only when you need a custom label or an `accepts` guard on a specific crop name.
 
 ### `accepts` filter
 
 Controls which asset types a rendition applies to:
 - Omit → all assets
 - MIME glob string: `'image/*'`, `'video/*'`, `'application/pdf'`
-- Function: `(asset) => asset.getProperty('dam:scene7File') != null`
+- Function: `(asset) => asset.getProperty('dam:scene7File').data != null`
 
 ### `visible` flag
 
 `visible: false` hides a rendition from the download list while keeping it available via `services.renditions.getRendition(asset, id)`. Use for the `thumbnail` rendition, which is used internally by teasers but shouldn't appear as a download option.
+
+### Download filenames
+
+Each resolver is responsible for the download filename of its rendition type. Resolvers set `filename` on the `Rendition` they construct; the block uses it verbatim when present and falls back to a generic `{asset-stem}-{rendition-id}.{ext}` pattern otherwise.
+
+**Built-in naming**
+
+| Type | Filename pattern | Example |
+|------|-----------------|---------|
+| `dm-smartcrop` | `{asset-stem}-smart-crop-{cropName}.jpg` | `hero-banner-smart-crop-Large.jpg` |
+| `static` / `url` / `url-template` / `dm-openapi` | `{asset-stem}-{id}.{ext}` | `hero-banner-web.jpg` |
+| `static` with JCR node name as id | extension stripped: `{asset-stem}-{node-base}.{ext}` | `hero-banner-cq5dam.fpo.png` |
+| `original` | `{asset-stem}.{ext}` (no suffix) | `hero-banner.jpg` |
+
+**Definition-level override** — add `filename` to any definition in `configurations.js`. A plain string is used as-is; a function receives `(rendition, asset)` and returns a string. Applied after the resolver runs, so `rendition` already has its `url`, `mimeType`, etc.
+
+```js
+// Plain string
+{ id: 'fpo', label: 'FPO', type: 'static', name: 'cq5dam.fpo',
+  filename: 'fpo-placeholder.png' }
+
+// Function — full access to rendition and asset
+{ id: 'web', label: 'Web', type: 'static', name: /^cq5dam\.web\./,
+  filename: (rendition, asset) => {
+    const stem = asset.filename?.replace(/\.[^.]+$/, '') ?? asset.title;
+    return `${stem}-web-optimized.jpg`;
+  } }
+```
+
+**Resolver-level override** — set `filename` in the `Rendition` constructor inside `fromDefinition` or `fromNode`. This is the right place when the naming logic depends on information only the resolver has (e.g. the crop name in `dm-smartcrop`):
+
+```js
+fromNode(name, node, asset) {
+  const url = buildUrl(asset, name);
+  return new Rendition({
+    id: name, label: `My Type — ${name}`,
+    url,
+    filename: `${asset.filename?.replace(/\.[^.]+$/, '')}-my-type-${name}.png`,
+  });
+}
+```
+
+Definition-level `filename` always wins over a resolver-set one (applied last by `_resolveFromDef`).
+
+### `thumbnails` array — responsive srcset for search result cards
+
+Put thumbnail renditions in a **separate `thumbnails` array** (not `definitions`). Entries in `thumbnails` are never shown in the download list — they exist solely to generate the `<img srcset>` on asset teasers (cards, masonry, list thumbnail, board cards, collection mosaics). Each entry requires `size.width` so the browser gets a correct `Nw` descriptor.
+
+Use `web-optimized-delivery` for thumbnails — it works on any AEMaaCS publish instance without requiring DM OpenAPI to be enabled. Use `dm-openapi` only in `definitions` (downloadable renditions).
+
+```js
+renditions: {
+  thumbnails: [
+    { type: 'web-optimized-delivery', size: { width: 250  }, params: 'width=250&preferwebp=true&quality=85',  accepts: (asset) => asset.mimeType?.startsWith('image/') },
+    { type: 'web-optimized-delivery', size: { width: 500  }, params: 'width=500&preferwebp=true&quality=85',  accepts: (asset) => asset.mimeType?.startsWith('image/') },
+    { type: 'web-optimized-delivery', size: { width: 1000 }, params: 'width=1000&preferwebp=true&quality=60', accepts: (asset) => asset.mimeType?.startsWith('image/') },
+    { type: 'web-optimized-delivery', size: { width: 1600 }, params: 'width=1600&preferwebp=true&quality=60', accepts: (asset) => asset.mimeType?.startsWith('image/') },
+  ],
+  definitions: [ /* downloadable renditions */ ],
+}
+```
+
+URL shape: `{host}/adobe/dynamicmedia/deliver/dm-aid--{uuid}/{filename}?{params}` — the `dm-aid--` prefix distinguishes web-optimized from DM OpenAPI delivery. Uses `aem.deliveryHost` when set, falls back to `aem.host`.
+
+`services.renditions.getThumbnailSrcset(asset)` reads `thumbnails`, resolves URLs for the asset, and returns them sorted smallest to largest. `getThumbnailUrl(asset)` picks the mid-size entry as the `src` fallback. Non-image assets return `[]` if all entries have `accepts: (asset) => asset.mimeType?.startsWith('image/')`, falling back to the static `cq5dam.thumbnail` node URL.
 
 ### How To: Add a Custom Rendition
 
 ```js
 // scripts/configurations.js
 renditions: {
+  // Thumbnail srcset — never in download list, used by cards/masonry/list/board/collection mosaics.
+  thumbnails: [
+    { type: 'web-optimized-delivery', size: { width: 250  }, params: 'width=250&preferwebp=true&quality=85',  accepts: (asset) => asset.mimeType?.startsWith('image/') },
+    { type: 'web-optimized-delivery', size: { width: 500  }, params: 'width=500&preferwebp=true&quality=85',  accepts: (asset) => asset.mimeType?.startsWith('image/') },
+    { type: 'web-optimized-delivery', size: { width: 1000 }, params: 'width=1000&preferwebp=true&quality=60', accepts: (asset) => asset.mimeType?.startsWith('image/') },
+    { type: 'web-optimized-delivery', size: { width: 1600 }, params: 'width=1600&preferwebp=true&quality=60', accepts: (asset) => asset.mimeType?.startsWith('image/') },
+  ],
+
   definitions: [
     // ── Static (any AEM) ──────────────────────────────────────────────────
     { id: 'thumbnail', label: 'Thumbnail', type: 'static', name: /^cq5dam\.thumbnail\./, visible: false },
-    { id: 'web',       label: 'Web',       type: 'static', name: /^cq5dam\.web\./,       accepts: 'image/*' },
+    { id: 'web',       label: 'Web',       type: 'static', name: /^cq5dam\.web\./,       accepts: (asset) => asset.mimeType?.startsWith('image/') },
     { id: 'original',  label: 'Original',  type: 'static', name: 'original' },
 
-    // ── Legacy DM / Scene7 IS-IR protocol (AEM 6.5 or classic DM) ────────
-    // Variables resolve from dam:scene7* metadata on the asset.
+    // ── Classic DM / Scene7 IS-IR protocol (AEM 6.5 or classic DM) ───────
+    // Smart crops are auto-detected from the asset's JCR renditions tree
+    // (sling:resourceType: dam/rendition/smartcrop nodes). No definitions needed.
+    // Add an explicit dm-smartcrop definition only to override label or add an accepts guard.
+
+    // IS/IR image preset — url-template with ${dm.domain} (delivery CDN host).
     {
       id: 'dm-web-preset',
-      label: 'Web',
-      type: 'url',
-      url: '${dm.apiServer}is/image/${dm.file}?$web$',
-      accepts: (asset) => !!asset.getProperty('dam:scene7File'),
-    },
-    {
-      id: 'dm-smart-crop-small',        // ":Small" IS/IR syntax
-      label: 'Smart Crop — Small',
-      type: 'url',
-      url: '${dm.apiServer}is/image/${dm.file}:Small',
-      accepts: (asset) => !!asset.getProperty('dam:scene7File'),
+      label: 'Web Preset',
+      type: 'url-template',
+      template: '${dm.domain}is/image/${dm.file}?$web$',
     },
 
     // ── DM with OpenAPI / Asset Delivery (AEMaaCS only) ──────────────────
-    // Requires aem.deliveryHost. Uses UUID — no dam:scene7* metadata needed.
+    // Requires aem.deliveryHost. Falls back to aem.host if not set.
     {
       id: 'web-optimized',
       label: 'Web Optimized',
-      type: 'asset-delivery',
+      type: 'dm-openapi',
       params: 'format=webp&preferwebp=true&width=1200&quality=85',
-      accepts: 'image/*',
+      accepts: (asset) => asset.mimeType?.startsWith('image/'),
     },
     {
-      id: 'smart-crop-small',           // "?smartcrop=" OpenAPI syntax
+      id: 'smart-crop-small',
       label: 'Smart Crop — Small',
-      type: 'asset-delivery',
+      type: 'dm-openapi',
       params: 'smartcrop=Small',
-      accepts: 'image/*',
-    },
-    {
-      id: 'dm-preset-web',              // Named image preset
-      label: 'Web Preset',
-      type: 'asset-delivery',
-      params: 'imagePreset=web',
-      accepts: 'image/*',
+      accepts: (asset) => asset.mimeType?.startsWith('image/'),
     },
   ],
+
+  // ── Custom resolvers (optional) ────────────────────────────────────────
+  // Register a new type or override a built-in by keying on the type string.
+  resolvers: {
+    'my-type': {
+      // Return a new Rendition or null. Set rendition.filename to control the download filename.
+      fromDefinition(def, asset, aemConfig) { /* return new Rendition({...}) or null */ },
+      // Node-scanning (optional — for JCR-backed types):
+      autoDetect: true,                      // true = also runs in getRenditions() default pass
+      acceptsNode(name, node) { return false; },
+      fromNode(name, node, asset, aemConfig) { /* return new Rendition({...}) or null */ },
+    },
+  },
 }
 ```
 
@@ -637,9 +811,12 @@ renditions: {
 ```js
 import services from '../../scripts/asc/services/services.js';
 
-services.renditions.getRenditions(asset);          // all renditions for asset
-services.renditions.getRendition(asset, 'web');    // single rendition by id
-services.renditions.getThumbnailUrl(asset);        // best thumbnail URL (with fallback)
+services.renditions.getRenditions(asset);              // definitions + auto-detected node renditions (autoDetect: true)
+services.renditions.getRendition(asset, 'web');        // single rendition by id
+services.renditions.resolveAllNodes(asset);            // every JCR node through all resolvers — used by 'all' mode
+services.renditions.getThumbnailUrl(asset);            // best thumbnail URL (with fallback)
+services.renditions.getThumbnailSrcset(asset);         // Rendition[] sorted by size.width, for <img srcset>
+services.renditions.getRenditionDefinition('web');     // raw definition object (no asset needed)
 ```
 
 ### Asset Model — Computed Rendition Properties
@@ -856,10 +1033,13 @@ Stored under `storage.get('collections')` (user-scoped):
       name:       string,
       createdAt:  ISO string,
       modifiedAt: ISO string,
-      assetIds:   string[]
+      items:      Array<AssetItem | SectionItem>
     }
   }
 }
+
+// AssetItem:   { type: 'asset',   id: string, mimeType?: string, x?: number, y?: number, notes?: string }
+// SectionItem: { type: 'section', id: string, title: string, body: string }
 ```
 
 The **active collection** ID is stored separately under `storage.get(storage.ACTIVE_COLLECTION_ID)`. `null` means use `defaultId`.
@@ -888,8 +1068,16 @@ await collections.addAsset(assetId, collectionId?)
 await collections.removeAsset(assetId, collectionId?)
 await collections.hasAsset(assetId, collectionId?)   // → boolean
 
-// Asset reordering
-      collections.reorderAssets(collectionId, newAssetIds) // replace full ordered array
+// Board item updates — partial update of x/y position and/or notes for an asset item
+      collections.updateItem(collectionId, assetId, { x?, y?, notes? })
+
+// Asset reordering — replaces the full ordered array (programmatic use; board uses x/y instead)
+      collections.reorderAssets(collectionId, newAssetIds)
+
+// Section management (stored in items[] alongside assets)
+await collections.addSection(collectionId, { title?, body? })       // → SectionItem
+      collections.updateSection(collectionId, sectionId, { title, body })
+await collections.removeSection(collectionId, sectionId)
 
 // Login / merge / logout
 await collections.loginAs(userId)  // merges anonymous → user, switches context
@@ -906,6 +1094,33 @@ await collections.loginAs(userId)  // merges anonymous → user, switches contex
 | `asc:collection:activated` | Active collection changed | `{ id, previous }` |
 
 `action` values in `asc:collection:change`: `"created"`, `"deleted"`, `"renamed"`, `"activated"`, `"assetAdded"`, `"assetRemoved"`, `"reordered"`, `"login"`, `"logout"`, or `"external"` (cross-tab).
+
+### Share URL format (`?sheet=`)
+
+The collection Share dialog encodes the full board state as a single compressed JSON payload:
+
+```
+{sheetPath}?sheet={compressArray([JSON.stringify(payload)])}
+```
+
+Payload structure:
+```js
+{
+  title:        string,
+  description?: string,
+  expiresAt?:   ISO string,          // link expires; sheet block shows an error state
+  items:        string[],            // encoded asset and section items (see below)
+  textElements?: { x, y, w, h, content }[],  // free-floating text from the board
+}
+```
+
+Item encoding within `items[]`:
+- **Asset** (no position, no notes): `"uuid"`
+- **Asset** (with board position): `"uuid@x,y"`
+- **Asset** (with notes): `"uuid@x,y|||notes text"` or `"uuid|||notes text"`
+- **Section heading**: `"~title|||body"`
+
+The `sheet` block decodes the same format for display.
 
 ---
 
@@ -1036,15 +1251,13 @@ asc:user123   → { user, collections, activeCollectionId, recentlyViewed }
 ```js
 import url from '../../scripts/asc/services/url/url.js';
 
-// Build a shareable URL encoding a list of asset UUIDs
-const shareUrl = await url.toCollectionUrl(assetIds, { param: 'assets', base?: string });
-
-// Decode asset UUIDs from a URL
-const assetIds = await url.fromCollectionUrl(window.location.search, 'assets');
-
-// Low-level compression
+// Low-level compression — used by the collection share dialog to encode the ?sheet= payload
 const encoded = await url.compressArray(['uuid1', 'uuid2']);
 const values  = await url.decompressToArray(encoded);
+
+// Legacy helpers — still available but not used by the board/sheet share flow
+const shareUrl = await url.toCollectionUrl(assetIds, { param: 'assets', base?: string });
+const assetIds = await url.fromCollectionUrl(window.location.search, 'assets');
 ```
 
 ---

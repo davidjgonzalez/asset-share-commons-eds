@@ -192,11 +192,18 @@ async function loadCardMosaic(card) {
     try {
       const asset = await Asset.create(assetId);
       if (!asset?.path) return;
-      const url = services.renditions.getThumbnailUrl(asset);
+      const srcset = services.renditions.getThumbnailSrcset(asset);
+      const url = srcset.length
+        ? srcset[Math.floor(srcset.length / 2)].url
+        : services.renditions.getThumbnailUrl(asset);
       const img = document.createElement('img');
-      img.alt = '';
+      img.alt = asset.description || asset.title || asset.name || '';
       img.loading = 'lazy';
       img.src = url;
+      if (srcset.length) {
+        img.srcset = srcset.map((r) => `${r.url} ${r.size.width}w`).join(', ');
+        img.sizes = '(min-width: 768px) 120px, 80px';
+      }
       el.classList.remove('asc-ui-skeleton');
       el.appendChild(img);
     } catch {

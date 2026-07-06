@@ -23,12 +23,13 @@
  *   width / height        pixel dimensions
  *   dimensions            "width × height" combined string
  *   url                   rendition URL
- *   type                  static | url | asset-delivery
+ *   type                  static | url | dm-openapi
  *   usecase               usecase tag from the definition
  *   description           description from the definition
  */
 
 import Asset from '../../scripts/asc/models/asset.js';
+import { escHtml, renderPropertyValue } from '../../scripts/html.js';
 
 const MULTI_VALUE_LIMIT = 10;
 
@@ -97,20 +98,7 @@ export default async function decorate(block) {
 }
 
 function renderValue(value) {
-  if (Array.isArray(value)) {
-    const chips = (items) => items.map((v) => `<span class="asc-ui-chip">${escHtml(String(v))}</span>`).join('');
-    if (value.length > MULTI_VALUE_LIMIT) {
-      const count = value.length - MULTI_VALUE_LIMIT;
-      return `<span class="asc-ui-chip-list">${chips(value.slice(0, MULTI_VALUE_LIMIT))}<span class="asc-ui-chip-extras is-hidden">${chips(value.slice(MULTI_VALUE_LIMIT))}</span></span>`
-        + `<button class="asc-view-more-btn" type="button" aria-expanded="false" data-extras-count="${count}">View more (${count})</button>`;
-    }
-    return `<span class="asc-ui-chip-list">${chips(value)}</span>`;
-  }
-  if (typeof value === 'object' && value !== null) {
-    if (value.width != null && value.height != null) return escHtml(`${value.width} × ${value.height}`);
-    return '';
-  }
-  return escHtml(String(value));
+  return renderPropertyValue(value, { limit: MULTI_VALUE_LIMIT });
 }
 
 function buildContext(asset, rendition) {
@@ -140,12 +128,4 @@ function formatBytes(bytes) {
   if (bytes < 1024 * 1024) return `${Math.ceil(bytes / 1024)} KB`;
   if (bytes < 1024 * 1024 * 1024) return `${Math.ceil(bytes / (1024 * 1024))} MB`;
   return `${(Math.ceil((bytes / (1024 * 1024 * 1024)) * 10) / 10).toFixed(1)} GB`;
-}
-
-function escHtml(str) {
-  return String(str ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
 }

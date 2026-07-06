@@ -7,16 +7,26 @@
  * Every option is documented below. Most are commented out with their defaults shown.
  * Uncomment and change only what you need.
  */
+import uploadedDate from './asc/services/properties/uploaded-date.js';
+import uploadedBy from './asc/services/properties/uploaded-by.js';
+import lastModifiedBy from './asc/services/properties/last-modified-by.js';
+import author from './asc/services/properties/author.js';
+import keywords from './asc/services/properties/keywords.js';
+import lastModifiedDate from './asc/services/properties/last-modified-date.js';
+import tags from './asc/services/properties/tags.js';
+import colors from './asc/services/properties/colors.js';
+import smartTags from './asc/services/properties/smart-tags.js';
+
 const configurations = {
 
   // ─── AEM Connection ──────────────────────────────────────────────────────────
   aem: {
     // The hostname of your AEM author or publish instance.
     // In production this is typically your publish host; locally it's your AEM SDK.
-    host: 'http://localhost:3002',
+    host: 'https://publish-p207002-e2157253.adobeaemcloud.com',
 
     // AEM Asset Delivery host (AEM as a Cloud Service only).
-    // Required when using renditions of type 'asset-delivery'.
+    // Required when using renditions of type 'dm-openapi'.
     // Format: 'https://delivery-pXXXXX-eYYYYY.adobeaemcloud.com'
     // deliveryHost: '',
   },
@@ -109,7 +119,7 @@ const configurations = {
     // accepts: (asset) => asset.mimeType?.startsWith('image/'),
     //
     // Require a specific metadata property:
-    // accepts: (asset) => !!asset.getProperty('jcr:content/metadata/dam:status'),
+    // accepts: (asset) => !!asset.getProperty('jcr:content/metadata/dam:status').data,
   },
 
   // ─── Search Results ──────────────────────────────────────────────────────────
@@ -148,7 +158,7 @@ const configurations = {
   //       // Custom property — must be registered in properties.custom:
   //       // { property: 'brand',   label: 'Brand', width: '120px' },
   //       // Escape hatch — custom render function when a property name isn't enough:
-  //       // { label: 'Status', width: '80px', render: (asset) => asset.getProperty('dam:status') || '—' },
+  //       // { label: 'Status', width: '80px', render: (asset) => asset.getProperty('dam:status').text || '—' },
   //     ],
   //   },
   // },
@@ -176,15 +186,15 @@ const configurations = {
     //
     // Route by metadata property:
     // templates: (asset) => {
-    //   const brand = asset.getProperty('jcr:content/metadata/myco:brand');
+    //   const brand = asset.getProperty('jcr:content/metadata/myco:brand').data;
     //   return brand === 'acme' ? '/details/acme' : '/details';
     // },
     // Route PDFs to their own fragment page so details-pdf can be authored there.
     // Create template pages in da.live and map MIME types here.
     templates: (asset) => {
-      if (asset.mimeType?.startsWith('image/'))    return '/details/image';
-      if (asset.mimeType?.startsWith('video/'))    return '/details/video';
-      if (asset.mimeType === 'application/pdf')    return '/details/pdf';
+      if (asset.mimeType?.startsWith('image/')) return '/details/image';
+      if (asset.mimeType?.startsWith('video/')) return '/details/video';
+      if (asset.mimeType === 'application/pdf') return '/details/pdf';
       if ([
         'application/vnd.openxmlformats-officedocument.presentationml.presentation',
         'application/vnd.ms-powerpoint',
@@ -192,7 +202,7 @@ const configurations = {
         'application/msword',
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         'application/vnd.ms-excel',
-      ].includes(asset.mimeType))                  return '/details/office';
+      ].includes(asset.mimeType)) return '/details/office';
       return '/details';
     },
   },
@@ -248,83 +258,18 @@ const configurations = {
   },
 
   // ─── Asset Properties ────────────────────────────────────────────────────────
+  // Each property handler lives in scripts/asc/services/properties/<name>.js
   properties: {
     custom: {
-      // Uploaded date → repo:createDate (OpenAPI) or jcr:created root (QueryBuilder).
-      'uploaded-date': (asset) => {
-        const raw = asset.getProperty('repo:createDate') || asset.getProperty('jcr:created');
-        if (!raw) return null;
-        return new Date(raw).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
-      },
-
-      // Uploaded by → repo:createdBy (OpenAPI) or jcr:createdBy root (QueryBuilder).
-      'uploaded-by': (asset) => asset.getProperty('repo:createdBy') || asset.getProperty('jcr:createdBy') || null,
-
-      // Last modified by → repo:modifiedBy (OpenAPI) or jcr:lastModifiedBy root (QueryBuilder).
-      'last-modified-by': (asset) => asset.getProperty('repo:modifiedBy') || asset.getProperty('jcr:lastModifiedBy') || null,
-
-      // Author → dc:creator, may be multi-value.
-      'author': (asset) => {
-        const raw = asset.getProperty('jcr:content/metadata/dc:creator');
-        if (!raw) return null;
-        return Array.isArray(raw) ? raw.join(', ') : raw;
-      },
-
-      // Keywords → dc:subject values; multi-value, rendered as chips.
-      'keywords': (asset) => {
-        const raw = asset.getProperty('jcr:content/metadata/dc:subject');
-        if (!raw) return null;
-        return Array.isArray(raw) ? raw : [raw];
-      },
-
-      // Last modified date → repo:modifiedDate (OpenAPI) or jcr:lastModified root (QueryBuilder).
-      'last-modified-date': (asset) => {
-        const raw = asset.getProperty('repo:modifiedDate') || asset.getProperty('jcr:lastModified');
-        if (!raw) return null;
-        return new Date(raw).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
-      },
-
-      // Tags → array of leaf labels; the details-metadata block renders arrays
-      // as .asc-ui-chip pills. Reads AEM's cq:tags (tag IDs like "ns:foo/bar").
-      tags: (asset) => {
-        const raw = asset.getProperty('jcr:content/metadata/cq:tags');
-        const list = Array.isArray(raw) ? raw : (raw ? [raw] : []);
-        return list.map((t) => String(t).split('/').pop()).filter(Boolean);
-      },
-
-      // Colors → HTML swatch strip from AEM Sensei dominant color analysis.
-      // Reads dam:colorDistribution; each swatch shows the actual color dot + label.
-      // Requires 'jcr:content/metadata/dam:colorDistribution' in search.properties
-      // so the node is fetched with each result (QueryBuilder provider only).
-      // Returns null when no color distribution data is present.
-      colors: (asset) => {
-        const dist = asset.getProperty('jcr:content/metadata/dam:colorDistribution');
-        if (!dist || typeof dist !== 'object') return null;
-        const list = Object.values(dist)
-          .filter((c) => c && Array.isArray(c.rgb) && c.rgb.length === 3)
-          .sort((a, b) => (a.rank ?? 99) - (b.rank ?? 99));
-        if (!list.length) return null;
-        const swatches = list.map(({ rgb, name }) => {
-          const hex = `#${rgb.map((n) => n.toString(16).padStart(2, '0')).join('')}`;
-          const label = name.replace(/_/g, ' ').toLowerCase().replace(/^\w/, (c) => c.toUpperCase());
-          return `<span class="asc-ui-swatch" style="--asc-ui-swatch-color:${hex}"><span class="asc-ui-swatch__dot"></span><span class="asc-ui-swatch__label">${label}</span></span>`;
-        }).join('');
-        return `<span class="asc-ui-swatch-list">${swatches}</span>`;
-      },
-
-      // Smart Tags → array of tag names from AEM Sensei AI, sorted by confidence.
-      // Requires 'jcr:content/metadata/predictedTags' in search.properties
-      // so the data is fetched with each result (QueryBuilder provider only).
-      // Returns null when no smart tags are present on the asset.
-      'smart-tags': (asset) => {
-        const predictedTags = asset.getProperty('jcr:content/metadata/predictedTags');
-        if (!predictedTags || typeof predictedTags !== 'object') return null;
-        return Object.values(predictedTags)
-          .filter((tag) => tag && typeof tag.confidence === 'number')
-          .sort((a, b) => b.confidence - a.confidence)
-          .map((tag) => tag.name)
-          .filter(Boolean) || null;
-      },
+      'uploaded-date': uploadedDate,
+      'uploaded-by': uploadedBy,
+      'last-modified-by': lastModifiedBy,
+      author,
+      keywords,
+      'last-modified-date': lastModifiedDate,
+      tags,
+      colors,
+      'smart-tags': smartTags,
     },
   },
 
@@ -334,7 +279,7 @@ const configurations = {
   //   // The key is the property name used in details-property blocks.
   //   // Built-in: 'file-type', 'file-size', 'dimensions', 'width', 'height', 'file-extension'
   //   custom: {
-  //     'my-property': (asset, options) => asset.getProperty('jcr:content/metadata/myns:myField'),
+  //     'my-property': (asset, options) => asset.getProperty('jcr:content/metadata/myns:myField').data,
   //   },
   //
   //   // Configuration passed to built-in property handlers.
@@ -363,7 +308,7 @@ const configurations = {
   // Each definition has:
   //   id          {string}    Unique key. Used by getRendition(asset, id).
   //   label       {string}    Display name in the download list.
-  //   type        {string}    'static' | 'url' | 'asset-delivery'
+  //   type        {string}    'static' | 'url' | 'dm-openapi'
   //   accepts     {Function}  (asset) => boolean. Omit to apply to all asset types.
   //   visible     {boolean}   Show in download list (default: true).
   //                           Set false for internal-only renditions (e.g. thumbnail).
@@ -381,23 +326,34 @@ const configurations = {
   //   name: /^cq5dam\.web\./         RegExp pattern match
   //   name: (asset) => string        Dynamic exact match
   //
-  // ── type: 'url' ──────────────────────────────────────────────────────────────
-  // Legacy Dynamic Media / Scene7 (IS/IR protocol — "is/image/" URLs).
-  //   url: (asset) => string         Function that returns the full URL.
-  //                                  Use asset.getProperty('dam:scene7APIServer') etc.
+  // ── type: 'dm-smartcrop' ─────────────────────────────────────────────────────
+  // Classic Dynamic Media (Scene7) smart crop via the IS protocol.
+  // URL: {dam:scene7APIServer}is/image/{dam:scene7File}:{id}
+  // The definition `id` must exactly match the smart crop name registered in DM
+  // (e.g. "Small", "Medium", "Large" — case-sensitive).
+  // Smart crops present on the asset but not listed here are auto-detected and
+  // appended automatically. Use explicit definitions when you need custom labels,
+  // accepts guards, or a specific ordering.
   //
-  // ── type: 'asset-delivery' ───────────────────────────────────────────────────
+  // ── type: 'url-template' ─────────────────────────────────────────────────────
+  // Dynamic Media / Scene7 IS/IR protocol using declarative token strings.
+  // Preferred over 'url' for DM image presets — no JS function needed.
+  //   template: string   URL with ${variable} tokens. Resolves to null automatically
+  //                      if any token has no value on the asset (safe fallback).
+  // Tokens: ${asset.path} ${asset.name} ${asset.extension} ${rendition.name}
+  //         ${dm.api-server} ${dm.file} ${dm.folder} ${dm.domain} ${dm.name} ${dm.id}
+  //
+  // ── type: 'url' ──────────────────────────────────────────────────────────────
+  // Custom Dynamic Media URLs requiring arbitrary JS logic.
+  //   url: (asset) => string         Function that returns the full URL.
+  //                                  Use asset.getProperty('dam:scene7APIServer').data etc.
+  //
+  // ── type: 'dm-openapi' ───────────────────────────────────────────────────
   // Dynamic Media with OpenAPI / AEM Asset Delivery (AEM as a Cloud Service only).
   // URL: {aem.deliveryHost}/adobe/dynamicmedia/deliver/{uuid}/{filename}.{ext}?{params}
   // Requires aem.deliveryHost to be set.
   //
-  // This covers ALL DM OpenAPI use cases — plain image transforms, smart crops,
-  // and named image presets are all just different `params` values on the same URL:
-  //   Plain transforms:  format=webp&width=1200&quality=85
-  //   Smart Crop:        smartcrop=Small  (crop name must match DM preset)
-  //   Named preset:      imagePreset=web
-  //
-  //   params   {string}  Query string appended to the delivery URL
+  //   params   {string}  Query string appended to the delivery URL (e.g. 'format=webp&width=1200')
   //   format   {string}  File extension override (default: asset's extension)
   //
   renditions: {
@@ -414,7 +370,16 @@ const configurations = {
       /^cqdam\..+\.json$/,     // cqdam.text.json, cqdam.metadata.json, etc.
       'cqdam.metadata.xml',
     ],
-  //   definitions: [
+    // Thumbnail renditions — used exclusively for <img srcset> in search result cards.
+    // Never shown in the download list. Each entry needs `size.width` for the srcset descriptor.
+    thumbnails: [
+      { type: 'web-optimized-delivery', size: { width: 100  }, params: 'width=100&preferwebp=true&quality=85',  accepts: (asset) => asset.mimeType?.startsWith('image/') },
+      { type: 'web-optimized-delivery', size: { width: 250  }, params: 'width=250&preferwebp=true&quality=85',  accepts: (asset) => asset.mimeType?.startsWith('image/') },
+      { type: 'web-optimized-delivery', size: { width: 500  }, params: 'width=500&preferwebp=true&quality=85',  accepts: (asset) => asset.mimeType?.startsWith('image/') },
+      { type: 'web-optimized-delivery', size: { width: 1000 }, params: 'width=1000&preferwebp=true&quality=60', accepts: (asset) => asset.mimeType?.startsWith('image/') },
+      { type: 'web-optimized-delivery', size: { width: 1600 }, params: 'width=1600&preferwebp=true&quality=60', accepts: (asset) => asset.mimeType?.startsWith('image/') },
+    ],
+    definitions: [
   //
   //     // ── Static renditions ─────────────────────────────────────────────────
   //     // Works with any AEM instance that runs standard DAM processing profiles.
@@ -439,30 +404,56 @@ const configurations = {
   //       name: 'original',
   //     },
   //
-  //     // ── Legacy Dynamic Media / Scene7 (IS/IR protocol) ────────────────────
+  //     // ── Dynamic Media / Scene7 (IS/IR protocol) ──────────────────────────
   //     // For AEM 6.5 or AEMaaCS with classic DM enabled.
-  //     // Requires dam:scene7* metadata on assets (written by DM sync process).
+  //     // Requires dam:scene7* metadata on assets (written by the DM sync process).
+  //     //
+  //     // type: 'url-template' — resolves ${variable} tokens against the asset.
+  //     // Supported tokens: ${asset.path}, ${asset.name}, ${asset.extension},
+  //     //   ${rendition.name}, ${dm.name}, ${dm.id}, ${dm.file}, ${dm.folder},
+  //     //   ${dm.domain}, ${dm.api-server}
+  //     // Returns null automatically if any token in the template has no value.
+  //     //
+  //     // Image preset:
   //     {
   //       id: 'dm-web',
   //       label: 'Web',
-  //       type: 'url',
-  //       url: (asset) => {
-  //         const server = asset.getProperty('dam:scene7APIServer');
-  //         const file = asset.getProperty('dam:scene7File');
-  //         return server && file ? `${server}is/image/${file}?$web$` : null;
-  //       },
-  //       accepts: (asset) => !!asset.getProperty('dam:scene7File'),
+  //       type: 'url-template',
+  //       template: '${dm.api-server}is/image/${dm.file}?$web$',
+  //     },
+  //     //
+  //     // Smart crops — id must match the DM-registered crop name exactly.
+  //     // Any crop NOT listed here is auto-detected from the asset's JCR renditions tree.
+  //     // Use explicit definitions only when you need custom labels or accepts guards.
+  //     {
+  //       id: 'Large',
+  //       label: 'Smart Crop — Large',
+  //       type: 'dm-smartcrop',
+  //       accepts: (asset) => asset.mimeType?.startsWith('image/'),
   //     },
   //     {
-  //       id: 'dm-smart-crop-small',
+  //       id: 'Medium',
+  //       label: 'Smart Crop — Medium',
+  //       type: 'dm-smartcrop',
+  //       accepts: (asset) => asset.mimeType?.startsWith('image/'),
+  //     },
+  //     {
+  //       id: 'Small',
   //       label: 'Smart Crop — Small',
+  //       type: 'dm-smartcrop',
+  //       accepts: (asset) => asset.mimeType?.startsWith('image/'),
+  //     },
+  //     //
+  //     // type: 'url' — arbitrary JS function when template tokens aren't enough.
+  //     {
+  //       id: 'dm-grayscale',
+  //       label: 'Grayscale',
   //       type: 'url',
   //       url: (asset) => {
-  //         const server = asset.getProperty('dam:scene7APIServer');
-  //         const file = asset.getProperty('dam:scene7File');
-  //         return server && file ? `${server}is/image/${file}:Small` : null;
+  //         const server = asset.getProperty('dam:scene7APIServer').data;
+  //         const file = asset.getProperty('dam:scene7File').data;
+  //         return server && file ? `${server}is/image/${file}?$grayscale$` : null;
   //       },
-  //       accepts: (asset) => !!asset.getProperty('dam:scene7File'),
   //     },
   //
   //     // ── DM with OpenAPI / AEM Asset Delivery (AEMaaCS only) ──────────────
@@ -471,25 +462,25 @@ const configurations = {
   //     {
   //       id: 'web-optimized',
   //       label: 'Web Optimized',
-  //       type: 'asset-delivery',
+  //       type: 'dm-openapi',
   //       params: 'format=webp&preferwebp=true&width=1200&quality=85',
   //       accepts: (asset) => asset.mimeType?.startsWith('image/'),
   //     },
   //     {
   //       id: 'smart-crop-small',
   //       label: 'Smart Crop — Small',
-  //       type: 'asset-delivery',
+  //       type: 'dm-openapi',
   //       params: 'smartcrop=Small',
   //       accepts: (asset) => asset.mimeType?.startsWith('image/'),
   //     },
   //     {
   //       id: 'dm-preset-web',
   //       label: 'Web Preset',
-  //       type: 'asset-delivery',
+  //       type: 'dm-openapi',
   //       params: 'imagePreset=web',
   //       accepts: (asset) => asset.mimeType?.startsWith('image/'),
   //     },
-  //   ],
+    ],
   },
 
   // ─── Init / Preloading ───────────────────────────────────────────────────────

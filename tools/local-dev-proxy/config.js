@@ -15,7 +15,7 @@ export default {
 
   targets: {
     aemUp: 'http://localhost:3000', // aem up dev proxy
-    aem:   'http://localhost:4503', // local AEM author/publish
+    aem:   'https://publish-p207002-e2157253.adobeaemcloud.com', // local AEM author/publish
   },
 
   // ─── Routing ───────────────────────────────────────────────────────────────

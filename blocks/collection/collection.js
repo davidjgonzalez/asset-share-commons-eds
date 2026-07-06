@@ -11,60 +11,13 @@ const SHEET_PATH = configurations.collections?.sheetPath || '/sheets/';
 const SHARE_HISTORY_KEY = 'shareHistory';
 const MAX_SHARE_HISTORY = 20;
 
-let _cardDragMoved = false;
-let _rubberBandJustSelected = false;
-
-let _openPanelState = null;
-let _noteHoverTimer = null;
-
-const _selectedItems = new Set();
-
-// ─── Viewport & board state ────────────────────────────────────────────────────
-
-const VIEWPORT_KEY = (id) => `asc:boardViewport:${id}`;
+// Board text items are owned by the board block; the collection block reads them
+// here only when encoding the share payload so text elements survive into the sheet.
 const BOARD_TEXT_KEY = (id) => `asc:boardText:${id}`;
-const EXPAND_KEY = (id) => `asc:boardExpanded:${id}`;
-
 function getBoardTextItems(collectionId) {
-  try {
-    return JSON.parse(localStorage.getItem(BOARD_TEXT_KEY(collectionId))) || [];
-  } catch {
-    return [];
-  }
+  try { return JSON.parse(localStorage.getItem(BOARD_TEXT_KEY(collectionId))) || []; } catch { return []; }
 }
 
-function setBoardTextItems(collectionId, items) {
-  localStorage.setItem(BOARD_TEXT_KEY(collectionId), JSON.stringify(items));
-}
-
-function saveTextItem(collectionId, el) {
-  const { textId } = el.dataset;
-  if (!textId) return;
-  const w = el.offsetWidth;
-  const h = el.offsetHeight;
-  if (!w || !h) return; // element removed from DOM — ResizeObserver fires 0×0, don't clobber stored size
-  const items = getBoardTextItems(collectionId);
-  const item = items.find((t) => t.id === textId);
-  if (!item) return;
-  item.x = Math.round(parseFloat(el.style.left) || 0);
-  item.y = Math.round(parseFloat(el.style.top) || 0);
-  item.w = w;
-  item.h = h;
-  item.content = el.querySelector('.board__text-content')?.innerText?.trim() || '';
-  setBoardTextItems(collectionId, items);
-}
-
-function getViewport(collectionId) {
-  try {
-    return JSON.parse(localStorage.getItem(VIEWPORT_KEY(collectionId))) || { panX: 0, panY: 0, zoom: 1 };
-  } catch {
-    return { panX: 0, panY: 0, zoom: 1 };
-  }
-}
-
-function setViewport(collectionId, state) {
-  localStorage.setItem(VIEWPORT_KEY(collectionId), JSON.stringify(state));
-}
 
 /**
  * Collection block — detail/edit page for a single collection.
@@ -72,10 +25,11 @@ function setViewport(collectionId, state) {
  * Page URL: /collections/collection?id=<uuid>
  *
  * Features:
+ *   - Board canvas: pan (drag background), zoom (scroll), Fit view, Expand, Align to grid
+ *   - Draggable asset cards with per-asset notes; position saved via updateItem()
+ *   - Free-floating text elements stored in localStorage (asc:boardText:{id})
+ *   - Rubber-band + shift-click multi-select; group drag
  *   - Editable collection name
- *   - Mixed item list: asset rows (120×90 thumbnail) and inline section widgets
- *   - Section widgets: editable h2 + Markdown textarea, saves on blur
- *   - "Add section" button appends a new empty section
  *   - Share / Download / Delete using global .btn utilities
  *   - Dialogs use .asc-dialog shell
  */
@@ -88,9 +42,9 @@ export default async function decorate(block) {
     await render(block, collectionId);
   });
 
-  document.addEventListener(DownloadEvents.CHANGED, () => refreshDownloadStatus(block));
-  document.addEventListener(DownloadEvents.COMPLETE, () => refreshDownloadStatus(block));
-  document.addEventListener(DownloadEvents.FAILED, () => refreshDownloadStatus(block));
+  [DownloadEvents.CHANGED, DownloadEvents.COMPLETE, DownloadEvents.FAILED].forEach((ev) => {
+    document.addEventListener(ev, () => refreshDownloadStatus(block, collectionId));
+  });
 
   document.addEventListener('click', (e) => {
     if (!block.contains(e.target)) closeMenu(block);
@@ -107,17 +61,14 @@ async function render(block, collectionId) {
   }
   const data = services.collections._getData();
   const isDefault = data.defaultId === collection.id;
-  const pendingJobs = services.downloads.getAll().filter(
-    (j) => j.collectionId === collection.id
-      && (j.status === DownloadStatus.RUNNING || j.status === DownloadStatus.PENDING),
-  );
+  const pendingJobs = getPendingJobs(collection.id);
   block.innerHTML = html(collection, isDefault, pendingJobs);
   initInteractions(block, collection, isDefault);
 }
 
 function html(collection, isDefault, pendingJobs) {
   const items = collection.hydratedItems || [];
-  const assetCount = (collection.assetIds || []).length;
+  const assetCount = items.filter((i) => i.type === 'asset').length;
   const updated = formatUpdated(collection.modifiedAt);
   return `
     <section class="collection__shell" aria-label="Collection">
@@ -160,83 +111,7 @@ function html(collection, isDefault, pendingJobs) {
 
     ${pendingJobs.length ? renderJobsStatus(pendingJobs) : ''}
 
-    ${boardHtml(items, getBoardTextItems(collection.id))}
     </section>`;
-}
-
-function boardHtml(items, textItems) {
-  const assetItems = items.filter((i) => i.type === 'asset' && i.asset);
-  return `
-    <div class="board__viewport">
-      <div class="board__canvas">
-        ${assetItems.map((item, index) => boardCard(item, index)).join('')}
-        ${textItems.map((t) => boardTextElement(t)).join('')}
-      </div>
-      <div class="asc-ui-segmented asc-ui-segmented--xl board__toolbar" role="toolbar" aria-label="Board tools">
-        <button type="button" class="asc-ui-segmented__option board__reset-view">Fit view</button>
-        <button type="button" class="asc-ui-segmented__option board__align-grid">Align to grid</button>
-        <button type="button" class="asc-ui-segmented__option board__add-text">+ Text</button>
-        <button type="button" class="asc-ui-segmented__option board__expand">Expand</button>
-      </div>
-    </div>`;
-}
-
-function assetTypeLabel(mimeType) {
-  if (!mimeType) return 'Asset';
-  if (mimeType.startsWith('image/')) return 'Image';
-  if (mimeType.startsWith('video/')) return 'Video';
-  if (mimeType.startsWith('audio/')) return 'Audio';
-  if (mimeType === 'application/pdf') return 'PDF';
-  if (mimeType.includes('word') || mimeType.includes('document')) return 'Document';
-  if (mimeType.includes('sheet') || mimeType.includes('excel')) return 'Spreadsheet';
-  if (mimeType.includes('presentation') || mimeType.includes('powerpoint')) return 'Presentation';
-  const ext = services.fileType.getExtension(mimeType);
-  return ext ? ext.toUpperCase() : 'Asset';
-}
-
-function boardCard(item, index) {
-  const { asset, notes } = item;
-  const x = item.x !== undefined ? item.x : 80 + (index % 10) * 180;
-  const y = item.y !== undefined ? item.y : 80 + Math.floor(index / 10) * 160;
-  const thumbnailUrl = services.renditions.getThumbnailUrl(asset);
-  return `
-    <article class="asc-ui-asset-card board__card${notes ? ' board__card--has-note' : ''}"
-             style="left: ${x}px; top: ${y}px"
-             data-asc-asset="${escAttr(asset.uuid)}"
-             data-asc-notes="${escAttr(notes || '')}">
-      <div class="asc-ui-asset-card__thumb">
-        <div class="asc-ui-asset-card__overlay">
-          <button type="button"
-                  class="asc-ui-icon-btn asc-ui-icon-btn--sm board__card-remove"
-                  data-asc-asset="${escAttr(asset.uuid)}"
-                  aria-label="Remove ${escHtml(asset.title)} from collection">&#x2715;</button>
-        </div>
-        <img src="${thumbnailUrl}" alt="${escHtml(asset.title)}" loading="lazy" draggable="false" />
-      </div>
-      <div class="asc-ui-asset-card__body">
-        <p class="asc-ui-asset-card__title" title="${escHtml(asset.title)}">${escHtml(assetTypeLabel(asset.mimeType))}</p>
-      </div>
-      <div class="asc-ui-asset-card__footer">
-        <button type="button"
-                class="asc-ui-icon-btn asc-ui-icon-btn--sm board__notes-btn"
-                data-asc-asset="${escAttr(asset.uuid)}"
-                aria-label="Notes"
-                title="Notes">&#9998;</button>
-      </div>
-    </article>`;
-}
-
-function boardTextElement(t) {
-  return `
-    <div class="board__text-element"
-         style="left:${t.x}px;top:${t.y}px;width:${t.w}px;height:${t.h}px"
-         data-text-id="${escAttr(t.id)}">
-      <button type="button"
-              class="btn btn--ghost btn--icon btn--sm board__text-remove"
-              data-text-id="${escAttr(t.id)}"
-              aria-label="Remove text element">&#x2715;</button>
-      <div class="board__text-content" contenteditable="false">${escHtml(t.content)}</div>
-    </div>`;
 }
 
 function renderJobsStatus(jobs) {
@@ -269,729 +144,8 @@ function initInteractions(block, collection, isDefault) {
   initDownload(block, collection);
   if (!isDefault) initDelete(block, collection);
   initJobActions(block);
-  initBoard(block, collection);
-  initCardDrag(block, collection);
-  initBoardClicks(block, collection);
-  initTextElements(block, collection);
-  initAddText(block, collection);
 }
 
-function selectItem(el) {
-  el.classList.add('board__card--selected');
-  _selectedItems.add(el);
-}
-
-function deselectItem(el) {
-  el.classList.remove('board__card--selected');
-  _selectedItems.delete(el);
-}
-
-function deselectAll() {
-  _selectedItems.forEach((el) => el.classList.remove('board__card--selected'));
-  _selectedItems.clear();
-}
-
-function toggleItem(el) {
-  if (_selectedItems.has(el)) deselectItem(el);
-  else selectItem(el);
-}
-
-function computeFitViewport(cards, viewport) {
-  if (!cards.length) return { panX: 0, panY: 0, zoom: 1 };
-  let minX = Infinity;
-  let minY = Infinity;
-  let maxX = -Infinity;
-  let maxY = -Infinity;
-  cards.forEach((card) => {
-    const x = parseFloat(card.style.left) || 0;
-    const y = parseFloat(card.style.top) || 0;
-    const w = card.offsetWidth || 160;
-    const h = card.offsetHeight || 200;
-    minX = Math.min(minX, x);
-    minY = Math.min(minY, y);
-    maxX = Math.max(maxX, x + w);
-    maxY = Math.max(maxY, y + h);
-  });
-  const PAD = 72; // 3 × --spacing-lg (4.5rem)
-  const contentW = maxX - minX;
-  const contentH = maxY - minY;
-  const vw = viewport.clientWidth;
-  const vh = viewport.clientHeight;
-  if (!contentW || !contentH) return { panX: 0, panY: 0, zoom: 1 };
-  const zoom = Math.min(
-    (vw - 2 * PAD) / contentW,
-    (vh - 2 * PAD) / contentH,
-    1.0,
-  );
-  const panX = (vw - contentW * zoom) / 2 - minX * zoom;
-  const panY = PAD - minY * zoom;
-  return { panX, panY, zoom };
-}
-
-function initBoard(block, collection) {
-  const viewport = block.querySelector('.board__viewport');
-  const canvas = block.querySelector('.board__canvas');
-  if (!viewport || !canvas) return;
-
-  _selectedItems.clear();
-
-  // Restore expand state before measuring the viewport
-  if (localStorage.getItem(EXPAND_KEY(collection.id)) === 'true') {
-    block.setAttribute('data-board-expanded', '');
-    const expandBtn = block.querySelector('.board__expand');
-    if (expandBtn) expandBtn.textContent = 'Collapse';
-  }
-
-  const hasSavedViewport = localStorage.getItem(VIEWPORT_KEY(collection.id)) !== null;
-  let { panX, panY, zoom } = getViewport(collection.id);
-
-  function applyFit(fit) {
-    ({ panX, panY, zoom } = fit);
-    canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
-    setViewport(collection.id, fit);
-  }
-
-  canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
-
-  if (!hasSavedViewport) {
-    // RAF ensures the expanded CSS dimensions are applied before measuring
-    requestAnimationFrame(() => {
-      const allCards = [...canvas.querySelectorAll('.board__card, .board__text-element')];
-      applyFit(computeFitViewport(allCards, viewport));
-    });
-  }
-
-  let panning = false;
-  let lastX = 0;
-  let lastY = 0;
-
-  viewport.addEventListener('pointerdown', (e) => {
-    if (e.target.closest('.board__card, .board__text-element')) return;
-    if (e.target.closest('.board__notes-panel, .board__toolbar')) return;
-
-    if (e.button === 1) {
-      // Middle-mouse = pan
-      panning = true;
-      lastX = e.clientX;
-      lastY = e.clientY;
-      viewport.setPointerCapture(e.pointerId);
-      viewport.classList.add('board__viewport--panning');
-      return;
-    }
-
-    // Plain drag on empty canvas = rubber-band selection
-    const viewportRect = viewport.getBoundingClientRect();
-    const startX = e.clientX - viewportRect.left;
-    const startY = e.clientY - viewportRect.top;
-    let endX = startX;
-    let endY = startY;
-
-    const selRect = document.createElement('div');
-    selRect.className = 'board__selection-rect';
-    viewport.appendChild(selRect);
-
-    const rbMove = (ev) => {
-      endX = ev.clientX - viewportRect.left;
-      endY = ev.clientY - viewportRect.top;
-      const left = Math.min(startX, endX);
-      const top = Math.min(startY, endY);
-      selRect.style.left = `${left}px`;
-      selRect.style.top = `${top}px`;
-      selRect.style.width = `${Math.abs(endX - startX)}px`;
-      selRect.style.height = `${Math.abs(endY - startY)}px`;
-    };
-
-    const rbUp = () => {
-      document.removeEventListener('pointermove', rbMove);
-      document.removeEventListener('pointerup', rbUp);
-      selRect.remove();
-
-      const rbW = Math.abs(endX - startX);
-      const rbH = Math.abs(endY - startY);
-      if (rbW < 4 && rbH < 4) { deselectAll(); return; }
-
-      const rbLeft = Math.min(startX, endX);
-      const rbTop = Math.min(startY, endY);
-      const rbRight = rbLeft + rbW;
-      const rbBottom = rbTop + rbH;
-
-      deselectAll();
-      canvas.querySelectorAll('.board__card, .board__text-element').forEach((item) => {
-        const cx = parseFloat(item.style.left) || 0;
-        const cy = parseFloat(item.style.top) || 0;
-        const itemVpLeft = cx * zoom + panX;
-        const itemVpTop = cy * zoom + panY;
-        const itemVpRight = itemVpLeft + item.offsetWidth * zoom;
-        const itemVpBottom = itemVpTop + item.offsetHeight * zoom;
-        if (itemVpRight > rbLeft && itemVpLeft < rbRight
-          && itemVpBottom > rbTop && itemVpTop < rbBottom) {
-          selectItem(item);
-        }
-      });
-      if (_selectedItems.size > 0) _rubberBandJustSelected = true;
-    };
-
-    document.addEventListener('pointermove', rbMove);
-    document.addEventListener('pointerup', rbUp);
-  });
-
-  viewport.addEventListener('pointermove', (e) => {
-    if (!panning) return;
-    panX += e.clientX - lastX;
-    panY += e.clientY - lastY;
-    lastX = e.clientX;
-    lastY = e.clientY;
-    canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
-    repositionOpenPanel();
-  });
-
-  function endPan(save) {
-    if (!panning) return;
-    panning = false;
-    viewport.classList.remove('board__viewport--panning');
-    if (save) setViewport(collection.id, { panX, panY, zoom });
-  }
-  viewport.addEventListener('pointerup', () => endPan(true));
-  viewport.addEventListener('pointercancel', () => endPan(false));
-
-  const MIN_ZOOM = 0.2;
-  const MAX_ZOOM = 3.0;
-
-  viewport.addEventListener('wheel', (e) => {
-    e.preventDefault();
-    if (e.ctrlKey || e.metaKey) {
-      // Ctrl+scroll or pinch-to-zoom
-      const rect = viewport.getBoundingClientRect();
-      const cursorX = e.clientX - rect.left;
-      const cursorY = e.clientY - rect.top;
-      const factor = e.deltaY < 0 ? 1.1 : 0.9;
-      const newZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom * factor));
-      panX = cursorX - (cursorX - panX) * (newZoom / zoom);
-      panY = cursorY - (cursorY - panY) * (newZoom / zoom);
-      zoom = newZoom;
-    } else {
-      // Scroll / two-finger trackpad swipe = pan
-      panX -= e.deltaX;
-      panY -= e.deltaY;
-    }
-    canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
-    setViewport(collection.id, { panX, panY, zoom });
-    repositionOpenPanel();
-  }, { passive: false });
-
-  block.querySelector('.board__reset-view')?.addEventListener('click', () => {
-    const allCards = [...canvas.querySelectorAll('.board__card, .board__text-element')];
-    applyFit(computeFitViewport(allCards, viewport));
-    repositionOpenPanel();
-  });
-
-  block.querySelector('.board__expand')?.addEventListener('click', () => {
-    const expandBtn = block.querySelector('.board__expand');
-    const isExpanded = block.hasAttribute('data-board-expanded');
-    if (isExpanded) {
-      block.removeAttribute('data-board-expanded');
-      expandBtn.textContent = 'Expand';
-      localStorage.setItem(EXPAND_KEY(collection.id), 'false');
-    } else {
-      block.setAttribute('data-board-expanded', '');
-      expandBtn.textContent = 'Collapse';
-      localStorage.setItem(EXPAND_KEY(collection.id), 'true');
-    }
-    requestAnimationFrame(() => {
-      const allCards = [...canvas.querySelectorAll('.board__card, .board__text-element')];
-      applyFit(computeFitViewport(allCards, viewport));
-      repositionOpenPanel();
-    });
-  });
-
-  block.querySelector('.board__align-grid')?.addEventListener('click', () => {
-    const allItems = [...canvas.querySelectorAll('.board__card, .board__text-element')];
-    if (!allItems.length) return;
-
-    const SNAP = 24; // matches the dot-grid spacing
-    const MIN_GAP = 16;
-
-    // Snapshot current positions + dimensions before touching the DOM
-    const layout = allItems.map((el) => ({
-      el,
-      x: Math.round((parseFloat(el.style.left) || 0) / SNAP) * SNAP,
-      y: Math.round((parseFloat(el.style.top) || 0) / SNAP) * SNAP,
-      w: el.offsetWidth || 160,
-      h: el.offsetHeight || 200,
-    }));
-
-    // Resolve overlaps: up to n passes, push the later element the shortest distance
-    for (let pass = 0; pass < layout.length; pass++) {
-      let changed = false;
-      layout.sort((a, b) => (Math.abs(a.y - b.y) > 2 ? a.y - b.y : a.x - b.x));
-      for (let i = 0; i < layout.length; i++) {
-        for (let j = i + 1; j < layout.length; j++) {
-          const a = layout[i];
-          const b = layout[j];
-          if (a.x < b.x + b.w + MIN_GAP && a.x + a.w + MIN_GAP > b.x
-              && a.y < b.y + b.h + MIN_GAP && a.y + a.h + MIN_GAP > b.y) {
-            const pushRight = Math.ceil((a.x + a.w + MIN_GAP) / SNAP) * SNAP;
-            const pushDown = Math.ceil((a.y + a.h + MIN_GAP) / SNAP) * SNAP;
-            if (Math.abs(pushRight - b.x) <= Math.abs(pushDown - b.y)) {
-              b.x = pushRight;
-            } else {
-              b.y = pushDown;
-            }
-            changed = true;
-          }
-        }
-      }
-      if (!changed) break;
-    }
-
-    // Animate to snapped positions
-    allItems.forEach((el) => { el.style.transition = 'left 0.2s ease, top 0.2s ease'; });
-    layout.forEach(({ el, x, y }) => {
-      el.style.left = `${x}px`;
-      el.style.top = `${y}px`;
-    });
-
-    setTimeout(() => {
-      allItems.forEach((el) => { el.style.transition = ''; });
-      layout.forEach(({ el, x, y }) => {
-        if (el.dataset.ascAsset) {
-          services.collections.updateItem(collection.id, el.dataset.ascAsset, { x, y });
-        } else if (el.dataset.textId) {
-          saveTextItem(collection.id, el);
-        }
-      });
-      applyFit(computeFitViewport(allItems, viewport));
-      repositionOpenPanel();
-    }, 230);
-  });
-}
-
-function initCardDrag(block, collection) {
-  const viewport = block.querySelector('.board__viewport');
-  if (!viewport) return;
-
-  viewport.addEventListener('pointerdown', (e) => {
-    const card = e.target.closest('.board__card');
-    if (!card) return;
-    if (e.target.closest('.board__card-remove, .board__notes-btn')) return;
-
-    e.stopPropagation();
-
-    const startX = e.clientX;
-    const startY = e.clientY;
-    _cardDragMoved = false;
-
-    const { zoom } = getViewport(collection.id);
-
-    const isInGroup = _selectedItems.has(card) && _selectedItems.size > 1;
-    const dragGroup = isInGroup ? [..._selectedItems] : [card];
-
-    const zVal = Date.now();
-    dragGroup.forEach((c) => { c.style.zIndex = zVal; });
-
-    const startPositions = dragGroup.map((c) => ({
-      el: c,
-      left: parseFloat(c.style.left) || 0,
-      top: parseFloat(c.style.top) || 0,
-    }));
-
-    card.setPointerCapture(e.pointerId);
-    dragGroup.forEach((c) => c.classList.add('board__card--dragging'));
-
-    function onMove(ev) {
-      const dx = ev.clientX - startX;
-      const dy = ev.clientY - startY;
-      if (Math.abs(dx) > 5 || Math.abs(dy) > 5) _cardDragMoved = true;
-      if (!_cardDragMoved) return;
-      startPositions.forEach(({ el, left, top }) => {
-        el.style.left = `${left + dx / zoom}px`;
-        el.style.top = `${top + dy / zoom}px`;
-      });
-    }
-
-    function onUp() {
-      card.removeEventListener('pointermove', onMove);
-      card.removeEventListener('pointerup', onUp);
-      card.removeEventListener('pointercancel', onUp);
-      dragGroup.forEach((c) => c.classList.remove('board__card--dragging'));
-      if (_cardDragMoved) {
-        startPositions.forEach(({ el }) => {
-          if (el.dataset.textId) {
-            saveTextItem(collection.id, el);
-          } else if (el.dataset.ascAsset) {
-            const x = Math.round(parseFloat(el.style.left));
-            const y = Math.round(parseFloat(el.style.top));
-            services.collections.updateItem(collection.id, el.dataset.ascAsset, { x, y });
-          }
-        });
-      }
-    }
-
-    card.addEventListener('pointermove', onMove);
-    card.addEventListener('pointerup', onUp);
-    card.addEventListener('pointercancel', onUp);
-  });
-}
-
-function positionPanel(panel, btn, viewport) {
-  const btnRect = btn.getBoundingClientRect();
-  const vRect = viewport.getBoundingClientRect();
-  const pw = panel.offsetWidth || 220;
-  const ph = panel.offsetHeight || 160;
-  const gap = 10;
-  // Tail square is 12px wide at left/right: 20px → center is 26px from edge
-  const tailCenter = 26;
-
-  // Align tail center with button center
-  const btnCX = btnRect.left - vRect.left + btnRect.width / 2;
-  let left = btnCX - tailCenter;
-  let useRightTail = false;
-
-  if (left + pw > vRect.width - 4) {
-    left = btnCX - (pw - tailCenter);
-    useRightTail = true;
-  }
-  left = Math.max(4, left);
-
-  // Prefer above the button; fall back to below
-  const aboveTop = btnRect.top - vRect.top - ph - gap;
-  const belowTop = btnRect.bottom - vRect.top + gap;
-  const goAbove = aboveTop >= 4;
-  const top = goAbove ? aboveTop : belowTop;
-
-  panel.classList.remove('asc-ui-bubble--br', 'asc-ui-bubble--tl', 'asc-ui-bubble--tr');
-  if (goAbove) {
-    if (useRightTail) panel.classList.add('asc-ui-bubble--br');
-    // else: default --bl, no extra class needed
-  } else {
-    panel.classList.add(useRightTail ? 'asc-ui-bubble--tr' : 'asc-ui-bubble--tl');
-  }
-
-  panel.style.left = `${left}px`;
-  panel.style.top = `${top}px`;
-}
-
-function repositionOpenPanel() {
-  if (!_openPanelState) return;
-  const { panel, btn, viewport } = _openPanelState;
-  if (!document.contains(panel)) { _openPanelState = null; return; }
-  positionPanel(panel, btn, viewport);
-}
-
-function openNotePanel(block, card, btn, className, html, mode) {
-  block.querySelector('.board__notes-panel')?.remove();
-  _openPanelState = null;
-  const panel = document.createElement('div');
-  panel.className = className;
-  panel.innerHTML = html;
-  const viewport = block.querySelector('.board__viewport');
-  viewport.appendChild(panel);
-  positionPanel(panel, btn, viewport);
-  _openPanelState = { panel, card, btn, viewport, mode };
-  return { panel, viewport };
-}
-
-function openNotePreview(block, card, btn) {
-  const notes = card.dataset.ascNotes || '';
-  if (!notes) return;
-
-  const { panel } = openNotePanel(
-    block, card, btn,
-    'asc-ui-bubble board__notes-panel board__notes-panel--preview',
-    `<p class="board__notes-preview-text">${escHtml(notes)}</p>`,
-    'preview',
-  );
-
-  panel.addEventListener('mouseenter', () => clearTimeout(_noteHoverTimer));
-  panel.addEventListener('mouseleave', () => {
-    if (_openPanelState?.mode === 'preview') {
-      _noteHoverTimer = setTimeout(() => {
-        if (_openPanelState?.mode === 'preview') {
-          _openPanelState.panel.remove();
-          _openPanelState = null;
-        }
-      }, 150);
-    }
-  });
-}
-
-function openNoteEdit(block, collection, card) {
-  const assetId = card.dataset.ascAsset;
-  const currentNotes = card.dataset.ascNotes || '';
-  const btn = card.querySelector('.board__notes-btn');
-
-  const { panel } = openNotePanel(
-    block, card, btn,
-    'asc-ui-bubble board__notes-panel',
-    `<div class="asc-ui-field">
-      <textarea class="board__notes-textarea"
-                placeholder="Add a note about this asset…"
-                rows="4">${escHtml(currentNotes)}</textarea>
-    </div>
-    <div class="board__notes-actions">
-      <button type="button" class="board__notes-done btn btn--secondary btn--sm">Done</button>
-    </div>`,
-    'edit',
-  );
-
-  const textarea = panel.querySelector('.board__notes-textarea');
-  textarea.focus();
-
-  let removeOutsideClick = () => {};
-
-  function saveAndClose() {
-    const notes = textarea.value.trim();
-    services.collections.updateItem(collection.id, assetId, { notes });
-    updateCardNotes(card, notes);
-    removeOutsideClick();
-    panel.remove();
-    _openPanelState = null;
-  }
-
-  panel.querySelector('.board__notes-done').addEventListener('click', saveAndClose);
-  textarea.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') { textarea.value = currentNotes; saveAndClose(); }
-  });
-
-  setTimeout(() => {
-    function onOutsideClick(e) {
-      if (!panel.contains(e.target) && !card.contains(e.target)) {
-        saveAndClose();
-      }
-    }
-    document.addEventListener('click', onOutsideClick);
-    removeOutsideClick = () => document.removeEventListener('click', onOutsideClick);
-  }, 0);
-}
-
-function updateCardNotes(card, notes) {
-  card.classList.toggle('board__card--has-note', !!notes);
-  card.dataset.ascNotes = notes || '';
-}
-
-function initBoardClicks(block, collection) {
-  const viewport = block.querySelector('.board__viewport');
-  if (!viewport) return;
-
-  viewport.addEventListener('click', (e) => {
-    if (!e.target.closest('.board__card, .board__notes-panel, .board__toolbar, .board__text-element')) {
-      if (_rubberBandJustSelected) { _rubberBandJustSelected = false; return; }
-      deselectAll();
-    }
-
-    const removeBtn = e.target.closest('.board__card-remove');
-    if (removeBtn) {
-      services.collections.removeAsset(collection.id, removeBtn.dataset.ascAsset);
-      return;
-    }
-
-    const notesBtn = e.target.closest('.board__notes-btn');
-    if (notesBtn) {
-      const card = notesBtn.closest('.board__card');
-      if (card) {
-        clearTimeout(_noteHoverTimer);
-        if (_openPanelState?.mode === 'preview') {
-          _openPanelState.panel.remove();
-          _openPanelState = null;
-        }
-        openNoteEdit(block, collection, card);
-      }
-      return;
-    }
-
-    const card = e.target.closest('.board__card');
-    if (card) {
-      if (!_cardDragMoved) {
-        if (e.shiftKey) {
-          toggleItem(card);
-        } else if (card.dataset.ascAsset) {
-          document.body.dispatchEvent(new CustomEvent('asc:asset:details:open', {
-            bubbles: true,
-            detail: { data: { ascAsset: card.dataset.ascAsset } },
-          }));
-        } else {
-          deselectAll();
-          selectItem(card);
-        }
-      }
-      _cardDragMoved = false;
-    }
-  });
-
-  // Hover preview: show note on button hover, close when leaving btn+panel
-  viewport.addEventListener('mouseover', (e) => {
-    const btn = e.target.closest('.board__notes-btn');
-    if (!btn) return;
-    clearTimeout(_noteHoverTimer);
-    const card = btn.closest('.board__card');
-    if (card?.classList.contains('board__card--has-note') && !_openPanelState) {
-      openNotePreview(block, card, btn);
-    }
-  });
-
-  viewport.addEventListener('mouseout', (e) => {
-    if (!e.target.closest('.board__notes-btn')) return;
-    if (e.relatedTarget?.closest('.board__notes-panel')) return;
-    if (_openPanelState?.mode === 'preview') {
-      _noteHoverTimer = setTimeout(() => {
-        if (_openPanelState?.mode === 'preview') {
-          _openPanelState.panel.remove();
-          _openPanelState = null;
-        }
-      }, 150);
-    }
-  });
-}
-
-function initTextElement(el, collection) {
-  const content = el.querySelector('.board__text-content');
-  const { textId } = el.dataset;
-
-  // ResizeObserver — save when user drags resize handle
-  const ro = new ResizeObserver(() => saveTextItem(collection.id, el));
-  ro.observe(el);
-
-  const enterEditMode = () => {
-    content.contentEditable = 'true';
-    el.dataset.editing = 'true';
-    content.focus();
-    const range = document.createRange();
-    range.selectNodeContents(content);
-    const sel = window.getSelection();
-    sel.removeAllRanges();
-    sel.addRange(range);
-  };
-
-  el.addEventListener('dblclick', (ev) => { ev.stopPropagation(); enterEditMode(); });
-
-  // Blur content → exit edit and save
-  content.addEventListener('blur', () => {
-    content.contentEditable = 'false';
-    delete el.dataset.editing;
-    saveTextItem(collection.id, el);
-  });
-
-  // Escape key exits edit
-  content.addEventListener('keydown', (ev) => {
-    if (ev.key === 'Escape') { ev.preventDefault(); content.blur(); }
-  });
-
-  // Remove button
-  el.querySelector('.board__text-remove')?.addEventListener('click', (ev) => {
-    ev.stopPropagation();
-    const items = getBoardTextItems(collection.id).filter((t) => t.id !== textId);
-    setBoardTextItems(collection.id, items);
-    deselectItem(el);
-    ro.disconnect();
-    el.remove();
-  });
-
-  // Drag to move (only when not editing)
-  el.addEventListener('pointerdown', (ev) => {
-    if (el.dataset.editing) return;
-    if (ev.target.closest('.board__text-remove')) return;
-    // Bail if pointer is on the native CSS resize handle (bottom-right 16×16px)
-    const elRect = el.getBoundingClientRect();
-    if (ev.clientX > elRect.right - 16 && ev.clientY > elRect.bottom - 16) return;
-    ev.stopPropagation();
-
-    const startX = ev.clientX;
-    const startY = ev.clientY;
-    let moved = false;
-
-    const { zoom } = getViewport(collection.id);
-
-    // Group drag: if this element is in selection, move all selected items
-    const isInGroup = _selectedItems.has(el) && _selectedItems.size > 1;
-    const dragGroup = isInGroup ? [..._selectedItems] : [el];
-    const startPositions = dragGroup.map((item) => ({
-      item,
-      left: parseFloat(item.style.left) || 0,
-      top: parseFloat(item.style.top) || 0,
-    }));
-
-    el.setPointerCapture(ev.pointerId);
-    dragGroup.forEach((item) => item.classList.add('board__card--dragging'));
-
-    function onMove(mev) {
-      const dx = mev.clientX - startX;
-      const dy = mev.clientY - startY;
-      if (Math.abs(dx) > 5 || Math.abs(dy) > 5) moved = true;
-      if (!moved) return;
-      startPositions.forEach(({ item, left, top }) => {
-        item.style.left = `${left + dx / zoom}px`;
-        item.style.top = `${top + dy / zoom}px`;
-      });
-    }
-
-    function onUp(uev) {
-      el.removeEventListener('pointermove', onMove);
-      el.removeEventListener('pointerup', onUp);
-      el.removeEventListener('pointercancel', onUp);
-      dragGroup.forEach((item) => item.classList.remove('board__card--dragging'));
-
-      if (moved) {
-        startPositions.forEach(({ item }) => {
-          if (item.dataset.textId) saveTextItem(collection.id, item);
-          if (item.dataset.ascAsset) {
-            const x = Math.round(parseFloat(item.style.left));
-            const y = Math.round(parseFloat(item.style.top));
-            services.collections.updateItem(collection.id, item.dataset.ascAsset, { x, y });
-          }
-        });
-      } else if (!uev.target.closest('.board__text-remove')) {
-        // click (no drag) → select
-        if (uev.shiftKey) toggleItem(el);
-        else { deselectAll(); selectItem(el); }
-      }
-    }
-
-    el.addEventListener('pointermove', onMove);
-    el.addEventListener('pointerup', onUp);
-    el.addEventListener('pointercancel', onUp);
-  });
-}
-
-function initTextElements(block, collection) {
-  const canvas = block.querySelector('.board__canvas');
-  if (!canvas) return;
-  canvas.querySelectorAll('.board__text-element').forEach((el) => {
-    initTextElement(el, collection);
-  });
-}
-
-function initAddText(block, collection) {
-  block.querySelector('.board__add-text')?.addEventListener('click', () => {
-    const viewport = block.querySelector('.board__viewport');
-    const canvas = block.querySelector('.board__canvas');
-    if (!viewport || !canvas) return;
-
-    const { panX, panY, zoom } = getViewport(collection.id);
-    const x = Math.round((viewport.clientWidth / 2 - panX) / zoom - 100);
-    const y = Math.round((viewport.clientHeight / 2 - panY) / zoom - 40);
-
-    const newItem = {
-      id: crypto.randomUUID(),
-      x,
-      y,
-      w: 200,
-      h: 80,
-      content: 'New text',
-    };
-
-    const items = getBoardTextItems(collection.id);
-    items.push(newItem);
-    setBoardTextItems(collection.id, items);
-
-    const wrapper = document.createElement('div');
-    wrapper.innerHTML = boardTextElement(newItem);
-    const textEl = wrapper.firstElementChild;
-    canvas.appendChild(textEl);
-    initTextElement(textEl, collection);
-
-    textEl.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
-  });
-}
 
 // ── Actions menu ─────────────────────────────────────────────────────────────
 
@@ -1061,8 +215,6 @@ function initDelete(block, collection) {
   });
 }
 
-// ── Sections ─────────────────────────────────────────────────────────────────
-
 // ── Share ─────────────────────────────────────────────────────────────────────
 
 function saveShareHistory(entry) {
@@ -1081,10 +233,14 @@ function renderShareHistory() {
       <li class="collection__past-share-row">
         <span class="asc-ui-menu__item-label" title="${escAttr(entry.url)}">${escHtml(entry.title || 'Untitled')}</span>
         <span class="asc-ui-menu__item-meta">${escHtml(label)}</span>
-        <button type="button" class="btn btn--ghost btn--sm collection__share-history-copy"
-                data-url="${escAttr(entry.url)}">Copy</button>
+        <button type="button" class="btn btn--ghost btn--circle btn--sm collection__share-history-copy"
+                data-url="${escAttr(entry.url)}" aria-label="Copy link">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </button>
         <a href="${escAttr(entry.url)}" target="_blank" rel="noopener noreferrer"
-           class="btn btn--ghost btn--sm">Open</a>
+           class="btn btn--ghost btn--circle btn--sm" aria-label="Open link">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </a>
       </li>`;
   }).join('');
 
@@ -1121,11 +277,7 @@ function initShare(block, collection) {
 
     const copyBtn = e.target.closest('.collection__share-history-copy');
     if (copyBtn) {
-      navigator.clipboard.writeText(copyBtn.dataset.url).then(() => {
-        const orig = copyBtn.textContent;
-        copyBtn.textContent = 'Copied!';
-        setTimeout(() => { copyBtn.textContent = orig; }, 2000);
-      });
+      flashCopy(copyBtn, copyBtn.dataset.url);
       return;
     }
 
@@ -1191,10 +343,7 @@ async function openShareDialog(block, collection) {
   block.appendChild(dialog);
   dialog.showModal();
 
-  dialog.querySelectorAll('[data-dialog-close]').forEach((btn) => {
-    btn.addEventListener('click', () => dialog.close());
-  });
-  dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
+  wireDialogClose(dialog);
 
   dialog.querySelector('.collection__share-generate').addEventListener('click', async () => {
     const title = dialog.querySelector('.collection__share-title').value.trim();
@@ -1244,14 +393,14 @@ async function openShareDialog(block, collection) {
   });
 
   dialog.querySelector('.collection__share-copy')?.addEventListener('click', () => {
-    const output = dialog.querySelector('.collection__share-url-output');
-    navigator.clipboard.writeText(output.value).then(() => {
-      const btn = dialog.querySelector('.collection__share-copy');
+    const btn = dialog.querySelector('.collection__share-copy');
+    const url = dialog.querySelector('.collection__share-url-output').value;
+    navigator.clipboard.writeText(url).then(() => {
+      const orig = btn.textContent;
       btn.textContent = 'Copied!';
-      setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+      setTimeout(() => { btn.textContent = orig; }, 2000);
     });
   });
-
 }
 
 // ── Download ──────────────────────────────────────────────────────────────────
@@ -1311,10 +460,7 @@ async function openDownloadDialog(block, collection) {
   block.appendChild(dialog);
   dialog.showModal();
 
-  dialog.querySelectorAll('[data-dialog-close]').forEach((btn) => {
-    btn.addEventListener('click', () => dialog.close());
-  });
-  dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
+  wireDialogClose(dialog);
 
   dialog.querySelector('.collection__download-submit').addEventListener('click', async () => {
     const checked = [...dialog.querySelectorAll('input[name="rendition"]:checked')];
@@ -1364,16 +510,11 @@ function initJobActions(block) {
   });
 }
 
-function refreshDownloadStatus(block) {
+function refreshDownloadStatus(block, collectionId) {
   const jobsSection = block.querySelector('.collection__jobs');
-  if (!jobsSection) return;
-  const collectionId = block.querySelector('[data-collection-id]')?.dataset?.collectionId;
-  if (!collectionId) return;
+  if (!jobsSection || !collectionId) return;
 
-  const pendingJobs = services.downloads.getAll().filter(
-    (j) => j.collectionId === collectionId
-      && (j.status === DownloadStatus.RUNNING || j.status === DownloadStatus.PENDING),
-  );
+  const pendingJobs = getPendingJobs(collectionId);
 
   if (!pendingJobs.length) {
     jobsSection.remove();
@@ -1413,4 +554,28 @@ function jobStatusLabel(job) {
     case DownloadStatus.FAILED: return `Failed: ${job.error || 'Unknown error'}`;
     default: return job.status;
   }
+}
+
+function getPendingJobs(collectionId) {
+  return services.downloads.getAll().filter(
+    (j) => j.collectionId === collectionId
+      && (j.status === DownloadStatus.RUNNING || j.status === DownloadStatus.PENDING),
+  );
+}
+
+function wireDialogClose(dialog) {
+  dialog.querySelectorAll('[data-dialog-close]').forEach((btn) => {
+    btn.addEventListener('click', () => dialog.close());
+  });
+  dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
+}
+
+const ICON_COPY = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+const ICON_CHECK = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
+
+function flashCopy(btn, text) {
+  navigator.clipboard.writeText(text).then(() => {
+    btn.innerHTML = ICON_CHECK;
+    setTimeout(() => { btn.innerHTML = ICON_COPY; }, 2000);
+  });
 }

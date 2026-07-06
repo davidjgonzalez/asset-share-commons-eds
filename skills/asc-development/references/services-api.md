@@ -103,7 +103,7 @@ const has = await services.collections.hasAsset('asset-uuid', 'col-uuid');
 // has = boolean
 ```
 
-#### Activation and Reordering
+#### Activation
 
 ```js
 // Get active collection ID
@@ -111,8 +111,20 @@ const activeId = services.collections.getActiveId();
 
 // Set active collection
 services.collections.setActive('col-uuid');
+```
 
-// Reorder assets in collection (replaces entire array)
+#### Board Item Updates
+
+```js
+// Partially update board position and/or notes for an asset item
+services.collections.updateItem('col-uuid', 'asset-uuid', { x: 120, y: 80 });
+services.collections.updateItem('col-uuid', 'asset-uuid', { notes: 'Approved for web use' });
+```
+
+#### Reordering (programmatic)
+
+```js
+// Replace the entire ordered items array (board positions use x/y instead)
 services.collections.reorderAssets('col-uuid', ['uuid1', 'uuid2', 'uuid3']);
 ```
 
@@ -425,33 +437,9 @@ URL utilities for encoding/decoding asset lists for sharing.
 
 ### Methods
 
-#### `url.toCollectionUrl(assetIds, options?)`
-
-Encode asset UUIDs as a shareable URL.
-
-```js
-const shareUrl = await services.url.toCollectionUrl(
-  ['uuid1', 'uuid2', 'uuid3'],
-  { param: 'assets', base: 'https://example.com/collection' }
-);
-// shareUrl = 'https://example.com/collection?assets=compressed-encoded-string'
-```
-
-#### `url.fromCollectionUrl(search, paramName)`
-
-Decode asset UUIDs from a URL query parameter.
-
-```js
-const assetIds = await services.url.fromCollectionUrl(
-  window.location.search,
-  'assets'
-);
-// assetIds = ['uuid1', 'uuid2', 'uuid3']
-```
-
 #### `url.compressArray(array)`, `url.decompressToArray(compressed)`
 
-Low-level compression for URL encoding.
+Low-level compression for URL encoding. Used by the collection share dialog to encode the `?sheet=` payload — prefer these when building new share flows.
 
 ```js
 const encoded = await services.url.compressArray(['a', 'b', 'c']);

@@ -17,7 +17,7 @@ function contextValue(context, accessor) {
     'file-extension': context.fileExtension,
   };
   if (accessor in direct && direct[accessor] != null) return direct[accessor];
-  if (typeof context.getProperty === 'function') return context.getProperty(accessor);
+  if (typeof context.getProperty === 'function') return context.getProperty(accessor).data;
   return context[accessor];
 }
 

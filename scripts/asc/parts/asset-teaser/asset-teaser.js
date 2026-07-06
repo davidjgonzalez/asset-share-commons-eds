@@ -3,6 +3,7 @@
 import { loadCSS } from '../../../aem.js';
 import collectionToggle from '../collection-toggle/collection-toggle.js';
 import serviceConfigurations from '../../../configurations.js';
+import services from '../../services/services.js';
 
 loadCSS('/scripts/asc/parts/asset-teaser/asset-teaser.css');
 
@@ -18,12 +19,19 @@ function getViewProps(view) {
     || DEFAULT_VIEW_PROPS.cards;
 }
 
-// Converts a property value to a renderable string.
-// dimensions returns { width, height } — everything else should already be a string.
-function propToString(val) {
-  if (val == null) return null;
-  if (typeof val === 'object' && val.width != null) return `${val.width} \u00d7 ${val.height}`;
-  return String(val);
+function imgAlt(asset) {
+  return asset.description || asset.title || asset.name || '';
+}
+
+function thumbnailImgHtml(asset) {
+  const alt = imgAlt(asset);
+  const srcset = services.renditions.getThumbnailSrcset(asset);
+  if (srcset.length) {
+    const srcsetAttr = srcset.map((r) => `${r.url} ${r.size.width}w`).join(', ');
+    const src = srcset[Math.floor(srcset.length / 2)].url;
+    return `<img src="${src}" srcset="${srcsetAttr}" sizes="(min-width: 1024px) 300px, (min-width: 600px) 250px, 300px" alt="${alt}" loading="lazy" />`;
+  }
+  return `<img src="${asset.thumbnail}" alt="${alt}" loading="lazy" />`;
 }
 
 /**
@@ -46,7 +54,7 @@ export default function assetTeaser(asset, { mode = 'card', view = 'cards' } = {
 
   const previewHtml = hasThumbnail ? `
       <div class="asc-asset-teaser__preview">
-        <img src="${asset.thumbnail}" alt="${asset.title}" loading="lazy" />
+        ${thumbnailImgHtml(asset)}
       </div>` : '';
 
   const metaHtml = metaProps.length ? `
@@ -55,7 +63,7 @@ export default function assetTeaser(asset, { mode = 'card', view = 'cards' } = {
           if (prop === 'title') {
             return `<h3 class="asc-asset-teaser__title">${asset.title}</h3>`;
           }
-          const val = propToString(asset.getProperty(prop));
+          const val = asset.getProperty(prop).text;
           if (!val) return '';
           return `<div class="asc-asset-teaser__prop asc-asset-teaser__${prop}">${val}</div>`;
         }).join('')}
@@ -70,7 +78,7 @@ export default function assetTeaser(asset, { mode = 'card', view = 'cards' } = {
              data-asc-action="asset:details:open@click asset:preload@mouseover"
              data-asc-asset="${asset.uuid}"
              data-asc-mime-type="${asset.mimeType || ''}"
-             data-asc-file-type="${asset.getProperty('file-type') || ''}">
+             data-asc-file-type="${asset.getProperty('file-type').data || ''}">
       ${previewHtml}
       ${metaHtml}
       ${collectionToggle(asset)}

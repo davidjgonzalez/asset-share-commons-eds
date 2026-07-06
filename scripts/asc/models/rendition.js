@@ -1,6 +1,6 @@
 // ASC Core — do not edit. Customize via scripts/configurations.js
 class Rendition {
-  constructor({ asset, id, label, description, visible, mimeType, format, fileType, usecase, url, fileSize, width, height, type, path }) {
+  constructor({ asset, id, label, description, visible, mimeType, format, fileType, usecase, url, downloadUrl, filename, fileSize, width, height, type, path, size }) {
     // Simple data as direct properties
     this.asset = asset;
     this.id = id;
@@ -13,11 +13,14 @@ class Rendition {
     this.fileType = fileType;
     this.usecase = usecase;
     this.url = (id === 'original' && asset?.url) ? asset.url : url;
+    this.downloadUrl = downloadUrl ?? null;
+    this.filename = filename ?? null;
     this.fileSize = fileSize;
     this.width = width;
     this.height = height;
     this.type = type;
     this.path = path;
+    this.size = size ?? null;
   }
 
   static async create(asset, renditionId) {

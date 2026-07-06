@@ -6,7 +6,7 @@ const config = {
 }
 
 export default function get(asset, options = {}) {
-    const bytes = asset.getProperty('dam:size');
+    const bytes = asset.getProperty('dam:size').data;
 
     if (bytes) {
         const k = 1024;

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Collection — Asset Share</title>
+  <meta name="template" content="collection">
+</head>
+<body>
+  <header></header>
+  <main>
+
+    <!--
+      Section 1: Collection header.
+      Reads the ?id= URL parameter. Renders the collection name (editable),
+      asset count, Share / Download buttons, jobs indicator, and the
+      actions menu (Rename / Delete).
+    -->
+    <div>
+
+      <!-- collection block (zero-config — reads ?id= from URL) -->
+      <div class="collection"></div>
+
+    </div>
+
+    <!--
+      Section 2: Interactive board canvas.
+      source: collection  — reads the same ?id= param, loads hydratedItems.
+      mode: interactive   — enables drag, rubber-band select, text elements,
+                            notes, Align to grid, and the + Text button.
+
+      search-properties: comma-separated asset property names to stash into
+      each card's data-search attribute for client-side filtering.
+    -->
+    <div>
+
+      <div class="board">
+        <div><div>source</div><div>collection</div></div>
+        <div><div>mode</div><div>interactive</div></div>
+        <div><div>search-properties</div><div>title, file-type</div></div>
+      </div>
+
+    </div>
+  </main>
+  <footer></footer>
+</body>
+</html>

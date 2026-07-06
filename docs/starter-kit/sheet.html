@@ -11,14 +11,23 @@
   <main>
 
     <!--
-      Section 1: Download sheet
-      The sheet block reads asset and rendition IDs from the URL query parameters
-      added when the user navigates from the cart.
+      Section 1: Board canvas for the shared sheet.
+      The board block reads the ?sheet= URL parameter, decodes the payload,
+      checks expiry, and renders the read-only asset canvas with search.
+
+      search-properties: comma-separated asset property names to stash into
+      each card's data-search attribute for client-side filtering.
+
+      details: optional base path to navigate to when a card is clicked instead
+      of opening the default ASC asset details modal.
     -->
     <div>
 
-      <!-- sheet block (zero-config) -->
-      <div class="sheet"></div>
+      <div class="board">
+        <div><div>source</div><div>sheet</div></div>
+        <div><div>mode</div><div>view</div></div>
+        <div><div>search-properties</div><div>title, file-type</div></div>
+      </div>
 
     </div>
   </main>
