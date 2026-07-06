@@ -31,7 +31,7 @@
  *   mimeType         raw MIME type string (e.g. "image/jpeg")
  *   format           short format label derived from MIME type (e.g. "JPEG")
  *   file-type        fileType from the definition if set, else same as format
- *   file-size        human-readable size (e.g. "2.4 MB")
+ *   file-size        human-readable size (e.g. "2.4 MB"); lazily fetched via HEAD if absent
  *   width            pixel width (number)
  *   height           pixel height (number)
  *   dimensions       "width × height" string
@@ -148,6 +148,7 @@ export default async function decorate(block) {
 
     wireRenditionInteractions(block, asset, renditions);
     wireCopyUrl(block);
+    lazyLoadFileSizes(block, asset, renditions);
     return;
   }
 
@@ -184,10 +185,12 @@ export default async function decorate(block) {
     </div>`;
   wireRenditionInteractions(block, asset, renditions);
   wireCopyUrl(block);
+  lazyLoadFileSizes(block, asset, renditions);
 }
 
 function valueCell(col, ctx, asset) {
-  return `<td>${esc(resolveValue(col.value, ctx, asset))}</td>`;
+  const extra = col.value.trim().toLowerCase() === 'file-size' ? ' data-asc-field="file-size"' : '';
+  return `<td${extra}>${esc(resolveValue(col.value, ctx, asset))}</td>`;
 }
 
 function actionCell(asset, rendition, actions) {
@@ -529,6 +532,49 @@ function esc(str) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+async function fetchFileSize(url) {
+  try {
+    const isAemUrl = url.startsWith(services.aem.getHost());
+    const headers = isAemUrl ? await services.aem.getHeaders() : {};
+    const res = await fetch(url, { method: 'HEAD', credentials: 'omit', headers });
+    if (!res.ok) return null;
+    const cl = res.headers.get('content-length');
+    return cl ? parseInt(cl, 10) : null;
+  } catch {
+    return null;
+  }
+}
+
+function lazyLoadFileSizes(block, asset, renditions) {
+  renditions.filter((r) => !r.fileSize && r.url).forEach(async (rendition) => {
+    const size = await fetchFileSize(rendition.url);
+    if (!size) return;
+    rendition.fileSize = size;
+    const formatted = formatBytes(size);
+
+    // Update table cells
+    block.querySelectorAll(`[data-asc-rendition="${rendition.id}"] [data-asc-field="file-size"]`)
+      .forEach((el) => { el.textContent = formatted; });
+
+    // Update card meta
+    const card = block.querySelector(`.asc-ui-card[data-asc-rendition="${rendition.id}"]`);
+    if (!card) return;
+    const ctx = renditionContext(asset, rendition);
+    const metaItems = [ctx['file-type'], ctx['file-size'], ctx.dimensions].filter(Boolean);
+    const meta = metaItems.map((item, i) => `<span>${esc(item)}${i < metaItems.length - 1 ? ' ·&nbsp;' : ''}</span>`).join('');
+    const metaEl = card.querySelector('.details-renditions__card-meta');
+    if (metaEl) {
+      metaEl.innerHTML = meta;
+    } else if (meta) {
+      const p = Object.assign(document.createElement('p'), {
+        className: 'asc-ui-copy details-renditions__card-meta',
+        innerHTML: meta,
+      });
+      card.querySelector('.asc-ui-card__body')?.appendChild(p);
+    }
+  });
 }
 
 const ICONS = {

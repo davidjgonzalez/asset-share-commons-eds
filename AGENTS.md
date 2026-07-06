@@ -246,8 +246,9 @@ Authoring (da.live):
   `asset.…`. A value is either a bare path (`name`, `file-size`) or contains `{{ }}` tokens for
   mixed text (`{{ width }}×{{ height }}`).
 - **Rendition fields / aliases**: `name`, `label`, `url`, `format`, `file-type`, `file-size`
-  (formatted), `dimensions`, `width`, `height`, `mimeType`, `filename` (download filename),
-  `downloadUrl`, `type`, `path`, `usecase`.
+  (formatted; lazily fetched via HEAD if absent from metadata — see below), `dimensions`,
+  `width`, `height`, `mimeType`, `filename` (download filename), `downloadUrl`, `type`,
+  `path`, `usecase`.
 - **Asset paths**: `asset.properties.title`, `asset.renditions['web'].url`, or a bare term →
   `asset.getProperty('…')`. Well-known asset sub-objects: `properties`, `renditions`.
 - **Path syntax**: dot (`a.b`), bracket (`a['b']`, `a[b]`), nesting combine.
@@ -675,6 +676,21 @@ Controls which asset types a rendition applies to:
 ### `visible` flag
 
 `visible: false` hides a rendition from the download list while keeping it available via `services.renditions.getRendition(asset, id)`. Use for the `thumbnail` rendition, which is used internally by teasers but shouldn't appear as a download option.
+
+### File size — lazy HEAD fetch
+
+Static renditions have `fileSize` from JCR metadata. Dynamically generated renditions
+(dm-smartcrop, url, url-template) do not — their size is unknown until the URL is
+requested.
+
+After the block renders, `details-renditions` fires a `HEAD` request for every rendition
+with no `fileSize`. The `Content-Length` response header is read and the cell / card meta
+updated in place. Same auth logic as blob download: AEM auth headers for AEM-host URLs,
+no credentials for CDN/Scene7 URLs (`credentials: 'omit'` keeps it compatible with
+`Access-Control-Allow-Origin: *`).
+
+If the server returns no `Content-Length` (e.g. chunked transfer, Scene7 crop with no
+pre-generated file), the cell remains blank — no error is thrown.
 
 ### Download filenames
 
