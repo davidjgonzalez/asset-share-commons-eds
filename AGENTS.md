@@ -39,13 +39,12 @@ Every file inside `scripts/asc/` starts with `// ASC Core — do not edit.` as a
 |-------|---------|
 | `details-modal` | Modal dialog shell; auto-injected by `AssetDetails` service. Close button floats top-right; the loaded fragment supplies its own header |
 | `details-header` | Title + meta-subtitle bar. Authored content is a **token template** — `{{ accessor }}` / `{{ accessor \| fallback }}` resolved against the asset (see Token Placeholders below) |
-| `details-image` | Asset preview **media only** (image / video / PDF). Shows a rendition label chip. Initial container AR comes from `asset.renditionsBoundingAspectRatio` (tallest rendition), then snaps to the loaded image's natural dimensions. Unsupported renditions show an error overlay with a download link. Preview `<img>` carries `data-img-error="1"` so the global fallback (`setupImageFallback`) does not intercept its errors — the block's own handler runs instead. Responds to `asc:rendition:activate` (sticky) and `asc:rendition:preview` (hover/restore). |
+| `details-preview` | Unified media previewer for **all rendition types**. Detects the selected rendition's MIME type (and filename extension as fallback) and routes to the matching sub-renderer: `image.js` (image/*), `video.js` (video/*), `pdf.js` (application/pdf), `office.js` (Office formats). Enables cross-type rendition switching — e.g. a video asset can display its JPEG poster rendition, or a PPT can display its generated PDF rendition. Config rows: `renditions` (comma-delimited priority list, default `original` — walked in order to pick the initial display rendition), `height` (viewer height for video/PDF/Office, default `600px`), `client-id` (Adobe PDF Embed API key, optional). Image viewer: square aspect-ratio container with `object-fit: contain` letterboxing, `failedUrls` tracking prevents flashing broken images. Video viewer: `canPlayType` probe → native `<video>` or unsupported overlay; MIME inferred from filename extension when `mimeType` absent. PDF viewer: Adobe PDF Embed API when `client-id` provided, native `<iframe>` fallback. Office viewer: Microsoft Office Online `<iframe>`. All viewers show an unsupported/error overlay with a download link. Responds to `asc:rendition:activate` (sticky — may swap renderer type) and `asc:rendition:preview` (hover — same-type only, cross-type hover is no-op). |
 | `details-property` | Displays a single metadata property (label + value; `pill` variant → badge) |
 | `details-metadata` | A panel of property rows (`asc-ui-metadata`). Rows are `Label \| property-key`; `display: list\|grid`; array values (e.g. `tags`) render as `asc-ui-chip` pills |
 | `details-renditions` | Renditions as an `asc-ui-table` (default) or card grid (`\| display \| cards \|`). Author-configurable columns; highlights original rendition as active on load and dispatches `asc:rendition:activate`. Optional `instructions` row accepts inline HTML (strong/em/code/br). Cards mode: initial card AR from `asset.renditionsBoundingAspectRatio`, snapped per-card to natural image dimensions after load; `max-height: 12rem` clamps portrait cards with side bars. See "Renditions Table Templates" below |
-| `details-actions` | Action buttons (`asc-ui-action` circle-icon + label). One row per action: `\| Label \| action-name \|`. Actions: `download`, `copy-url`, `share`, `collection`. Labels are used exactly as authored. Updates `href`/`data-copy-url` on `asc:rendition:activate`. |
-| `details-pdf` | Embeds a PDF via native `<object data="{url}" type="application/pdf">` (no client-id) or the Adobe PDF Embed API (with `client-id`). `height` row sets viewer height (default: `600px`). Route PDFs via `assetDetails.templates` in `configurations.js`. |
-| `details-office-doc` | Embeds Word/Excel/PowerPoint files using the Microsoft Office Online viewer (`view.officeapps.live.com`). `height` row sets iframe height (default: `600px`). **Asset URL must be publicly accessible** — the viewer fetches it from Microsoft's servers. Route Office MIME types via `assetDetails.templates` in `configurations.js`. |
+| `details-actions` | Action buttons (`asc-ui-action` circle-icon + label). One row per action: `\| Label \| action-name \|`. Actions: `download`, `copy-url`, `share`, `collection`. Labels are used exactly as authored. Updates `href`/`data-copy-url` on `asc:rendition:activate`. Download filename uses `asset-base + rendition.label + ext` (e.g. `photo-preview.mp4`); `rendition.label` is already cleaned by `Rendition.deriveLabel` (strips `cq5dam.` prefix). |
+| `details-map` | Interactive Leaflet map centered on the asset's GPS capture location. Hides itself completely when coordinates are absent or invalid. Loads Leaflet 1.9.4 and OpenStreetMap tiles from CDN (no API key). EXIF DMS strings (`"42,59.35N"`) are converted to signed decimal degrees internally; full precision is passed to Leaflet and map links — never rounded before use. Authored rows: `latitude` (JCR path, default `jcr:content/metadata/exif:GPSLatitude`), `longitude` (default `jcr:content/metadata/exif:GPSLongitude`), `label` (default `"Location"`), `zoom` (default `10`). Falls back to coordinates text + Google Maps link if Leaflet fails to load. Uses `ResizeObserver` to call `map.invalidateSize()` so the map sizes correctly when the details `<dialog>` opens. |
 
 ### Collections / cart blocks
 | Block | Purpose |
@@ -206,8 +205,8 @@ declaring which cell it occupies — no per-layout CSS required.
 **Block placement** — each block claims a cell with a `_area` config row:
 
 ```
-| details-image |         |
-| _area           | preview |
+| details-preview |         |
+| _area             | preview |
 ```
 
 `scripts/section-grid.js` (called from `decorateMain`, before `decorateSections`) reads the
@@ -287,8 +286,8 @@ All ASC custom events follow `asc:{noun}:{verb}`. Dispatched on `document` unles
 | `asc:download:failed` | Downloads service | collection block | `{ jobId, error }` |
 | `asc:download:change` | Downloads service | (UI handlers) | `{ jobId, status }` |
 | `asc:blocks:loaded` | Init service | SearchService | `{ blocks }` |
-| `asc:rendition:activate` | `details-renditions` | `details-image`, `details-actions`, `details-rendition-metadata` | `{ rendition, asset }` — sticky selection; dispatched on `document.body` |
-| `asc:rendition:preview` | `details-renditions` | `details-image` | `{ rendition, asset }` — transient hover preview; `rendition: null` on mouseleave to restore sticky |
+| `asc:rendition:activate` | `details-renditions` | `details-preview`, `details-actions`, `details-rendition-metadata` | `{ rendition, asset }` — sticky selection; dispatched on `document.body` |
+| `asc:rendition:preview` | `details-renditions` | `details-preview` | `{ rendition, asset }` — transient hover preview; `rendition: null` on mouseleave to restore sticky |
 
 `asc:search:complete` `results` shape:
 ```js
@@ -341,13 +340,27 @@ Search blocks emit **QueryBuilder-native field names** (e.g. `{n}_group.daterang
 
 ### Form field naming convention
 
-All search block inputs carry `form="asc-search-form"` so `SearchService.collectFormData()` picks them up. Field names follow the QB group naming pattern:
+All search block inputs carry `form="asc-search-form"` so `SearchService.collectFormData()` picks them up. Most field names follow the QB group sub-key pattern:
 
 ```
-{groupNum}_group.{predicateName}.{paramKey}
+{groupNum}_group.{predicateName}.{paramKey}    ← property, daterange, tagid predicates
 ```
 
-Where `groupNum` is the block's **filter-block-index** — assigned in DOM order, counting only blocks that call `readBlockConfig` from `search.js` (i.e. actual filter blocks, not display blocks like `search-results`). This number is stable across page loads as long as the filter blocks on the page don't change, which makes it safe to use in shareable URLs.
+**Exception — `path` predicate:** The QB `path` predicate takes its value directly as the key (no `.value` sub-key). `search-path` therefore emits:
+
+```
+{n}_group.path=/content/dam/…                  ← radio / dropdown (single selection)
+{n}_group.1_path=/path1
+{n}_group.2_path=/path2                         ← checkbox (multi-selection)
+{n}_group.p.or=true                             ← emitted alongside multi-select checkboxes
+```
+
+`path.exact` and `path.flat` are sub-keys of the `path` predicate and remain in `{n}_group.path.exact` / `{n}_group.path.flat` form.  
+`path.self` is **deprecated** by AEM — do not use it.
+
+**Reference:** [QueryBuilder Predicate Reference](https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/implementing/developing/full-stack/search/query-builder-predicates)
+
+`groupNum` is the block's **filter-block-index** — assigned in DOM order, counting only blocks that call `readBlockConfig` from `search.js` (i.e. actual filter blocks, not display blocks like `search-results`). This number is stable across page loads as long as the filter blocks on the page don't change, which makes it safe to use in shareable URLs.
 
 **Group number ranges:**
 - Filter blocks (DOM order, via `readBlockConfig` from `search.js`): groups `1`–`n`
@@ -385,7 +398,7 @@ Both QB and OpenAPI providers receive the merged sheet params through the normal
 | `daterange.upperBound` + `.property` | `filter[createdAt\|modifiedAt][to]` | Same mapping |
 | `tagid.N_value` | `filter[assetTagIds][]` | Each selected tag appended |
 | `property.N_value` + `.property=dc:format` | `filter[assetFormat][]` | Via `PROPERTY_MAP` |
-| `path.N_value` | `filter[assetAncestorPath]` | Direct mapping |
+| `path` / `M_path` | `filter[assetAncestorPath]` | First value used; radio/dropdown → `N_group.path`; checkboxes → `N_group.M_path` |
 | `fulltext` | `q` | Top-level, not a predicate group |
 
 `DATE_PROPERTY_MAP` and `PROPERTY_MAP` are static getters on `OpenApiProvider` — extend them there to support additional JCR property → OpenAPI filter mappings.
@@ -538,6 +551,22 @@ export default function decorate(block) {
   addSearchEventListeners(block, config);
 }
 ```
+
+### Restoring URL-based initial values
+
+Every filter block **must** render its inputs with values pre-filled from `config.initial` so that shared/bookmarked URLs restore visual filter state. `config.initial` is populated by `getInitialValues(window.location.search, group)` inside `readBlockConfig` — no extra work required.
+
+**`<input type="date">` pitfall:** URL persistence stores full ISO datetimes (`YYYY-MM-DDT00:00:00.000Z`). Date inputs only accept `YYYY-MM-DD`. Always strip the time suffix when setting the initial value:
+
+```js
+// Bad — browser silently ignores the ISO string, picker appears blank after refresh
+value="${config.initial[lowerName] || ''}"
+
+// Correct
+value="${(config.initial[lowerName] || '').slice(0, 10)}"
+```
+
+`adjustFormData` re-appends the correct time suffix (`T00:00:00.000Z` / `T23:59:59.999Z`) before the search runs, so the QB query is always correct regardless.
 
 ---
 
@@ -1292,7 +1321,7 @@ const assetIds = await url.fromCollectionUrl(window.location.search, 'assets');
 
 `scripts/asc/utils/images.js` exports `setupImageFallback()`, called once from `scripts/scripts.js` on page load. It installs a capture-phase `error` listener on `document` that replaces broken `<img>` `src` with `/styles/images/image-placeholder.svg` and stamps `data-img-error="1"` to prevent infinite loops.
 
-**Opt-out**: set `data-img-error="1"` on an image element to skip the fallback entirely. This is required for blocks that handle their own image errors (e.g. `details-image`) — the block's error handler runs in the bubble phase and would see the placeholder URL instead of the original broken URL if the fallback fires first.
+**Opt-out**: set `data-img-error="1"` on an image element to skip the fallback entirely. This is required for blocks that handle their own image errors (e.g. `details-preview`'s image sub-module) — the block's error handler runs in the bubble phase and would see the placeholder URL instead of the original broken URL if the fallback fires first.
 
 ---
 

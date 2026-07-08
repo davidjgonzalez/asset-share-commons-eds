@@ -56,10 +56,14 @@ function html(config) {
 function addEventListeners(block, config) {
   const input = block.querySelector('input');
 
-  // Live search — only fires when already on the target page.
+  // Live search — debounced so rapid typing only searches once the user pauses.
+  let debounceTimer;
   input.addEventListener('input', () => {
     if (needsRedirect(config)) return;
-    document.dispatchEvent(new CustomEvent('asc:search:execute'));
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      document.dispatchEvent(new CustomEvent('asc:search:execute'));
+    }, 300);
   });
 
   // Enter key — navigates cross-page or triggers in-place search.

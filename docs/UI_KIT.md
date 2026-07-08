@@ -152,9 +152,17 @@ Status label. Default is muted. Modifiers: `--primary` `--success` `--warning` `
 ```
 
 ### Chip — `@kit chip` · `styles/ui-kit.css`
-Static tag / token (asset tag, active facet label). Not removable.
+Static tag / token (asset tag, active facet label).
 ```html
 <span class="asc-ui-chip">Campaign</span>
+```
+
+**Removable variant** — use a `<button>` element; set `aria-label` to describe the remove action:
+```html
+<button type="button" class="asc-ui-chip asc-ui-chip--removable" aria-label="Remove Campaign">
+  Campaign
+  <span class="asc-ui-chip__remove" aria-hidden="true">&#x2715;</span>
+</button>
 ```
 
 ### Count pill — `@kit count` · `styles/ui-kit.css`

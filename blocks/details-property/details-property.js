@@ -22,12 +22,12 @@ export default async function decorate(block) {
   const asset = await Asset.create(block);
 
   // `pill` variant renders the value as a UI Kit badge
-  const valueClass = block.classList.contains("pill") ? "asc-ui-badge" : "";
+  const valueClass = ['details-property__value', block.classList.contains('pill') ? 'asc-ui-badge' : ''].filter(Boolean).join(' ');
   const pv = asset.getProperty(config.property);
   const display = pv.html || escHtml(config.default || '');
 
   block.innerHTML = `
       <label>${escHtml(config.label || '')}</label>
-      <span class="${valueClass}">${display}</span>
+      <div class="${valueClass}">${display}</div>
     `;
 }

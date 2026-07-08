@@ -23,6 +23,32 @@
         }
     }
 
+    /* ── Loading skeleton ────────────────────────────────────────────────── */
+    /* Holds the grid cell at ~viewport height while results are in flight,
+       preventing the filters/controls column from reflowing when content arrives. */
+    [data-asc-results][data-loading] {
+        position: relative;
+        display: block;
+        min-height: calc(100vh - 10rem);
+        overflow: hidden;
+        background: var(--color-muted);
+        border-radius: var(--border-radius-md);
+    }
+
+    [data-asc-results][data-loading]::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        transform: translateX(-100%);
+        background: linear-gradient(
+            90deg,
+            transparent,
+            color-mix(in srgb, var(--color-fg) 6%, transparent),
+            transparent
+        );
+        animation: asc-ui-shimmer 1.4s ease-in-out infinite;
+    }
+
     [data-asc-results] {
         /* default — overridden by data-display attribute */
         display: grid;

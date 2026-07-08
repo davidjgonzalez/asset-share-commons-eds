@@ -74,8 +74,8 @@ export default class OpenApiProvider extends SearchProvider {
       || [...formData.entries()].find(([k]) => /^\d+_group\.fulltext$/.test(k))?.[1];
     if (fulltextValue) params.set('q', fulltextValue);
 
-    // path can be bare ('path'), from search-hidden, or will be handled in pass 2
-    // via N_group.path.K_value entries emitted by search-path checkboxes/selects.
+    // Bare top-level path (e.g. from search-hidden or configurations.basePredicates).
+    // Group-scoped paths (N_group.path, N_group.M_path) are handled in the pre-scan below.
     const path = formData.get('path');
     if (path) params.set('filter[assetAncestorPath]', path);
 
@@ -96,6 +96,17 @@ export default class OpenApiProvider extends SearchProvider {
     // ── Pass 1: collect QB predicate groups ─────────────────────────────────
     // Matches `{groupNum}_group.{predicateName}.{paramKey}` (e.g. `2_group.daterange.lowerBound`)
     const groups = {};
+
+    // Pre-scan: collect direct path predicates emitted by search-path.
+    // Radio/dropdown emit N_group.path=<value>; checkboxes emit N_group.M_path=<value>.
+    // Neither has a sub-key, so neither matches the main pass-1 regex below.
+    formData.forEach((value, name) => {
+      const m = name.match(/^(\d+)_group\.(?:\d+_)?path$/);
+      if (!m) return;
+      (groups[m[1]] ??= {});
+      (groups[m[1]].path ??= { values: [] }).values.push(value);
+    });
+
     formData.forEach((value, name) => {
       const match = name.match(/^(\d+)_group\.(\w+)\.(.+)$/);
       if (!match) return;
@@ -126,7 +137,8 @@ export default class OpenApiProvider extends SearchProvider {
       }
 
       // path predicate → filter[assetAncestorPath] (first selected value)
-      // search-path emits N_group.path.K_value entries for each checkbox/radio/select option.
+      // search-path emits N_group.path (radio/dropdown) or N_group.M_path (checkboxes),
+      // both collected into group.path.values by the pre-scan above.
       if (group.path?.values?.length && !params.has('filter[assetAncestorPath]')) {
         params.set('filter[assetAncestorPath]', group.path.values[0]);
       }

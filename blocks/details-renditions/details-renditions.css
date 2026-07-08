@@ -65,10 +65,12 @@
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
             gap: var(--spacing-md);
-            align-items: start;
+            align-items: stretch;
         }
 
         .details-renditions__cards > .asc-ui-card {
+            display: flex;
+            flex-direction: column;
             max-width: 280px;
             cursor: pointer;
         }
@@ -79,8 +81,7 @@
         }
 
         .details-renditions__card-preview {
-            aspect-ratio: var(--renditions-card-ar, 4 / 3);
-            max-height: 12rem;
+            aspect-ratio: 1;
             overflow: hidden;
             background: var(--color-muted);
             border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;

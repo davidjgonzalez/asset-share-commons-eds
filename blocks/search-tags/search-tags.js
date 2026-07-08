@@ -18,7 +18,7 @@
  * Tag values follow AEM tag namespace format: `namespace:tag-path`
  * (e.g. `dam:status/approved`, `myns:category/nature`).
  */
-import { readBlockConfig, getOptions, addSearchEventListeners } from '../../scripts/asc/utils/search.js';
+import { readBlockConfig, getOptions, addSearchEventListeners, enhanceSearchFilterDropdown } from '../../scripts/asc/utils/search.js';
 
 export default function decorate(block) {
   const config = readBlockConfig(block, {
@@ -32,63 +32,8 @@ export default function decorate(block) {
   });
 
   block.innerHTML = html(config);
-  if (isInlineDropdownMode(block)) {
-    enhanceAsDropdown(block, config.title || 'Tags');
-  }
+  enhanceSearchFilterDropdown(block, config.title || 'Tags');
   addSearchEventListeners(block, config);
-}
-
-function isInlineDropdownMode(block) {
-  return Boolean(
-    block.closest('.section.inline.dropdowns.search-filters')
-    || block.closest('.section.top.dropdowns.search-filters'),
-  );
-}
-
-function enhanceAsDropdown(block, fallbackLabel) {
-  const titleEl = block.querySelector(':scope > .search-tags__title');
-  const label = titleEl?.textContent?.trim() || fallbackLabel;
-  titleEl?.remove();
-
-  const hiddenInputs = Array.from(block.querySelectorAll(':scope > input[type="hidden"]'));
-  const panelContent = Array.from(block.children).filter((el) => !hiddenInputs.includes(el));
-
-  const dropdown = document.createElement('div');
-  dropdown.className = 'search-filter-dropdown asc-ui-control asc-ui-dropdown';
-
-  const trigger = document.createElement('button');
-  trigger.type = 'button';
-  trigger.className = 'search-filter-dropdown__trigger btn btn--secondary asc-ui-control-btn';
-  trigger.setAttribute('aria-expanded', 'false');
-  trigger.innerHTML = `<span>${label}</span><span class="search-filter-dropdown__arrow asc-ui-chevron" aria-hidden="true">▾</span>`;
-
-  const panel = document.createElement('div');
-  panel.className = 'search-filter-dropdown__panel asc-ui-dropdown__panel';
-  panel.hidden = true;
-  panel.append(...panelContent);
-
-  const closePanel = () => {
-    panel.hidden = true;
-    trigger.setAttribute('aria-expanded', 'false');
-  };
-
-  trigger.addEventListener('click', () => {
-    const expanded = trigger.getAttribute('aria-expanded') === 'true';
-    panel.hidden = expanded;
-    trigger.setAttribute('aria-expanded', expanded ? 'false' : 'true');
-  });
-
-  document.addEventListener('click', (event) => {
-    if (!dropdown.contains(event.target)) closePanel();
-  });
-
-  document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') closePanel();
-  });
-
-  block.innerHTML = '';
-  block.append(...hiddenInputs, dropdown);
-  dropdown.append(trigger, panel);
 }
 
 function html(config) {

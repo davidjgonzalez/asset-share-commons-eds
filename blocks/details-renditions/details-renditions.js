@@ -58,7 +58,6 @@
 import Asset from '../../scripts/asc/models/asset.js';
 import services from '../../scripts/asc/services/services.js';
 import { delegateEvent } from '../../scripts/asc/utils/events.js';
-import { snapAspectRatio } from '../../scripts/asc/utils/images.js';
 
 const KNOWN_ACTIONS = new Set(['download', 'share', 'copy-url']);
 const PREVIEW_KEYWORD = 'preview';
@@ -137,14 +136,8 @@ export default async function decorate(block) {
 
   if (display === 'cards') {
     block.classList.add('details-renditions--cards');
-    block.style.setProperty('--renditions-card-ar', asset.renditionsBoundingAspectRatio);
     const cards = renditions.map((rendition) => renditionCard(asset, rendition)).join('');
     block.innerHTML = `${headerHtml}<div class="details-renditions__cards">${cards}</div>`;
-
-    block.querySelectorAll('.details-renditions__card-preview').forEach((preview) => {
-      const img = preview.querySelector('img');
-      if (img) snapAspectRatio(img, preview);
-    });
 
     wireRenditionInteractions(block, asset, renditions);
     wireCopyUrl(block);
@@ -213,7 +206,7 @@ function renditionCard(asset, rendition) {
   const ctx = renditionContext(asset, rendition);
   const thumbSrc = renditionPreviewSrc(asset, rendition);
   const thumbHtml = thumbSrc
-    ? `<img class="details-renditions__card-thumb" src="${esc(thumbSrc)}" alt="" loading="lazy">`
+    ? `<img class="details-renditions__card-thumb" src="${esc(thumbSrc)}" alt="" width="320" height="192">`
     : '';
   const metaItems = [ctx['file-type'], ctx['file-size'], ctx.dimensions].filter(Boolean);
   const meta = metaItems.map((item, i) => `<span>${esc(item)}${i < metaItems.length - 1 ? ' ·&nbsp;' : ''}</span>`).join('');

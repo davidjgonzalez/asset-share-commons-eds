@@ -1,0 +1,16 @@
+.block.search-active-filters {
+    padding-block: var(--spacing-sm);
+
+    /* Collapse completely when no pills are rendered */
+    &:empty {
+        display: none;
+        padding: 0;
+    }
+
+    & .search-active-filters__list {
+        align-items: center;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+}

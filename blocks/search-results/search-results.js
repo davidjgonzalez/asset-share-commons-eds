@@ -7,6 +7,8 @@ import services from '../../scripts/asc/services/services.js';
 import configurations from '../../scripts/configurations.js';
 
 const MASONRY_COLS = 3;
+// asset-teaser.js uses card-optimised sizes (300px); override for masonry columns (~⅓ viewport).
+const MASONRY_SIZES = '(min-width: 1024px) calc(33vw - 24px), (min-width: 640px) calc(50vw - 20px), 100vw';
 
 // ── Default labels for built-in properties in list column headers ─────────
 const PROP_LABELS = {
@@ -86,7 +88,9 @@ function appendMasonryItems(container, assets) {
   }
   const start = cols.reduce((sum, col) => sum + col.children.length, 0);
   assets.forEach((asset, i) => {
-    cols[(start + i) % cols.length].insertAdjacentHTML('beforeend', assetTeaser(asset, { mode: 'card', view: 'masonry' }));
+    const html = assetTeaser(asset, { mode: 'card', view: 'masonry' })
+      .replace(/sizes="[^"]*"/, `sizes="${MASONRY_SIZES}"`);
+    cols[(start + i) % cols.length].insertAdjacentHTML('beforeend', html);
   });
 }
 
@@ -120,6 +124,19 @@ function renderListView(assets, renditionId) {
 
 function getDisplayMode(block) {
   return block.querySelector('[name="asc.search-results.display"]')?.value || 'masonry';
+}
+
+// Promote the first N result images to eager + high priority for LCP.
+// Only called on fresh renders (not load-more); load-more images are below the fold.
+// Count 4 covers the first visible row across 2–4 column grid layouts.
+function promoteAboveFoldImages(container, count = 4) {
+  let promoted = 0;
+  for (const img of container.querySelectorAll('img')) {
+    if (promoted >= count) break;
+    img.loading = 'eager';
+    img.fetchPriority = 'high';
+    promoted += 1;
+  }
 }
 
 function attachImageHandlers(resultsEl) {
@@ -221,9 +238,7 @@ function html(config) {
     <input type="hidden" name="asc.search-results.more" value="true"/>
     <input type="hidden" name="asc.search-results.total" value="0"/>
 
-    <div data-asc-results>
-      <!-- Inject point for results here based on asc.search-results.display -->
-    </div>
+    <div data-asc-results data-loading></div>
   `;
 }
 
@@ -288,6 +303,8 @@ async function addEventListeners(block, _config) {
     const display = getDisplayMode(block);
     const resultsEl = block.querySelector('[data-asc-results]');
     resultsEl.dataset.display = display;
+    // Drop the loading placeholder so the grid cell height is no longer constrained.
+    delete resultsEl.dataset.loading;
 
     if (event.detail.type === 'load-more') {
       if (display === 'list') {
@@ -316,10 +333,23 @@ async function addEventListeners(block, _config) {
         .map((asset) => assetTeaser(asset, { mode: 'card', view: display })).join('') || '';
     }
 
+    if (event.detail.type !== 'load-more') {
+      promoteAboveFoldImages(resultsEl);
+    }
+
     attachImageHandlers(resultsEl);
     injectQuickDownloadButtons(resultsEl, display, quickDownloadRendition);
     isLoadingMore = false;
     setupSentinel();  // no-op after first call; observer handles subsequent loads
+
+    // After a page-load search (filter change, new query), the IntersectionObserver
+    // only fires on transitions. If the sentinel was already visible before the new
+    // (potentially shorter) results rendered, no transition occurs and load-more
+    // would never fire. Re-observe to force immediate re-evaluation.
+    if (event.detail.type !== 'load-more' && sentinel && observer) {
+      observer.unobserve(sentinel);
+      observer.observe(sentinel);
+    }
   });
 
   block.addEventListener('click', (event) => {

@@ -401,6 +401,39 @@
     white-space: nowrap;
 }
 
+/* Removable variant — use a <button> element; aria-label should describe the remove action */
+.asc-ui-chip--removable {
+    cursor: pointer;
+    font-family: inherit;
+
+    &:hover {
+        background: var(--color-secondary);
+        border-color: var(--color-primary);
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--color-ring);
+        outline-offset: 2px;
+    }
+}
+
+/* The × icon inside a removable chip */
+.asc-ui-chip__remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.1em;
+    height: 1.1em;
+    border-radius: 50%;
+    background: color-mix(in srgb, currentcolor 15%, transparent);
+    font-size: 0.85em;
+    line-height: 1;
+
+    .asc-ui-chip--removable:hover & {
+        background: color-mix(in srgb, currentcolor 28%, transparent);
+    }
+}
+
 /* ─────────────────────────────────────────────────────────────────────────
    @kit count — small numeric pill (e.g. active-collection count on a trigger)
 ───────────────────────────────────────────────────────────────────────── */

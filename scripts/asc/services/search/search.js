@@ -47,7 +47,7 @@ class SearchService {
     // Wait until all blocks are decorated before running the initial search.
     // The search-page check runs here — after blocks exist — not at import time.
     document.addEventListener('asc:blocks:loaded', () => {
-      if (document.querySelector('.block.search-bar, .block.search-results, .block.search-property, .block.search-path')) {
+      if (document.querySelector('.block.search-bar, .block.search-results, .block.search-property, .block.search-path, .block.search-tags, .block.search-date-range')) {
         this.executeSearchFromUrl(window.location.search);
       }
     });
@@ -137,15 +137,12 @@ class SearchService {
     }
 
     const results = await this._search(formData);
-
-    const safeResults = results || {
-      more: false, offset: 0, size: 0, total: 0, success: false, assets: [],
-    };
+    if (results === undefined) return; // concurrent search in flight — silently drop
 
     document.dispatchEvent(
       new CustomEvent(Events.SEARCH_COMPLETE, {
         detail: {
-          results: safeResults,
+          results,
           type: event.detail?.type || 'page-load',
           formData: new Map(formData),
         },

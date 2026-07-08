@@ -17,9 +17,51 @@
 
     /* Base value. Scoped to :not(.pill) so the .pill variant's .asc-ui-badge
        (UI Kit) keeps its own color/size/display instead of being overridden here. */
-    &:not(.pill) span {
+    &:not(.pill) .details-property__value {
         display: block;
         font-size: var(--body-font-size-s);
         color: var(--color-muted-fg);
     }
+}
+
+/* ── history property ────────────────────────────────────────────────────────
+   Top-level rules (not nested) to avoid CSS-nesting parse quirks.
+   Uses div elements so two-line layout holds even without these styles.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.asc-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.asc-history-entry {
+    padding-inline-start: var(--spacing-sm);
+    padding-block: 2px;
+    border-inline-start: 2px solid var(--color-border);
+}
+
+.asc-history-entry__top {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    flex-wrap: wrap;
+    margin-bottom: 2px;
+}
+
+.asc-history-list .asc-history-entry__action {
+    text-transform: capitalize;
+    font-size: var(--body-font-size-xs);
+    padding: 1px 6px;
+}
+
+.asc-history-list .asc-history-entry__when {
+    font-size: var(--body-font-size-2xs);
+    color: var(--color-muted-fg);
+}
+
+.asc-history-list .asc-history-entry__agent {
+    font-size: var(--body-font-size-2xs);
+    color: var(--color-muted-fg);
+    font-style: italic;
 }

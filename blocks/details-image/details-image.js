@@ -48,8 +48,6 @@ export default async function decorate(block) {
     const unsupportedHint = block.querySelector('.details-image__unsupported-hint');
     const unsupportedDownload = block.querySelector('.details-image__unsupported-download');
 
-    preview.style.aspectRatio = asset.renditionsBoundingAspectRatio;
-
     const showImage = () => {
       img.classList.remove('details-image__img--hidden');
       unsupported.classList.add('details-image__unsupported--hidden');
@@ -68,17 +66,6 @@ export default async function decorate(block) {
       if (pendingUrl) failedUrls.add(pendingUrl);
       showUnsupported(loadingRendition);
     });
-
-    // Snap the container to the real output AR after load (rendition width/height
-    // metadata are max-dimension bounds, not actual output dimensions). Only update
-    // for the active rendition — hover loads must not cause layout reflow.
-    const snapActiveAR = () => {
-      if (img.naturalWidth && img.naturalHeight && img.src === srcFor(activeRendition)) {
-        preview.style.aspectRatio = `${img.naturalWidth} / ${img.naturalHeight}`;
-      }
-    };
-    img.addEventListener('load', snapActiveAR);
-    if (img.complete) snapActiveAR();
 
     const setDisplay = (rendition, sticky) => {
       const url = srcFor(rendition);

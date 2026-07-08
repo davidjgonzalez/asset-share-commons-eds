@@ -637,4 +637,44 @@ observer.observe(block);
 
 ---
 
+---
+
+## Loading External Libraries from CDN
+
+Some details blocks need a third-party library (e.g. a map renderer, a PDF viewer, a chart).
+Use `loadCSS` / `loadScript` from `scripts/aem.js` — they de-duplicate loads and return Promises.
+
+**Rules:**
+- Load only when the block is present — never in `scripts.js` or globally
+- Always `try/catch` the load so a CDN failure doesn't crash the page
+- Provide a fallback (text, link, message) so the block degrades gracefully
+- `loadCSS` is fire-and-forget (non-blocking); `await loadScript` before calling library APIs
+
+```js
+import { loadCSS, loadScript } from '../../scripts/aem.js';
+
+const LIB_CSS = 'https://cdn.example.com/lib@1.0.0/lib.css';
+const LIB_JS  = 'https://cdn.example.com/lib@1.0.0/lib.js';
+
+export default async function decorate(block) {
+  // ... get asset, validate data, render container HTML ...
+
+  const container = block.querySelector('.my-block__container');
+
+  try {
+    loadCSS(LIB_CSS);          // non-blocking — CSS loads in parallel
+    await loadScript(LIB_JS);  // wait for JS before calling library APIs
+    initLibrary(container, data);
+  } catch {
+    // CDN failed — container already has fallback text/link from innerHTML above
+    container.remove();
+  }
+}
+```
+
+**Reference implementation:** `blocks/details-map/details-map.js` — Leaflet + OpenStreetMap,
+with `ResizeObserver` to handle sizing inside a `<dialog>` that was hidden at decoration time.
+
+---
+
 See also: [block-conventions.md](block-conventions.md), [cdd-workflow.md](cdd-workflow.md), [services-api.md](services-api.md), [recipes.md](recipes.md#recipe-12-fetch-and-display-single-asset)

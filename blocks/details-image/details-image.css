@@ -8,8 +8,11 @@
 .block.details-image {
     .asc-ui-detail__preview {
         width: 100%;
+        aspect-ratio: 1;
+        max-height: calc(90vh - 12rem); /* keep the square from overflowing the dialog */
         position: relative;
-        max-height: clamp(16rem, 50vh, 40rem);
+        overflow: hidden;
+        background: var(--color-muted);
     }
 
     .asc-ui-detail__preview img {

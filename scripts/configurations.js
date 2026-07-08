@@ -16,6 +16,7 @@ import lastModifiedDate from './asc/services/properties/last-modified-date.js';
 import tags from './asc/services/properties/tags.js';
 import colors from './asc/services/properties/colors.js';
 import smartTags from './asc/services/properties/smart-tags.js';
+import history from './asc/services/properties/history.js';
 
 const configurations = {
 
@@ -270,6 +271,7 @@ const configurations = {
       tags,
       colors,
       'smart-tags': smartTags,
+      history,
     },
   },
 
@@ -369,15 +371,18 @@ const configurations = {
       /^cq5dam\.thumbnail\./,  // cq5dam.thumbnail.48.48.png, cq5dam.thumbnail.319.319.png, etc.
       /^cqdam\..+\.json$/,     // cqdam.text.json, cqdam.metadata.json, etc.
       'cqdam.metadata.xml',
+      'Swatch'
     ],
     // Thumbnail renditions — used exclusively for <img srcset> in search result cards.
     // Never shown in the download list. Each entry needs `size.width` for the srcset descriptor.
+    // Ladder is aligned to card/masonry display sizes at 1× and 2× DPR:
+    //   cards (300px): 1× → 320w, 2× → 640w
+    //   masonry (~450px at 1440px viewport): 1× → 640w, 2× → 1280w
     thumbnails: [
       { type: 'web-optimized-delivery', size: { width: 100  }, params: 'width=100&preferwebp=true&quality=85',  accepts: (asset) => asset.mimeType?.startsWith('image/') },
-      { type: 'web-optimized-delivery', size: { width: 250  }, params: 'width=250&preferwebp=true&quality=85',  accepts: (asset) => asset.mimeType?.startsWith('image/') },
-      { type: 'web-optimized-delivery', size: { width: 500  }, params: 'width=500&preferwebp=true&quality=85',  accepts: (asset) => asset.mimeType?.startsWith('image/') },
-      { type: 'web-optimized-delivery', size: { width: 1000 }, params: 'width=1000&preferwebp=true&quality=60', accepts: (asset) => asset.mimeType?.startsWith('image/') },
-      { type: 'web-optimized-delivery', size: { width: 1600 }, params: 'width=1600&preferwebp=true&quality=60', accepts: (asset) => asset.mimeType?.startsWith('image/') },
+      { type: 'web-optimized-delivery', size: { width: 320  }, params: 'width=320&preferwebp=true&quality=85',  accepts: (asset) => asset.mimeType?.startsWith('image/') },
+      { type: 'web-optimized-delivery', size: { width: 640  }, params: 'width=640&preferwebp=true&quality=80',  accepts: (asset) => asset.mimeType?.startsWith('image/') },
+      { type: 'web-optimized-delivery', size: { width: 1280 }, params: 'width=1280&preferwebp=true&quality=70', accepts: (asset) => asset.mimeType?.startsWith('image/') },
     ],
     definitions: [
   //

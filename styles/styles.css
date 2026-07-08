@@ -10,16 +10,14 @@
  * governing permissions and limitations under the License.
  */
 
-/* ASC structural tokens — loaded before theme overrides */
+/* Critical-path CSS — all three loaded together before first render.
+   tokens.css:  design tokens (CSS variables); themes override these.
+   ui-kit.css:  reusable .asc-ui-* component primitives.
+   sections.css: section layout variants (grid, aside, inline, full-width, named-area).
+   Consolidated from 7 @imports to 3 to reduce the render-blocking waterfall. */
 @import url('./tokens.css');
-
-/* ASC UI Kit — reusable .asc-ui-* component primitives (see /ui-kit.html, docs/UI_KIT.md) */
 @import url('./ui-kit.css');
-@import url('./sections/inline.css');
-@import url('./sections/grid.css');
-@import url('./sections/aside.css');
-@import url('./sections/grid-layout.css');
-@import url('./sections/full-width.css');
+@import url('./sections.css');
 
 /* ─────────────────────────────────────────────────────────────────────────
    SEMANTIC COLOR TOKENS

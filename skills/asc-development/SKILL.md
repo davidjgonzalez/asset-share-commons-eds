@@ -253,6 +253,7 @@ Create a PR with:
 | Dispatching `asc:search:execute` manually inside a filter | Already handled by `addSearchEventListeners` | Call `addSearchEventListeners(block, config)` after setting `block.innerHTML` |
 | Calling `readBlockConfig` from `search.js` in a display block | Wastes a group slot; group numbers are URL keys for shared links — gaps break URL hydration for filter blocks | Display blocks use `readBlockConfig` from `blocks.js` / `aem.js` and import `SEARCH_FORM` directly |
 | Importing one block from another | Creates tight coupling | Use `data-asc-action` events for inter-block communication |
+| Setting `<input type="date">` value directly from `config.initial` | URL persistence writes full ISO datetimes (`2024-01-15T00:00:00.000Z`); browsers silently discard invalid date values — picker appears blank after refresh even though the search ran correctly | Strip the time suffix: `(config.initial[name] \|\| '').slice(0, 10)`. The search service's `adjustFormData` re-appends `T00:00:00.000Z` / `T23:59:59.999Z` before the QB query runs |
 
 ---
 

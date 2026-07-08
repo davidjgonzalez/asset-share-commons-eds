@@ -140,7 +140,7 @@ function htmlOption(option, index, config) {
 | `config.group` | This block's 1-based DOM index — distinguishes same-predicate filters |
 | `config.parameter(key)` | Builds `{group}_group.{name}.{key}` — the QB field name pattern |
 | `config.fieldset` | Unique ID for this block's group; used to group inputs for dependency logic |
-| `config.initial` | Values from the current URL (`?1_group.myprop.0_value=adobe`) — pre-checks correct options |
+| `config.initial` | Values from the current URL — pre-checks correct options. **Date caveat:** URL persistence stores full ISO datetimes (`2024-01-15T00:00:00.000Z`); `<input type="date">` only accepts `YYYY-MM-DD`. Always strip the time suffix: `(config.initial[name] \|\| '').slice(0, 10)` |
 | `addSearchEventListeners` | Wires `change` events on all interactive inputs to dispatch `asc:search:execute` |
 
 ---
@@ -250,6 +250,7 @@ Check in browser:
 | Using wrong field name pattern | Always use `config.parameter(key)` — never hardcode `_group.` strings |
 | Forgetting `addSearchEventListeners` | Without it, changing a checkbox won't trigger a search |
 | Binding inputs inside `decorate()` manually | Use `addSearchEventListeners(block, config)` instead — it handles all input types correctly |
+| Setting `<input type="date">` value directly from `config.initial` | URL persistence stores ISO datetimes (`T00:00:00.000Z` suffix); browsers silently blank date inputs that aren't `YYYY-MM-DD` — filter appears empty after refresh | Use `(config.initial[name] \|\| '').slice(0, 10)` — `adjustFormData` in the search service re-appends the time suffix before the QB query runs |
 | Naming CSS selector `main .search-{name} {}` then using `.search-{name}__child` at root | All descendants must be nested: `main .search-{name} .search-{name}__child` |
 
 ---

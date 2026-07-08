@@ -122,8 +122,16 @@ function htmlButton(asset, action, rendition, label) {
 
 function downloadFilename(asset, rendition) {
   const base = asset.filename ? asset.filename.replace(/\.[^.]+$/, '') : (asset.title || 'download');
-  const ext = mimeToExt(rendition?.mimeType) || asset.fileExtension || '';
-  return ext ? `${base}.${ext}` : base;
+  // Extension: prefer MIME mapping, then parse from rendition filename, then asset extension.
+  const ext = mimeToExt(rendition?.mimeType)
+    || (rendition?.filename ? rendition.filename.split('.').pop() : '')
+    || asset.fileExtension || '';
+  // rendition.label is already cleaned by Rendition.deriveLabel (e.g. "cq5dam.preview" → "preview").
+  // For the original rendition, omit the suffix so the download keeps the asset's own filename.
+  const label = rendition?.label || '';
+  const isOriginal = !label || label.toLowerCase() === 'original';
+  const stem = isOriginal ? base : `${base}-${label}`;
+  return ext ? `${stem}.${ext}` : stem;
 }
 
 function mimeToExt(mimeType) {

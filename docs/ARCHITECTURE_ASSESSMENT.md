@@ -192,7 +192,7 @@ Search Blocks (8):       search-bar, search-property, search-path,
                          search-date-range, search-tags, search-hidden, 
                          search-results, search-statistics
 
-Details Blocks (6):      details-modal, details-image, details-property, 
+Details Blocks (6):      details-modal, details-preview, details-property,
                          details-renditions, details-actions, details-similar
 
 Collections Blocks (4):  stub, sheet, collections, collection, 
@@ -352,7 +352,7 @@ All blocks use `.block.{name}` as the root selector, not `main .{name}` (Adobe's
 | Category | Prefix | Examples |
 |----------|--------|----------|
 | Search | `search-*` | search-bar, search-property, search-date-range |
-| Details | `details-*` | details-modal, details-image, details-renditions |
+| Details | `details-*` | details-modal, details-preview, details-renditions |
 | Collections | `collection*` | collection, collection-switcher, stub, sheet |
 | EDS standard | — | hero, footer, header, fragment, columns |
 
