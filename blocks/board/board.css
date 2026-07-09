@@ -67,15 +67,6 @@
         }
     }
 
-    /* Expanded state */
-    &[data-board-expanded] .board__viewport {
-        width: calc(100vw - 4rem);
-        position: relative;
-        left: 50%;
-        transform: translateX(-50%);
-        height: 85vh;
-    }
-
     /* ── Canvas ─────────────────────────────────────────────────────── */
 
     .board__canvas {

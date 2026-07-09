@@ -84,19 +84,19 @@ Wraps a label + control + optional hint/error. Controls inherit the global input
 ```
 
 ### Switch — `@kit switch` · `styles/ui-kit.css`
-Accessible on/off toggle built on a native checkbox.
+Accessible on/off toggle built on a native checkbox. Always include `role="switch"` and `aria-checked` on the `<input>` so assistive technology announces on/off state correctly.
 ```html
 <label class="asc-ui-switch">
-  <input type="checkbox">
+  <input type="checkbox" role="switch" aria-checked="false">
   <span class="asc-ui-switch__track"><span class="asc-ui-switch__thumb"></span></span>
   <span>Include subfolders</span>
 </label>
 ```
 
 ### Search — `@kit search` · `styles/ui-kit.css`
-Pill input that grows on focus. Width via `--asc-ui-search-width`.
+Pill input that grows on focus. Width via `--asc-ui-search-width`. Wrap in `role="search"` so AT users can navigate to the search landmark.
 ```html
-<div class="asc-ui-search"><input type="search" placeholder="Search assets…" aria-label="Search assets"></div>
+<div class="asc-ui-search" role="search"><input type="search" placeholder="Search assets…" aria-label="Search assets"></div>
 ```
 
 ### Filter control + dropdown — `@kit control / dropdown` · `styles/ui-kit.css`
@@ -225,6 +225,11 @@ Compact horizontal asset row (list view). Children: `__thumb` `__title` `__meta`
 Vertical asset tile: thumbnail + title + metadata. Modifier: `--interactive`.
 Slots: `__thumb` (put `<img>` or `.asc-ui-filetype` inside), `__badge`, `__overlay`
 (hover actions), `__body` / `__title` / `__meta`, `__footer`.
+
+**Alt text rules for `<img>` inside cards:**
+- Meaningful image (asset thumbnail shown to user): `alt="<asset title or description>"` — use `asset.description || asset.title || asset.name`
+- Decorative / duplicate (same title is nearby in the card): `alt=""`
+- Never omit the `alt` attribute.
 ```html
 <article class="asc-ui-asset-card asc-ui-asset-card--interactive">
   <div class="asc-ui-asset-card__thumb">
@@ -328,13 +333,14 @@ stacked `__section` blocks (with `__section-title`) below for renditions, simila
 Column-flow gallery. `__item` > `__photo` (`--tall` / `--wide` / `--square`) + `__actions` (`asc-ui-icon-btn`).
 
 ### Empty state — `@kit empty-state` · `styles/ui-kit.css`
+Use `<section>` so AT users can navigate to it as a landmark. Always add `aria-hidden="true"` to decorative icons.
 ```html
-<div class="asc-ui-empty-state">
-  <span class="asc-ui-empty-state__icon">📁</span>
+<section class="asc-ui-empty-state">
+  <span class="asc-ui-empty-state__icon" aria-hidden="true">📁</span>
   <p class="asc-ui-empty-state__title">No collections yet</p>
   <p class="asc-ui-empty-state__hint">Create a collection to start building a set of assets.</p>
   <div class="asc-ui-empty-state__actions"><button class="btn btn--primary btn--sm" type="button">New</button></div>
-</div>
+</section>
 ```
 
 ### Spinner — `@kit spinner` · `styles/ui-kit.css`

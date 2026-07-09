@@ -1,0 +1,16 @@
+/* fixed-width section — constrains a section to the standard max-width.
+ *
+ * style: fixed-width
+ *
+ * Useful for editorial sections (text, hero, etc.) inside pages that are
+ * otherwise full-width (e.g., a search results page). The inverse of full-width.
+ */
+main .section.fixed-width {
+    max-width: var(--section-max-width, 1200px);
+    padding-inline: var(--section-padding, 24px);
+    margin-inline: auto;
+}
+
+main .section.fixed-width > div {
+    max-width: 100%;
+}

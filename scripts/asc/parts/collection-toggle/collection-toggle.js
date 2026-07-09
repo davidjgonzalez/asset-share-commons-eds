@@ -105,7 +105,7 @@ export default function collectionToggle(asset, options = {}) {
             data-asc-action="collection:add@click"
             data-asc-stop="true"
             data-asc-asset="${escAttr(asset.uuid)}"${collectionAttr}
-            aria-pressed=""
+            aria-pressed="false"
             type="button">
       <span class="asc-collection-toggle__icon" aria-hidden="true">+</span>
       <span class="asc-collection-toggle__label" data-label="${escAttr(addLabel)}"
@@ -115,7 +115,7 @@ export default function collectionToggle(asset, options = {}) {
             data-asc-action="collection:remove@click"
             data-asc-stop="true"
             data-asc-asset="${escAttr(asset.uuid)}"${collectionAttr}
-            aria-pressed=""
+            aria-pressed="false"
             type="button">
       <span class="asc-collection-toggle__icon" aria-hidden="true">−</span>
       <span class="asc-collection-toggle__label" data-label="${escAttr(removeLabel)}"

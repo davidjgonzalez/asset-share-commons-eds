@@ -62,4 +62,13 @@ export default async function decorate(block) {
   navWrapper.append(nav);
   block.innerHTML = '';
   block.append(navWrapper);
+
+  // Depth effect: add shadow when user scrolls past the top of the page
+  const sentinel = document.createElement('div');
+  sentinel.style.height = '1px';
+  sentinel.setAttribute('aria-hidden', 'true');
+  document.body.insertAdjacentElement('afterbegin', sentinel);
+  new IntersectionObserver(([entry]) => {
+    block.closest('header').classList.toggle('scrolled', !entry.isIntersecting);
+  }, { threshold: 0 }).observe(sentinel);
 }

@@ -14,6 +14,7 @@
 // limitations under the License.
 
 import aem from './aem/aem.js';
+import actionPages from './action-pages/action-pages.js';
 import actions from './actions/actions.js';
 import assetDetails from './asset-details/asset-details.js';
 import debug from './debug/debug.js';
@@ -31,6 +32,7 @@ import users from './users/users.js';
 import init from './init/init.js';
 
 const services = {
+  actionPages,
   actions,
   aem,
   assetDetails,

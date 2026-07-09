@@ -6,9 +6,11 @@ import collectionToggle from '../../scripts/asc/parts/collection-toggle/collecti
 import services from '../../scripts/asc/services/services.js';
 import configurations from '../../scripts/configurations.js';
 
-const MASONRY_COLS = 3;
-// asset-teaser.js uses card-optimised sizes (300px); override for masonry columns (~⅓ viewport).
-const MASONRY_SIZES = '(min-width: 1024px) calc(33vw - 24px), (min-width: 640px) calc(50vw - 20px), 100vw';
+const MASONRY_SIZES = '(min-width: 1400px) 25vw, (min-width: 1000px) 33vw, (min-width: 640px) 50vw, 100vw';
+const MASONRY_COL_WIDTH = 360; // target column width — smaller value = more columns at wider viewports
+
+// Per-container masonry state: tracks column elements and round-robin index.
+const masonryState = new WeakMap();
 
 // ── Default labels for built-in properties in list column headers ─────────
 const PROP_LABELS = {
@@ -76,21 +78,28 @@ function renderListActionsCell(asset, renditionId) {
     </div>`;
 }
 
+function getMasonryState(container) {
+  if (masonryState.has(container)) return masonryState.get(container);
+  const count = Math.min(8, Math.max(2, Math.floor((container.offsetWidth || window.innerWidth) / MASONRY_COL_WIDTH)));
+  const cols = Array.from({ length: count }, () => {
+    const col = document.createElement('div');
+    col.className = 'masonry-col';
+    container.appendChild(col);
+    return col;
+  });
+  const state = { cols, next: 0 };
+  masonryState.set(container, state);
+  return state;
+}
+
 function appendMasonryItems(container, assets) {
-  let cols = [...container.querySelectorAll('.search-results__masonry-col')];
-  if (!cols.length) {
-    cols = Array.from({ length: MASONRY_COLS }, () => {
-      const col = document.createElement('div');
-      col.className = 'search-results__masonry-col';
-      container.appendChild(col);
-      return col;
-    });
-  }
-  const start = cols.reduce((sum, col) => sum + col.children.length, 0);
-  assets.forEach((asset, i) => {
-    const html = assetTeaser(asset, { mode: 'card', view: 'masonry' })
-      .replace(/sizes="[^"]*"/, `sizes="${MASONRY_SIZES}"`);
-    cols[(start + i) % cols.length].insertAdjacentHTML('beforeend', html);
+  const state = getMasonryState(container);
+  assets.forEach((asset) => {
+    const col = state.cols[state.next % state.cols.length];
+    col.insertAdjacentHTML('beforeend',
+      assetTeaser(asset, { mode: 'card', view: 'masonry' })
+        .replace(/sizes="[^"]*"/, `sizes="${MASONRY_SIZES}"`));
+    state.next += 1;
   });
 }
 
@@ -327,6 +336,7 @@ async function addEventListeners(block, _config) {
       resultsEl.innerHTML = renderListView(results.assets, quickDownloadRendition);
     } else if (display === 'masonry') {
       resultsEl.innerHTML = '';
+      masonryState.delete(resultsEl);
       appendMasonryItems(resultsEl, results.assets || []);
     } else {
       resultsEl.innerHTML = results.assets

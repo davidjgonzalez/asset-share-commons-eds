@@ -208,6 +208,24 @@ const configurations = {
     },
   },
 
+  // ─── Action Pages ────────────────────────────────────────────────────────────
+  //
+  // Controls the action-pages service — the framework that intercepts clicks on
+  // <a href="/actions/..."> links and loads the matching action block as a modal.
+  //
+  // actions: {
+  //   root: '/actions',   // DA path prefix for action pages (default: '/actions')
+  // },
+
+  // ─── Share ───────────────────────────────────────────────────────────────────
+  //
+  // Controls the Share Collection dialog.
+  // Author the dialog content at the actionPath DA page.
+  //
+  share: {
+    actionPath: '/actions/share',
+  },
+
   // ─── Collections ─────────────────────────────────────────────────────────────
   collections: {
     // Path to the collections management index page (used by collection-switcher block)
@@ -229,21 +247,26 @@ const configurations = {
   // Bulk downloads are submitted to the AEM download framework and polled
   // until complete, then the browser download is triggered automatically.
   //
-  // downloads: {
-  //   // AEM servlet path for initiating and polling download jobs.
-  //   // POST to initiate; GET with ?jobId=<id> to poll status.
-  //   // Defaults to AEM's standard download initiation endpoint.
+  downloads: {
+    // AEM Assets download framework endpoint — accepts a JSON targets payload and
+    // returns the zip as a binary stream or a JSON { downloadUrl } redirect.
+    binariesUrl: '/content/dam.downloadbinaries.json',
+
+    // DA page that provides the download dialog's intro content (title, description,
+    // usage terms, etc.). Fetched as a fragment and injected into the dialog body.
+    // Author the page in DA under /actions/download.
+    actionPath: '/actions/download',
+
+    // Default zip filename. Overridden at runtime by the collection name.
+    // archiveName: 'assets.zip',
+  },
+
+  // Legacy async-polling download service (ASC Core).
+  // Uncomment to customise the poll interval or job expiry for services.downloads.
+  // downloads_legacy: {
   //   initiateUrl: '/content/dam.downloads.initiateDownload.json',
-  //
-  //   // How long (ms) to poll for a quick auto-download (default: 15 seconds).
-  //   // If the job finishes within this window the browser download triggers.
-  //   // If not, the job is left as 'running' and can be resumed later.
   //   quickPollTimeout: 15000,
-  //
-  //   // Interval between status polls in ms (default: 2000).
   //   pollInterval: 2000,
-  //
-  //   // How long (ms) to keep completed/failed jobs in localStorage (default: 7 days).
   //   jobExpiry: 7 * 24 * 60 * 60 * 1000,
   // },
 
@@ -385,6 +408,10 @@ const configurations = {
       { type: 'web-optimized-delivery', size: { width: 1280 }, params: 'width=1280&preferwebp=true&quality=70', accepts: (asset) => asset.mimeType?.startsWith('image/') },
     ],
     definitions: [
+      { id: 'original', label: 'Original', type: 'static', name: 'original' },
+      { id: 'web', label: 'Web (1280px)', type: 'static', name: 'cq5dam.web.1280.1280', accepts: (asset) => asset.mimeType?.startsWith('image/') },
+      { id: 'smart-crop-small', label: 'Smart Crop — Small', type: 'dm-smartcrop', accepts: (asset) => asset.mimeType?.startsWith('image/') },
+      { id: 'smart-crop-medium', label: 'Smart Crop — Medium', type: 'dm-smartcrop', accepts: (asset) => asset.mimeType?.startsWith('image/') },
   //
   //     // ── Static renditions ─────────────────────────────────────────────────
   //     // Works with any AEM instance that runs standard DAM processing profiles.

@@ -14,3 +14,11 @@
         padding: 0;
     }
 }
+
+/* When teleported into the sticky header nav-wrapper */
+header .block.search-active-filters:not(:empty) {
+    border-top: 1px solid var(--color-border);
+    padding-inline: var(--spacing-lg);
+    width: 100%;
+    box-sizing: border-box;
+}

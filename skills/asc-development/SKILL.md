@@ -189,6 +189,20 @@ Invoke the **building-blocks** skill, but use ASC references instead of Adobe's 
 - [ ] Events use `data-asc-action` or `addSearchEventListeners` — no manual event binding in `decorate()`
 - [ ] No direct imports between blocks
 
+**Accessibility checklist** (see [references/accessibility-guidelines.md](references/accessibility-guidelines.md)):
+- [ ] Icon-only buttons have `aria-label` — use `escAttr()` from `scripts/html.js`
+- [ ] Decorative SVGs / emoji icons have `aria-hidden="true"`
+- [ ] Images have `alt` text: meaningful text for content images; `alt=""` for decorative
+- [ ] Custom interactive elements that are not `<button>` or `<a>` carry an appropriate `role`
+- [ ] `<label>` elements are associated with a form control (via `for`/`id` or wrapping)
+- [ ] Toggle inputs use `role="switch"` + `aria-checked`; `aria-pressed` is `"true"` or `"false"`, never empty
+- [ ] Grouped checkboxes/radios are wrapped in `<fieldset>` + `<legend>`
+- [ ] Standalone select elements have `aria-label`
+- [ ] Lists of cards/tiles use `<ul role="list">` + `<li>`
+- [ ] Modals use native `<dialog>` with `aria-labelledby` pointing to the heading `id`
+- [ ] Focus is restored to the trigger element when a modal closes
+- [ ] All interactive UI Kit elements use their `:focus-visible` class (included in `styles/ui-kit.css`)
+
 ---
 
 ## Step 6: Lint
@@ -217,6 +231,12 @@ All lint errors must be resolved before proceeding.
 - [ ] Page refresh restores filter state (for filter blocks)
 - [ ] Asset details modal opens correctly when an asset is clicked
 - [ ] No regressions on existing blocks (spot-check search results, details modal, collections)
+
+**Accessibility browser checklist**:
+- [ ] Tab through all interactive elements — none are skipped; order is logical
+- [ ] Focus indicator is clearly visible on every focusable element
+- [ ] Screen reader announces button/link purpose without needing surrounding context
+- [ ] Modal opens with focus inside the dialog; close returns focus to the trigger element
 
 **ASC-specific validation**:
 - [ ] Works with the configured search provider (QueryBuilder or OpenAPI)

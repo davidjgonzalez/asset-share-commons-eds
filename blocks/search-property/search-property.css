@@ -10,12 +10,19 @@
     margin-bottom: var(--spacing-lg);
 
     /* Group title label */
-    > label,
     .search-property__title {
         display: block;
         color: var(--label-color);
         font-weight: var(--label-font-weight);
         font-size: var(--body-font-size-s);
         margin-bottom: var(--spacing-sm);
+    }
+
+    /* Reset fieldset browser defaults */
+    .search-property__group {
+        margin: 0;
+        padding: 0;
+        border: 0;
+        min-width: 0;
     }
 }

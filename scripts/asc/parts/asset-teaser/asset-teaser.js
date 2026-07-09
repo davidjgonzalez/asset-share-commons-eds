@@ -4,6 +4,7 @@ import { loadCSS } from '../../../aem.js';
 import collectionToggle from '../collection-toggle/collection-toggle.js';
 import serviceConfigurations from '../../../configurations.js';
 import services from '../../services/services.js';
+import { escAttr } from '../../../html.js';
 
 loadCSS('/scripts/asc/parts/asset-teaser/asset-teaser.css');
 
@@ -74,7 +75,7 @@ export default function assetTeaser(asset, { mode = 'card', view = 'cards' } = {
              role="button"
              tabindex="0"
              draggable="true"
-             aria-label="${asset.title}"
+             aria-label="${escAttr(asset.title)}"
              data-asc-action="asset:details:open@click asset:preload@mouseover"
              data-asc-asset="${asset.uuid}"
              data-asc-mime-type="${asset.mimeType || ''}"

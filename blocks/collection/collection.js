@@ -2,37 +2,13 @@
 import services from '../../scripts/asc/services/services.js';
 import storage from '../../scripts/asc/services/storage/storage.js';
 import { Events as CollectionEvents } from '../../scripts/asc/services/collections/collections.js';
-import { Events as DownloadEvents, Status as DownloadStatus } from '../../scripts/asc/services/downloads/downloads.js';
 import { escHtml, escAttr, formatUpdated } from '../../scripts/html.js';
+import { triggerAction } from '../../scripts/asc.js';
 
 const configurations = (await import('../../scripts/configurations.js')).default;
 
-const SHEET_PATH = configurations.collections?.sheetPath || '/sheets/';
 const SHARE_HISTORY_KEY = 'shareHistory';
-const MAX_SHARE_HISTORY = 20;
 
-// Board text items are owned by the board block; the collection block reads them
-// here only when encoding the share payload so text elements survive into the sheet.
-const BOARD_TEXT_KEY = (id) => `asc:boardText:${id}`;
-function getBoardTextItems(collectionId) {
-  try { return JSON.parse(localStorage.getItem(BOARD_TEXT_KEY(collectionId))) || []; } catch { return []; }
-}
-
-
-/**
- * Collection block — detail/edit page for a single collection.
- *
- * Page URL: /collections/collection?id=<uuid>
- *
- * Features:
- *   - Board canvas: pan (drag background), zoom (scroll), Fit view, Expand, Align to grid
- *   - Draggable asset cards with per-asset notes; position saved via updateItem()
- *   - Free-floating text elements stored in localStorage (asc:boardText:{id})
- *   - Rubber-band + shift-click multi-select; group drag
- *   - Editable collection name
- *   - Share / Download / Delete using global .btn utilities
- *   - Dialogs use .asc-dialog shell
- */
 export default async function decorate(block) {
   const collectionId = resolveCollectionId();
   await render(block, collectionId);
@@ -42,12 +18,14 @@ export default async function decorate(block) {
     await render(block, collectionId);
   });
 
-  [DownloadEvents.CHANGED, DownloadEvents.COMPLETE, DownloadEvents.FAILED].forEach((ev) => {
-    document.addEventListener(ev, () => refreshDownloadStatus(block, collectionId));
-  });
-
   document.addEventListener('click', (e) => {
     if (!block.contains(e.target)) closeMenu(block);
+  });
+
+  // Re-render the past-shares panel when action-share creates a new link
+  document.addEventListener('asc:share:created', () => {
+    const pastSharesEl = block.querySelector('.collection__past-shares');
+    if (pastSharesEl) pastSharesEl.innerHTML = renderShareHistory();
   });
 }
 
@@ -61,18 +39,19 @@ async function render(block, collectionId) {
   }
   const data = services.collections._getData();
   const isDefault = data.defaultId === collection.id;
-  const pendingJobs = getPendingJobs(collection.id);
-  block.innerHTML = html(collection, isDefault, pendingJobs);
+  block.innerHTML = html(collection, isDefault);
   initInteractions(block, collection, isDefault);
 }
 
-function html(collection, isDefault, pendingJobs) {
+function html(collection, isDefault) {
   const items = collection.hydratedItems || [];
   const assetCount = items.filter((i) => i.type === 'asset').length;
   const updated = formatUpdated(collection.modifiedAt);
+  const collectionsPath = configurations.collections?.managePath || '/collections/';
   return `
     <section class="collection__shell" aria-label="Collection">
     <header class="collection__header">
+      <a href="${escAttr(collectionsPath)}" class="collection__back">&#8592; Collections</a>
       <div class="collection__title-row">
         <h1 class="collection__name" data-collection-id="${collection.id}">${escHtml(collection.name)}</h1>
         <div class="collection__menu-wrap">
@@ -103,36 +82,14 @@ function html(collection, isDefault, pendingJobs) {
     <div class="collection__toolbar">
       <div class="collection__toolbar-end">
         <div class="collection__past-shares">${renderShareHistory()}</div>
-        <button type="button" class="collection__share-btn btn btn--secondary">Share</button>
+        <button type="button" class="collection__share-btn btn btn--secondary" aria-label="Share this collection">Share</button>
         <button type="button" class="collection__download-btn btn btn--primary"
+                aria-label="Download all assets in collection"
                 ${assetCount === 0 ? 'disabled' : ''}>Download</button>
       </div>
     </div>
 
-    ${pendingJobs.length ? renderJobsStatus(pendingJobs) : ''}
-
     </section>`;
-}
-
-function renderJobsStatus(jobs) {
-  return `
-    <div class="collection__jobs">
-      <h3 class="collection__jobs-title">Active Downloads</h3>
-      <ul class="collection__jobs-list">
-        ${jobs.map((job) => `
-          <li class="collection__job" data-job-id="${job.id}">
-            <span class="collection__job-status collection__job-status--${job.status}">
-              ${jobStatusLabel(job)}
-            </span>
-            ${job.status === DownloadStatus.COMPLETE && job.downloadUrl
-    ? `<button type="button" class="collection__job-download btn btn--secondary btn--sm" data-job-id="${job.id}">Download again</button>`
-    : ''}
-            ${job.status === DownloadStatus.RUNNING
-    ? `<button type="button" class="collection__job-resume btn btn--ghost btn--sm" data-job-id="${job.id}">Check status</button>`
-    : ''}
-          </li>`).join('')}
-      </ul>
-    </div>`;
 }
 
 // ─── Interactions ─────────────────────────────────────────────────────────────
@@ -143,7 +100,6 @@ function initInteractions(block, collection, isDefault) {
   initShare(block, collection);
   initDownload(block, collection);
   if (!isDefault) initDelete(block, collection);
-  initJobActions(block);
 }
 
 
@@ -217,12 +173,6 @@ function initDelete(block, collection) {
 
 // ── Share ─────────────────────────────────────────────────────────────────────
 
-function saveShareHistory(entry) {
-  const history = storage.get(SHARE_HISTORY_KEY) || [];
-  history.unshift({ id: crypto.randomUUID(), ...entry, createdAt: new Date().toISOString() });
-  storage.set(SHARE_HISTORY_KEY, history.slice(0, MAX_SHARE_HISTORY));
-}
-
 function renderShareHistory() {
   const history = storage.get(SHARE_HISTORY_KEY) || [];
   if (!history.length) return '';
@@ -260,7 +210,10 @@ function renderShareHistory() {
 
 function initShare(block, collection) {
   block.querySelector('.collection__share-btn')?.addEventListener('click', () => {
-    openShareDialog(block, collection);
+    triggerAction(
+      configurations.share?.actionPath || '/actions/share',
+      { collectionId: collection.id },
+    );
   });
 
   block.addEventListener('click', (e) => {
@@ -293,234 +246,15 @@ function initShare(block, collection) {
   });
 }
 
-async function openShareDialog(block, collection) {
-  block.querySelector('.collection__share-dialog')?.remove();
-
-  const dialog = document.createElement('dialog');
-  dialog.className = 'asc-dialog asc-dialog--narrow collection__share-dialog';
-  dialog.setAttribute('aria-labelledby', 'share-dialog-title');
-  dialog.innerHTML = `
-    <header class="asc-dialog__header">
-      <div class="asc-dialog__header-main">
-        <h2 class="asc-dialog__title" id="share-dialog-title">Share Collection</h2>
-        <p class="asc-dialog__description">
-          Create a shareable link to this collection as a download sheet.
-        </p>
-      </div>
-      <button type="button" class="btn btn--ghost btn--icon asc-dialog__close" aria-label="Close" data-dialog-close>&#x2715;</button>
-    </header>
-    <div class="asc-dialog__body">
-      <label class="collection__dialog-label">
-        Sheet Title
-        <input type="text" class="collection__share-title" value="${escHtml(collection.name)}" placeholder="Sheet title" />
-      </label>
-      <label class="collection__dialog-label">
-        Description
-        <textarea class="collection__share-description" rows="3" placeholder="Optional context or usage guidance for recipients&#8230;"></textarea>
-      </label>
-      <label class="collection__dialog-label">
-        Expires in
-        <div class="collection__share-expires-wrap">
-          <input type="number" class="collection__share-expires" min="1" max="365" placeholder="No expiry" />
-          <span class="collection__share-expires-unit">days</span>
-        </div>
-      </label>
-      <div class="collection__share-url-wrap" hidden>
-        <label class="collection__dialog-label">
-          Share URL
-          <input type="text" class="collection__share-url-output" readonly />
-        </label>
-      </div>
-    </div>
-    <footer class="asc-dialog__footer">
-      <button type="button" class="btn btn--secondary" data-dialog-close>Cancel</button>
-      <div class="asc-dialog__footer-end">
-        <button type="button" class="btn btn--secondary collection__share-generate">Generate Link</button>
-        <button type="button" class="btn btn--primary collection__share-copy" hidden>Copy Share Link</button>
-      </div>
-    </footer>`;
-
-  block.appendChild(dialog);
-  dialog.showModal();
-
-  wireDialogClose(dialog);
-
-  dialog.querySelector('.collection__share-generate').addEventListener('click', async () => {
-    const title = dialog.querySelector('.collection__share-title').value.trim();
-    const description = dialog.querySelector('.collection__share-description').value.trim();
-    const days = parseInt(dialog.querySelector('.collection__share-expires').value, 10);
-
-    // Re-read from storage so drag-updated x/y positions are current (the block's
-    // collection reference is a snapshot from initial load).
-    const fresh = await services.collections.get(collection.id);
-    const liveItems = (fresh || collection).items || [];
-    const encodedItems = liveItems.map((item) => {
-      if (item.type === 'section') return `~${item.title}|||${item.body}`;
-      const pos = (item.x != null && item.y != null)
-        ? `@${Math.round(item.x)},${Math.round(item.y)}`
-        : '';
-      return item.notes ? `${item.id}${pos}|||${item.notes}` : `${item.id}${pos}`;
-    });
-
-    const textItems = getBoardTextItems(collection.id);
-    const payload = {
-      title: title || collection.name,
-      ...(description && { description }),
-      // eslint-disable-next-line no-underscore-dangle
-      ...(days > 0 && { expiresAt: new Date(Date.now() + days * 86_400_000).toISOString() }),
-      items: encodedItems,
-      ...(textItems.length && {
-        textElements: textItems.map(({
-          x, y, w, h, content,
-        }) => ({
-          x, y, w, h, content,
-        })),
-      }),
-    };
-
-    const compressed = await services.url.compressArray([JSON.stringify(payload)]);
-    const url = `${window.location.origin}${SHEET_PATH}?sheet=${compressed}`;
-
-    saveShareHistory({ title: payload.title, url, collectionId: collection.id });
-
-    const wrap = dialog.querySelector('.collection__share-url-wrap');
-    wrap.removeAttribute('hidden');
-    wrap.querySelector('.collection__share-url-output').value = url;
-    dialog.querySelector('.collection__share-copy')?.removeAttribute('hidden');
-
-    const pastSharesEl = block.querySelector('.collection__past-shares');
-    if (pastSharesEl) pastSharesEl.innerHTML = renderShareHistory();
-  });
-
-  dialog.querySelector('.collection__share-copy')?.addEventListener('click', () => {
-    const btn = dialog.querySelector('.collection__share-copy');
-    const url = dialog.querySelector('.collection__share-url-output').value;
-    navigator.clipboard.writeText(url).then(() => {
-      const orig = btn.textContent;
-      btn.textContent = 'Copied!';
-      setTimeout(() => { btn.textContent = orig; }, 2000);
-    });
-  });
-}
-
 // ── Download ──────────────────────────────────────────────────────────────────
 
 function initDownload(block, collection) {
   block.querySelector('.collection__download-btn')?.addEventListener('click', () => {
-    openDownloadDialog(block, collection);
+    triggerAction(
+      configurations.downloads?.actionPath || '/actions/download',
+      { collectionId: collection.id },
+    );
   });
-}
-
-async function openDownloadDialog(block, collection) {
-  block.querySelector('.collection__download-dialog')?.remove();
-
-  const assets = collection.assets || [];
-  const renditionDefs = getVisibleRenditionDefs(assets);
-
-  const dialog = document.createElement('dialog');
-  dialog.className = 'asc-dialog asc-dialog--narrow collection__download-dialog';
-  dialog.setAttribute('aria-labelledby', 'download-dialog-title');
-  dialog.setAttribute('aria-describedby', 'download-dialog-description');
-  dialog.innerHTML = `
-    <header class="asc-dialog__header">
-      <div class="asc-dialog__header-main">
-        <h2 class="asc-dialog__title" id="download-dialog-title">Download Collection</h2>
-        <p class="asc-dialog__description" id="download-dialog-description">
-          ${assets.length} asset${assets.length !== 1 ? 's' : ''} — choose renditions, then start the download job.
-        </p>
-      </div>
-      <button type="button" class="btn btn--ghost btn--icon asc-dialog__close" aria-label="Close" data-dialog-close>✕</button>
-    </header>
-    <div class="asc-dialog__body">
-      <fieldset class="collection__download-renditions">
-        <legend>Select renditions to download</legend>
-        ${renditionDefs.length
-    ? renditionDefs.map((def) => `
-            <label class="collection__rendition-option">
-              <input type="checkbox" name="rendition" value="${escAttr(def.id)}"
-                     ${def.id === 'original' ? 'checked' : ''} />
-              ${escHtml(def.label || def.id)}
-            </label>`).join('')
-    : '<p>No renditions configured. <a href="/config">Configure renditions</a>.</p>'}
-      </fieldset>
-      <p class="collection__download-note">
-        Large collections may take a moment. Your download will start automatically.
-      </p>
-    </div>
-    <footer class="asc-dialog__footer">
-      <button type="button" class="btn btn--secondary" data-dialog-close>Cancel</button>
-      <div class="asc-dialog__footer-end">
-        <button type="button" class="collection__download-submit btn btn--primary"
-                ${renditionDefs.length === 0 ? 'disabled' : ''}>
-          Start Download
-        </button>
-      </div>
-    </footer>`;
-
-  block.appendChild(dialog);
-  dialog.showModal();
-
-  wireDialogClose(dialog);
-
-  dialog.querySelector('.collection__download-submit').addEventListener('click', async () => {
-    const checked = [...dialog.querySelectorAll('input[name="rendition"]:checked')];
-    const selectedRenditionIds = checked.map((cb) => cb.value);
-    if (!selectedRenditionIds.length) {
-      alert('Please select at least one rendition.');
-      return;
-    }
-
-    const assetPaths = assets.map((a) => a.path).filter(Boolean);
-    if (!assetPaths.length) {
-      alert('Asset paths could not be resolved. Ensure assets have a JCR path.');
-      return;
-    }
-
-    const submitBtn = dialog.querySelector('.collection__download-submit');
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Submitting…';
-
-    await services.downloads.create(assetPaths, selectedRenditionIds, {
-      collectionId: collection.id,
-      autoDownload: true,
-    });
-
-    submitBtn.textContent = 'Job submitted — download will start automatically';
-    setTimeout(() => dialog.close(), 3000);
-  });
-}
-
-// ── Download job actions ──────────────────────────────────────────────────────
-
-function initJobActions(block) {
-  block.addEventListener('click', async (e) => {
-    const resumeBtn = e.target.closest('.collection__job-resume');
-    if (resumeBtn) {
-      resumeBtn.disabled = true;
-      resumeBtn.textContent = 'Checking…';
-      await services.downloads.resume(resumeBtn.dataset.jobId);
-      resumeBtn.disabled = false;
-      resumeBtn.textContent = 'Check status';
-    }
-
-    const dlBtn = e.target.closest('.collection__job-download');
-    if (dlBtn) {
-      services.downloads.triggerDownload(dlBtn.dataset.jobId);
-    }
-  });
-}
-
-function refreshDownloadStatus(block, collectionId) {
-  const jobsSection = block.querySelector('.collection__jobs');
-  if (!jobsSection || !collectionId) return;
-
-  const pendingJobs = getPendingJobs(collectionId);
-
-  if (!pendingJobs.length) {
-    jobsSection.remove();
-    return;
-  }
-  jobsSection.outerHTML = renderJobsStatus(pendingJobs);
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -531,43 +265,6 @@ function resolveCollectionId() {
     return id;
   }
   return services.collections.getActiveId();
-}
-
-function getVisibleRenditionDefs(assets) {
-  if (!assets.length) return [];
-  const seen = new Map();
-  assets.forEach((asset) => {
-    (asset.renditions || []).forEach((r) => {
-      if (r.visible !== false && !seen.has(r.id)) {
-        seen.set(r.id, { id: r.id, label: r.label || r.id });
-      }
-    });
-  });
-  return [...seen.values()];
-}
-
-function jobStatusLabel(job) {
-  switch (job.status) {
-    case DownloadStatus.PENDING: return 'Waiting to start…';
-    case DownloadStatus.RUNNING: return 'Preparing your download…';
-    case DownloadStatus.COMPLETE: return 'Ready to download';
-    case DownloadStatus.FAILED: return `Failed: ${job.error || 'Unknown error'}`;
-    default: return job.status;
-  }
-}
-
-function getPendingJobs(collectionId) {
-  return services.downloads.getAll().filter(
-    (j) => j.collectionId === collectionId
-      && (j.status === DownloadStatus.RUNNING || j.status === DownloadStatus.PENDING),
-  );
-}
-
-function wireDialogClose(dialog) {
-  dialog.querySelectorAll('[data-dialog-close]').forEach((btn) => {
-    btn.addEventListener('click', () => dialog.close());
-  });
-  dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
 }
 
 const ICON_COPY = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';

@@ -68,13 +68,25 @@ header nav .nav-sections {
   min-width: 0;
 }
 
-header nav .nav-sections .search-bar-wrapper {
-  width: 100%;
-  max-width: 50rem;
+/* Set a wider base width — kit re-declares --asc-ui-search-width: 20rem on the component
+   element itself, so we must target .asc-ui-search directly to win the specificity race */
+header .block.search-bar .asc-ui-search {
+  --asc-ui-search-width: 28rem;
 }
 
-header nav .nav-sections .search-bar {
-  width: 100%;
+/* Depth effect — shadow + glass blur when page is scrolled */
+header.scrolled .nav-wrapper {
+  box-shadow: 0 4px 24px -4px color-mix(in srgb, var(--color-fg) 14%, transparent),
+              0 2px 8px -2px color-mix(in srgb, var(--color-fg) 8%, transparent);
+  background: color-mix(in srgb, var(--color-bg) 92%, transparent);
+  backdrop-filter: blur(10px);
+  transition: box-shadow var(--transition-normal), background var(--transition-normal);
+}
+
+/* Sheet pages — no nav, no footer */
+body.page-sheet header,
+body.page-sheet footer {
+  display: none;
 }
 
 /* Collection switcher — right */

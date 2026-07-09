@@ -57,11 +57,14 @@ function html(config) {
            form="${config.form}"
            for="${config.fieldset}"/>` : ''}
 
-    ${config.title ? `<label class="search-property__title">${config.title}</label>` : ''}
-
-    ${type === 'radio' ? htmlRadio(config) : ''}
-    ${type === 'dropdown' || type === 'select' ? htmlDropdown(config) : ''}
-    ${type === 'checkbox' ? htmlCheckboxes(config) : ''}
+    ${type === 'radio' || type === 'checkbox' ? `
+    <fieldset class="search-property__group">
+      ${config.title ? `<legend class="search-property__title">${config.title}</legend>` : ''}
+      ${type === 'radio' ? htmlRadio(config) : htmlCheckboxes(config)}
+    </fieldset>` : ''}
+    ${type === 'dropdown' || type === 'select' ? `
+      ${config.title ? `<span class="search-property__title">${config.title}</span>` : ''}
+      ${htmlDropdown(config)}` : ''}
   `;
 }
 
@@ -116,6 +119,7 @@ export function htmlDropdown(config) {
   const selected = config.initial[name] || '';
   return `
     <select name="${name}"
+            aria-label="${config.title || 'Select option'}"
             data-asc-fieldset="${config.fieldset}"
             form="${config.form}">
       <option value="">${config.title || 'Select…'}</option>

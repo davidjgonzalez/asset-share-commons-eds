@@ -150,3 +150,19 @@ main .section.full-width > div {
     max-width: 100%;
     padding: 0;
 }
+
+/* ── fixed-width — explicit max-width constraint ─────────────────────────────
+ * style: fixed-width
+ * Constrains a section to the standard max-width. Useful inside pages that
+ * are otherwise full-width (e.g., an editorial strip on a search results page).
+ */
+
+main .section.fixed-width {
+    max-width: var(--section-max-width, 1200px);
+    padding-inline: var(--section-padding, 24px);
+    margin-inline: auto;
+}
+
+main .section.fixed-width > div {
+    max-width: 100%;
+}

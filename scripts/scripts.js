@@ -13,13 +13,12 @@ import {
   loadCSS,
 } from './aem.js';
 
-import './asc/services/services.js';
-import configurations from './configurations.js';
-import { decorateASCSections } from './section-grid.js';
-import { resolvePageTokens } from './tokens.js';
-import { setupImageFallback } from './asc/utils/images.js';
-
-setupImageFallback();
+import {
+  ascEager,
+  ascDecorateMain,
+  ascLazy,
+  ascDelayed,
+} from './asc.js';
 
 /**
  * Builds hero block and prepends to main in a new section.
@@ -60,20 +59,30 @@ function buildAutoBlocks(main) {
 }
 
 /**
+ * Adds page-type body classes based on which blocks are present.
+ * Called after decorateMain so block class names are available.
+ * @param {Element} main The main element
+ */
+function addPageTypeClasses(main) {
+  if (main.querySelector('.search-results')) document.body.classList.add('page-search');
+  if (main.querySelector('.collections, .collection-switcher')) document.body.classList.add('page-collections');
+  if (main.querySelector('.sheet') || new URLSearchParams(window.location.search).has('sheet')) {
+    document.body.classList.add('page-sheet');
+  }
+  if (main.querySelector('.board')) document.body.classList.add('page-board');
+}
+
+/**
  * Decorates the main element.
  * @param {Element} main The main element
  */
 export function decorateMain(main) {
-  // hopefully forward compatible button decoration
   decorateButtons(main);
   decorateIcons(main);
   buildAutoBlocks(main);
   decorateSections(main);
-  resolvePageTokens(main);
   decorateBlocks(main);
-  // Runs after decorateBlocks: reads section.dataset (set by decorateSections),
-  // assigns grid areas to block wrappers, and groups co-area blocks into stacks.
-  decorateASCSections(main);
+  ascDecorateMain(main);
 }
 
 /**
@@ -83,16 +92,12 @@ export function decorateMain(main) {
 async function loadEager(doc) {
   document.documentElement.lang = 'en';
   decorateTemplateAndTheme();
+  ascEager(doc);
 
-  // Apply ASC theme class and load its CSS
-  const themeName = configurations.theme?.default;
-  if (themeName) {
-    document.body.classList.add(`theme-${themeName}`);
-    loadCSS(`${window.hlx.codeBasePath}/styles/themes/${themeName}.css`);
-  }
   const main = doc.querySelector('main');
   if (main) {
     decorateMain(main);
+    addPageTypeClasses(main);
     document.body.classList.add('appear');
     await loadSection(main.querySelector('.section'), waitForFirstImage);
   }
@@ -112,6 +117,8 @@ async function loadEager(doc) {
  * @param {Element} doc The container element
  */
 async function loadLazy(doc) {
+  ascLazy();
+
   const main = doc.querySelector('main');
   await loadSections(main);
 
@@ -119,8 +126,10 @@ async function loadLazy(doc) {
   const element = hash ? doc.getElementById(hash.substring(1)) : false;
   if (hash && element) element.scrollIntoView();
 
-  loadHeader(doc.querySelector('header'));
-  loadFooter(doc.querySelector('footer'));
+  if (!document.body.classList.contains('page-sheet')) {
+    loadHeader(doc.querySelector('header'));
+    loadFooter(doc.querySelector('footer'));
+  }
 
   loadCSS(`${window.hlx.codeBasePath}/styles/lazy-styles.css`);
   loadFonts();
@@ -131,8 +140,8 @@ async function loadLazy(doc) {
  * without impacting the user experience.
  */
 function loadDelayed() {
+  ascDelayed();
   window.setTimeout(() => import('./delayed.js'), 3000);
-  // load anything that can be postponed to the latest here
 }
 
 async function loadPage() {

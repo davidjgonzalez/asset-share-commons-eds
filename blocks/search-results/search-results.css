@@ -52,8 +52,8 @@
     [data-asc-results] {
         /* default — overridden by data-display attribute */
         display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr));
-        gap: var(--spacing-md);
+            grid-template-columns: repeat(auto-fill, minmax(var(--card-min-width, 275px), 1fr));
+        gap: var(--spacing-xl);
 
         /* Show full asset without cropping across all display modes.
            Specificity bump via [data-asc-results] beats the ASC Core
@@ -73,8 +73,8 @@
 
     [data-asc-results][data-display="cards"] {
         display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr));
-        gap: var(--spacing-md);
+            grid-template-columns: repeat(auto-fill, minmax(var(--card-min-width, 275px), 1fr));
+        gap: var(--spacing-xl);
 
         .asc-asset-teaser .asc-collection-toggle,
         .asc-asset-teaser .search-results__quick-download {
@@ -123,12 +123,12 @@
             flex-wrap: wrap;
             align-items: center;
             gap: 0;
-            padding-block-end: var(--spacing-sm);
+            padding: var(--spacing-md) var(--spacing-lg) var(--spacing-md);
         }
 
         .asc-asset-teaser__title {
             width: 100%;
-            margin-block-end: var(--spacing-2xs);
+            margin-block-end: var(--spacing-sm);
             transition: opacity var(--transition-fast), visibility var(--transition-fast);
         }
 
@@ -323,106 +323,84 @@
     [data-asc-results][data-display="masonry"] {
         display: flex;
         align-items: flex-start;
-        gap: var(--spacing-md);
+        gap: var(--spacing-xxl);
 
-        .search-results__masonry-col {
-            flex: 1 1 0;
+        .masonry-col {
+            flex: 1 1 clamp(240px, 22vw, 420px);
             min-width: 0;
             display: flex;
             flex-direction: column;
-            gap: var(--spacing-md);
+            gap: var(--spacing-xxl);
         }
 
-        /* Natural aspect ratio — override the card-mode forced aspect-ratio */
+        /* Pure image tile — strip all card chrome */
+        .asc-asset-teaser {
+            display: block;
+            width: 100%;
+            background: none;
+            border: none;
+            border-radius: 0;
+            box-shadow: none;
+
+            &:hover {
+                transform: none;
+                box-shadow: none;
+            }
+        }
+
+        /* Natural image sizing — no skeleton, no forced aspect ratio */
         .asc-asset-teaser__preview {
             aspect-ratio: unset;
-            min-height: 15rem;
+            background: none;
         }
 
-        .asc-asset-teaser__preview img,
         .asc-asset-teaser__preview picture {
+            display: block;
             width: 100%;
-            height: 100%;
-            object-fit: contain;
         }
 
-        /* Meta overlay — hidden by default, revealed on hover */
+        .asc-asset-teaser__preview img {
+            display: block;
+            width: 100%;
+            height: auto;
+            object-fit: initial;
+        }
+
+        /* Meta: overlay at bottom edge, hidden at rest */
         .asc-asset-teaser__meta {
             position: absolute;
             inset: auto 0 0;
-            background: transparent;
-            color: var(--color-primary-fg);
-            text-shadow:
-                0 1px 1px color-mix(in srgb, black 88%, transparent),
-                0 0 2px color-mix(in srgb, black 78%, transparent);
-            -webkit-text-stroke: 0.35px color-mix(in srgb, black 60%, transparent);
-            padding: 2rem 1rem 0.75rem;
+            padding: 0.5rem 1rem;
             opacity: 0;
-            transform: var(--drop-sm);
-            transition: opacity var(--transition-fast), transform var(--transition-fast);
-        }
-
-        .asc-asset-teaser__title,
-        .asc-asset-teaser__file-type,
-        .asc-asset-teaser__file-size,
-        .asc-asset-teaser__dimensions {
-            color: inherit;
+            transition: opacity var(--transition-fast);
         }
 
         .asc-asset-teaser__title {
             display: none;
         }
 
-        .asc-asset-teaser:hover .asc-asset-teaser__meta {
-            opacity: 1;
-            transform: translateY(0);
+        .asc-asset-teaser__prop {
+            color: color-mix(in srgb, white 85%, transparent);
+            font-size: var(--body-font-size-xs);
         }
 
-        /* Masonry actions: hidden until card hover/focus */
+        .asc-asset-teaser:hover .asc-asset-teaser__meta {
+            opacity: 1;
+        }
+
+        /* Actions: hidden until hover/focus */
         .asc-asset-teaser .asc-collection-toggle,
         .asc-asset-teaser .search-results__quick-download {
             opacity: 0;
             pointer-events: none;
         }
 
-        /* On card hover/focus: show actions */
         .asc-asset-teaser:hover .asc-collection-toggle,
         .asc-asset-teaser:focus-within .asc-collection-toggle,
         .asc-asset-teaser:hover .search-results__quick-download,
         .asc-asset-teaser:focus-within .search-results__quick-download {
             opacity: 1;
             pointer-events: auto;
-        }
-
-        /* Keep + icon optically centered in the circle */
-        .asc-asset-teaser .asc-collection-toggle__icon {
-            width: 1em;
-            height: 1em;
-            line-height: 1;
-            transform: translateY(-0.03em);
-        }
-
-        /* Remove-state icon should be a checkmark */
-        .asc-asset-teaser .asc-collection-toggle__remove .asc-collection-toggle__icon {
-            font-size: 0;
-        }
-
-        .asc-asset-teaser .asc-collection-toggle__remove .asc-collection-toggle__icon::before {
-            content: '✓';
-            font-size: 0.875rem;
-            font-weight: 700;
-            line-height: 1;
-        }
-
-        /* Button hover interaction in masonry: +10% */
-        .asc-asset-teaser .asc-collection-toggle__btn,
-        .asc-asset-teaser .search-results__quick-download {
-            transition: opacity var(--transition-fast), transform var(--transition-fast);
-        }
-
-        .asc-asset-teaser .asc-collection-toggle__btn:hover,
-        .asc-asset-teaser .search-results__quick-download:hover {
-            transform: scale(1.1);
         }
 
     }

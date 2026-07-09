@@ -96,6 +96,7 @@ class AssetDetails {
    */
   async open(assetId, { addHistory = true } = {}) {
     if (!this.modal) return;
+    this._triggerElement = document.activeElement;
 
     // Fetch the asset to determine its MIME type for template resolution
     // Import lazily to avoid circular dependencies
@@ -147,6 +148,8 @@ class AssetDetails {
   close({ updateHistory = true } = {}) {
     if (!this.modal) return;
     this.modal.querySelector('dialog')?.close();
+    this._triggerElement?.focus();
+    this._triggerElement = null;
 
     if (updateHistory) {
       const url = new URL(window.location);

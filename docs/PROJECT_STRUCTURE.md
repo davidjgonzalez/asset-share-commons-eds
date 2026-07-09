@@ -24,9 +24,9 @@ do not edit them directly, or your changes will be lost on the next upgrade.
 | `head.html` | `<head>` fragment |
 | `404.html` | 404 page |
 
-> **`scripts/scripts.js` is boilerplate, but ASC modifies it** — it imports ASC services and
-> calls `resolvePageTokens()` + `decorateGridLayouts()` in `decorateMain()`. Re-apply these
-> modifications after any EDS boilerplate upgrade.
+> **`scripts/scripts.js` is boilerplate, but ASC modifies it** — it imports four lifecycle hooks
+> from `scripts/asc.js` (`ascEager`, `ascDecorateMain`, `ascLazy`, `ascDelayed`) and calls them
+> at the matching EDS phases. Re-apply these modifications after any EDS boilerplate upgrade.
 
 ---
 
@@ -38,7 +38,14 @@ ASC. Customise behaviour via `configurations.js` only — not by editing core fi
 
 ```
 scripts/asc/
-  services/       — business logic (search, AEM, collections, renditions, users, …)
+  services/
+    action-pages/ — intercepts /actions/* links; loads action-* blocks as modals
+    actions/      — declarative data-asc-action event dispatch system
+    aem/          — AEM host/URL management + auth headers
+    collections/  — cart/collection state
+    renditions/   — rendition resolver registry
+    search/       — search orchestration + providers
+    …             — other singleton services
   models/         — Asset, Rendition, User data models
   utils/          — shared utilities (events, blocks, search, fragments)
   parts/          — reusable UI components (AssetTeaser, …)
@@ -56,6 +63,7 @@ These files are intentionally outside `scripts/asc/` so you can change them.
 | File | Purpose |
 |------|---------|
 | `scripts/configurations.js` | **Start here.** AEM host, search provider, themes, renditions, collections, custom properties, asset details templates — all user config lives here |
+| `scripts/asc.js` | **ASC integration entry point.** Exports lifecycle hooks (`ascEager`, `ascDecorateMain`, `ascLazy`, `ascDelayed`) and action-page utilities (`triggerAction`, `parseActionFragment`, `wireDialogClose`). Auto-initializes all ASC services on import. Customize here to add eager/lazy/delayed work. |
 
 #### Blocks
 
@@ -64,10 +72,20 @@ blocks/
   <block-name>/
     <block-name>.js    — exports default decorate(block)
     <block-name>.css   — block styles, rooted at .block.<block-name>
+
+  action-<name>/       — action dialog blocks (loaded by the action-pages service)
+    action-<name>.js   — decorate() reads window.asc.pendingAction for context
+    action-<name>.css  — scoped to .action-<name>.asc-dialog
 ```
 
 Copy a block from the ASC starter kit or create your own. The only rule: export
 `default function decorate(block)` and follow the kit-first CSS conventions.
+
+**Action blocks** are a special convention: any `<a href="/actions/foo">` is intercepted by the
+`actionPages` service, which fetches the DA page at that path, creates a detached `action-foo`
+block, and runs `loadBlock()` to invoke the block's `decorate()`. The block is responsible for
+creating and showing the `<dialog>`. Context (e.g. `collectionId`) is passed via
+`window.asc.pendingAction`.
 
 #### Styles
 
@@ -82,8 +100,8 @@ styles/
 
 | File | Purpose |
 |------|---------|
-| `scripts/section-grid.js` | Named-area CSS grid for section metadata. Call `decorateGridLayouts(main)` in `decorateMain()` after `decorateBlocks` |
-| `scripts/tokens.js` | `{{ accessor \| fallback }}` content variable resolver. Called as `resolvePageTokens(main)` before `decorateBlocks` |
+| `scripts/section-grid.js` | Named-area CSS grid for section metadata — called internally by `ascDecorateMain` |
+| `scripts/tokens.js` | `{{ accessor \| fallback }}` content variable resolver — called internally by `ascDecorateMain` |
 | `scripts/html.js` | Shared HTML helpers: `escHtml`, `escAttr`, `formatUpdated` — import into any block that builds HTML strings |
 | `scripts/extract-design-tokens.js` | Dev utility — extracts token values for tooling/docs |
 
@@ -105,21 +123,26 @@ styles/
 │   ├── aem.js                  EDS boilerplate
 │   ├── scripts.js              EDS boilerplate (ASC-modified)
 │   ├── delayed.js              EDS boilerplate
-│   ├── configurations.js       USER — only config file you need
-│   ├── section-grid.js         USER — section grid utility
-│   ├── tokens.js               USER — content variable resolver
+│   ├── configurations.js       USER — all site configuration
+│   ├── asc.js                  USER — ASC entry point; lifecycle hooks + action-page utils
+│   ├── section-grid.js         USER — section grid utility (called by asc.js)
+│   ├── tokens.js               USER — content variable resolver (called by asc.js)
 │   ├── html.js                 USER — escHtml / escAttr / formatUpdated
 │   ├── extract-design-tokens.js USER — dev tooling
 │   └── asc/                    ASC CORE — do not edit
 │       ├── services/
+│       │   └── action-pages/   — /actions/* link interceptor + loadBlock runner
 │       ├── models/
 │       ├── utils/
 │       └── parts/
 │
 ├── blocks/                     USER — all blocks live here
-│   └── <block>/
-│       ├── <block>.js
-│       └── <block>.css
+│   ├── <block>/
+│   │   ├── <block>.js
+│   │   └── <block>.css
+│   └── action-<name>/          USER — action dialog blocks
+│       ├── action-<name>.js
+│       └── action-<name>.css
 │
 ├── styles/
 │   ├── styles.css              EDS boilerplate
@@ -152,7 +175,7 @@ styles/
 | Named `aem.js`, `scripts.js`, `delayed.js` | EDS boilerplate |
 | Lives in `blocks/` | User-owned |
 | Lives in `styles/themes/` or `styles/sections/` | User-owned |
-| `scripts/configurations.js` | User-owned |
+| `scripts/configurations.js` or `scripts/asc.js` | User-owned |
 
 ---
 
@@ -160,8 +183,14 @@ styles/
 
 **EDS boilerplate upgrade:** Pull the latest `scripts/aem.js`, `scripts/scripts.js`,
 `styles/styles.css`, etc. from the EDS boilerplate template. Then re-apply the ASC
-modifications to `scripts/scripts.js` (imports and `decorateMain` calls — documented in
-`CLAUDE.md` and `AGENTS.md`).
+modifications to `scripts/scripts.js`:
+```js
+import { ascEager, ascDecorateMain, ascLazy, ascDelayed } from './asc.js';
+// In loadEager: ascEager(doc)
+// In decorateMain (after decorateBlocks): ascDecorateMain(main)
+// In loadLazy: ascLazy()
+// In loadDelayed: ascDelayed()
+```
 
 **ASC Core upgrade:** Replace `scripts/asc/` wholesale. Your customizations live outside
 that directory, so they are safe.

@@ -105,11 +105,13 @@ function collectionCard(collection, activeId, defaultId) {
       <div class="collections__card-actions asc-ui-card__footer">
         ${!isActive
     ? `<button type="button" class="collections__card-activate btn btn--secondary btn--sm"
-               data-collection-id="${escAttr(collection.id)}">Set active</button>`
+               data-collection-id="${escAttr(collection.id)}"
+               aria-label="Set ${escAttr(collection.name)} as active collection">Set active</button>`
     : ''}
         ${!isDefault
     ? `<button type="button" class="collections__card-delete btn btn--ghost btn--sm"
-               data-collection-id="${escAttr(collection.id)}">Delete</button>`
+               data-collection-id="${escAttr(collection.id)}"
+               aria-label="Delete ${escAttr(collection.name)} collection">Delete</button>`
     : ''}
       </div>` : ''}
     </li>`;

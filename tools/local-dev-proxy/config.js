@@ -22,7 +22,7 @@ export default {
   routes: [
     // AEM DAM and servlet paths go directly to AEM (bypassing aem up),
     // so response-header overrides below take effect.
-    { match: '/content/dam', target: 'aem' },
+    { match: '/content', target: 'aem' },
     { match: '/bin',         target: 'aem' },
     { match: '/libs',        target: 'aem' },
     // Everything else (EDS pages, JS, CSS, fragments) goes through aem up.

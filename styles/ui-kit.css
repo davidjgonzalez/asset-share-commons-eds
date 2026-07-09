@@ -116,7 +116,6 @@
 
     display: inline-flex;
     width: 100%;
-    max-width: var(--asc-ui-search-width);
 }
 
 /* Specificity matches the global input baseline (styles.css) so the pill
@@ -135,7 +134,7 @@
 }
 
 .asc-ui-search input:not([type="checkbox"], [type="radio"], [type="hidden"], [type="range"]):focus {
-    width: min(calc(var(--asc-ui-search-width) * 1.66), 100%);
+    width: calc(var(--asc-ui-search-width) * 1.66);
     outline: 2px solid var(--color-ring);
     outline-offset: -2px;
     border-color: var(--color-ring);
@@ -238,6 +237,11 @@
     background: var(--color-accent);
 }
 
+.asc-ui-menu__item:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: -2px;
+}
+
 .asc-ui-menu__item--active {
     background: var(--color-accent);
     font-weight: 500;
@@ -296,6 +300,11 @@
     border-color: color-mix(in srgb, var(--color-fg) 18%, var(--color-border));
     background: color-mix(in srgb, var(--color-fg) 2.5%, var(--color-card));
     box-shadow: var(--shadow-md);
+}
+
+.asc-ui-card--interactive:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
 }
 
 .asc-ui-card--active {
@@ -540,6 +549,11 @@
     background: var(--color-card);
     color: var(--color-fg);
     box-shadow: var(--shadow-sm);
+}
+
+.asc-ui-segmented__option:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
 }
 
 /* Sizes — default is medium */
@@ -908,6 +922,11 @@
     background: var(--color-card);
 }
 
+.asc-ui-icon-btn:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}
+
 .asc-ui-icon-btn--sm {
     width: 1.5rem;
     height: 1.5rem;
@@ -939,6 +958,11 @@
     border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border));
     box-shadow: var(--shadow-md);
     transform: var(--lift-sm);
+}
+
+.asc-ui-asset-card--interactive:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
 }
 
 .asc-ui-asset-card__thumb {
@@ -1081,6 +1105,11 @@
 
 .asc-ui-action:hover {
     background: var(--color-muted);
+}
+
+.asc-ui-action:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
 }
 
 .asc-ui-action__icon {

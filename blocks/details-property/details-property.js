@@ -27,7 +27,9 @@ export default async function decorate(block) {
   const display = pv.html || escHtml(config.default || '');
 
   block.innerHTML = `
-      <label>${escHtml(config.label || '')}</label>
-      <div class="${valueClass}">${display}</div>
+      <dl>
+        <dt>${escHtml(config.label || '')}</dt>
+        <dd class="${valueClass}">${display}</dd>
+      </dl>
     `;
 }

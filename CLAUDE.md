@@ -20,17 +20,19 @@ aem up              # Start local dev proxy at http://localhost:3000
 
 ```
 scripts/
-  configurations.js     ← USER-OWNED: the only file you need to edit for configuration
+  configurations.js     ← USER-OWNED: all site configuration
+  asc.js                ← USER-OWNED: ASC integration entry point (lifecycle hooks)
   asc/                  ← ASC CORE: do not edit; all files begin with "// ASC Core"
     services/
     models/
     utils/
     parts/
 blocks/                 ← USER-OWNED: copy/modify blocks freely
+  action-*/             ← USER-OWNED: action blocks loaded by the action-pages service
 styles/                 ← USER-OWNED: themes and CSS variables
 ```
 
-Every file in `scripts/asc/` starts with `// ASC Core — do not edit.` as a signal. Users customize via `scripts/configurations.js` only.
+Every file in `scripts/asc/` starts with `// ASC Core — do not edit.` as a signal. Users customize via `scripts/configurations.js` and `scripts/asc.js` only.
 
 ## Architecture
 
@@ -41,16 +43,16 @@ EDS runs three phases on every page load:
 2. **`loadLazy()`** — remaining sections, header/footer, lazy styles
 3. **`loadDelayed()`** — runs after 3s; analytics, non-critical work
 
-ASC services are imported in `scripts/scripts.js` and initialize themselves as singletons on module import.
+ASC services auto-initialize when `scripts/asc.js` is imported; no explicit init calls needed.
 
 > **`scripts/scripts.js` is boilerplate, but ASC modifies it** — re-apply these after any EDS
 > boilerplate upgrade:
 >
-> - imports the ASC services bundle (`./asc/services/services.js`) and `configurations.js`
-> - `decorateMain()` calls `decorateASCSections(main)` (from `scripts/section-grid.js`) **after
->   `decorateBlocks`** to enable the named-area `_layout: grid` section paradigm (see
->   AGENTS.md → "Section Layouts"). It reads layout config from `section.dataset` (set by
->   `decorateSections`) and assigns grid areas to the block wrappers `decorateSections` created.
+> - `import { ascEager, ascDecorateMain, ascLazy, ascDelayed } from './asc.js';`
+> - `loadEager()` calls `ascEager(doc)` — applies theme class and loads theme CSS
+> - `decorateMain()` calls `ascDecorateMain(main)` **after `decorateBlocks`** — runs token
+>   substitution and wires the named-area `_layout: grid` section grid
+> - `loadLazy()` calls `ascLazy()` and `loadDelayed()` calls `ascDelayed()` (hooks for future use)
 
 ### Core Layers
 
@@ -87,6 +89,36 @@ Services handle business logic. Each is a singleton initialized on import. Key s
 - `users` — IMS/SSO detection, provides `getAuthHeaders()` for AEM API calls
 - `renditions` — rendition definition lookup
 - `properties` — pluggable asset property handlers
+- `actionPages` — intercepts clicks on `/actions/*` links, loads the matching `action-*` block as a modal dialog
+
+### Action Pages
+
+A convention for link-triggered action dialogs. Any `<a href="/actions/foo">` is intercepted by
+the `actionPages` service, which:
+1. Fetches `/actions/foo.plain.html` (DA-authored dialog content)
+2. Creates a detached `action-foo` block element with that content
+3. Calls EDS `loadBlock()` — which imports and runs `blocks/action-foo/action-foo.js`
+4. The block's `decorate()` builds and opens a `<dialog>` modal
+
+Context is passed via `window.asc.pendingAction` (read at the top of `decorate()`, before any
+`await`). The `actionPages` service also collects `data-action-*` attributes from the clicked
+element and its ancestors.
+
+From blocks, trigger actions programmatically:
+```js
+import { triggerAction } from '../../scripts/asc.js';
+triggerAction('/actions/download', { collectionId: collection.id });
+```
+
+Utilities exported from `scripts/asc.js`:
+- `triggerAction(href, ctx)` — trigger an action programmatically
+- `parseActionFragment(blockEl, ctx)` — parse DA sections into `{ title, bodyNodes, fields, renditionLabel, renditionIds, actions }`
+- `wireDialogClose(dialog)` — wire `[data-dialog-close]` buttons and backdrop click to `dialog.close()`
+
+Configure the root path in `scripts/configurations.js`:
+```js
+// actions: { root: '/actions' }  // default
+```
 
 ### Search Provider Abstraction
 
@@ -172,6 +204,7 @@ Need a new primitive? Workshop it in the kit first, then deploy into blocks.
 | File | Purpose |
 |------|---------|
 | `scripts/configurations.js` | All user configuration — start here |
+| `scripts/asc.js` | ASC entry point — lifecycle hooks + action-page utilities |
 | `scripts/asc/services/services.js` | All service singletons exported together |
 | `scripts/asc/utils/events.js` | `delegateEvent()` — use for all event binding |
 | `AGENTS.md` | Full event/attribute/parts/provider reference for AI assistants |

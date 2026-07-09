@@ -18,6 +18,15 @@
 
 import { SEARCH_FORM } from '../../scripts/asc/utils/search.js';
 
+function mountToHeader(block) {
+  const navWrapper = document.querySelector('header .nav-wrapper');
+  if (!navWrapper) return false;
+  const section = block.closest('.section');
+  navWrapper.appendChild(block);
+  if (section && !section.querySelector('.block')) section.remove();
+  return true;
+}
+
 export default function decorate(block) {
   document.addEventListener('asc:search:complete', () => update(block));
 
@@ -31,6 +40,16 @@ export default function decorate(block) {
       clearAllFilters();
     }
   });
+
+  // Teleport into the sticky header so pills remain visible on scroll.
+  // Header loads lazily — observe until it's ready if needed.
+  if (!mountToHeader(block)) {
+    const headerEl = document.querySelector('header');
+    const obs = new MutationObserver(() => {
+      if (mountToHeader(block)) obs.disconnect();
+    });
+    obs.observe(headerEl || document.body, { childList: true, subtree: true });
+  }
 }
 
 function update(block) {

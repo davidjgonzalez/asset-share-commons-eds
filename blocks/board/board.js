@@ -17,8 +17,6 @@ const _selectedItems = new Set();
 
 const BOARD_TEXT_KEY = (id) => `asc:boardText:${id}`;
 const VIEWPORT_KEY = (id) => `asc:boardViewport:${id}`;
-const EXPAND_KEY = (id) => `asc:boardExpanded:${id}`;
-const SHEET_EXPAND_KEY = 'asc:sheetBoardExpanded';
 
 // ─── Config parsing ───────────────────────────────────────────────────────────
 
@@ -252,7 +250,6 @@ function viewportHtml(assetItems, textItems, config) {
           ${interactive ? `
           <button type="button" class="asc-ui-segmented__option board__align-grid">Align to grid</button>
           <button type="button" class="asc-ui-segmented__option board__add-text">+ Text</button>` : ''}
-          <button type="button" class="asc-ui-segmented__option board__expand">Expand</button>
           ${config.searchProperties.length ? `<input type="search" class="board__search" placeholder="Search…" aria-label="Search assets">` : ''}
         </div>
       </div>
@@ -617,31 +614,6 @@ function initPanZoom(block, persistId) {
     applyFit,
     fitView,
   };
-}
-
-// ─── Expand button ────────────────────────────────────────────────────────────
-
-function initFitExpand(block, panZoom, expandKey) {
-  const canvas = block.querySelector('.board__canvas');
-  const viewport = block.querySelector('.board__viewport');
-  const expandBtn = block.querySelector('.board__expand');
-  if (!expandBtn) return;
-
-  if (localStorage.getItem(expandKey) === 'true') {
-    block.setAttribute('data-board-expanded', '');
-    expandBtn.textContent = 'Collapse';
-  }
-
-  expandBtn.addEventListener('click', () => {
-    const nowExpanded = !block.hasAttribute('data-board-expanded');
-    block.toggleAttribute('data-board-expanded', nowExpanded);
-    expandBtn.textContent = nowExpanded ? 'Collapse' : 'Expand';
-    localStorage.setItem(expandKey, String(nowExpanded));
-    requestAnimationFrame(() => {
-      const allCards = [...canvas.querySelectorAll('.board__card, .board__text-element')];
-      panZoom.applyFit(computeFitViewport(allCards, viewport));
-    });
-  });
 }
 
 // ─── Search filter ────────────────────────────────────────────────────────────
@@ -1108,12 +1080,9 @@ function initViewClicks(block, config) {
 function initBoard(block, config, collectionId) {
   _selectedItems.clear();
 
-  const expandKey = collectionId ? EXPAND_KEY(collectionId) : SHEET_EXPAND_KEY;
   const hasSavedViewport = collectionId && localStorage.getItem(VIEWPORT_KEY(collectionId)) !== null;
 
   const panZoom = initPanZoom(block, collectionId);
-
-  initFitExpand(block, panZoom, expandKey);
 
   block.querySelector('.board__fit')?.addEventListener('click', () => panZoom.fitView());
 

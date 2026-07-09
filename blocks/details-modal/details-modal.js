@@ -38,4 +38,18 @@ function addEventListeners(block) {
   document.body.addEventListener('asc:asset:details:close', () => {
     block.querySelector('dialog').close();
   });
+
+  // Wire aria-labelledby whenever new content is loaded into the dialog
+  const dialog = block.querySelector('dialog');
+  const content = dialog.querySelector('.content');
+  const observer = new MutationObserver(() => {
+    const heading = content.querySelector('h1, h2, h3');
+    if (heading) {
+      if (!heading.id) heading.id = 'details-modal-title';
+      dialog.setAttribute('aria-labelledby', heading.id);
+    } else {
+      dialog.removeAttribute('aria-labelledby');
+    }
+  });
+  observer.observe(content, { childList: true });
 }

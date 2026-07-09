@@ -16,8 +16,7 @@
     container-type: inline-size;
 
     .collections__shell {
-        max-width: 1200px;
-        margin-inline: auto;
+        width: 100%;
     }
 
     /* ── Toolbar (title / intro come from page content above this block) ─ */

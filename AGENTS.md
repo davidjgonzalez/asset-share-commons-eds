@@ -8,9 +8,11 @@ This file documents conventions, extension points, and architecture decisions fo
 
 | Path | Owner | Rule |
 |------|-------|------|
-| `scripts/configurations.js` | **You** | Edit freely — the single customization entry point |
+| `scripts/configurations.js` | **You** | Edit freely — all site configuration |
+| `scripts/asc.js` | **You** | Edit freely — ASC lifecycle entry point; add eager/lazy/delayed hooks here |
 | `scripts/asc/` | **ASC core** | Do not edit — replace the whole folder on upgrades |
 | `blocks/` | **You** | Copy and modify blocks as needed |
+| `blocks/action-*/` | **You** | Action dialog blocks — one per `/actions/*` path |
 | `styles/` | **You** | Add themes, override CSS variables |
 | `component-definition.json` | **You** | Universal Editor component library |
 | `component-models.json` | **You** | Universal Editor field definitions |
@@ -143,34 +145,149 @@ The details page itself is a normal EDS page; add a `details-modal` block and th
 
 ---
 
+## Action Pages
+
+A convention for link-triggered action dialogs. The `actionPages` ASC Core service
+(`scripts/asc/services/action-pages/action-pages.js`) intercepts any click on
+`<a href="/actions/*">` and orchestrates the full load-render-dialog flow.
+
+### Flow
+
+```
+click on <a href="/actions/download">
+  ↓
+ActionPages.trigger('/actions/download', ctx)
+  ↓
+fetch /actions/download.plain.html          ← DA-authored dialog content
+  ↓
+create detached <div class="action-download block">
+  └── append fetched section divs as children
+  ↓
+loadBlock(blockEl)                          ← EDS loads blocks/action-download/action-download.js
+  ↓
+decorate(blockEl) runs
+  ├── reads window.asc.pendingAction        ← context passed by triggerAction()
+  ├── parses DA sections with parseActionFragment()
+  └── builds + shows <dialog>
+  ↓
+delete window.asc.pendingAction             ← cleaned up after loadBlock resolves
+```
+
+### Context passing (`window.asc.pendingAction`)
+
+Before calling `loadBlock`, the service writes the caller-supplied context object to
+`window.asc.pendingAction`. The block's `decorate()` must read it **before any `await`**
+and capture it in a local variable — it is deleted immediately after `loadBlock` resolves.
+
+```js
+export default async function decorate(block) {
+  const ctx = window.asc?.pendingAction || {};  // ← capture before first await
+  const collection = ctx.collectionId
+    ? await services.collections.get(ctx.collectionId)
+    : null;
+  // …
+}
+```
+
+The service also collects `data-action-*` attributes from the clicked element and its
+ancestors and merges them into the context (without the `action` prefix, camelCased).
+
+### Block naming convention
+
+| `/actions/` path | Block name | Block directory |
+|-----------------|-----------|----------------|
+| `/actions/download` | `action-download` | `blocks/action-download/` |
+| `/actions/share` | `action-share` | `blocks/action-share/` |
+| `/actions/foo-bar` | `action-foo-bar` | `blocks/action-foo-bar/` |
+
+### DA document structure
+
+DA pages at `/actions/*` follow a three-section layout (separated by `---`):
+
+| Position | Semantic role | Parsed as |
+|----------|--------------|-----------|
+| First section | Header | `h1` → `title`; other elements → `bodyNodes` |
+| Middle section(s) | Body | `h2/h3` + `ul` → `renditionIds` (plain items) or `fields` (pipe-delimited items); other elements → `bodyNodes` |
+| Last section | Footer | `<p>` links with `#hash` hrefs → `actions[]` |
+
+`parseActionFragment(blockEl, ctx)` returns:
+```js
+{
+  title: string | null,
+  bodyNodes: Element[],          // non-title header elements + non-list body elements
+  fields: Field[] | null,        // form fields from pipe-delimited ul: id|type|label|placeholder|suffix
+  renditionLabel: string | null, // label above rendition list
+  renditionIds: string[] | null, // plain ul items in body section
+  actions: { label, hash }[],   // footer links (#close, #action-generate, etc.)
+}
+```
+
+`ctx` values replace `{{ key }}` tokens in the document's HTML before nodes are returned.
+
+### Footer `#hash` conventions
+
+| Hash | Used for |
+|------|---------|
+| `#close` | Cancel / close buttons — rendered as secondary `btn` with `data-dialog-close` |
+| `#action-*` | Action-specific buttons — block maps these to click handlers |
+
+### `wireDialogClose(dialog)`
+
+Wires `[data-dialog-close]` buttons and backdrop click (`e.target === dialog`) to
+`dialog.close()`. Call after inserting the dialog into the DOM.
+
+### Triggering actions from blocks
+
+```js
+import { triggerAction } from '../../scripts/asc.js';
+
+// Via link click (handled automatically by the service):
+// <a href="/actions/download" data-action-collection-id="uuid">Download</a>
+
+// Programmatically:
+triggerAction('/actions/download', { collectionId: collection.id });
+triggerAction('/actions/share',    { collectionId: collection.id });
+```
+
+### Configuration
+
+In `scripts/configurations.js`:
+```js
+// actions: {
+//   root: '/actions',   // DA path prefix (default: '/actions')
+// },
+```
+
+---
+
 ## Section Layouts — Named-Area Grid (`_layout: grid`)
 
 A general, author-driven grid paradigm for sections, modeled on CSS `grid-template-areas`.
 Lets authors arrange blocks into a 2-D layout from **section metadata**, with each block
 declaring which cell it occupies — no per-layout CSS required.
 
-> ⚠️ **Boilerplate modification — `scripts/scripts.js`.** This feature adds an import and one
-> call to `decorateMain()`. Grid layouts must run **before** `decorateSections` so the
-> `_`-prefixed keys can be read directly from the raw block DOM — EDS's `toClassName()` strips
-> underscores, making `_layout` indistinguishable from `layout` after section-metadata processing.
+> ⚠️ **Boilerplate modification — `scripts/scripts.js`.** ASC wires in through a single import
+> from `scripts/asc.js`. The relevant call is `ascDecorateMain(main)` in `decorateMain()`, which
+> runs token substitution then `decorateASCSections`. Grid layout must run **after** `decorateBlocks`
+> so section wrapper classes are already set.
 >
 > ```js
-> import { decorateASCSections } from './section-grid.js';
+> import { ascEager, ascDecorateMain, ascLazy, ascDelayed } from './asc.js';
 > // …
 > export function decorateMain(main) {
 >   decorateButtons(main);
 >   decorateIcons(main);
 >   buildAutoBlocks(main);
 >   decorateSections(main);    // sets section.dataset.layout/areas/columns/rows/gap
->   resolvePageTokens(main);
 >   decorateBlocks(main);      // decorates all blocks (wrappers created by decorateSections)
->   decorateASCSections(main); // ← ASC addition: AFTER decorateBlocks
+>   ascDecorateMain(main);     // ← ASC addition: resolvePageTokens + decorateASCSections
 > }
 > ```
 >
-> `decorateASCSections` reads layout config from `section.dataset` (already set by `decorateSections`
-> via `toClassName`, which strips the leading `_` — `_layout→layout`, `_areas→areas`, etc.), assigns
-> `--grid-area` to block wrappers, and groups co-area blocks into `.grid-area-stack` containers.
+> `decorateASCSections` (called inside `ascDecorateMain`) reads layout config from `section.dataset`
+> (already set by `decorateSections` via `toClassName`, which strips the leading `_` —
+> `_layout→layout`, `_areas→areas`, etc.), assigns `--grid-area` to block wrappers, and groups
+> co-area blocks into `.grid-area-stack` containers.
 >
 > `scripts.js` is boilerplate (not `scripts/asc/`), so **re-apply this edit after any EDS
 > boilerplate upgrade.** The logic itself lives in the user-owned `scripts/section-grid.js`; the
@@ -288,6 +405,7 @@ All ASC custom events follow `asc:{noun}:{verb}`. Dispatched on `document` unles
 | `asc:blocks:loaded` | Init service | SearchService | `{ blocks }` |
 | `asc:rendition:activate` | `details-renditions` | `details-preview`, `details-actions`, `details-rendition-metadata` | `{ rendition, asset }` — sticky selection; dispatched on `document.body` |
 | `asc:rendition:preview` | `details-renditions` | `details-preview` | `{ rendition, asset }` — transient hover preview; `rendition: null` on mouseleave to restore sticky |
+| `asc:share:created` | `action-share` block | `collection` block (past-shares panel) | `{ url, title, collectionId }` — fired after share URL is generated and saved to history |
 
 `asc:search:complete` `results` shape:
 ```js
@@ -1043,7 +1161,7 @@ Built-in themes: `default` (Violet Studio), `dark` (Deep Ocean), `studio` (Unspl
 theme: { default: 'my-theme' }
 ```
 
-The `scripts/scripts.js` `loadEager()` function reads this value, adds `theme-{name}` to `<body>`, and loads `styles/themes/{name}.css`.
+The `ascEager(doc)` hook in `scripts/asc.js` reads this value, adds `theme-{name}` to `<body>`, and loads `styles/themes/{name}.css`. It is called from `scripts/scripts.js` `loadEager()`.
 
 ---
 
@@ -1319,7 +1437,7 @@ const assetIds = await url.fromCollectionUrl(window.location.search, 'assets');
 
 ## Global Image Fallback
 
-`scripts/asc/utils/images.js` exports `setupImageFallback()`, called once from `scripts/scripts.js` on page load. It installs a capture-phase `error` listener on `document` that replaces broken `<img>` `src` with `/styles/images/image-placeholder.svg` and stamps `data-img-error="1"` to prevent infinite loops.
+`scripts/asc/utils/images.js` exports `setupImageFallback()`, called once from `scripts/asc.js` at module-load time. It installs a capture-phase `error` listener on `document` that replaces broken `<img>` `src` with `/styles/images/image-placeholder.svg` and stamps `data-img-error="1"` to prevent infinite loops.
 
 **Opt-out**: set `data-img-error="1"` on an image element to skip the fallback entirely. This is required for blocks that handle their own image errors (e.g. `details-preview`'s image sub-module) — the block's error handler runs in the bubble phase and would see the placeholder URL instead of the original broken URL if the fallback fires first.
 
