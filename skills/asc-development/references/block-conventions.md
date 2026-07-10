@@ -99,10 +99,10 @@ export default function decorate(block) {
 
 ### For Search Filter Blocks (QB Predicates)
 
-Use the search-specific `readBlockConfig(block, transform, defaults)` from `scripts/asc/utils/search.js`:
+Use the search-specific `readBlockConfig(block, transform, defaults)` from `scripts/asc/core/utils/search.js`:
 
 ```js
-import { readBlockConfig, getOptions, addSearchEventListeners } from '../../scripts/asc/utils/search.js';
+import { readBlockConfig, getOptions, addSearchEventListeners } from '../../scripts/asc/core/utils/search.js';
 
 export default function decorate(block) {
   const config = readBlockConfig(block, {
@@ -166,7 +166,7 @@ Becomes:
 
 Transform it in a read function:
 ```js
-import { getOptions } from '../../scripts/asc/utils/search.js';
+import { getOptions } from '../../scripts/asc/core/utils/search.js';
 
 const config = readBlockConfig(block, {
   options: (content) => getOptions({ content: Array.isArray(content) ? content.join('\n') : String(content) }),

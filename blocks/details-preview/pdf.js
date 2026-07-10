@@ -1,5 +1,5 @@
 /** @owner user */
-import { escAttr } from '../../scripts/html.js';
+import { escAttr } from '../../scripts/asc/html.js';
 
 const VIEWER_JS = 'https://acrobatservices.adobe.com/view-sdk/viewer.js';
 const FALLBACK_FRAGMENT = 'view=Fit&zoom=page-fit&toolbar=1&navpanes=0';

@@ -20,19 +20,23 @@ aem up              # Start local dev proxy at http://localhost:3000
 
 ```
 scripts/
-  configurations.js     ← USER-OWNED: all site configuration
   asc.js                ← USER-OWNED: ASC integration entry point (lifecycle hooks)
-  asc/                  ← ASC CORE: do not edit; all files begin with "// ASC Core"
-    services/
-    models/
-    utils/
-    parts/
+  asc/                  ← USER-OWNED: user-facing ASC files
+    configurations.js   ← USER-OWNED: all site configuration
+    section-grid.js     ← USER-OWNED: section grid utility
+    tokens.js           ← USER-OWNED: content variable resolver
+    html.js             ← USER-OWNED: HTML helpers
+    core/               ← ASC CORE: do not edit; all files begin with "// ASC Core"
+      services/
+      models/
+      utils/
+      parts/
 blocks/                 ← USER-OWNED: copy/modify blocks freely
   action-*/             ← USER-OWNED: action blocks loaded by the action-pages service
 styles/                 ← USER-OWNED: themes and CSS variables
 ```
 
-Every file in `scripts/asc/` starts with `// ASC Core — do not edit.` as a signal. Users customize via `scripts/configurations.js` and `scripts/asc.js` only.
+Every file in `scripts/asc/core/` starts with `// ASC Core — do not edit.` as a signal. Users customize via `scripts/asc/configurations.js` and `scripts/asc.js` only.
 
 ## Architecture
 
@@ -59,13 +63,13 @@ ASC services auto-initialize when `scripts/asc.js` is imported; no explicit init
 ```
 Blocks (UI)          /blocks/
   ↓ uses
-Parts (reusable UI)  /scripts/asc/parts/
+Parts (reusable UI)  /scripts/asc/core/parts/
   ↓ uses
-Services             /scripts/asc/services/   (search, aem, collections, renditions, etc.)
+Services             /scripts/asc/core/services/   (search, aem, collections, renditions, etc.)
   ↓ uses
-Models               /scripts/asc/models/     (Asset, Rendition, User)
+Models               /scripts/asc/core/models/     (Asset, Rendition, User)
   ↓ uses
-Utils                /scripts/asc/utils/      (events, blocks, search, fragments)
+Utils                /scripts/asc/core/utils/      (events, blocks, search, fragments)
 ```
 
 ### Blocks
@@ -74,7 +78,7 @@ Each block lives in `blocks/<name>/<name>.js` + `<name>.css`. The JS exports a d
 
 ### Parts
 
-Parts (`/scripts/asc/parts/`) are reusable UI components shared across blocks (e.g., `AssetTeaser`). Rules:
+Parts (`/scripts/asc/core/parts/`) are reusable UI components shared across blocks (e.g., `AssetTeaser`). Rules:
 - Constructor receives `{ block }` — the parent block element for event delegation
 - Never bind events directly; always use `delegateEvent(this.block, ...)` to prevent duplicates
 - `html()` method returns an HTML string; the block inserts it
@@ -115,7 +119,7 @@ Utilities exported from `scripts/asc.js`:
 - `parseActionFragment(blockEl, ctx)` — parse DA sections into `{ title, bodyNodes, fields, renditionLabel, renditionIds, actions }`
 - `wireDialogClose(dialog)` — wire `[data-dialog-close]` buttons and backdrop click to `dialog.close()`
 
-Configure the root path in `scripts/configurations.js`:
+Configure the root path in `scripts/asc/configurations.js`:
 ```js
 // actions: { root: '/actions' }  // default
 ```
@@ -123,10 +127,10 @@ Configure the root path in `scripts/configurations.js`:
 ### Search Provider Abstraction
 
 `SearchService` delegates all API calls to a provider:
-- `scripts/asc/services/search/providers/querybuilder.js` — AEM QueryBuilder (default)
-- `scripts/asc/services/search/providers/openapi.js` — AEM Dynamic Media OpenAPI Search
+- `scripts/asc/core/services/search/providers/querybuilder.js` — AEM QueryBuilder (default)
+- `scripts/asc/core/services/search/providers/openapi.js` — AEM Dynamic Media OpenAPI Search
 
-Switch providers in `scripts/configurations.js`: `search: { provider: 'openapi' }`.
+Switch providers in `scripts/asc/configurations.js`: `search: { provider: 'openapi' }`.
 
 ### Asset Details Modal
 
@@ -203,10 +207,10 @@ Need a new primitive? Workshop it in the kit first, then deploy into blocks.
 
 | File | Purpose |
 |------|---------|
-| `scripts/configurations.js` | All user configuration — start here |
+| `scripts/asc/configurations.js` | All user configuration — start here |
 | `scripts/asc.js` | ASC entry point — lifecycle hooks + action-page utilities |
-| `scripts/asc/services/services.js` | All service singletons exported together |
-| `scripts/asc/utils/events.js` | `delegateEvent()` — use for all event binding |
+| `scripts/asc/core/services/services.js` | All service singletons exported together |
+| `scripts/asc/core/utils/events.js` | `delegateEvent()` — use for all event binding |
 | `AGENTS.md` | Full event/attribute/parts/provider reference for AI assistants |
 | `docs/PROJECT_STRUCTURE.md` | Ownership zones — EDS boilerplate vs ASC Core vs user-owned |
 | `docs/CSS_CONVENTION.md` | Full CSS coding standards |

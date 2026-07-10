@@ -7,7 +7,7 @@ Complete catalog of all 15 ASC services with method signatures and usage example
 ## Import Services
 
 ```js
-import services from '../../scripts/asc/services/services.js';
+import services from '../../scripts/asc/core/services/services.js';
 
 // Destructure what you need
 const { search, collections, renditions, properties } = services;
@@ -19,7 +19,7 @@ All services are singletons initialized on module import.
 
 ## Search Service
 
-**Location**: `scripts/asc/services/search/search.js`
+**Location**: `scripts/asc/core/services/search/search.js`
 
 Orchestrates asset search against a configurable provider (QueryBuilder or OpenAPI).
 
@@ -61,7 +61,7 @@ const provider = services.search.getProvider();
 
 ## Collections Service
 
-**Location**: `scripts/asc/services/collections/collections.js`
+**Location**: `scripts/asc/core/services/collections/collections.js`
 
 Manage user collections (cart/favorites) stored in localStorage.
 
@@ -142,7 +142,7 @@ services.collections.logout();
 
 ## Renditions Service
 
-**Location**: `scripts/asc/services/renditions/renditions.js`
+**Location**: `scripts/asc/core/services/renditions/renditions.js`
 
 Look up download renditions for assets based on MIME type and availability.
 
@@ -202,7 +202,7 @@ img.addEventListener('load', () => {
 
 ## Properties Service
 
-**Location**: `scripts/asc/services/properties/properties.js`
+**Location**: `scripts/asc/core/services/properties/properties.js`
 
 Get asset properties (title, thumbnail, MIME type, dimensions, etc.).
 
@@ -266,7 +266,7 @@ const brand = asset.getProperty('brand');
 
 ## AEM Service
 
-**Location**: `scripts/asc/services/aem/aem.js`
+**Location**: `scripts/asc/core/services/aem/aem.js`
 
 AEM connection details and auth headers.
 
@@ -302,7 +302,7 @@ const url = services.aem.apiUrl('/content/dam/my-asset');
 
 ## Asset Details Service
 
-**Location**: `scripts/asc/services/asset-details/asset-details.js`
+**Location**: `scripts/asc/core/services/asset-details/asset-details.js`
 
 Open/close asset details modals, handle URL-based deep linking.
 
@@ -338,7 +338,7 @@ Open details if `?asset={uuid}` is in the URL (called on page load).
 
 ## Downloads Service
 
-**Location**: `scripts/asc/services/downloads/downloads.js`
+**Location**: `scripts/asc/core/services/downloads/downloads.js`
 
 Manage asynchronous AEM bulk-download jobs.
 
@@ -395,7 +395,7 @@ services.downloads.triggerDownload('job-uuid');
 
 ## Users Service
 
-**Location**: `scripts/asc/services/users/users.js`
+**Location**: `scripts/asc/core/services/users/users.js`
 
 Detect IMS/SSO login status and provide auth context.
 
@@ -431,7 +431,7 @@ const headers = services.users.getAuthHeaders();
 
 ## URL Service
 
-**Location**: `scripts/asc/services/url/url.js`
+**Location**: `scripts/asc/core/services/url/url.js`
 
 URL utilities for encoding/decoding asset lists for sharing.
 
@@ -450,7 +450,7 @@ const decoded = await services.url.decompressToArray(encoded);
 
 ## Storage Service
 
-**Location**: `scripts/asc/services/storage/storage.js`
+**Location**: `scripts/asc/core/services/storage/storage.js`
 
 User-scoped and global localStorage management.
 
@@ -501,7 +501,7 @@ storage.mergeUserData('from-user-id', 'to-user-id');
 
 ## Fragment Service
 
-**Location**: `scripts/asc/utils/fragments.js` (not a service singleton, but important utility)
+**Location**: `scripts/asc/core/utils/fragments.js` (not a service singleton, but important utility)
 
 Load EDS fragment pages dynamically.
 
@@ -512,7 +512,7 @@ Load EDS fragment pages dynamically.
 Load a fragment page.
 
 ```js
-import { loadFragment } from '../../scripts/asc/utils/fragments.js';
+import { loadFragment } from '../../scripts/asc/core/utils/fragments.js';
 
 const fragment = await loadFragment('/details');
 // fragment = <main> element with all blocks decorated
@@ -522,7 +522,7 @@ const fragment = await loadFragment('/details');
 
 ## Events Service
 
-**Location**: `scripts/asc/utils/events.js` (utility, not a service)
+**Location**: `scripts/asc/core/utils/events.js` (utility, not a service)
 
 Helpers for event delegation.
 
@@ -533,7 +533,7 @@ Helpers for event delegation.
 Delegate events to child elements.
 
 ```js
-import { delegateEvent } from '../../scripts/asc/utils/events.js';
+import { delegateEvent } from '../../scripts/asc/core/utils/events.js';
 
 delegateEvent(block, '.my-button', 'click', (e) => {
   console.log('Button clicked:', e.target);
@@ -544,7 +544,7 @@ delegateEvent(block, '.my-button', 'click', (e) => {
 
 ## Blocks Service
 
-**Location**: `scripts/asc/utils/blocks.js` (utility)
+**Location**: `scripts/asc/core/utils/blocks.js` (utility)
 
 Block decoration helpers.
 
@@ -555,7 +555,7 @@ Block decoration helpers.
 Decorate all blocks within an element (used by `loadFragment`).
 
 ```js
-import { decorateBlocksRecursively } from '../../scripts/asc/utils/blocks.js';
+import { decorateBlocksRecursively } from '../../scripts/asc/core/utils/blocks.js';
 
 decorateBlocksRecursively(fragment);
 ```
@@ -564,7 +564,7 @@ decorateBlocksRecursively(fragment);
 
 ## Init Service
 
-**Location**: `scripts/asc/services/init/init.js`
+**Location**: `scripts/asc/core/services/init/init.js`
 
 Page initialization and configuration.
 
@@ -669,4 +669,4 @@ const custom = asset.getProperty('my-custom');
 
 ---
 
-All services are initialized on import and configured via `scripts/configurations.js`. See [SKILL.md](../SKILL.md) for the configuration extension guide.
+All services are initialized on import and configured via `scripts/asc/configurations.js`. See [SKILL.md](../SKILL.md) for the configuration extension guide.

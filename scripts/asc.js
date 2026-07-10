@@ -6,19 +6,19 @@
  * Import this file from scripts/scripts.js and call the lifecycle hooks at the
  * appropriate EDS phase. ASC services are auto-initialized on module import.
  *
- * Configuration lives in scripts/configurations.js — do not edit scripts/asc/.
+ * Configuration lives in scripts/asc/configurations.js — do not edit scripts/asc/core/.
  */
 import { loadCSS } from './aem.js';
-import './asc/services/services.js';
-import configurations from './configurations.js';
-import { setupImageFallback } from './asc/utils/images.js';
-import { decorateASCSections } from './section-grid.js';
-import { resolvePageTokens } from './tokens.js';
+import './asc/core/services/services.js';
+import configurations from './asc/configurations.js';
+import { setupImageFallback } from './asc/core/utils/images.js';
+import { decorateASCSections } from './asc/section-grid.js';
+import { resolvePageTokens } from './asc/tokens.js';
 
 setupImageFallback();
 
 // Re-export action-page utilities so blocks can import from a single stable path.
-export { triggerAction, parseActionFragment, wireDialogClose } from './asc/services/action-pages/action-pages.js';
+export { triggerAction, parseActionFragment, wireDialogClose } from './asc/core/services/action-pages/action-pages.js';
 
 /** Called once in loadEager — applies theme and any other eager-phase ASC setup. */
 export function ascEager(doc) {

@@ -48,7 +48,7 @@ The simplest way to send an event is declaratively in HTML. No JS wiring needed.
 
 ### How It Works
 
-The **Actions service** (in `scripts/asc/services/actions/actions.js`) listens globally on `document.body`. When it sees a click/mouseover/other event on an element with `data-asc-action`:
+The **Actions service** (in `scripts/asc/core/services/actions/actions.js`) listens globally on `document.body`. When it sees a click/mouseover/other event on an element with `data-asc-action`:
 
 1. Parse the action: `"asset:details:open"` → dispatch `asc:asset:details:open`
 2. Collect all `data-asc-*` attributes up the DOM tree (parents and ancestors)
@@ -160,7 +160,7 @@ The `collectionToggle` Part listens to `asc:collection:change` and updates its U
 
 ```js
 // In a block, use the Part:
-import collectionToggle from '../../scripts/asc/parts/collection-toggle/collection-toggle.js';
+import collectionToggle from '../../scripts/asc/core/parts/collection-toggle/collection-toggle.js';
 
 export default function decorate(block) {
   const asset = /* ... */;

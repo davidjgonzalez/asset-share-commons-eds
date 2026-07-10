@@ -1,6 +1,6 @@
 /** @owner user */
-import services from '../../scripts/asc/services/services.js';
-import { escHtml, escAttr } from '../../scripts/html.js';
+import services from '../../scripts/asc/core/services/services.js';
+import { escHtml, escAttr } from '../../scripts/asc/html.js';
 
 /**
  * Sheet block — a download/rendition selection page.

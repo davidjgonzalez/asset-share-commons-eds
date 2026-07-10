@@ -1,7 +1,7 @@
 /** @owner user */
 import { readBlockConfig } from '../../scripts/aem.js';
-import Asset from '../../scripts/asc/models/asset.js';
-import { escHtml } from '../../scripts/html.js';
+import Asset from '../../scripts/asc/core/models/asset.js';
+import { escHtml } from '../../scripts/asc/html.js';
 
 const OFFICE_EXTS = new Set(['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx']);
 

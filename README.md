@@ -29,11 +29,11 @@ aem up       # opens http://localhost:3000
 
 ## Configuring
 
-All configuration lives in **`scripts/configurations.js`** — the only file you ever need to edit. Everything in `scripts/asc/` is ASC core and should not be modified.
+All configuration lives in **`scripts/asc/configurations.js`** — the only file you ever need to edit. Everything in `scripts/asc/` is ASC core and should not be modified.
 
 Minimum configuration:
 ```js
-// scripts/configurations.js
+// scripts/asc/configurations.js
 export default {
   aem: {
     host: 'https://author-pXXX-eYYY.adobeaemcloud.com',
@@ -48,7 +48,7 @@ export default {
 
 **Search:** `search-bar` `search-property` `search-path` `search-date-range` `search-tags` `search-hidden` `search-statistics` `search-results`
 
-**Asset Details:** `details-modal` `details-image` `details-property` `details-renditions` `details-actions`
+**Asset Details:** `details-modal` `details-preview` `details-property` `details-renditions` `details-actions`
 
 **Collections:** `stub` `sheet` `collections` `collection`
 
@@ -57,7 +57,7 @@ export default {
 Five built-in themes: `default`, `dark`, `warm`, `studio`, `vault`.
 
 ```js
-// scripts/configurations.js
+// scripts/asc/configurations.js
 theme: { default: 'vault' }
 ```
 

@@ -83,7 +83,7 @@ box-shadow: var(--shadow-md);
 #### Tier 1: Configuration (Zero-code)
 
 **Entry**: Customize behavior without touching code.  
-**Mechanism**: Update `scripts/configurations.js`
+**Mechanism**: Update `scripts/asc/configurations.js`
 
 **What's configurable**:
 - Search provider (QueryBuilder / OpenAPI)
@@ -335,7 +335,7 @@ The following skills will be created in Phases 6–6b:
 1. Extract CSS design tokens via Playwright headless rendering
 2. Map extracted values to ASC token system
 3. Generate `styles/themes/{name}.css`
-4. Activate in `scripts/configurations.js`
+4. Activate in `scripts/asc/configurations.js`
 5. Visual validation
 
 **Deliverable**: Ready-to-use theme file

@@ -112,7 +112,7 @@ You can create additional detail templates per MIME type — e.g. `/details/imag
 
 ---
 
-## 5. Configure `scripts/configurations.js`
+## 5. Configure `scripts/asc/configurations.js`
 
 This is the only file you need to edit. Set your AEM host and (optionally) your search provider:
 
@@ -175,7 +175,7 @@ If results do not appear, check:
 Push to `main` on GitHub — AEM Code Sync picks it up automatically. No build step needed.
 
 ```bash
-git add scripts/configurations.js fstab.yaml
+git add scripts/asc/configurations.js fstab.yaml
 git commit -m "Configure for production"
 git push origin main
 ```

@@ -75,7 +75,7 @@ async function generateTheme() {
   console.log(`  2. Start dev server: aem up --no-open`);
   console.log(`  3. Preview theme: http://localhost:3000?theme=${themeName}`);
   console.log(`  4. Adjust colors if needed`);
-  console.log(`  5. Activate: update scripts/configurations.js (theme.default = '${themeName}')`);
+  console.log(`  5. Activate: update scripts/asc/configurations.js (theme.default = '${themeName}')`);
   console.log(`  6. Deploy: npm run lint && git push\n`);
 }
 

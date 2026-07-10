@@ -15,9 +15,9 @@
  *   | poster        |          |  ← optional poster image URL
  */
 
-import { readBlockConfig } from '../../scripts/asc/utils/blocks.js';
-import { escAttr } from '../../scripts/html.js';
-import Asset from '../../scripts/asc/models/asset.js';
+import { readBlockConfig } from '../../scripts/asc/core/utils/blocks.js';
+import { escAttr } from '../../scripts/asc/html.js';
+import Asset from '../../scripts/asc/core/models/asset.js';
 
 const DEFAULTS = {
   height: '600px',

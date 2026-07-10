@@ -1,7 +1,7 @@
-import services from '../../scripts/asc/services/services.js';
-import storage from '../../scripts/asc/services/storage/storage.js';
-import configurations from '../../scripts/configurations.js';
-import { escHtml, escAttr } from '../../scripts/html.js';
+import services from '../../scripts/asc/core/services/services.js';
+import storage from '../../scripts/asc/core/services/storage/storage.js';
+import configurations from '../../scripts/asc/configurations.js';
+import { escHtml, escAttr } from '../../scripts/asc/html.js';
 import { parseActionFragment, wireDialogClose } from '../../scripts/asc.js';
 
 const SHEET_PATH = configurations.collections?.sheetPath || '/sheets/';

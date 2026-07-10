@@ -1,9 +1,9 @@
 /** @owner user */
-import services from '../../scripts/asc/services/services.js';
-import { Events as CollectionEvents } from '../../scripts/asc/services/collections/collections.js';
-import { escHtml, escAttr } from '../../scripts/html.js';
+import services from '../../scripts/asc/core/services/services.js';
+import { Events as CollectionEvents } from '../../scripts/asc/core/services/collections/collections.js';
+import { escHtml, escAttr } from '../../scripts/asc/html.js';
 
-const configurations = (await import('../../scripts/configurations.js')).default;
+const configurations = (await import('../../scripts/asc/configurations.js')).default;
 
 // ─── Module-level drag / selection state ─────────────────────────────────────
 

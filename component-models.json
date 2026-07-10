@@ -267,8 +267,17 @@
   },
 
   {
-    "id": "details-image",
-    "fields": []
+    "id": "details-preview",
+    "fields": [
+      {
+        "component": "text",
+        "name": "renditions",
+        "label": "Rendition Priority",
+        "value": "original",
+        "valueType": "string",
+        "description": "Comma-separated rendition names tried in order (e.g. original, web). Falls back to first available rendition."
+      }
+    ]
   },
 
   {
@@ -420,6 +429,26 @@
 
   {
     "id": "collection",
+    "fields": []
+  },
+
+  {
+    "id": "search-active-filters",
+    "fields": []
+  },
+
+  {
+    "id": "board",
+    "fields": []
+  },
+
+  {
+    "id": "collection-switcher",
+    "fields": []
+  },
+
+  {
+    "id": "hero",
     "fields": []
   }
 ]

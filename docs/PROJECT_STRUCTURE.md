@@ -37,7 +37,7 @@ These files are maintained by the ASC project and will be replaced wholesale whe
 ASC. Customise behaviour via `configurations.js` only — not by editing core files directly.
 
 ```
-scripts/asc/
+scripts/asc/core/
   services/
     action-pages/ — intercepts /actions/* links; loads action-* blocks as modals
     actions/      — declarative data-asc-action event dispatch system
@@ -56,13 +56,13 @@ scripts/asc/
 ### User-owned — customize freely
 
 Everything here is yours. Copy, modify, and extend without worrying about upstream conflicts.
-These files are intentionally outside `scripts/asc/` so you can change them.
+These files are intentionally outside `scripts/asc/core/` so you can change them.
 
 #### Configuration
 
 | File | Purpose |
 |------|---------|
-| `scripts/configurations.js` | **Start here.** AEM host, search provider, themes, renditions, collections, custom properties, asset details templates — all user config lives here |
+| `scripts/asc/configurations.js` | **Start here.** AEM host, search provider, themes, renditions, collections, custom properties, asset details templates — all user config lives here |
 | `scripts/asc.js` | **ASC integration entry point.** Exports lifecycle hooks (`ascEager`, `ascDecorateMain`, `ascLazy`, `ascDelayed`) and action-page utilities (`triggerAction`, `parseActionFragment`, `wireDialogClose`). Auto-initializes all ASC services on import. Customize here to add eager/lazy/delayed work. |
 
 #### Blocks
@@ -100,9 +100,9 @@ styles/
 
 | File | Purpose |
 |------|---------|
-| `scripts/section-grid.js` | Named-area CSS grid for section metadata — called internally by `ascDecorateMain` |
-| `scripts/tokens.js` | `{{ accessor \| fallback }}` content variable resolver — called internally by `ascDecorateMain` |
-| `scripts/html.js` | Shared HTML helpers: `escHtml`, `escAttr`, `formatUpdated` — import into any block that builds HTML strings |
+| `scripts/asc/section-grid.js` | Named-area CSS grid for section metadata — called internally by `ascDecorateMain` |
+| `scripts/asc/tokens.js` | `{{ accessor \| fallback }}` content variable resolver — called internally by `ascDecorateMain` |
+| `scripts/asc/html.js` | Shared HTML helpers: `escHtml`, `escAttr`, `formatUpdated` — import into any block that builds HTML strings |
 | `scripts/extract-design-tokens.js` | Dev utility — extracts token values for tooling/docs |
 
 #### Content pages and demos
@@ -110,8 +110,6 @@ styles/
 | File | Purpose |
 |------|---------|
 | `details.html` | ASC default asset details page template |
-| `*-demo.html` | Local dev demo pages for blocks and themes |
-| `search-example.html`, `header-test.html` | Dev test pages |
 
 ---
 
@@ -123,18 +121,19 @@ styles/
 │   ├── aem.js                  EDS boilerplate
 │   ├── scripts.js              EDS boilerplate (ASC-modified)
 │   ├── delayed.js              EDS boilerplate
-│   ├── configurations.js       USER — all site configuration
 │   ├── asc.js                  USER — ASC entry point; lifecycle hooks + action-page utils
-│   ├── section-grid.js         USER — section grid utility (called by asc.js)
-│   ├── tokens.js               USER — content variable resolver (called by asc.js)
-│   ├── html.js                 USER — escHtml / escAttr / formatUpdated
 │   ├── extract-design-tokens.js USER — dev tooling
-│   └── asc/                    ASC CORE — do not edit
-│       ├── services/
-│       │   └── action-pages/   — /actions/* link interceptor + loadBlock runner
-│       ├── models/
-│       ├── utils/
-│       └── parts/
+│   └── asc/                    USER — user-facing ASC files
+│       ├── configurations.js   USER — all site configuration
+│       ├── section-grid.js     USER — section grid utility (called by asc.js)
+│       ├── tokens.js           USER — content variable resolver (called by asc.js)
+│       ├── html.js             USER — escHtml / escAttr / formatUpdated
+│       └── core/               ASC CORE — do not edit
+│           ├── services/
+│           │   └── action-pages/   — /actions/* link interceptor + loadBlock runner
+│           ├── models/
+│           ├── utils/
+│           └── parts/
 │
 ├── blocks/                     USER — all blocks live here
 │   ├── <block>/
@@ -171,11 +170,12 @@ styles/
 | Signal | Zone |
 |--------|------|
 | `// ASC Core — do not edit.` at top of file | ASC Core |
-| Lives in `scripts/asc/` | ASC Core |
+| Lives in `scripts/asc/core/` | ASC Core |
 | Named `aem.js`, `scripts.js`, `delayed.js` | EDS boilerplate |
 | Lives in `blocks/` | User-owned |
 | Lives in `styles/themes/` or `styles/sections/` | User-owned |
-| `scripts/configurations.js` or `scripts/asc.js` | User-owned |
+| Lives in `scripts/asc/` (but not `core/`) | User-owned |
+| `scripts/asc.js` | User-owned |
 
 ---
 

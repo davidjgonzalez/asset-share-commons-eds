@@ -21,8 +21,8 @@
  *
  * Defaults (when a row is omitted): title → {{title}}, meta → file info line.
  */
-import Asset from '../../scripts/asc/models/asset.js';
-import { resolveTokens } from '../../scripts/tokens.js';
+import Asset from '../../scripts/asc/core/models/asset.js';
+import { resolveTokens } from '../../scripts/asc/tokens.js';
 
 const DEFAULT_TITLE = '{{title}}';
 const DEFAULT_META = '{{file-type}} · {{file-size}} · {{dimensions}}';

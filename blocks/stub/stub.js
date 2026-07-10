@@ -1,5 +1,5 @@
 /** @owner user */
-import services from '../../scripts/asc/services/services.js';
+import services from '../../scripts/asc/core/services/services.js';
 
 /**
  * Collection-bar (stub) block — shows the current cart state and a link

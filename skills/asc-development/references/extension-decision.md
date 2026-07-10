@@ -16,10 +16,10 @@ Describe what you want in one sentence. Find the closest match below. Follow the
 
 | Where? | Mechanism | File to edit | Guide |
 |--------|-----------|-------------|-------|
-| In search result cards / list / masonry | Register a custom property, add to `searchResults.views` | `scripts/configurations.js` | [→ Custom property](#custom-property) |
+| In search result cards / list / masonry | Register a custom property, add to `searchResults.views` | `scripts/asc/configurations.js` | [→ Custom property](#custom-property) |
 | In the asset details panel | Author a `details-property` block on the details fragment page | da.live (no code needed) | [→ Details property block](#details-property-block) |
-| In search cards with a custom render function | `searchResults.views.list` `render` escape hatch | `scripts/configurations.js` | [→ Custom render in list view](#custom-render-in-list-view) |
-| Everywhere (reusable) | Register a custom property handler | `scripts/configurations.js` | [→ Custom property](#custom-property) |
+| In search cards with a custom render function | `searchResults.views.list` `render` escape hatch | `scripts/asc/configurations.js` | [→ Custom render in list view](#custom-render-in-list-view) |
+| Everywhere (reusable) | Register a custom property handler | `scripts/asc/configurations.js` | [→ Custom property](#custom-property) |
 
 ---
 
@@ -116,7 +116,7 @@ Describe what you want in one sentence. Find the closest match below. Follow the
 
 **Built-in properties**: `title`, `thumbnail`, `file-type`, `file-size`, `file-extension`, `dimensions`, `width`, `height`, `modified`, `created`, `description`, `filename`, `mime-type`
 
-**File**: `scripts/configurations.js`
+**File**: `scripts/asc/configurations.js`
 
 ```js
 properties: {
@@ -146,7 +146,7 @@ Once registered, use the key anywhere:
 - In `searchResults.views.list`: `{ property: 'brand', label: 'Brand', width: '120px' }`
 - In code: `asset.getProperty('brand')`
 
-**What NOT to do**: Do not modify `scripts/asc/services/properties/properties.js`. The `properties.custom` config is merged in automatically.
+**What NOT to do**: Do not modify `scripts/asc/core/services/properties/properties.js`. The `properties.custom` config is merged in automatically.
 
 ---
 
@@ -172,7 +172,7 @@ The `details-property` block reads `data-asc-asset` from its parent `<main>` ele
 
 **Use when**: A property name alone isn't enough — you need custom HTML in a list column.
 
-**File**: `scripts/configurations.js`
+**File**: `scripts/asc/configurations.js`
 
 ```js
 searchResults: {
@@ -201,7 +201,7 @@ searchResults: {
 
 **Use when**: You want to control which properties appear in cards, masonry, or list views.
 
-**File**: `scripts/configurations.js`
+**File**: `scripts/asc/configurations.js`
 
 ```js
 searchResults: {
@@ -235,7 +235,7 @@ searchResults: {
 
 **Use when**: You want to restrict all searches globally — e.g. only show approved assets, only search within a specific DAM folder.
 
-**File**: `scripts/configurations.js` → `search.basePredicates`
+**File**: `scripts/asc/configurations.js` → `search.basePredicates`
 
 ```js
 search: {
@@ -266,7 +266,7 @@ These predicates are merged into every query. Form-submitted predicates from sea
 
 **Use when**: You need to transform the query or results at runtime — conditionally, based on user context, or for analytics.
 
-**File**: `scripts/configurations.js` → `search.*`
+**File**: `scripts/asc/configurations.js` → `search.*`
 
 ```js
 search: {
@@ -305,7 +305,7 @@ search: {
 
 **Use when**: Your AEM instance has Dynamic Media with OpenAPI enabled (AEMaaCS only).
 
-**File**: `scripts/configurations.js`
+**File**: `scripts/asc/configurations.js`
 
 ```js
 search: {
@@ -326,7 +326,7 @@ The OpenAPI provider translates QB-style form fields from search filter blocks i
 
 **Use when**: You need to connect ASC to a search API other than AEM QueryBuilder or AEM OpenAPI (e.g. Elasticsearch, Algolia, Coveo).
 
-**Step 1**: Create the provider in `scripts/asc/services/search/providers/my-provider.js`:
+**Step 1**: Create the provider in `scripts/asc/core/services/search/providers/my-provider.js`:
 
 ```js
 // NOTE: This goes inside scripts/asc/ which is normally ASC Core.
@@ -390,7 +390,7 @@ function transformHit(hit) {
 }
 ```
 
-**Step 2**: Register it in `scripts/asc/services/search/search.js`:
+**Step 2**: Register it in `scripts/asc/core/services/search/search.js`:
 
 ```js
 // Add to the PROVIDERS map:
@@ -401,7 +401,7 @@ const PROVIDERS = {
 };
 ```
 
-**Step 3**: Activate in `scripts/configurations.js`:
+**Step 3**: Activate in `scripts/asc/configurations.js`:
 
 ```js
 search: { provider: 'my-provider' },
@@ -413,7 +413,7 @@ search: { provider: 'my-provider' },
 
 **Use when**: You want to add, remove, or reconfigure downloadable renditions that appear in the `details-renditions` block.
 
-**File**: `scripts/configurations.js` → `renditions.definitions`
+**File**: `scripts/asc/configurations.js` → `renditions.definitions`
 
 The `definitions` array is evaluated top-to-bottom for each asset. **First-match-per-id wins** — so you can have conditional renditions that fall back.
 
@@ -499,7 +499,7 @@ renditions: {
 
 **Use when**: You want different details panel layouts for different asset types or metadata values.
 
-**File**: `scripts/configurations.js` → `assetDetails.templates`
+**File**: `scripts/asc/configurations.js` → `assetDetails.templates`
 
 ```js
 assetDetails: {
@@ -557,7 +557,7 @@ For a fully custom action not covered by `collection-toggle`, `download`, or `sh
 
 **Use when**: You need to change polling behaviour or the AEM download endpoint.
 
-**File**: `scripts/configurations.js`
+**File**: `scripts/asc/configurations.js`
 
 ```js
 downloads: {
@@ -606,7 +606,7 @@ downloads: {
 }
 ```
 
-**Step 2**: Activate in `scripts/configurations.js`:
+**Step 2**: Activate in `scripts/asc/configurations.js`:
 
 ```js
 theme: {
@@ -655,7 +655,7 @@ Full token reference: [css-guidelines.md](css-guidelines.md)
 | Don't | Instead |
 |-------|---------|
 | Edit files in `scripts/asc/` | Use `configurations.js` hooks; copy blocks to `blocks/` |
-| Add properties directly to `scripts/asc/services/properties/properties.js` | Use `configurations.properties.custom` |
+| Add properties directly to `scripts/asc/core/services/properties/properties.js` | Use `configurations.properties.custom` |
 | Hardcode QB field names in block code | Use `config.parameter(key)` from `readBlockConfig` |
 | Bind events manually in a Part | Use `data-asc-action` attributes on the returned HTML |
 | Use `--text-color` or `--background-color` | Use `--color-fg` and `--color-bg` (ASC semantic tokens) |

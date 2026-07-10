@@ -14,7 +14,7 @@
  *
  * Both "From" and "To" inputs are optional at query time — omitting either end leaves that bound open.
  */
-import { readBlockConfig, addSearchEventListeners, enhanceSearchFilterDropdown } from '../../scripts/asc/utils/search.js';
+import { readBlockConfig, addSearchEventListeners, enhanceSearchFilterDropdown } from '../../scripts/asc/core/utils/search.js';
 
 export default function decorate(block) {
   const config = readBlockConfig(block, {}, {

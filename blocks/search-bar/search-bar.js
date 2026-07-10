@@ -13,9 +13,9 @@
  *   |            |             |     a different page. Omit to live-search in place.
  *   | placeholder | Search...  |   ← optional input placeholder
  */
-import { readBlockConfig } from '../../scripts/asc/utils/search.js';
+import { readBlockConfig } from '../../scripts/asc/core/utils/search.js';
 
-const configurations = (await import('../../scripts/configurations.js')).default;
+const configurations = (await import('../../scripts/asc/configurations.js')).default;
 const SEARCH_PAGE = configurations.search?.page || '';
 
 export default function decorate(block) {

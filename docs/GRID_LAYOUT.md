@@ -10,7 +10,7 @@ each block declaring which cell it occupies — no per-layout CSS required.
 
 1. An author adds `layout: grid` to a section's metadata table
 2. EDS promotes all section metadata keys to `data-*` attributes on the `.section` element
-3. `scripts/section-grid.js` runs (called from `decorateMain`, before blocks render) and
+3. `scripts/asc/section-grid.js` runs (called from `decorateMain`, before blocks render) and
    reads those attributes into CSS custom properties on the section
 4. Each block wrapper picks up its `--grid-area` from the block's own `area` config row
 5. `styles/sections/grid-layout.css` turns those custom properties into the live grid
@@ -188,7 +188,7 @@ would make the right column's blocks pack to the top.
 
 ## Implementation notes
 
-**Boilerplate modification required.** `scripts/section-grid.js` must be imported and called
+**Boilerplate modification required.** `scripts/asc/section-grid.js` must be imported and called
 in `scripts/scripts.js` `decorateMain()`. This call must come **after** `decorateBlocks` and
 **before** blocks render:
 
@@ -206,7 +206,7 @@ export function decorateMain(main) {
 ```
 
 Re-apply this edit after any EDS boilerplate upgrade. The logic lives in the user-owned
-`scripts/section-grid.js`; the styling in `styles/sections/grid-layout.css` (imported by
+`scripts/asc/section-grid.js`; the styling in `styles/sections/grid-layout.css` (imported by
 `styles.css`).
 
 ---
@@ -215,7 +215,7 @@ Re-apply this edit after any EDS boilerplate upgrade. The logic lives in the use
 
 | File | Purpose |
 |---|---|
-| `scripts/section-grid.js` | Reads section metadata, sets CSS custom properties |
+| `scripts/asc/section-grid.js` | Reads section metadata, sets CSS custom properties |
 | `styles/sections/grid-layout.css` | Applies custom properties to produce the grid |
 | `scripts/scripts.js` | Must import and call `decorateGridLayouts` in `decorateMain` |
 | `AGENTS.md` → "Section Layouts" | Shorter summary for AI assistant context |

@@ -1,10 +1,10 @@
 /** @owner user */
-import { readBlockConfig } from '../../scripts/asc/utils/blocks.js';
-import { SEARCH_FORM } from '../../scripts/asc/utils/search.js';
-import assetTeaser from '../../scripts/asc/parts/asset-teaser/asset-teaser.js';
-import collectionToggle from '../../scripts/asc/parts/collection-toggle/collection-toggle.js';
-import services from '../../scripts/asc/services/services.js';
-import configurations from '../../scripts/configurations.js';
+import { readBlockConfig } from '../../scripts/asc/core/utils/blocks.js';
+import { SEARCH_FORM } from '../../scripts/asc/core/utils/search.js';
+import assetTeaser from '../../scripts/asc/core/parts/asset-teaser/asset-teaser.js';
+import collectionToggle from '../../scripts/asc/core/parts/collection-toggle/collection-toggle.js';
+import services from '../../scripts/asc/core/services/services.js';
+import configurations from '../../scripts/asc/configurations.js';
 
 const MASONRY_SIZES = '(min-width: 1400px) 25vw, (min-width: 1000px) 33vw, (min-width: 640px) 50vw, 100vw';
 const MASONRY_COL_WIDTH = 360; // target column width — smaller value = more columns at wider viewports

@@ -18,7 +18,7 @@
  * Tag values follow AEM tag namespace format: `namespace:tag-path`
  * (e.g. `dam:status/approved`, `myns:category/nature`).
  */
-import { readBlockConfig, getOptions, addSearchEventListeners, enhanceSearchFilterDropdown } from '../../scripts/asc/utils/search.js';
+import { readBlockConfig, getOptions, addSearchEventListeners, enhanceSearchFilterDropdown } from '../../scripts/asc/core/utils/search.js';
 
 export default function decorate(block) {
   const config = readBlockConfig(block, {

@@ -22,7 +22,7 @@ ASC JavaScript conventions, service usage patterns, and anti-patterns.
  */
 
 import { readBlockConfig } from '../../scripts/aem.js';
-import { addSearchEventListeners } from '../../scripts/asc/utils/search.js';
+import { addSearchEventListeners } from '../../scripts/asc/core/utils/search.js';
 
 export default function decorate(block) {
   // 1. Extract configuration
@@ -124,7 +124,7 @@ export default function decorate(block) {
 For search filters (QB-aware):
 
 ```js
-import { readBlockConfig, addSearchEventListeners } from '../../scripts/asc/utils/search.js';
+import { readBlockConfig, addSearchEventListeners } from '../../scripts/asc/core/utils/search.js';
 
 export default function decorate(block) {
   const config = readBlockConfig(block, {
@@ -270,7 +270,7 @@ export default function decorate(block) {
 Use delegateEvent for blocks, not direct element listeners:
 
 ```js
-import { delegateEvent } from '../../scripts/asc/utils/events.js';
+import { delegateEvent } from '../../scripts/asc/core/utils/events.js';
 
 export default function decorate(block) {
   // Delegate: works for all current and future .delete-btn elements
@@ -389,7 +389,7 @@ element.className = 'active inactive';  // Risky; overwrites existing classes
 | Get asset property | `asset.getProperty('title')` |
 | Get download URLs | `services.renditions.getRenditions(asset)` |
 | Open asset details | Dispatch or use `data-asc-action="asset:details:open"` |
-| Load fragment | `loadFragment('/path')` from `scripts/asc/utils/fragments.js` |
+| Load fragment | `loadFragment('/path')` from `scripts/asc/core/utils/fragments.js` |
 | Create modal | `document.createElement('dialog')` + `showModal()` |
 | Delegate events | Use `data-asc-action` or `delegateEvent()` from events.js |
 

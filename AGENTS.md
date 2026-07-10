@@ -8,7 +8,7 @@ This file documents conventions, extension points, and architecture decisions fo
 
 | Path | Owner | Rule |
 |------|-------|------|
-| `scripts/configurations.js` | **You** | Edit freely — all site configuration |
+| `scripts/asc/configurations.js` | **You** | Edit freely — all site configuration |
 | `scripts/asc.js` | **You** | Edit freely — ASC lifecycle entry point; add eager/lazy/delayed hooks here |
 | `scripts/asc/` | **ASC core** | Do not edit — replace the whole folder on upgrades |
 | `blocks/` | **You** | Copy and modify blocks as needed |
@@ -148,7 +148,7 @@ The details page itself is a normal EDS page; add a `details-modal` block and th
 ## Action Pages
 
 A convention for link-triggered action dialogs. The `actionPages` ASC Core service
-(`scripts/asc/services/action-pages/action-pages.js`) intercepts any click on
+(`scripts/asc/core/services/action-pages/action-pages.js`) intercepts any click on
 `<a href="/actions/*">` and orchestrates the full load-render-dialog flow.
 
 ### Flow
@@ -251,7 +251,7 @@ triggerAction('/actions/share',    { collectionId: collection.id });
 
 ### Configuration
 
-In `scripts/configurations.js`:
+In `scripts/asc/configurations.js`:
 ```js
 // actions: {
 //   root: '/actions',   // DA path prefix (default: '/actions')
@@ -290,7 +290,7 @@ declaring which cell it occupies — no per-layout CSS required.
 > co-area blocks into `.grid-area-stack` containers.
 >
 > `scripts.js` is boilerplate (not `scripts/asc/`), so **re-apply this edit after any EDS
-> boilerplate upgrade.** The logic itself lives in the user-owned `scripts/section-grid.js`; the
+> boilerplate upgrade.** The logic itself lives in the user-owned `scripts/asc/section-grid.js`; the
 > styling in `styles/sections/grid-layout.css` (imported by `styles.css`). Because `decorateMain`
 > also runs for fragments loaded via `loadFragment` (e.g. the asset-details modal), grid layouts
 > work inside the modal too.
@@ -326,7 +326,7 @@ declaring which cell it occupies — no per-layout CSS required.
 | _area             | preview |
 ```
 
-`scripts/section-grid.js` (called from `decorateMain`, before `decorateSections`) reads the
+`scripts/asc/section-grid.js` (called from `decorateMain`, before `decorateSections`) reads the
 section-metadata block directly for `_`-prefixed keys, removes them (so EDS never sees them),
 then writes `--grid-areas` / `--grid-columns` / `--grid-cols` / `--grid-rows` / `--grid-gap`
 custom properties on the section and `--grid-area` on each block wrapper.
@@ -524,7 +524,7 @@ Both QB and OpenAPI providers receive the merged sheet params through the normal
 ### Adding a custom search provider
 
 ```js
-// scripts/asc/services/search/providers/my-provider.js
+// scripts/asc/core/services/search/providers/my-provider.js
 import SearchProvider from '../search-provider.js';
 
 export default class MyProvider extends SearchProvider {
@@ -542,7 +542,7 @@ export default class MyProvider extends SearchProvider {
 }
 ```
 
-Register in `scripts/asc/services/search/search.js`:
+Register in `scripts/asc/core/services/search/search.js`:
 ```js
 const PROVIDERS = {
   querybuilder: QueryBuilderProvider,
@@ -551,7 +551,7 @@ const PROVIDERS = {
 };
 ```
 
-Activate in `scripts/configurations.js`:
+Activate in `scripts/asc/configurations.js`:
 ```js
 search: { provider: 'my-provider' }
 ```
@@ -563,11 +563,11 @@ search: { provider: 'my-provider' }
 Parts are **plain exported functions** that return HTML strings. They are not blocks — they have no `decorate()` and are never loaded independently by EDS.
 
 ```js
-// scripts/asc/parts/my-part/my-part.js
-// ASC Core — do not edit. Customize via scripts/configurations.js
+// scripts/asc/core/parts/my-part/my-part.js
+// ASC Core — do not edit. Customize via scripts/asc/configurations.js
 import { loadCSS } from '../../../aem.js';
 
-loadCSS('/scripts/asc/parts/my-part/my-part.css');
+loadCSS('/scripts/asc/core/parts/my-part/my-part.css');
 
 /**
  * @param {Asset}  asset
@@ -590,7 +590,7 @@ Rules:
 Renders an add/remove collection toggle button. Both states are rendered simultaneously; CSS hides the inactive one based on `data-in-collection`. State is hydrated asynchronously after render and updated on every `asc:collection:change` event — including active collection switches.
 
 ```js
-import collectionToggle from '../../scripts/asc/parts/collection-toggle/collection-toggle.js';
+import collectionToggle from '../../scripts/asc/core/parts/collection-toggle/collection-toggle.js';
 
 // Default — labels use {name} token replaced with the active collection name
 container.insertAdjacentHTML('beforeend', collectionToggle(asset));
@@ -617,7 +617,7 @@ The Part registers a single global `asc:collection:change` listener at import ti
 
 Usage in a block:
 ```js
-import assetTeaser from '../../scripts/asc/parts/asset-teaser/asset-teaser.js';
+import assetTeaser from '../../scripts/asc/core/parts/asset-teaser/asset-teaser.js';
 
 export default async function decorate(block) {
   const assets = /* ... */;
@@ -626,13 +626,13 @@ export default async function decorate(block) {
 }
 ```
 
-The `Part` base class in `scripts/asc/parts/part.js` exists as documentation only — do not extend it.
+The `Part` base class in `scripts/asc/core/parts/part.js` exists as documentation only — do not extend it.
 
 ---
 
 ## Search Utility — Shared Helpers
 
-`scripts/asc/utils/search.js` exports helpers used by all search filter blocks:
+`scripts/asc/core/utils/search.js` exports helpers used by all search filter blocks:
 
 ### `readBlockConfig(block, transform, defaults)`
 Wraps the generic `readBlockConfig` and adds search-specific context:
@@ -661,7 +661,7 @@ const results = await services.search.searchSilent(new Map([
 Wires all interactive inputs in a filter block (checkboxes, radios, date inputs, selects) to dispatch `asc:search:execute` on change. **All search filter blocks must use this** instead of writing their own change listeners.
 
 ```js
-import { readBlockConfig, addSearchEventListeners } from '../../scripts/asc/utils/search.js';
+import { readBlockConfig, addSearchEventListeners } from '../../scripts/asc/core/utils/search.js';
 
 export default function decorate(block) {
   const config = readBlockConfig(block, {}, { name: 'myfilter', ... });
@@ -712,7 +712,7 @@ All built-in names are also valid in `searchResults.views` (see below).
 ### Adding a custom property
 
 ```js
-// scripts/configurations.js
+// scripts/asc/configurations.js
 properties: {
   custom: {
     'brand': (asset) => asset.getProperty('jcr:content/metadata/myco:brand').data,
@@ -730,7 +730,7 @@ Custom property names can then be used in `details-property` blocks and in `sear
 
 ## Search Result Views — `searchResults.views`
 
-Controls which properties are displayed in each view mode. Configured in `scripts/configurations.js`.
+Controls which properties are displayed in each view mode. Configured in `scripts/asc/configurations.js`.
 
 ```js
 searchResults: {
@@ -907,7 +907,7 @@ URL shape: `{host}/adobe/dynamicmedia/deliver/dm-aid--{uuid}/{filename}?{params}
 ### How To: Add a Custom Rendition
 
 ```js
-// scripts/configurations.js
+// scripts/asc/configurations.js
 renditions: {
   // Thumbnail srcset — never in download list, used by cards/masonry/list/board/collection mosaics.
   thumbnails: [
@@ -972,7 +972,7 @@ renditions: {
 ### Service API
 
 ```js
-import services from '../../scripts/asc/services/services.js';
+import services from '../../scripts/asc/core/services/services.js';
 
 services.renditions.getRenditions(asset);              // definitions + auto-detected node renditions (autoDetect: true)
 services.renditions.getRendition(asset, 'web');        // single rendition by id
@@ -1156,7 +1156,7 @@ Built-in themes: `default` (Violet Studio), `dark` (Deep Ocean), `studio` (Unspl
 | `--color-input` | Form input backgrounds |
 | `--color-ring` | Focus outline color |
 
-2. In `scripts/configurations.js`:
+2. In `scripts/asc/configurations.js`:
 ```js
 theme: { default: 'my-theme' }
 ```
@@ -1181,7 +1181,7 @@ To activate page-level filters (e.g. `asc-details-page`), add `data-aue-filter="
 
 ## Collections Service
 
-`scripts/asc/services/collections/collections.js` — singleton exported from `services.js` as `services.collections`.
+`scripts/asc/core/services/collections/collections.js` — singleton exported from `services.js` as `services.collections`.
 
 ### Storage schema
 
@@ -1210,7 +1210,7 @@ The **active collection** ID is stored separately under `storage.get(storage.ACT
 ### API
 
 ```js
-import services from '../../scripts/asc/services/services.js';
+import services from '../../scripts/asc/core/services/services.js';
 const { collections } = services;
 
 // CRUD
@@ -1289,7 +1289,7 @@ The `sheet` block decodes the same format for display.
 
 ## Downloads Service
 
-`scripts/asc/services/downloads/downloads.js` — singleton. Manages asynchronous AEM bulk-download jobs with localStorage persistence.
+`scripts/asc/core/services/downloads/downloads.js` — singleton. Manages asynchronous AEM bulk-download jobs with localStorage persistence.
 
 ### Storage schema
 
@@ -1318,7 +1318,7 @@ Stored under `storage.get(storage.DOWNLOAD_JOBS)` (user-scoped):
 ### API
 
 ```js
-import services from '../../scripts/asc/services/services.js';
+import services from '../../scripts/asc/core/services/services.js';
 const { downloads } = services;
 
 // Initiate an async AEM download job (returns immediately; polling runs in background)
@@ -1357,7 +1357,7 @@ downloads.triggerDownload(jobId)
 
 ## Storage Service
 
-`scripts/asc/services/storage/storage.js` — singleton. Provides user-scoped and global localStorage management.
+`scripts/asc/core/services/storage/storage.js` — singleton. Provides user-scoped and global localStorage management.
 
 ### Key constants (available as `storage.KEY_NAME`)
 
@@ -1372,7 +1372,7 @@ downloads.triggerDownload(jobId)
 ### API
 
 ```js
-import storage from '../../scripts/asc/services/storage/storage.js';
+import storage from '../../scripts/asc/core/services/storage/storage.js';
 
 // User-scoped
 storage.get(key)          // → value | null
@@ -1409,10 +1409,10 @@ asc:user123   → { user, collections, activeCollectionId, recentlyViewed }
 
 ## URL Service
 
-`scripts/asc/services/url/url.js` — singleton. URL helpers for asset lists.
+`scripts/asc/core/services/url/url.js` — singleton. URL helpers for asset lists.
 
 ```js
-import url from '../../scripts/asc/services/url/url.js';
+import url from '../../scripts/asc/core/services/url/url.js';
 
 // Low-level compression — used by the collection share dialog to encode the ?sheet= payload
 const encoded = await url.compressArray(['uuid1', 'uuid2']);
@@ -1437,7 +1437,7 @@ const assetIds = await url.fromCollectionUrl(window.location.search, 'assets');
 
 ## Global Image Fallback
 
-`scripts/asc/utils/images.js` exports `setupImageFallback()`, called once from `scripts/asc.js` at module-load time. It installs a capture-phase `error` listener on `document` that replaces broken `<img>` `src` with `/styles/images/image-placeholder.svg` and stamps `data-img-error="1"` to prevent infinite loops.
+`scripts/asc/core/utils/images.js` exports `setupImageFallback()`, called once from `scripts/asc.js` at module-load time. It installs a capture-phase `error` listener on `document` that replaces broken `<img>` `src` with `/styles/images/image-placeholder.svg` and stamps `data-img-error="1"` to prevent infinite loops.
 
 **Opt-out**: set `data-img-error="1"` on an image element to skip the fallback entirely. This is required for blocks that handle their own image errors (e.g. `details-preview`'s image sub-module) — the block's error handler runs in the bubble phase and would see the placeholder URL instead of the original broken URL if the fallback fires first.
 

@@ -108,7 +108,7 @@ blocks or parts directly.
 - Theme files in `styles/themes/*.css` should define token values (`--color-*`,
   typography, motion/shape, and component-specific custom variables).
 - Block/part selectors belong in the owning stylesheet (`blocks/*/*.css`,
-  `scripts/asc/parts/*/*.css`), where those selectors should consume variables.
+  `scripts/asc/core/parts/*/*.css`), where those selectors should consume variables.
 - Avoid selectors like `.theme-pro .block.search-results ...` or
   `.theme-pro .asc-asset-teaser__title` unless there is no viable variable-based
   alternative.
@@ -144,7 +144,7 @@ Parts (reusable UI components) scope to `.asc-{part-name}`, not `.block.*`:
 /* blocks/search-results/search-results.css — the block container */
 .block.search-results { ... }
 
-/* scripts/asc/parts/asset-teaser/asset-teaser.css — the part */
+/* scripts/asc/core/parts/asset-teaser/asset-teaser.css — the part */
 .asc-asset-teaser { ... }
 .asc-asset-teaser--list { ... }   /* mode modifier */
 .asc-asset-teaser__title { ... }  /* BEM child element */
@@ -158,7 +158,7 @@ Parts load their own CSS via `loadCSS()` at module import time. Do not import pa
 |--------|--------------|---------|
 | `.block.<block-name>` | `blocks/<block-name>/<block-name>.css` | Root selector for every block. EDS appends both `block` and the block name as classes — always use both together. Never write a bare `.my-block { }` root. |
 | `.asc-ui-*` | `styles/ui-kit.css` | Shared UI Kit primitives (cards, badges, empty states, etc.). Use these in block HTML; do not redefine them in block CSS. |
-| `.asc-{part-name}` | `scripts/asc/parts/<part-name>/<part-name>.css` | Reusable part components (e.g. `.asc-asset-teaser`, `.asc-collection-toggle`). Parts own their own CSS; do not duplicate part styles in blocks. |
+| `.asc-{part-name}` | `scripts/asc/core/parts/<part-name>/<part-name>.css` | Reusable part components (e.g. `.asc-asset-teaser`, `.asc-collection-toggle`). Parts own their own CSS; do not duplicate part styles in blocks. |
 | `.btn` | `styles/styles.css` | Global button primitive. Variants: `.btn--primary`, `.btn--secondary`, `.btn--sm`, `.btn--destructive`. |
 
 ### Kit primitive rule
@@ -196,7 +196,7 @@ Include at minimum:
 ## File Organization
 
 - Block CSS: `blocks/<block-name>/<block-name>.css`
-- Part CSS: `scripts/asc/parts/<part-name>/<part-name>.css`
+- Part CSS: `scripts/asc/core/parts/<part-name>/<part-name>.css`
 - Theme overrides: `styles/themes/<theme-name>.css`
 - Shared tokens: `styles/tokens.css`
 - Global base: `styles/styles.css` (imports `tokens.css`)

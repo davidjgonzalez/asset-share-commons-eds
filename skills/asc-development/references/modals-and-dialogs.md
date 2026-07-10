@@ -164,7 +164,7 @@ To autofocus a specific element:
 Combine `loadFragment()` with modals to load dynamic content:
 
 ```js
-import { loadFragment } from '../../scripts/asc/utils/fragments.js';
+import { loadFragment } from '../../scripts/asc/core/utils/fragments.js';
 
 export default function decorate(block) {
   const button = block.querySelector('button');

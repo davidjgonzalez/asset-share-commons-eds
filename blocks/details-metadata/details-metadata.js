@@ -17,8 +17,8 @@
  * - Rows whose value resolves empty are skipped.
  * - `display: grid` switches to the responsive cell layout (term over value).
  */
-import Asset from '../../scripts/asc/models/asset.js';
-import { escHtml as esc } from '../../scripts/html.js';
+import Asset from '../../scripts/asc/core/models/asset.js';
+import { escHtml as esc } from '../../scripts/asc/html.js';
 
 const RESERVED = new Set(['display', 'layout']);
 

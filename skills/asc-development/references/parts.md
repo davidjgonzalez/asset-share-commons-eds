@@ -9,7 +9,7 @@ Parts are **plain functions** that return HTML strings. They are reusable across
 A Part is a simple function:
 
 ```js
-// scripts/asc/parts/my-part/my-part.js
+// scripts/asc/core/parts/my-part/my-part.js
 /**
  * @param {Asset}  asset
  * @param {object} [options]
@@ -40,7 +40,7 @@ export default function myPart(asset, options = {}) {
 Part CSS is scoped to `.asc-{part-name}`:
 
 ```css
-/* scripts/asc/parts/my-part/my-part.css */
+/* scripts/asc/core/parts/my-part/my-part.css */
 .asc-my-part {
   display: flex;
   gap: var(--spacing-md);
@@ -68,7 +68,7 @@ Part CSS is scoped to `.asc-{part-name}`:
 ### Basic Usage
 
 ```js
-import myPart from '../../scripts/asc/parts/my-part/my-part.js';
+import myPart from '../../scripts/asc/core/parts/my-part/my-part.js';
 
 export default function decorate(block) {
   const assets = [...];
@@ -83,7 +83,7 @@ export default function decorate(block) {
 ### With Options
 
 ```js
-import myPart from '../../scripts/asc/parts/my-part/my-part.js';
+import myPart from '../../scripts/asc/core/parts/my-part/my-part.js';
 
 export default function decorate(block) {
   const assets = [...];
@@ -105,11 +105,11 @@ export default function decorate(block) {
 
 Renders a card-style asset teaser with thumbnail, title, and optional properties.
 
-**Location**: `scripts/asc/parts/asset-teaser/`
+**Location**: `scripts/asc/core/parts/asset-teaser/`
 
 **Basic**:
 ```js
-import assetTeaser from '../../scripts/asc/parts/asset-teaser/asset-teaser.js';
+import assetTeaser from '../../scripts/asc/core/parts/asset-teaser/asset-teaser.js';
 
 block.innerHTML = assets.map(asset => assetTeaser(asset)).join('');
 ```
@@ -135,11 +135,11 @@ assetTeaser(asset, {
 
 Renders an add/remove collection toggle button. Updates reactively when collection state changes.
 
-**Location**: `scripts/asc/parts/collection-toggle/`
+**Location**: `scripts/asc/core/parts/collection-toggle/`
 
 **Basic**:
 ```js
-import collectionToggle from '../../scripts/asc/parts/collection-toggle/collection-toggle.js';
+import collectionToggle from '../../scripts/asc/core/parts/collection-toggle/collection-toggle.js';
 
 // Renders both "Add" and "Remove" buttons; CSS hides the inactive one
 block.innerHTML = collectionToggle(asset);
@@ -177,11 +177,11 @@ collectionToggle(asset, {
 
 Renders a responsive `<picture>` element with srcset fallbacks for different widths.
 
-**Location**: `scripts/asc/parts/picture/`
+**Location**: `scripts/asc/core/parts/picture/`
 
 **Basic**:
 ```js
-import picture from '../../scripts/asc/parts/picture/picture.js';
+import picture from '../../scripts/asc/core/parts/picture/picture.js';
 
 block.innerHTML = `<figure>${picture(asset)}</figure>`;
 ```
@@ -204,7 +204,7 @@ picture(asset, {
 ### Step 1: Create Files
 
 ```
-scripts/asc/parts/my-new-part/
+scripts/asc/core/parts/my-new-part/
   my-new-part.js      ← Main function
   my-new-part.css     ← Scoped styles
 ```
@@ -212,7 +212,7 @@ scripts/asc/parts/my-new-part/
 ### Step 2: Import CSS
 
 ```js
-// scripts/asc/parts/my-new-part/my-new-part.js
+// scripts/asc/core/parts/my-new-part/my-new-part.js
 import { loadCSS } from '../../../aem.js';
 
 loadCSS(`${import.meta.url.split('/').slice(0, -1).join('/')}/my-new-part.css`);
@@ -240,7 +240,7 @@ export default function myNewPart(asset, options = {}) {
 ### Step 4: Scope CSS
 
 ```css
-/* scripts/asc/parts/my-new-part/my-new-part.css */
+/* scripts/asc/core/parts/my-new-part/my-new-part.css */
 .asc-my-new-part {
   padding: var(--spacing-md);
   background: var(--color-muted);
@@ -261,7 +261,7 @@ export default function myNewPart(asset, options = {}) {
 ### Step 5: Use in a Block
 
 ```js
-import myNewPart from '../../scripts/asc/parts/my-new-part/my-new-part.js';
+import myNewPart from '../../scripts/asc/core/parts/my-new-part/my-new-part.js';
 
 export default function decorate(block) {
   const assets = [...];
@@ -307,7 +307,7 @@ The Actions service listens globally and handles all events delegated via `data-
 Parts that need to stay in sync with application state should listen to events **once at import time**:
 
 ```js
-// scripts/asc/parts/my-reactive-part/my-reactive-part.js
+// scripts/asc/core/parts/my-reactive-part/my-reactive-part.js
 import services from '../../services/services.js';
 
 // Set up listener once when Part is imported

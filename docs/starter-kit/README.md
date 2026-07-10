@@ -51,7 +51,7 @@ The filter blocks in `index.html` are pre-populated with example values. Before 
 
 ## Configuring the Details Templates
 
-The `assetDetails` service in `scripts/configurations.js` maps MIME type patterns to detail template URLs. By default it loads `/details` (authored as `details/index` in da.live) for all asset types. To use the image-specific template for images, add a mapping such as:
+The `assetDetails` service in `scripts/asc/configurations.js` maps MIME type patterns to detail template URLs. By default it loads `/details` (authored as `details/index` in da.live) for all asset types. To use the image-specific template for images, add a mapping such as:
 
 ```js
 assetDetails: {
@@ -61,4 +61,4 @@ assetDetails: {
 }
 ```
 
-Refer to `scripts/configurations.js` for the full configuration reference.
+Refer to `scripts/asc/configurations.js` for the full configuration reference.

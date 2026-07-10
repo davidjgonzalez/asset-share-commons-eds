@@ -22,8 +22,9 @@
       "search-hidden",
       "search-statistics",
       "search-results",
+      "search-active-filters",
       "details-modal",
-      "details-image",
+      "details-preview",
       "details-video",
       "details-property",
       "details-renditions",
@@ -31,7 +32,9 @@
       "stub",
       "sheet",
       "collections",
-      "collection"
+      "collection",
+      "board",
+      "collection-switcher"
     ]
   },
   {
@@ -51,7 +54,7 @@
   {
     "id": "asc-details-page",
     "components": [
-      "details-image",
+      "details-preview",
       "details-video",
       "details-property",
       "details-renditions",

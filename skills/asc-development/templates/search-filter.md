@@ -78,7 +78,7 @@ Copy and adapt this starting point. Replace all `{filter-name}`, `{predicate-nam
  *   | options  | Label: value        |   (one per line; for checkbox/radio/dropdown)
  *   | type     | checkbox            |   (optional; checkbox | radio | dropdown)
  */
-import { readBlockConfig, getOptions, addSearchEventListeners } from '../../scripts/asc/utils/search.js';
+import { readBlockConfig, getOptions, addSearchEventListeners } from '../../scripts/asc/core/utils/search.js';
 
 export default function decorate(block) {
   const config = readBlockConfig(block, {
@@ -328,7 +328,7 @@ Result: Assets under `/content/dam/brand` OR `/content/dam/creative` (QB ORs mul
 
 ```js
 // blocks/search-path/search-path.js
-import { readBlockConfig, getOptions, addSearchEventListeners } from '../../scripts/asc/utils/search.js';
+import { readBlockConfig, getOptions, addSearchEventListeners } from '../../scripts/asc/core/utils/search.js';
 import { htmlCheckboxes, htmlRadio, htmlDropdown } from '../search-property/search-property.js';
 
 export default function decorate(block) {

@@ -21,7 +21,7 @@ Fragment pages:
 ### `loadFragment(path)`
 
 ```js
-import { loadFragment } from '../../scripts/asc/utils/fragments.js';
+import { loadFragment } from '../../scripts/asc/core/utils/fragments.js';
 
 async function loadMyFragment() {
   const fragment = await loadFragment('/details');
@@ -96,7 +96,7 @@ fragment.setAttribute('data-asc-asset', 'uuid-string');
 The most common pattern: load a fragment into a modal dialog.
 
 ```js
-import { loadFragment } from '../../scripts/asc/utils/fragments.js';
+import { loadFragment } from '../../scripts/asc/core/utils/fragments.js';
 
 export default function decorate(block) {
   block.querySelector('button').addEventListener('click', async () => {
@@ -151,7 +151,7 @@ A fragment page is a normal da.live page with `<main>` as the root:
       </div>
       
       <div class="section">
-        <div class="details-image"></div>
+        <div class="details-preview"></div>
       </div>
       
       <div class="section">
@@ -212,7 +212,7 @@ You can pre-cache fragments at page load:
 
 ```js
 // In delayed.js or a custom block
-import { loadFragment } from '../../scripts/asc/utils/fragments.js';
+import { loadFragment } from '../../scripts/asc/core/utils/fragments.js';
 
 // Pre-cache for instant opening
 await loadFragment('/details');
@@ -319,7 +319,7 @@ export default function decorate(block) {
 
 ```js
 // In delayed.js
-import { loadFragment } from './scripts/asc/utils/fragments.js';
+import { loadFragment } from './scripts/asc/core/utils/fragments.js';
 
 // Pre-warm cache for instant modal opens
 Promise.all([

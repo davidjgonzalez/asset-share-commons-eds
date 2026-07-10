@@ -14,9 +14,9 @@
  *   | Share      | share      |
  *   | Collection | collection |
  */
-import Asset from '../../scripts/asc/models/asset.js';
-import services from '../../scripts/asc/services/services.js';
-import collectionToggle from '../../scripts/asc/parts/collection-toggle/collection-toggle.js';
+import Asset from '../../scripts/asc/core/models/asset.js';
+import services from '../../scripts/asc/core/services/services.js';
+import collectionToggle from '../../scripts/asc/core/parts/collection-toggle/collection-toggle.js';
 
 const VALID_ACTIONS = new Set(['download', 'copy-url', 'share', 'collection']);
 

@@ -66,7 +66,7 @@ regardless of backend provider (QueryBuilder or OpenAPI).
   - Con: Added indirection; developers lose QB context
 
 ### Implementation
-- Form fields standardized in `scripts/asc/utils/search.js`: `readBlockConfig()`, `addSearchEventListeners()`
+- Form fields standardized in `scripts/asc/core/utils/search.js`: `readBlockConfig()`, `addSearchEventListeners()`
 - Each provider implements `buildParams(formData)` to translate QB → API format
 - Example translation: `1_group.daterange.lowerBound` → `filter[createdAt][from]` (OpenAPI)
 
@@ -86,7 +86,7 @@ regardless of backend provider (QueryBuilder or OpenAPI).
 
 ### Relevant Docs
 - [extension-decision.md](asc-development/references/extension-decision.md) — Search customization
-- [search.js](../scripts/asc/utils/search.js) — Implementation
+- [search.js](../scripts/asc/core/utils/search.js) — Implementation
 
 ---
 
@@ -143,7 +143,7 @@ Custom events dispatched on two scopes:
 
 ### Decision
 All 15 core services are module-level singletons, initialized on import.  
-Exported from `scripts/asc/services/services.js` and shared across all blocks.
+Exported from `scripts/asc/core/services/services.js` and shared across all blocks.
 
 ### Rationale
 - **Shared state**: Collections, downloads, recently-viewed all shared across page
@@ -164,7 +164,7 @@ Exported from `scripts/asc/services/services.js` and shared across all blocks.
 
 ### Implementation
 ```js
-// scripts/asc/services/services.js
+// scripts/asc/core/services/services.js
 const search = new SearchService();
 const collections = new CollectionsService();
 const downloads = new DownloadsService();
@@ -212,7 +212,7 @@ Each Part returns an HTML string; no state, no methods.
 
 ### Implementation
 ```js
-// scripts/asc/parts/asset-teaser/asset-teaser.js
+// scripts/asc/core/parts/asset-teaser/asset-teaser.js
 import { loadCSS } from '../../../aem.js';
 
 loadCSS('./asset-teaser.css');
@@ -232,7 +232,7 @@ export default function assetTeaser(asset, options = {}) {
 }
 
 // Block usage:
-import assetTeaser from '../../scripts/asc/parts/asset-teaser/asset-teaser.js';
+import assetTeaser from '../../scripts/asc/core/parts/asset-teaser/asset-teaser.js';
 const html = results.map(asset => assetTeaser(asset)).join('');
 element.innerHTML = html;
 ```
@@ -330,7 +330,7 @@ Additionally, `renditions.thumbnails` is a separate array for srcset-only rendit
 
 ### Implementation
 ```js
-// scripts/configurations.js
+// scripts/asc/configurations.js
 renditions: {
   // Thumbnail srcset — AEMaaCS publish, no DM OpenAPI required
   thumbnails: [
@@ -377,7 +377,7 @@ The rendition type switch is replaced by a named resolver registry. Each resolve
 }
 ```
 
-Built-in resolvers live in `scripts/asc/services/renditions/resolvers/`. Users register custom resolvers via `configurations.renditions.resolvers` (an object keyed by type string). Custom resolvers override built-ins of the same type.
+Built-in resolvers live in `scripts/asc/core/services/renditions/resolvers/`. Users register custom resolvers via `configurations.renditions.resolvers` (an object keyed by type string). Custom resolvers override built-ins of the same type.
 
 Two scan modes:
 - **`getRenditions(asset)`** — definitions + auto-detected nodes (`autoDetect: true` resolvers only, deduped by URL). Smart crops use `autoDetect: true`; static uses `false`.
@@ -530,7 +530,7 @@ Built-in properties provided; custom properties added via `configurations.js`.
 
 ### Implementation
 ```js
-// scripts/configurations.js
+// scripts/asc/configurations.js
 properties: {
   custom: {
     'brand': (asset) => asset.getProperty('jcr:content/metadata/myco:brand'),
@@ -564,7 +564,7 @@ Core services marked with `/** @owner ASC Core — do not edit */`.
 - **Clear boundaries**: Teams know what they own vs what they shouldn't modify
 - **Upgrade safety**: ASC upgrades replace scripts/asc/ but preserve blocks/
 - **Extensibility**: Teams encouraged to copy and modify blocks freely
-- **Single customization entry point**: scripts/configurations.js is the only file to edit for config
+- **Single customization entry point**: scripts/asc/configurations.js is the only file to edit for config
 
 ### Alternatives Considered
 - **No markers** (implicit ownership):
@@ -590,8 +590,8 @@ export default function decorate(block) { ... }
 
 // vs
 
-// scripts/asc/services/search/search.js
-// ASC Core — do not edit. Customize via scripts/configurations.js
+// scripts/asc/core/services/search/search.js
+// ASC Core — do not edit. Customize via scripts/asc/configurations.js
 export default class SearchService { ... }
 ```
 

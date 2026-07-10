@@ -45,7 +45,7 @@ remote; code (blocks, styles, scripts) is served from your working directory.
 
 ## AEM backend
 
-The AEM backend host is configured in `scripts/configurations.js`:
+The AEM backend host is configured in `scripts/asc/configurations.js`:
 
 ```js
 aem: {
@@ -66,7 +66,7 @@ API calls from blocks use `services.users.getAuthHeaders()` which returns the ap
 auth headers for the current login state:
 
 ```js
-import services from '../../scripts/asc/services/services.js';
+import services from '../../scripts/asc/core/services/services.js';
 const headers = await services.users.getAuthHeaders();
 ```
 
@@ -169,7 +169,7 @@ changes render correctly across all of them.
 ### Adding a new theme
 
 1. Create `styles/themes/my-theme.css` — override `--color-*` tokens only (see AGENTS.md)
-2. Register it in `scripts/configurations.js`: `theme: { default: 'my-theme' }`
+2. Register it in `scripts/asc/configurations.js`: `theme: { default: 'my-theme' }`
 3. Verify in the gallery: open the UI Kit and select your theme
 
 See `AGENTS.md → "How To: Add a Custom Theme"` for the full token reference.
@@ -180,10 +180,10 @@ See `AGENTS.md → "How To: Add a Custom Theme"` for the full token reference.
 
 | Path | Who edits it |
 |------|-------------|
-| `scripts/configurations.js` | You — the single config entry point |
+| `scripts/asc/configurations.js` | You — the single config entry point |
 | `scripts/asc/` | ASC core — do not edit; replace the whole folder on upgrades |
 | `blocks/` | You — copy and modify blocks freely |
 | `styles/` | You — add themes, override CSS variables |
 
 Every file in `scripts/asc/` starts with `// ASC Core — do not edit.` as a guard. If you
-need to change core behavior, use the configuration hooks in `scripts/configurations.js`.
+need to change core behavior, use the configuration hooks in `scripts/asc/configurations.js`.

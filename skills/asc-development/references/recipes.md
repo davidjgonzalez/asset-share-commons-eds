@@ -167,7 +167,7 @@ button.addEventListener('click', async () => {
 ### Recipe 8: Open Fragment in Modal
 
 ```js
-import { loadFragment } from '../../scripts/asc/utils/fragments.js';
+import { loadFragment } from '../../scripts/asc/core/utils/fragments.js';
 
 const button = block.querySelector('button');
 button.addEventListener('click', async () => {
@@ -455,7 +455,7 @@ await waitForImageLoad(imgElement);
 Prevent too many search requests while user types:
 
 ```js
-import { debounce } from '../../scripts/asc/utils/timing.js'; // or create one
+import { debounce } from '../../scripts/asc/core/utils/timing.js'; // or create one
 
 export default function decorate(block) {
   const input = block.querySelector('input');

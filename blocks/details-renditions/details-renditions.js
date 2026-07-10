@@ -55,9 +55,9 @@
  *              Image renditions use their own URL; non-image renditions fall back
  *              to the asset thumbnail.
  */
-import Asset from '../../scripts/asc/models/asset.js';
-import services from '../../scripts/asc/services/services.js';
-import { delegateEvent } from '../../scripts/asc/utils/events.js';
+import Asset from '../../scripts/asc/core/models/asset.js';
+import services from '../../scripts/asc/core/services/services.js';
+import { delegateEvent } from '../../scripts/asc/core/utils/events.js';
 
 const KNOWN_ACTIONS = new Set(['download', 'share', 'copy-url']);
 const PREVIEW_KEYWORD = 'preview';

@@ -28,7 +28,7 @@ The `asc-ui-search` wrapper must include `role="search"`:
 
 **Icon-only buttons** must have `aria-label`. Always escape with `escAttr()`:
 ```js
-import { escAttr } from '../../scripts/html.js';
+import { escAttr } from '../../scripts/asc/html.js';
 // …
 `<button type="button" aria-label="${escAttr(label)}">
   <svg aria-hidden="true">…</svg>

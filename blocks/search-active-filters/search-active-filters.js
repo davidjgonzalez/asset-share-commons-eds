@@ -16,7 +16,7 @@
  * Authoring: no configuration rows needed; just add the block to any search page.
  */
 
-import { SEARCH_FORM } from '../../scripts/asc/utils/search.js';
+import { SEARCH_FORM } from '../../scripts/asc/core/utils/search.js';
 
 function mountToHeader(block) {
   const navWrapper = document.querySelector('header .nav-wrapper');

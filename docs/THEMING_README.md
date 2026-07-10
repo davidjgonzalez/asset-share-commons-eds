@@ -4,7 +4,7 @@ Asset Share Commons uses a semantic CSS custom property (variable) system for th
 
 ## Activating a Theme
 
-Set `theme.default` in `scripts/configurations.js`:
+Set `theme.default` in `scripts/asc/configurations.js`:
 
 ```js
 theme: {
@@ -59,7 +59,7 @@ Themes only need to override `--color-*` semantic tokens. Structural tokens (spa
 
 2. Activate it:
 ```js
-// scripts/configurations.js
+// scripts/asc/configurations.js
 theme: { default: 'my-theme' }
 ```
 

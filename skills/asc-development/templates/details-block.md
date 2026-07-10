@@ -255,8 +255,8 @@ Sketch what a details panel looks like:
  */
 
 import { readBlockConfig } from '../../scripts/aem.js';
-import Asset from '../../scripts/asc/models/asset.js';
-import services from '../../scripts/asc/services/services.js';
+import Asset from '../../scripts/asc/core/models/asset.js';
+import services from '../../scripts/asc/core/services/services.js';
 
 const DEFAULT_PROPERTIES = ['title', 'file-type', 'file-size', 'modified'];
 

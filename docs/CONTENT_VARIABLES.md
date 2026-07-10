@@ -63,7 +63,7 @@ Any raw JCR metadata key also works as an accessor (e.g. `dc:format`, `dam:asset
 
 ### Custom property accessors
 
-Properties registered in `scripts/configurations.js` under `properties.custom` are also
+Properties registered in `scripts/asc/configurations.js` under `properties.custom` are also
 valid accessors:
 
 ```js
@@ -191,7 +191,7 @@ If you need `{{ }}` token support in a new block, copy the `resolveTokens()` + `
 | File | Purpose |
 |---|---|
 | `blocks/details-header/details-header.js` | Primary implementation of token resolution |
-| `scripts/asc/models/asset.js` | `Asset.getProperty()` and computed getters |
-| `scripts/asc/services/properties/` | Custom property handler registration |
-| `scripts/configurations.js` | Register `properties.custom` handlers |
+| `scripts/asc/core/models/asset.js` | `Asset.getProperty()` and computed getters |
+| `scripts/asc/core/services/properties/` | Custom property handler registration |
+| `scripts/asc/configurations.js` | Register `properties.custom` handlers |
 | `AGENTS.md` → "Token Placeholders" | Shorter summary for AI assistant context |

@@ -42,7 +42,7 @@ This skill fetches content from AEM Author/Publish instances and links to AEM do
 - Implementing modals or fragment-based content
 - Listening to ASC events from a custom block
 - Theming: colors, typography, spacing
-- Any change to `scripts/configurations.js`
+- Any change to `scripts/asc/configurations.js`
 
 **Do NOT use for:**
 - Editing files inside `scripts/asc/` (that is ASC Core — do not edit)
@@ -55,7 +55,7 @@ This skill fetches content from AEM Author/Publish instances and links to AEM do
 ## Ownership Boundary (Critical)
 
 ```
-scripts/configurations.js  ← YOUR FILE — edit freely, the single customization entry point
+scripts/asc/configurations.js  ← YOUR FILE — edit freely, the single customization entry point
 scripts/asc/              ← ASC CORE — never edit; all files start with "// ASC Core — do not edit."
 blocks/                   ← YOUR BLOCKS — copy and modify freely (each has /** @owner user */)
 styles/                   ← YOUR STYLES — add themes, override tokens
@@ -127,13 +127,13 @@ Based on the decision guide, you are doing one of:
 
 | Path | Where to implement | Key files |
 |------|--------------------|-----------|
-| **A — Configuration only** | `scripts/configurations.js` | [Extension decision](references/extension-decision.md) |
+| **A — Configuration only** | `scripts/asc/configurations.js` | [Extension decision](references/extension-decision.md) |
 | **B — Block modification** | `blocks/{existing-name}/` | [Block conventions](references/block-conventions.md) |
 | **C — New search filter block** | `blocks/search-{name}/` | [Search filter template](templates/search-filter.md) |
 | **D — New result display block** | `blocks/` or modify `search-results` | [Result item template](templates/result-item.md) |
 | **E — New details block** | `blocks/details-{name}/` | [Details block template](templates/details-block.md) |
 | **F — New general block** | `blocks/{name}/` | [Block conventions](references/block-conventions.md) |
-| **G — Custom search provider** | `scripts/asc/services/search/providers/` | [Extension decision](references/extension-decision.md#custom-search-provider) |
+| **G — Custom search provider** | `scripts/asc/core/services/search/providers/` | [Extension decision](references/extension-decision.md#custom-search-provider) |
 
 ---
 
@@ -156,7 +156,7 @@ curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/your-page
 
 ### For configuration-only changes (Path A)
 
-1. Edit `scripts/configurations.js`
+1. Edit `scripts/asc/configurations.js`
 2. Read [references/extension-decision.md](references/extension-decision.md) for the exact config shape
 3. Reload the browser — no server restart needed
 4. Verify the change in browser
@@ -181,7 +181,7 @@ Invoke the **building-blocks** skill, but use ASC references instead of Adobe's 
 **Block implementation checklist**:
 - [ ] `decorate(block)` exported as default
 - [ ] Content extracted via `readBlockConfig(block)` (details blocks) or `readBlockConfig(block, transform, defaults)` (search filter blocks)
-- [ ] **Search filter blocks only**: imports `readBlockConfig` from `../../scripts/asc/utils/search.js` — this assigns a stable group number used for URL-serialised predicates. Display blocks (`search-results`, `search-statistics`) must NOT import from `search.js` `readBlockConfig` — they should use `blocks.js` or `aem.js` and import `SEARCH_FORM` directly.
+- [ ] **Search filter blocks only**: imports `readBlockConfig` from `../../scripts/asc/core/utils/search.js` — this assigns a stable group number used for URL-serialised predicates. Display blocks (`search-results`, `search-statistics`) must NOT import from `search.js` `readBlockConfig` — they should use `blocks.js` or `aem.js` and import `SEARCH_FORM` directly.
 - [ ] CSS scoped to `main .{block-name}` root selector
 - [ ] All colors use `--color-*` tokens
 - [ ] All spacing uses `--spacing-*` tokens
@@ -190,7 +190,7 @@ Invoke the **building-blocks** skill, but use ASC references instead of Adobe's 
 - [ ] No direct imports between blocks
 
 **Accessibility checklist** (see [references/accessibility-guidelines.md](references/accessibility-guidelines.md)):
-- [ ] Icon-only buttons have `aria-label` — use `escAttr()` from `scripts/html.js`
+- [ ] Icon-only buttons have `aria-label` — use `escAttr()` from `scripts/asc/html.js`
 - [ ] Decorative SVGs / emoji icons have `aria-hidden="true"`
 - [ ] Images have `alt` text: meaningful text for content images; `alt=""` for decorative
 - [ ] Custom interactive elements that are not `<button>` or `<a>` carry an appropriate `role`
@@ -249,7 +249,7 @@ All lint errors must be resolved before proceeding.
 
 ```bash
 git checkout -b {block-name}
-git add blocks/{block-name}/ scripts/configurations.js  # Only files you changed
+git add blocks/{block-name}/ scripts/asc/configurations.js  # Only files you changed
 git commit -m "feat({block-name}): {describe what it does}"
 git push origin HEAD
 ```

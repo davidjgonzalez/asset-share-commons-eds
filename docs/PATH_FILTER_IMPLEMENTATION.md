@@ -106,7 +106,7 @@ ${type === 'dropdown' ? htmlDropdown(config) : ''}
 Filters wire to search service via `addSearchEventListeners()`:
 
 ```js
-import { addSearchEventListeners } from '../../scripts/asc/utils/search.js';
+import { addSearchEventListeners } from '../../scripts/asc/core/utils/search.js';
 
 block.innerHTML = html(config);
 addSearchEventListeners(block, config);  // ← No manual listener binding

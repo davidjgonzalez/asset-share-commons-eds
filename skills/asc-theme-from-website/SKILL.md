@@ -66,7 +66,7 @@ node scripts/extract-design-tokens.js --url https://target-website.com --theme m
   styles/themes/my-brand.css
   
 ✓ Updated configurations:
-  scripts/configurations.js (theme.default = 'my-brand')
+  scripts/asc/configurations.js (theme.default = 'my-brand')
   
 → Preview: aem up --no-open
 → Visit: http://localhost:3000?theme=my-brand
@@ -91,7 +91,7 @@ If colors don't match your vision:
 Make the theme the default:
 
 ```js
-// scripts/configurations.js
+// scripts/asc/configurations.js
 theme: { default: 'my-brand' }
 ```
 
@@ -146,7 +146,7 @@ node scripts/extract-design-tokens.js --url https://github.com --theme github
 node scripts/extract-design-tokens.js --url https://notion.so --theme notion
 ```
 
-Then switch between them in `scripts/configurations.js`:
+Then switch between them in `scripts/asc/configurations.js`:
 
 ```js
 theme: { 
@@ -246,7 +246,7 @@ All 16 tokens are generated and ready to use.
 - Check `--selector` targets actual colored elements
 
 **Theme doesn't apply?**
-- Verify `scripts/configurations.js` has `theme: { default: 'my-brand' }`
+- Verify `scripts/asc/configurations.js` has `theme: { default: 'my-brand' }`
 - Restart `aem up` after editing configurations.js
 - Clear browser cache (DevTools → Settings → Network → Disable cache)
 
@@ -305,7 +305,7 @@ Creates themes: `adobe.css`, `netflix.css`, `spotify.css`.
 1. **Generate** a theme: `node scripts/extract-design-tokens.js --url ...`
 2. **Preview** in browser: `aem up --no-open` → `http://localhost:3000`
 3. **Refine** colors in `styles/themes/{name}.css` if needed
-4. **Activate** in `scripts/configurations.js`
+4. **Activate** in `scripts/asc/configurations.js`
 5. **Deploy**: `npm run lint && git push`
 
 All ASC blocks automatically adapt to the new theme via CSS variables.

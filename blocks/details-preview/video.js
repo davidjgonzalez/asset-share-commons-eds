@@ -1,5 +1,5 @@
 /** @owner user */
-import { escAttr } from '../../scripts/html.js';
+import { escAttr } from '../../scripts/asc/html.js';
 
 const FORMAT_NAMES = {
   'video/quicktime': 'QuickTime',

@@ -33,7 +33,7 @@ The codebase embodies 8 foundational architectural choices, all explicitly docum
 ### 2.1 Ownership Boundary
 
 ```
-scripts/configurations.js  ← USER-EDITABLE (single entry point)
+scripts/asc/configurations.js  ← USER-EDITABLE (single entry point)
 scripts/asc/              ← ASC CORE (all start with "// ASC Core — do not edit.")
 blocks/                   ← USER-OWNED (copy and modify freely)
 styles/                   ← USER-OWNED (add themes, override CSS)
@@ -55,8 +55,8 @@ component-*.json          ← USER-EDITABLE (Universal Editor config)
 **Decision**: Search layer delegates all API calls to a pluggable provider.
 
 **Implementations**:
-- **QueryBuilder** (default): `scripts/asc/services/search/providers/querybuilder.js` — all AEM versions via `/bin/querybuilder.json`
-- **OpenAPI**: `scripts/asc/services/search/providers/openapi.js` — AEMaaCS only with Dynamic Media Asset Delivery API
+- **QueryBuilder** (default): `scripts/asc/core/services/search/providers/querybuilder.js` — all AEM versions via `/bin/querybuilder.json`
+- **OpenAPI**: `scripts/asc/core/services/search/providers/openapi.js` — AEMaaCS only with Dynamic Media Asset Delivery API
 
 **Form field naming convention** (QB → OpenAPI translation):
 ```
@@ -127,13 +127,13 @@ Both providers read this unified format; OpenAPI performs a two-pass translation
 
 ## 3. Configuration Mechanisms
 
-All customization lives in a single source: `scripts/configurations.js`
+All customization lives in a single source: `scripts/asc/configurations.js`
 
 ### 3.1 Configuration Surface (by tier)
 
 | Tier | Mechanism | Complexity |
 |------|-----------|-----------|
-| **Zero-code** | Configuration objects in `scripts/configurations.js` | Low |
+| **Zero-code** | Configuration objects in `scripts/asc/configurations.js` | Low |
 | **Single-file** | Custom property handler, rendition definition, search provider | Medium |
 | **Block copy** | Copy a block, modify JS + CSS | Medium |
 | **Part creation** | New part function + CSS | Medium |
@@ -161,25 +161,25 @@ All customization lives in a single source: `scripts/configurations.js`
 
 ## 4. Core Services Inventory (15 services)
 
-All exported from [scripts/asc/services/services.js](../scripts/asc/services/services.js).
+All exported from [scripts/asc/core/services/services.js](../scripts/asc/core/services/services.js).
 
 | Service | Module | Purpose | Extensibility |
 |---------|--------|---------|---|
-| **aem** | scripts/asc/services/aem/aem.js | Host/URL management, auth headers | Config via `configurations.aem` |
-| **actions** | scripts/asc/services/actions/actions.js | Declarative event binding (`data-asc-action`) | No extension point |
-| **assetDetails** | scripts/asc/services/asset-details/asset-details.js | URL-addressable modal, fragment routing | Config via `configurations.assetDetails.templates` |
-| **collections** | scripts/asc/services/collections/collections.js | Cart/collection state, localStorage persistence | Storage schema fixed; IMS login flow built-in |
-| **debug** | scripts/asc/services/debug/debug.js | Debug utilities | Config via `configurations.debug` |
-| **downloads** | scripts/asc/services/downloads/downloads.js | Async bulk-download polling, job tracking | Config via `configurations.downloads` |
-| **fileType** | scripts/asc/services/file-type/file-type.js | MIME type classification (extension → label) | Hardcoded types; no config |
-| **init** | scripts/asc/services/init/init.js | Page initialization, preloading on hover | Config via `configurations.init` |
-| **properties** | scripts/asc/services/properties/properties.js | Asset property handler registry, custom properties | Config via `configurations.properties.custom` |
-| **renditions** | scripts/asc/services/renditions/renditions.js | Rendition definition lookup, URL resolution | Config via `configurations.renditions.definitions` |
-| **search** | scripts/asc/services/search/search.js | Search orchestration, provider abstraction | Providers in `scripts/asc/services/search/providers/` |
-| **storage** | scripts/asc/services/storage/storage.js | User-scoped & global localStorage API | No extension point |
-| **url** | scripts/asc/services/url/url.js | Asset list compression & decompression | No extension point |
-| **users** | scripts/asc/services/users/users.js | IMS/SSO detection, user context | Depends on AEM IMS setup |
-| **configurations** | scripts/asc/services/configurations.js | Imported configuration object | — |
+| **aem** | scripts/asc/core/services/aem/aem.js | Host/URL management, auth headers | Config via `configurations.aem` |
+| **actions** | scripts/asc/core/services/actions/actions.js | Declarative event binding (`data-asc-action`) | No extension point |
+| **assetDetails** | scripts/asc/core/services/asset-details/asset-details.js | URL-addressable modal, fragment routing | Config via `configurations.assetDetails.templates` |
+| **collections** | scripts/asc/core/services/collections/collections.js | Cart/collection state, localStorage persistence | Storage schema fixed; IMS login flow built-in |
+| **debug** | scripts/asc/core/services/debug/debug.js | Debug utilities | Config via `configurations.debug` |
+| **downloads** | scripts/asc/core/services/downloads/downloads.js | Async bulk-download polling, job tracking | Config via `configurations.downloads` |
+| **fileType** | scripts/asc/core/services/file-type/file-type.js | MIME type classification (extension → label) | Hardcoded types; no config |
+| **init** | scripts/asc/core/services/init/init.js | Page initialization, preloading on hover | Config via `configurations.init` |
+| **properties** | scripts/asc/core/services/properties/properties.js | Asset property handler registry, custom properties | Config via `configurations.properties.custom` |
+| **renditions** | scripts/asc/core/services/renditions/renditions.js | Rendition definition lookup, URL resolution | Config via `configurations.renditions.definitions` |
+| **search** | scripts/asc/core/services/search/search.js | Search orchestration, provider abstraction | Providers in `scripts/asc/core/services/search/providers/` |
+| **storage** | scripts/asc/core/services/storage/storage.js | User-scoped & global localStorage API | No extension point |
+| **url** | scripts/asc/core/services/url/url.js | Asset list compression & decompression | No extension point |
+| **users** | scripts/asc/core/services/users/users.js | IMS/SSO detection, user context | Depends on AEM IMS setup |
+| **configurations** | scripts/asc/core/services/configurations.js | Imported configuration object | — |
 
 ---
 
@@ -211,7 +211,7 @@ EDS Standard (6):        hero, footer, header, fragment, columns
 
 ### 5.3 Search Blocks — Unified Form Handling
 
-All search blocks import from [scripts/asc/utils/search.js](../scripts/asc/utils/search.js):
+All search blocks import from [scripts/asc/core/utils/search.js](../scripts/asc/core/utils/search.js):
 - `readBlockConfig(block, transform, defaults)` — extracts QB-style form field names
 - `addSearchEventListeners(block, config)` — wires all interactive inputs to dispatch `asc:search:execute`
 
@@ -247,10 +247,10 @@ Form field naming convention: `{group}_group.{predicate}.{param}`
 
 | Module | Exports | Purpose |
 |--------|---------|---------|
-| [scripts/asc/utils/search.js](../scripts/asc/utils/search.js) | `readBlockConfig()`, `addSearchEventListeners()`, `getOptions()` | QB form field extraction, event wiring for search blocks |
-| [scripts/asc/utils/events.js](../scripts/asc/utils/events.js) | `delegateEvent()` | jQuery-like .on() event delegation pattern |
-| [scripts/asc/utils/fragments.js](../scripts/asc/utils/fragments.js) | `loadFragment()` | Fragment page loading with caching |
-| [scripts/asc/utils/blocks.js](../scripts/asc/utils/blocks.js) | `readBlockConfig()`, `getOptions()` | EDS standard block config helpers |
+| [scripts/asc/core/utils/search.js](../scripts/asc/core/utils/search.js) | `readBlockConfig()`, `addSearchEventListeners()`, `getOptions()` | QB form field extraction, event wiring for search blocks |
+| [scripts/asc/core/utils/events.js](../scripts/asc/core/utils/events.js) | `delegateEvent()` | jQuery-like .on() event delegation pattern |
+| [scripts/asc/core/utils/fragments.js](../scripts/asc/core/utils/fragments.js) | `loadFragment()` | Fragment page loading with caching |
+| [scripts/asc/core/utils/blocks.js](../scripts/asc/core/utils/blocks.js) | `readBlockConfig()`, `getOptions()` | EDS standard block config helpers |
 
 ---
 
@@ -258,9 +258,9 @@ Form field naming convention: `{group}_group.{predicate}.{param}`
 
 | Model | Purpose | Key properties |
 |-------|---------|---|
-| [scripts/asc/models/asset.js](../scripts/asc/models/asset.js) | Represents a DAM asset with metadata | `uuid`, `path`, `title`, `filename`, `mimeType`, `getProperty()`, `getRendition()` |
-| [scripts/asc/models/rendition.js](../scripts/asc/models/rendition.js) | Represents a single rendition | `id`, `label`, `type`, `url`, `fileSize`, `mimeType` |
-| [scripts/asc/models/user.js](../scripts/asc/models/user.js) | Represents authenticated user context | `id`, `email`, `name` |
+| [scripts/asc/core/models/asset.js](../scripts/asc/core/models/asset.js) | Represents a DAM asset with metadata | `uuid`, `path`, `title`, `filename`, `mimeType`, `getProperty()`, `getRendition()` |
+| [scripts/asc/core/models/rendition.js](../scripts/asc/core/models/rendition.js) | Represents a single rendition | `id`, `label`, `type`, `url`, `fileSize`, `mimeType` |
+| [scripts/asc/core/models/user.js](../scripts/asc/core/models/user.js) | Represents authenticated user context | `id`, `email`, `name` |
 
 ---
 
@@ -302,8 +302,8 @@ Each event passes a `detail` object with specific properties. For example:
 | Extension | Approach | Complexity |
 |-----------|----------|-----------|
 | Custom Search Filter | Copy `blocks/search-*`, modify to new QB predicate | Medium |
-| Custom Result Card | Modify `scripts/asc/parts/asset-teaser.js` or create new block | Medium |
-| Custom Search Provider | Extend `SearchProvider`, register in `scripts/asc/services/search/search.js` | High |
+| Custom Result Card | Modify `scripts/asc/core/parts/asset-teaser.js` or create new block | Medium |
+| Custom Search Provider | Extend `SearchProvider`, register in `scripts/asc/core/services/search/search.js` | High |
 | Custom Theme | Create `styles/themes/{name}.css` | Low |
 | Custom Property Handler | Register in `configurations.properties.custom` | Low |
 | Custom Rendition | Define in `configurations.renditions.definitions` | Low |
@@ -313,7 +313,7 @@ Each event passes a `detail` object with specific properties. For example:
 **Missing**: No documented pattern for partially overriding `scripts/asc/` core without forking the entire folder.
 
 Current options:
-1. Override a service method entirely (modify `scripts/asc/services/{name}.js` — requires re-applying on upgrades)
+1. Override a service method entirely (modify `scripts/asc/core/services/{name}.js` — requires re-applying on upgrades)
 2. Use hooks where they exist (search preprocessing, etc.)
 
 **Need**: A documented pattern for module re-exports or a clear protocol for safe core extension.
@@ -455,12 +455,12 @@ All blocks use `.block.{name}` as the root selector, not `main .{name}` (Adobe's
 
 | File | Role | Priority |
 |------|------|----------|
-| [scripts/configurations.js](../scripts/configurations.js) | Single source of truth for all customization | Critical |
-| [scripts/asc/services/services.js](../scripts/asc/services/services.js) | All 15 service singletons exported | Critical |
+| [scripts/asc/configurations.js](../scripts/asc/configurations.js) | Single source of truth for all customization | Critical |
+| [scripts/asc/core/services/services.js](../scripts/asc/core/services/services.js) | All 15 service singletons exported | Critical |
 | [AGENTS.md](../AGENTS.md) | Comprehensive reference for developers and AI agents | Critical |
 | [docs/CSS_CONVENTION.md](../docs/CSS_CONVENTION.md) | CSS standards and token reference | High |
-| [scripts/asc/utils/search.js](../scripts/asc/utils/search.js) | QB form field naming and search block utilities | High |
-| [scripts/asc/services/search/search.js](../scripts/asc/services/search/search.js) | Search provider abstraction | High |
+| [scripts/asc/core/utils/search.js](../scripts/asc/core/utils/search.js) | QB form field naming and search block utilities | High |
+| [scripts/asc/core/services/search/search.js](../scripts/asc/core/services/search/search.js) | Search provider abstraction | High |
 
 ---
 

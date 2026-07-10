@@ -28,8 +28,8 @@
  *   description           description from the definition
  */
 
-import Asset from '../../scripts/asc/models/asset.js';
-import { escHtml, renderPropertyValue } from '../../scripts/html.js';
+import Asset from '../../scripts/asc/core/models/asset.js';
+import { escHtml, renderPropertyValue } from '../../scripts/asc/html.js';
 
 const MULTI_VALUE_LIMIT = 10;
 

@@ -445,7 +445,7 @@ styles/themes/my-brand.css
 ### Step 3: Activate in Configuration
 
 ```js
-// scripts/configurations.js
+// scripts/asc/configurations.js
 theme: { default: 'my-brand' }
 ```
 
@@ -553,7 +553,7 @@ blocks/
 Part CSS lives alongside the JS:
 
 ```
-scripts/asc/parts/
+scripts/asc/core/parts/
   my-part/
     my-part.js        ← Part function
     my-part.css       ← Part styles (scoped to .asc-my-part)

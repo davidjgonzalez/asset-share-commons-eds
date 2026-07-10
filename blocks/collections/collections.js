@@ -1,10 +1,10 @@
 /** @owner user */
-import Asset from '../../scripts/asc/models/asset.js';
-import services from '../../scripts/asc/services/services.js';
-import { Events as CollectionEvents } from '../../scripts/asc/services/collections/collections.js';
-import { escHtml, escAttr, formatUpdated } from '../../scripts/html.js';
+import Asset from '../../scripts/asc/core/models/asset.js';
+import services from '../../scripts/asc/core/services/services.js';
+import { Events as CollectionEvents } from '../../scripts/asc/core/services/collections/collections.js';
+import { escHtml, escAttr, formatUpdated } from '../../scripts/asc/html.js';
 
-const configurations = (await import('../../scripts/configurations.js')).default;
+const configurations = (await import('../../scripts/asc/configurations.js')).default;
 
 const COLLECTION_PATH = configurations.collections?.collectionPath || '/collections/collection';
 

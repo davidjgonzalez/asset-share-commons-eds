@@ -316,7 +316,7 @@ function renderAsset(asset) {
 Now fetch **real data** from services. Use actual assets, not mock data.
 
 ```js
-import services from '../../scripts/asc/services/services.js';
+import services from '../../scripts/asc/core/services/services.js';
 
 export default async function decorate(block) {
   // ... same as Step 4, but now fetch real assets ...
@@ -417,7 +417,7 @@ Add JSDoc comments, authoring guide, and examples.
  * 
  * Dependencies:
  *   - readBlockConfig from scripts/aem.js
- *   - services from scripts/asc/services/services.js
+ *   - services from scripts/asc/core/services/services.js
  * 
  * @author Your Name
  * @since 2026-06

@@ -1,11 +1,11 @@
 /** @owner user */
-import services from '../../scripts/asc/services/services.js';
-import storage from '../../scripts/asc/services/storage/storage.js';
-import { Events as CollectionEvents } from '../../scripts/asc/services/collections/collections.js';
-import { escHtml, escAttr, formatUpdated } from '../../scripts/html.js';
+import services from '../../scripts/asc/core/services/services.js';
+import storage from '../../scripts/asc/core/services/storage/storage.js';
+import { Events as CollectionEvents } from '../../scripts/asc/core/services/collections/collections.js';
+import { escHtml, escAttr, formatUpdated } from '../../scripts/asc/html.js';
 import { triggerAction } from '../../scripts/asc.js';
 
-const configurations = (await import('../../scripts/configurations.js')).default;
+const configurations = (await import('../../scripts/asc/configurations.js')).default;
 
 const SHARE_HISTORY_KEY = 'shareHistory';
 
