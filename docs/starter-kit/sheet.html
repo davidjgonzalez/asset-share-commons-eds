@@ -11,9 +11,39 @@
   <main>
 
     <!--
-      Section 1: Board canvas for the shared sheet.
-      The board block reads the ?sheet= URL parameter, decodes the payload,
-      checks expiry, and renders the read-only asset canvas with search.
+      Section 1: Sheet header + toolbar.
+
+      Authored content (h1, p) uses {{sheet.*}} tokens resolved by the
+      sheet-controls block after it decodes the ?sheet= payload.
+
+      Tokens available:
+        {{sheet.title}}       — sheet title (falls back to "Download Sheet")
+        {{sheet.description}} — optional description (empty if unset)
+        {{sheet.count}}       — number of assets in the sheet
+        {{sheet.expiresAt}}   — human-readable expiry date (empty if the link never expires)
+
+      sheet-controls block: rows declare which controls to show (in order).
+      Left col = control ID, right col = button label.
+      Valid IDs: download, copy-link
+    -->
+    <div>
+
+      <p><a href="/">&#8592; Back to search</a></p>
+      <h1>{{sheet.title}}</h1>
+      <p>{{sheet.description}}</p>
+      <p>{{sheet.count}} assets &#8212; Expires {{sheet.expiresAt|Never}}</p>
+
+      <div class="sheet-controls">
+        <div><div>download</div><div>Download</div><div>primary</div></div>
+        <div><div>copy-link</div><div>Copy Link</div><div>secondary</div></div>
+      </div>
+
+    </div>
+
+    <!--
+      Section 2: Read-only board canvas for the shared sheet.
+      source: sheet — reads the same ?sheet= param, decodes the payload,
+      checks expiry, and renders the asset canvas with search.
 
       search-properties: comma-separated asset property names to stash into
       each card's data-search attribute for client-side filtering.

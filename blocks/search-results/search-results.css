@@ -1,5 +1,6 @@
 .block.search-results {
     min-height: 50vh;
+    isolation: isolate; /* contain internal z-indices (sticky list header); page dropdowns stack above */
 
     .search-results__sentinel {
         height: 1px;
@@ -209,7 +210,7 @@
         background: var(--search-results-action-bg);
         color: var(--search-results-action-fg);
         border-color: var(--search-results-action-border);
-        z-index: var(--z-header);
+        z-index: var(--z-raised);
         width: 2rem;
         min-width: 2rem;
         height: 2rem;

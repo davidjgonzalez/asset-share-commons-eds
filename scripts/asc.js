@@ -13,7 +13,7 @@ import './asc/core/services/services.js';
 import configurations from './asc/configurations.js';
 import { setupImageFallback } from './asc/core/utils/images.js';
 import { decorateASCSections } from './asc/section-grid.js';
-import { resolvePageTokens } from './asc/tokens.js';
+import { registerTokens } from './asc/tokens.js';
 
 setupImageFallback();
 
@@ -31,10 +31,12 @@ export function ascEager(doc) {
 
 /**
  * Called inside decorateMain, after decorateBlocks.
- * Runs token substitution then wires up the named-area grid layout.
+ * Registers URL params into the page-wide token registry (see tokens.js) — this
+ * resolves any {{...}} token whose accessor matches a search param, anywhere in
+ * the document. Then wires up the named-area grid layout.
  */
 export function ascDecorateMain(main) {
-  resolvePageTokens(main);
+  registerTokens(Object.fromEntries(new URLSearchParams(window.location.search)));
   decorateASCSections(main);
 }
 

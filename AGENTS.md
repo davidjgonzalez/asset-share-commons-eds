@@ -52,10 +52,10 @@ Every file inside `scripts/asc/` starts with `// ASC Core — do not edit.` as a
 | Block | Purpose |
 |-------|---------|
 | `stub` | Cart bar — shows active collection count and link to download sheet |
-| `sheet` | Legacy all-in-one sheet page — reads `?sheet=`, renders header + board. Kept for backward compat; new pages use `board` instead |
 | `collections` | Collections index/management page — list, create, delete, activate |
-| `collection` | Collection header — editable name, asset count, Share / Download buttons, jobs indicator; pair with `board` (source: collection, mode: interactive) on the same page |
-| `board` | Reusable board canvas — pan/zoom, client-side search, details navigation override; `source: collection\|sheet`, `mode: view\|interactive`, `search-properties`, `details` |
+| `collection-controls` | Collection header — editable name, asset count, Share / Download / past-shares buttons, jobs indicator. Header text (h1/p) is a **token template** — `{{collection.title}}` / `{{collection.description}}` / `{{collection.count}}` / `{{collection.lastUpdated}}` resolved against the hydrated collection. Pair with `board` (source: collection, mode: interactive) on the same page |
+| `sheet-controls` | Shared-sheet header — Download / Copy Link buttons. Header text (h1/p) is a **token template** — `{{sheet.title}}` / `{{sheet.description}}` / `{{sheet.count}}` / `{{sheet.expiresAt}}` resolved against the decoded `?sheet=` payload. Pair with `board` (source: sheet, mode: view) on the same page |
+| `board` | Reusable, header-less board canvas — pan/zoom, client-side search, details navigation override; `source: collection\|sheet`, `mode: view\|interactive`, `search-properties`, `details` |
 | `collection-switcher` | Persistent header widget — active collection dropdown, inline create, navigate to /collections |
 
 ### Board block — authoring reference
@@ -85,16 +85,28 @@ and `asc:boardExpanded:{id}`.
 
 Reads the `?sheet=` URL parameter, decompresses the payload via `services.url.decompressToArray`,
 and checks the `expiresAt` field before fetching assets. Expired sheets render an expiry notice
-instead of the canvas. Expand state is persisted under `asc:sheetBoardExpanded`.
+instead of the canvas. Expand state is persisted under `asc:sheetBoardExpanded`. The `board` block
+itself renders canvas only — it does not render a title/description header; that's `sheet-controls`'
+job (see above), authored as `{{sheet.*}}` tokens in the same section.
 
 #### Page patterns
 
-**Collection page** — pair `collection` (header) + `board` (source: collection, mode: interactive) in two sections:
+**Collection page** — pair `collection-controls` (header) + `board` (source: collection, mode: interactive) in two sections:
 
 ```html
-<!-- Section 1: collection header (name, share, download, jobs) -->
+<!-- Section 1: collection header — token template + controls -->
 <div>
-  <div class="collection"></div>
+  <p><a href="/collections/">&#8592; Collections</a></p>
+  <h1>{{collection.title}}</h1>
+  <p>{{collection.description}}</p>
+  <p>{{collection.count}} assets &#8212; Last updated {{collection.lastUpdated}}</p>
+
+  <div class="collection-controls">
+    <div><div>past-shares</div><div>Past Shares</div><div>ghost</div></div>
+    <div><div>edit</div><div>Edit</div><div>ghost</div></div>
+    <div><div>share</div><div>Share</div><div>secondary</div></div>
+    <div><div>download</div><div>Download</div><div>primary</div></div>
+  </div>
 </div>
 
 <!-- Section 2: interactive board canvas -->
@@ -109,9 +121,23 @@ instead of the canvas. Expand state is persisted under `asc:sheetBoardExpanded`.
 </div>
 ```
 
-**Sheet page** — standalone board with `source: sheet` and optional `details` override:
+**Sheet page** — pair `sheet-controls` (header) + `board` (source: sheet, mode: view) and optional `details` override:
 
 ```html
+<!-- Section 1: sheet header — token template + controls -->
+<div>
+  <p><a href="/">&#8592; Back to search</a></p>
+  <h1>{{sheet.title}}</h1>
+  <p>{{sheet.description}}</p>
+  <p>{{sheet.count}} assets &#8212; Expires {{sheet.expiresAt|Never}}</p>
+
+  <div class="sheet-controls">
+    <div><div>download</div><div>Download</div><div>primary</div></div>
+    <div><div>copy-link</div><div>Copy Link</div><div>secondary</div></div>
+  </div>
+</div>
+
+<!-- Section 2: read-only board canvas -->
 <div>
   <div class="board">
     <div><div>source</div><div>sheet</div></div>
@@ -280,7 +306,7 @@ declaring which cell it occupies — no per-layout CSS required.
 >   buildAutoBlocks(main);
 >   decorateSections(main);    // sets section.dataset.layout/areas/columns/rows/gap
 >   decorateBlocks(main);      // decorates all blocks (wrappers created by decorateSections)
->   ascDecorateMain(main);     // ← ASC addition: resolvePageTokens + decorateASCSections
+>   ascDecorateMain(main);     // ← ASC addition: registerTokens(URL params) + decorateASCSections
 > }
 > ```
 >
@@ -332,13 +358,165 @@ then writes `--grid-areas` / `--grid-columns` / `--grid-cols` / `--grid-rows` / 
 custom properties on the section and `--grid-area` on each block wrapper.
 `grid-layout.css` turns those into the grid.
 
-### Token Placeholders (`details-header`)
+### Token Placeholders
 
-`details-header` treats authored text as a template. Tokens: `{{ accessor }}` or
-`{{ accessor | fallback }}`. `accessor` resolves via `Asset.getProperty()` (so `title`,
-`file-type`, `file-size`, `dimensions`, `description`, or raw keys like `dc:format`), with
-computed getters layered on (`url`, `uuid`, `filename`, `file-extension`). Empty values fall
-back to the text after `|`; dangling ` · ` separators are trimmed automatically.
+**Syntax**: `{{ accessor }}` or `{{ accessor | fallback }}`.  
+When a value is empty/null, the fallback text is used (or the token collapses to `""`).  
+Dangling separators (` · `, `,`, `—`) adjacent to an empty token are trimmed automatically.
+
+Two token systems exist:
+
+---
+
+#### 1 — Page-wide registry (URL params, `collection.*`, `sheet.*`, ...)
+
+**API**: `registerTokens(context)` in `scripts/asc/tokens.js`  
+**Context**: a plain accumulating object — any block can merge its own `key → value` pairs into it
+
+`registerTokens(context)` merges `context` into a single page-wide registry, (re)scans the
+**entire document** — `<head>` and `<body>`, any section, `<title>`, `meta[content]`, headings,
+paragraphs, links — for any not-yet-recorded `{{...}}` occurrence, then re-resolves everything
+recorded so far against the full merged registry. Safe to call repeatedly and from multiple
+blocks: later values for the same accessor simply overwrite earlier ones, and an accessor
+nothing has registered yet just doesn't resolve (empty, or its fallback) until it does — there's
+no ordering dependency between whichever blocks end up supplying values, and a token whose
+namespace doesn't apply to the current page (e.g. `{{sheet.title}}` on a collection page) is
+never touched because nothing on that page ever registers it.
+
+Because the scan covers the whole document, `{{collection.title}}` / `{{sheet.title}}` etc. also
+resolve if authored into the page's `<title>` or `<meta name="description">` — the browser tab
+title and description update once the owning block registers real data.
+
+**Callers today**:
+
+| Caller | When | Keys registered |
+|---|---|---|
+| `ascDecorateMain()` (`scripts/asc.js`) | Before block decoration | Every URL search param, keyed by its own name (e.g. `?fulltext=mountains` → `{{fulltext}}`) |
+| `collection-controls` block | After collection data is hydrated; again on rename / item add-remove | `collection.title`, `collection.description`, `collection.count`, `collection.lastUpdated` |
+| `sheet-controls` block | After the `?sheet=` payload is decoded | `sheet.title`, `sheet.description`, `sheet.count`, `sheet.expiresAt` |
+
+**`collection.*` accessors**:
+
+| Accessor | Returns | Example |
+|---|---|---|
+| `collection.title` | Collection name (editable via ⋯ → Rename) | `"Q3 Campaign Assets"` |
+| `collection.description` | Collection description (empty if unset) | `"Assets for Q3"` |
+| `collection.count` | Number of assets in the collection | `"14"` |
+| `collection.lastUpdated` | Human-formatted last-modified date | `"July 10, 2025"` |
+
+**`sheet.*` accessors**:
+
+| Accessor | Returns | Example |
+|---|---|---|
+| `sheet.title` | Sheet title (falls back to `"Download Sheet"`) | `"Q3 Campaign Assets"` |
+| `sheet.description` | Sheet description (empty if unset) | `"Assets for Q3"` |
+| `sheet.count` | Number of assets in the sheet | `"14"` |
+| `sheet.expiresAt` | Human-formatted expiry date (empty if the link never expires) | `"July 10, 2025"` |
+
+**Authoring example** (da.live document, collection page — same section as `collection-controls`):
+
+```
+← Collections            [link to /collections/]
+{{collection.title}}     [H1]
+{{collection.description}}
+{{collection.count}} assets — Last updated {{collection.lastUpdated}}
+
+| collection-controls |
+| past-shares | Past Shares | ghost     |
+| edit        | Edit        | ghost     |
+| share       | Share       | secondary |
+| download    | Download    | primary   |
+```
+
+**Authoring example** (da.live document, sheet page — same section as `sheet-controls`):
+
+```
+← Back to search           [link to /]
+{{sheet.title}}            [H1]
+{{sheet.description}}
+{{sheet.count}} assets — Expires {{sheet.expiresAt|Never}}
+
+| sheet-controls |
+| download  | Download  | primary   |
+| copy-link | Copy Link | secondary |
+```
+
+---
+
+#### 2 — Asset (details-header, asset cards)
+
+**Resolver**: `resolveTokens(template, context)` / `resolveTokensInElement(el, context)` in
+`scripts/asc/tokens.js`  
+**Called from**: `blocks/details-header/details-header.js` — runs when asset data is loaded  
+**Context**: an `Asset` model instance, or a **namespace map** (`{ asset, rendition, ... }`)
+
+`details-header` rows are authored as template strings; any `{{ }}` token is resolved against
+the loaded asset. Accessor resolution order: computed getters → `asset.getProperty(key)` →
+`asset[key]`.
+
+**Namespaced accessors**: pass a namespace map instead of a single object when a template needs
+to pull from more than one "thing" — e.g. `resolveTokensInElement(cardEl, { asset })` lets a
+card template say `{{asset.title}} · {{asset.file-size}}`. `ns.accessor` switches to
+`context[ns]` and resolves the rest against it, using the same resolution order above; the
+switch only fires when `context[ns]` is itself an object, so it never collides with the
+page-wide registry's flat `'collection.title'`-style keys.
+
+`details-renditions` uses this too, but its `asset.*` paths need rules the generic engine
+doesn't know (`asset.properties.*` / `asset.renditions['id']` are keyword sub-paths, not real
+nested objects; rendition lookups prefer the configured rendition definition over a raw array
+find). Rather than teach the shared engine asset vocabulary, its context object's `asset` key is
+a small local wrapper exposing one `getProperty(path)` method — the namespace switch hands the
+whole remaining path to that method in a single call, and it resolves the rest with its own
+(unchanged) path-walking logic. See `assetResolver()` in `details-renditions.js`, and Renditions
+Table Templates below for the full accessor list.
+
+**Computed getters** (always available regardless of metadata):
+
+| Accessor | Returns |
+|---|---|
+| `url` | Full AEM URL of the asset |
+| `uuid` | Asset UUID |
+| `id` | Alias for `uuid` |
+| `filename` | File name (from `cq:name` or path) |
+| `file-extension` | Extension only (`jpg`, `pdf`, …) |
+
+**Property handler accessors** (registered in `configurations.js → properties`):
+
+| Accessor | Returns | Example |
+|---|---|---|
+| `title` | `dc:title` or `cq:name` | `"Coastal Sunset"` |
+| `description` | `dc:description` | `"A wide-angle landscape shot"` |
+| `mime-type` | `dc:format` | `"image/jpeg"` |
+| `file-type` | Friendly type label | `"JPEG"` / `"PDF"` |
+| `file-size` | Human-formatted size | `"2.4 MB"` |
+| `dimensions` | `width × height` string | `"1920 × 1080"` |
+| `width` | Pixel width | `"1920"` |
+| `height` | Pixel height | `"1080"` |
+| `author` | `dc:creator` | `"Jane Smith"` |
+| `keywords` | `dc:subject` (comma-joined) | `"nature, landscape"` |
+| `tags` | `cq:tags` (comma-joined) | `"outdoors, travel"` |
+| `smart-tags` | ML predicted tags (sorted by confidence) | `"mountain, sky, sunset"` |
+| `uploaded-date` | `jcr:created` formatted | `"June 3, 2025"` |
+| `uploaded-by` | `jcr:createdBy` | `"admin"` |
+| `last-modified-date` | `jcr:lastModified` formatted | `"July 10, 2025"` |
+| `last-modified-by` | `jcr:lastModifiedBy` | `"jdoe"` |
+| `colors` | Color distribution (comma-joined hex values) | `"#2a4d8f, #c8a96e"` |
+| `history` | XMP edit history entries | (array — joins as labels) |
+
+Any raw JCR metadata key (e.g. `dc:format`, `xmp:Rating`) is also accessible directly.
+
+**Authoring example** (`details-header` da.live table):
+
+```
+| details-header                                         |
+| {{title}}                                              |
+| {{file-type}} · {{file-size}} · {{dimensions}}         |
+```
+
+---
+
+> **Renditions columns** in `details-renditions` also support `{{ }}` tokens, but against
+> the rendition object rather than an asset. See the **Renditions Table Templates** section.
 
 ### Renditions Table Templates (`details-renditions`)
 
@@ -358,9 +536,10 @@ Authoring (da.live):
 |             | download, share       |   ← value of action keyword(s) → icon buttons
 ```
 
-- **Values** resolve against the **current rendition**; the owning asset is reachable via
-  `asset.…`. A value is either a bare path (`name`, `file-size`) or contains `{{ }}` tokens for
-  mixed text (`{{ width }}×{{ height }}`).
+- **Values** resolve through the shared token engine (`scripts/asc/tokens.js`) against the
+  **current rendition**; the owning asset is reachable via `asset.…`. A value is either a bare
+  path (`name`, `file-size`) or contains `{{ }}` tokens for mixed text (`{{ width }}×{{ height }}`)
+  — either form also supports `{{ accessor | fallback }}`.
 - **Rendition fields / aliases**: `name`, `label`, `url`, `format`, `file-type`, `file-size`
   (formatted; lazily fetched via HEAD if absent from metadata — see below), `dimensions`,
   `width`, `height`, `mimeType`, `filename` (download filename), `downloadUrl`, `type`,
@@ -1271,7 +1450,7 @@ Payload structure:
 {
   title:        string,
   description?: string,
-  expiresAt?:   ISO string,          // link expires; sheet block shows an error state
+  expiresAt?:   ISO string,          // link expires; board shows an error state, sheet-controls hides its buttons
   items:        string[],            // encoded asset and section items (see below)
   textElements?: { x, y, w, h, content }[],  // free-floating text from the board
 }
@@ -1283,7 +1462,7 @@ Item encoding within `items[]`:
 - **Asset** (with notes): `"uuid@x,y|||notes text"` or `"uuid|||notes text"`
 - **Section heading**: `"~title|||body"`
 
-The `sheet` block decodes the same format for display.
+`board` (source: sheet) and `sheet-controls` each independently decode the same payload for display.
 
 ---
 
@@ -1453,3 +1632,35 @@ const assetIds = await url.fromCollectionUrl(window.location.search, 'assets');
 - Mobile-first: `@media (width >= 768px)` syntax
 - Part CSS scoped to `.asc-{part-name}` prefix
 - Themes in `styles/themes/` override `--color-*` tokens only — never structural tokens
+
+### Z-Index Scale
+
+All z-index values use tokens from `styles/styles.css`. Never use raw integers for page- or modal-level stacking.
+
+**Two-context rule**: everything on the page lives below 400. Modals and their controls start at 400. No page-level element can ever visually overlay a modal or anything inside it.
+
+#### Page context tokens
+
+| Token | Value | Use for |
+|---|---|---|
+| `--z-behind` | -1 | Behind siblings — hero backgrounds, absolute image layers |
+| `--z-raised` | 1 | Minor stacking boost within a component (e.g. card hover overlay) |
+| `--z-sticky` | 100 | Sticky header, sticky toolbars |
+| `--z-dropdown` | 200 | Page dropdowns, popovers, tooltip panels |
+| `--z-float` | 300 | Toasts, floating action buttons |
+
+#### Modal context tokens
+
+| Token | Value | Use for |
+|---|---|---|
+| `--z-modal-backdrop` | 400 | Semi-transparent scrim behind the dialog |
+| `--z-modal` | 500 | The `<dialog>` / modal container itself |
+| `--z-modal-dropdown` | 600 | Dropdowns or panels rendered inside a modal |
+
+#### Rules for block authors
+
+- **Page dropdowns** (filter panels, collection menu, any `.asc-panel` anchored to a trigger): `z-index: var(--z-dropdown)`.
+- **Sticky elements** (header, any `position: sticky` bar): `z-index: var(--z-sticky)`. Page dropdowns intentionally sit above the header so they are never clipped by it.
+- **Blocks with an internal canvas** (e.g. `board`): add `isolation: isolate` to the block root. This contains the block's internal z-indices so they don't compete with page-level stacking values. Raw integers (10, 50, 200…) are acceptable *within* an isolated stacking context.
+- **Modal dropdowns**: any dropdown or popover that opens inside a `<dialog>` must use `--z-modal-dropdown` (600), not `--z-dropdown`. The `<dialog>` element is in the browser top layer, so its children need a z-index relative to the modal's own stacking context.
+- **Never** use `--z-modal` or `--z-modal-backdrop` inside a block — those are set by the `details-modal` block and action-page service.

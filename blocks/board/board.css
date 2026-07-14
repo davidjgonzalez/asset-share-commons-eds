@@ -2,32 +2,7 @@
     --board-radius: var(--border-radius-md);
 
     container-type: inline-size;
-
-    /* ── Sheet header ───────────────────────────────────────────────── */
-
-    .board__back {
-        margin-block-end: var(--spacing-md);
-    }
-
-    .board__sheet-header {
-        margin-block-end: var(--spacing-lg);
-    }
-
-    .board__sheet-title {
-        margin: 0;
-        font-size: var(--heading-font-size-xl);
-        font-weight: 600;
-    }
-
-    .board__sheet-description {
-        color: var(--color-muted-fg);
-        font-size: var(--body-font-size-s);
-    }
-
-    .board__sheet-count {
-        color: var(--color-muted-fg);
-        font-size: var(--body-font-size-s);
-    }
+    isolation: isolate; /* contain internal z-indices; page dropdowns stack above the board */
 
     /* ── Expired state ──────────────────────────────────────────────── */
 
@@ -241,6 +216,7 @@
         position: absolute;
         width: 160px;
         cursor: default;
+        transition: opacity var(--transition-fast), outline-color var(--transition-fast), box-shadow var(--transition-fast);
 
         .asc-ui-asset-card__title {
             white-space: nowrap;
@@ -293,10 +269,6 @@
     }
 
     /* ── Search highlight ───────────────────────────────────────────── */
-
-    .board__card.asc-ui-asset-card {
-        transition: opacity var(--transition-fast), outline-color var(--transition-fast), box-shadow var(--transition-fast);
-    }
 
     .board__viewport[data-board-searching] .board__card:not(.board__card--match) {
         opacity: 0.2;

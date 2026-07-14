@@ -4,115 +4,128 @@ import storage from '../../scripts/asc/core/services/storage/storage.js';
 import { Events as CollectionEvents } from '../../scripts/asc/core/services/collections/collections.js';
 import { escHtml, escAttr, formatUpdated } from '../../scripts/asc/html.js';
 import { triggerAction } from '../../scripts/asc.js';
+import { registerTokens } from '../../scripts/asc/tokens.js';
 
 const configurations = (await import('../../scripts/asc/configurations.js')).default;
 
 const SHARE_HISTORY_KEY = 'shareHistory';
 
 export default async function decorate(block) {
+  const controls = parseControls(block);
   const collectionId = resolveCollectionId();
-  await render(block, collectionId);
+  await render(block, collectionId, controls);
 
   document.addEventListener(CollectionEvents.CHANGED, async (e) => {
     if (e.detail?.source === 'block') return;
-    await render(block, collectionId);
+    await render(block, collectionId, controls);
   });
 
   document.addEventListener('click', (e) => {
     if (!block.contains(e.target)) closeMenu(block);
   });
 
-  // Re-render the past-shares panel when action-share creates a new link
   document.addEventListener('asc:share:created', () => {
-    const pastSharesEl = block.querySelector('.collection__past-shares');
-    if (pastSharesEl) pastSharesEl.innerHTML = renderShareHistory();
+    const pastSharesEl = block.querySelector('.collection-controls__past-shares');
+    if (pastSharesEl) {
+      const label = controls.find((c) => c.id === 'past-shares')?.label || '';
+      pastSharesEl.innerHTML = renderPastSharesHtml(label);
+    }
   });
+}
+
+// ─── Parsing ──────────────────────────────────────────────────────────────────
+
+function parseControls(block) {
+  return [...block.querySelectorAll(':scope > div')].map((row) => ({
+    id: row.children[0]?.textContent.trim().toLowerCase(),
+    label: row.children[1]?.textContent.trim() || '',
+    variant: row.children[2]?.textContent.trim().toLowerCase() || '',
+  })).filter((c) => c.id);
 }
 
 // ─── Rendering ────────────────────────────────────────────────────────────────
 
-async function render(block, collectionId) {
+async function render(block, collectionId, controls) {
   const collection = await services.collections.get(collectionId, true);
   if (!collection) {
-    block.innerHTML = '<p class="collection__not-found">Collection not found.</p>';
+    block.innerHTML = '<p class="collection-controls__not-found">Collection not found.</p>';
     return;
   }
+
   const data = services.collections._getData();
   const isDefault = data.defaultId === collection.id;
-  block.innerHTML = html(collection, isDefault);
-  initInteractions(block, collection, isDefault);
-}
-
-function html(collection, isDefault) {
   const items = collection.hydratedItems || [];
   const assetCount = items.filter((i) => i.type === 'asset').length;
   const updated = formatUpdated(collection.modifiedAt);
-  const collectionsPath = configurations.collections?.managePath || '/collections/';
+
+  registerTokens({
+    'collection.title': collection.name,
+    'collection.description': collection.description || '',
+    'collection.count': String(assetCount),
+    'collection.lastUpdated': updated?.label || '',
+  });
+
+  const section = block.closest('.section');
+  block.innerHTML = html(controls, isDefault, assetCount);
+  initInteractions(block, collection, isDefault, section);
+}
+
+const RENDERERS = {
+  'past-shares': ({ label, variant }) => `<div class="collection-controls__past-shares">${renderPastSharesHtml(label, variant || 'ghost')}</div>`,
+  edit: ({ label, isDefault, variant }) => renderEditMenu(label, isDefault, variant || 'ghost'),
+  share: ({ label, variant }) => `<button type="button" class="collection-controls__share-btn btn btn--${variant || 'secondary'}" aria-label="Share this collection">${escHtml(label || 'Share')}</button>`,
+  download: ({ label, assetCount, variant }) => `<button type="button" class="collection-controls__download-btn btn btn--${variant || 'primary'}" aria-label="Download all assets in collection"${assetCount === 0 ? ' disabled' : ''}>${escHtml(label || 'Download')}</button>`,
+};
+
+function html(controls, isDefault, assetCount) {
+  const items = controls
+    .map(({ id, label }) => RENDERERS[id]?.({ label, isDefault, assetCount }) ?? '')
+    .join('');
   return `
-    <section class="collection__shell" aria-label="Collection">
-    <header class="collection__header">
-      <a href="${escAttr(collectionsPath)}" class="collection__back">&#8592; Collections</a>
-      <div class="collection__title-row">
-        <h1 class="collection__name" data-collection-id="${collection.id}">${escHtml(collection.name)}</h1>
-        <div class="collection__menu-wrap">
-          <button type="button" class="collection__menu-trigger btn btn--ghost btn--icon btn--sm"
-                  aria-label="Collection actions" aria-haspopup="true" aria-expanded="false">&#8943;</button>
-          <div class="collection__menu asc-panel asc-panel--no-pad" hidden>
-            <ul class="asc-ui-menu" role="menu">
-              <li role="none">
-                <button type="button" class="collection__rename-btn asc-ui-menu__item" role="menuitem">Rename</button>
-              </li>
-              ${!isDefault ? `
-              <li role="none"><hr class="asc-ui-menu__separator"></li>
-              <li role="none">
-                <button type="button" class="collection__delete-btn asc-ui-menu__item collection__menu-item--danger" role="menuitem">Delete collection</button>
-              </li>` : ''}
-            </ul>
-          </div>
-        </div>
-      </div>
-      <p class="collection__meta">
-        <span class="collection__meta-count">${assetCount} asset${assetCount !== 1 ? 's' : ''}</span>
-        ${updated
-    ? `<span class="collection__meta-sep" aria-hidden="true">&#183;</span><time class="collection__meta-updated" datetime="${escAttr(updated.iso)}">${escHtml(updated.label)}</time>`
-    : ''}
-      </p>
-    </header>
+    <div class="collection-controls__toolbar">
+      <div class="collection-controls__toolbar-end">${items}</div>
+    </div>`;
+}
 
-    <div class="collection__toolbar">
-      <div class="collection__toolbar-end">
-        <div class="collection__past-shares">${renderShareHistory()}</div>
-        <button type="button" class="collection__share-btn btn btn--secondary" aria-label="Share this collection">Share</button>
-        <button type="button" class="collection__download-btn btn btn--primary"
-                aria-label="Download all assets in collection"
-                ${assetCount === 0 ? 'disabled' : ''}>Download</button>
+function renderEditMenu(label, isDefault, variant) {
+  return `
+    <div class="collection-controls__menu-wrap">
+      <button type="button" class="collection-controls__menu-trigger btn btn--${variant} btn--sm"
+              aria-haspopup="true" aria-expanded="false">${escHtml(label || 'Edit')}</button>
+      <div class="collection-controls__menu asc-panel asc-panel--no-pad" hidden>
+        <ul class="asc-ui-menu" role="menu">
+          <li role="none">
+            <button type="button" class="collection-controls__rename-btn asc-ui-menu__item" role="menuitem">Rename</button>
+          </li>
+          <li role="none"><hr class="asc-ui-menu__separator"></li>
+          <li role="none"${isDefault ? ' hidden' : ''}>
+            <button type="button" class="collection-controls__delete-btn asc-ui-menu__item collection-controls__menu-item--danger" role="menuitem">Delete collection</button>
+          </li>
+        </ul>
       </div>
-    </div>
-
-    </section>`;
+    </div>`;
 }
 
 // ─── Interactions ─────────────────────────────────────────────────────────────
 
-function initInteractions(block, collection, isDefault) {
+function initInteractions(block, collection, isDefault, section) {
   initMenu(block);
-  initRename(block, collection);
+  initRename(block, collection, section);
   initShare(block, collection);
   initDownload(block, collection);
   if (!isDefault) initDelete(block, collection);
 }
 
-
-// ── Actions menu ─────────────────────────────────────────────────────────────
+// ── Actions menu ──────────────────────────────────────────────────────────────
 
 function closeMenu(block) {
-  block.querySelector('.collection__menu')?.setAttribute('hidden', '');
-  block.querySelector('.collection__menu-trigger')?.setAttribute('aria-expanded', 'false');
+  block.querySelector('.collection-controls__menu')?.setAttribute('hidden', '');
+  block.querySelector('.collection-controls__menu-trigger')?.setAttribute('aria-expanded', 'false');
 }
 
 function initMenu(block) {
-  const trigger = block.querySelector('.collection__menu-trigger');
-  const menu = block.querySelector('.collection__menu');
+  const trigger = block.querySelector('.collection-controls__menu-trigger');
+  const menu = block.querySelector('.collection-controls__menu');
   if (!trigger || !menu) return;
 
   trigger.addEventListener('click', (e) => {
@@ -131,13 +144,15 @@ function initMenu(block) {
 
 // ── Rename ────────────────────────────────────────────────────────────────────
 
-function initRename(block, collection) {
-  block.querySelector('.collection__rename-btn')?.addEventListener('click', () => {
-    const nameEl = block.querySelector('.collection__name');
+function initRename(block, collection, section) {
+  block.querySelector('.collection-controls__rename-btn')?.addEventListener('click', () => {
+    const nameEl = section?.querySelector('h1');
+    if (!nameEl) return;
+
     const current = nameEl.textContent.trim();
     const input = document.createElement('input');
     input.type = 'text';
-    input.className = 'collection__name-input';
+    input.className = 'collection-controls__name-input';
     input.value = current;
     nameEl.replaceWith(input);
     input.focus();
@@ -145,9 +160,7 @@ function initRename(block, collection) {
 
     function commit() {
       const val = input.value.trim();
-      if (val && val !== current) {
-        services.collections.rename(collection.id, val);
-      }
+      if (val && val !== current) services.collections.rename(collection.id, val);
       input.replaceWith(nameEl);
       nameEl.textContent = val || current;
     }
@@ -163,7 +176,7 @@ function initRename(block, collection) {
 // ── Delete ────────────────────────────────────────────────────────────────────
 
 function initDelete(block, collection) {
-  block.querySelector('.collection__delete-btn')?.addEventListener('click', () => {
+  block.querySelector('.collection-controls__delete-btn')?.addEventListener('click', () => {
     if (!window.confirm(`Delete "${collection.name}"? This cannot be undone.`)) return;
     services.collections.delete(collection.id);
     const managePath = configurations.collections?.managePath || '/collections/';
@@ -173,17 +186,17 @@ function initDelete(block, collection) {
 
 // ── Share ─────────────────────────────────────────────────────────────────────
 
-function renderShareHistory() {
+function renderPastSharesHtml(label, variant) {
   const history = storage.get(SHARE_HISTORY_KEY) || [];
   if (!history.length) return '';
 
-  const items = history.map((entry) => {
-    const label = new Date(entry.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  const dateItems = history.map((entry) => {
+    const dateLabel = new Date(entry.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
     return `
-      <li class="collection__past-share-row">
+      <li class="collection-controls__past-share-row">
         <span class="asc-ui-menu__item-label" title="${escAttr(entry.url)}">${escHtml(entry.title || 'Untitled')}</span>
-        <span class="asc-ui-menu__item-meta">${escHtml(label)}</span>
-        <button type="button" class="btn btn--ghost btn--circle btn--sm collection__share-history-copy"
+        <span class="asc-ui-menu__item-meta">${escHtml(dateLabel)}</span>
+        <button type="button" class="btn btn--ghost btn--circle btn--sm collection-controls__share-history-copy"
                 data-url="${escAttr(entry.url)}" aria-label="Copy link">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         </button>
@@ -195,21 +208,21 @@ function renderShareHistory() {
   }).join('');
 
   return `
-    <div class="asc-ui-dropdown collection__past-shares-dropdown">
+    <div class="asc-ui-dropdown collection-controls__past-shares-dropdown">
       <button type="button"
-              class="btn btn--ghost collection__past-shares-trigger"
+              class="btn btn--${variant} collection-controls__past-shares-trigger"
               aria-expanded="false"
               aria-haspopup="true">
-        Past Shares <span class="asc-ui-count asc-ui-count--muted">${history.length}</span>
+        ${escHtml(label || 'Past Shares')} <span class="asc-ui-count asc-ui-count--muted">${history.length}</span>
       </button>
-      <div class="asc-ui-dropdown__panel collection__past-shares-panel" hidden>
-        <ul class="asc-ui-menu">${items}</ul>
+      <div class="asc-ui-dropdown__panel collection-controls__past-shares-panel" hidden>
+        <ul class="asc-ui-menu">${dateItems}</ul>
       </div>
     </div>`;
 }
 
 function initShare(block, collection) {
-  block.querySelector('.collection__share-btn')?.addEventListener('click', () => {
+  block.querySelector('.collection-controls__share-btn')?.addEventListener('click', () => {
     triggerAction(
       configurations.share?.actionPath || '/actions/share',
       { collectionId: collection.id },
@@ -217,10 +230,10 @@ function initShare(block, collection) {
   });
 
   block.addEventListener('click', (e) => {
-    const trigger = e.target.closest('.collection__past-shares-trigger');
+    const trigger = e.target.closest('.collection-controls__past-shares-trigger');
     if (trigger) {
-      const panel = trigger.closest('.collection__past-shares-dropdown')
-        ?.querySelector('.collection__past-shares-panel');
+      const panel = trigger.closest('.collection-controls__past-shares-dropdown')
+        ?.querySelector('.collection-controls__past-shares-panel');
       if (!panel) return;
       const expanded = trigger.getAttribute('aria-expanded') === 'true';
       panel.hidden = expanded;
@@ -228,18 +241,18 @@ function initShare(block, collection) {
       return;
     }
 
-    const copyBtn = e.target.closest('.collection__share-history-copy');
+    const copyBtn = e.target.closest('.collection-controls__share-history-copy');
     if (copyBtn) {
       flashCopy(copyBtn, copyBtn.dataset.url);
       return;
     }
 
-    if (!e.target.closest('.collection__past-shares-dropdown')) {
-      const openDropdown = block.querySelector('.collection__past-shares-panel:not([hidden])');
+    if (!e.target.closest('.collection-controls__past-shares-dropdown')) {
+      const openDropdown = block.querySelector('.collection-controls__past-shares-panel:not([hidden])');
       if (openDropdown) {
         openDropdown.hidden = true;
-        openDropdown.closest('.collection__past-shares-dropdown')
-          ?.querySelector('.collection__past-shares-trigger')
+        openDropdown.closest('.collection-controls__past-shares-dropdown')
+          ?.querySelector('.collection-controls__past-shares-trigger')
           ?.setAttribute('aria-expanded', 'false');
       }
     }
@@ -249,7 +262,7 @@ function initShare(block, collection) {
 // ── Download ──────────────────────────────────────────────────────────────────
 
 function initDownload(block, collection) {
-  block.querySelector('.collection__download-btn')?.addEventListener('click', () => {
+  block.querySelector('.collection-controls__download-btn')?.addEventListener('click', () => {
     triggerAction(
       configurations.downloads?.actionPath || '/actions/download',
       { collectionId: collection.id },

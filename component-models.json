@@ -418,17 +418,17 @@
   },
 
   {
-    "id": "sheet",
-    "fields": []
-  },
-
-  {
     "id": "collections",
     "fields": []
   },
 
   {
-    "id": "collection",
+    "id": "collection-controls",
+    "fields": []
+  },
+
+  {
+    "id": "sheet-controls",
     "fields": []
   },
 

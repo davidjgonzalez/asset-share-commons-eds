@@ -1,6 +1,45 @@
 /* Do not scope with `main` as this block can be used in the header */
 
 .block.search-bar {
-  /* asc-ui-search uses --asc-ui-search-width as its sizing contract. */
-  --asc-ui-search-width: var(--search-bar-width, 20rem);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+
+    & .asc-ui-search {
+        flex: 1;
+        --asc-ui-search-width: 100%;
+    }
+
+    & .search-bar__controls {
+        flex-shrink: 0;
+    }
+
+    /* Each segment is a circle sized to match the search input height (2.75rem).
+       Container: 2 × spacing-xs padding + 2px border + button = 2.75rem
+       Button: 2.75rem - 2 × 0.25rem - 2px */
+    & .search-bar__ctrl {
+        position: relative;
+        padding: 0;
+        width: calc(2.75rem - 2 * var(--spacing-xs) - 2px);
+        height: calc(2.75rem - 2 * var(--spacing-xs) - 2px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        & > span {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+
+        & select {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+    }
 }

@@ -231,11 +231,11 @@ const configurations = {
     managePath: '/collections/',
 
     // Path to the single collection detail/edit page.
-    // The collections block appends '?id=<uuid>' as a query param.
+    // The collection-controls block appends '?id=<uuid>' as a query param.
     // collectionPath: '/collections/collection',
     //
     // Target sheet page for collection share links.
-    // The collection block builds share URLs as:
+    // The collection-controls block builds share URLs as:
     //   {sheetPath}?assets=<compressed>&title=<encoded>&description=<encoded>
     // sheetPath: '/sheets/',
   },

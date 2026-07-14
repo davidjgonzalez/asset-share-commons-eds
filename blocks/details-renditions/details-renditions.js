@@ -19,9 +19,12 @@
  *   |             | download, share      |  ← column whose value is action
  *   |             |                      |    keyword(s) → renders icon buttons
  *
- * Column values resolve against the CURRENT rendition; the owning asset is
- * reachable via `asset.…`. A value may be a bare path (`name`, `file-size`) or
- * contain {{ }} tokens for mixed text (`{{ width }}×{{ height }}`).
+ * Column values resolve through the shared token engine (scripts/asc/tokens.js)
+ * against the CURRENT rendition; the owning asset is reachable via `asset.…`
+ * (see resolveAssetPath below — that's where the asset-specific path rules live).
+ * A value may be a bare path (`name`, `file-size`) or contain {{ }} tokens for
+ * mixed text (`{{ width }}×{{ height }}`); either form also supports
+ * `{{ accessor | fallback }}`.
  *
  * Rendition fields (use as bare column values):
  *   id / name        rendition key (e.g. "original", "web")
@@ -58,6 +61,7 @@
 import Asset from '../../scripts/asc/core/models/asset.js';
 import services from '../../scripts/asc/core/services/services.js';
 import { delegateEvent } from '../../scripts/asc/core/utils/events.js';
+import { resolveTokens } from '../../scripts/asc/tokens.js';
 
 const KNOWN_ACTIONS = new Set(['download', 'share', 'copy-url']);
 const PREVIEW_KEYWORD = 'preview';
@@ -156,7 +160,7 @@ export default async function decorate(block) {
     const cells = cols.map((col, i) => {
       if (colActions[i]) return actionCell(asset, rendition, colActions[i]);
       if (colPreviews[i]) return previewCell(asset, rendition);
-      return valueCell(col, ctx, asset);
+      return valueCell(col, ctx);
     });
     return `<tr data-asc-rendition="${esc(rendition.id)}">${cells.join('')}</tr>`;
   }).join('');
@@ -181,9 +185,9 @@ export default async function decorate(block) {
   lazyLoadFileSizes(block, asset, renditions);
 }
 
-function valueCell(col, ctx, asset) {
+function valueCell(col, ctx) {
   const extra = col.value.trim().toLowerCase() === 'file-size' ? ' data-asc-field="file-size"' : '';
-  return `<td${extra}>${esc(resolveValue(col.value, ctx, asset))}</td>`;
+  return `<td${extra}>${esc(resolveValue(col.value, ctx))}</td>`;
 }
 
 function actionCell(asset, rendition, actions) {
@@ -375,7 +379,14 @@ function resolveRenditions(asset, ids) {
 
 // ─── Template resolution ──────────────────────────────────────────────────────
 
-/** Build the per-rendition resolution context: rendition fields + display aliases. */
+/**
+ * Build the per-rendition resolution context: rendition fields + display aliases,
+ * plus an `asset` namespace so `{{asset.…}}` tokens resolve through the shared
+ * engine (see scripts/asc/tokens.js) — `resolveTokens` switches into `ctx.asset`
+ * for any `asset.`-prefixed accessor, handing the remaining path to
+ * `assetResolver()`'s `getProperty`, which is where the asset-specific path
+ * rules below (`properties`/`renditions` keywords, bracket indexing) apply.
+ */
 function renditionContext(asset, rendition) {
   const base = typeof rendition.toObject === 'function' ? rendition.toObject() : { ...rendition };
   const fmtLabel = mimeToLabel(base.mimeType);
@@ -386,24 +397,23 @@ function renditionContext(asset, rendition) {
     'file-size': base.fileSize ? formatBytes(base.fileSize) : '',
     dimensions: (base.width && base.height) ? `${base.width} × ${base.height}` : '',
     filename: buildFilename(asset, rendition),
+    asset: assetResolver(asset),
   };
 }
 
-/** Resolve a column value: bare path, or {{ }} token template for mixed text. */
-function resolveValue(value, ctx, asset) {
+/** Resolve a column value through the shared token engine: bare path, or {{ }} template. */
+function resolveValue(value, ctx) {
   const v = String(value).trim();
-  if (v.includes('{{')) {
-    return v.replace(/\{\{\s*([^}]+?)\s*\}\}/g, (_, expr) => stringify(resolvePath(expr.trim(), ctx, asset)));
-  }
-  return stringify(resolvePath(v, ctx, asset));
+  if (!v) return '';
+  return resolveTokens(v.includes('{{') ? v : `{{${v}}}`, ctx);
 }
 
-/** Resolve a path expression. `asset.…` switches to the asset; else off the rendition ctx. */
-function resolvePath(expr, ctx, asset) {
-  const segments = parsePath(expr);
-  if (!segments.length) return null;
-  if (segments[0] === 'asset') return resolveAssetPath(segments.slice(1), asset);
-  return walk(ctx, segments);
+/**
+ * Wraps `asset` so the shared engine's `context.getProperty(accessor)` hook resolves
+ * asset-specific path rules for any `asset.…`-prefixed token.
+ */
+function assetResolver(asset) {
+  return { getProperty: (path) => ({ data: resolveAssetPath(parsePath(path), asset) }) };
 }
 
 /**
@@ -447,17 +457,6 @@ function parsePath(expr) {
     m = re.exec(expr);
   }
   return segments;
-}
-
-/** Coerce a resolved value to a display string ({width,height} and arrays formatted). */
-function stringify(value) {
-  if (value == null) return '';
-  if (Array.isArray(value)) return value.map((v) => String(v).trim()).filter(Boolean).join(', ');
-  if (typeof value === 'object') {
-    if (value.width != null && value.height != null) return `${value.width} × ${value.height}`;
-    return '';
-  }
-  return String(value);
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────

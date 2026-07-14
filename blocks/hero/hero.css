@@ -5,6 +5,7 @@
 
 .block.hero {
   position: relative;
+  isolation: isolate; /* scopes z-index: -1 background picture within the block */
   padding: 40px 24px;
   min-height: 300px;
 

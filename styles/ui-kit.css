@@ -572,6 +572,25 @@
     font-size: var(--body-font-size-m);
 }
 
+/* Icon variant — each option is a bordered circle; inactive = white card, active = muted grey */
+.asc-ui-segmented--icon {
+    background: var(--color-card);
+    padding: var(--spacing-xs);
+    gap: var(--spacing-xs);
+}
+
+.asc-ui-segmented--icon .asc-ui-segmented__option {
+    border: 1px solid var(--color-border);
+    background: var(--color-card);
+}
+
+.asc-ui-segmented--icon .asc-ui-segmented__option.is-active,
+.asc-ui-segmented--icon .asc-ui-segmented__option[aria-pressed="true"] {
+    background: var(--color-muted);
+    color: var(--color-fg);
+    box-shadow: none;
+}
+
 /* ─────────────────────────────────────────────────────────────────────────
    @kit switch — accessible on/off toggle built on a native checkbox
 ───────────────────────────────────────────────────────────────────────── */

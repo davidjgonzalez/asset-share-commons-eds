@@ -127,6 +127,15 @@ Single-choice toggle. Sizes: `--sm` / (default) / `--lg`. Mark the active option
 
 **Embedding an input** — place a bare `<input>` as the last child of the segmented container (no `asc-ui-segmented__option`). Style it with `border: none; border-left: 1px solid var(--color-border); background: transparent` so it reads as part of the bar. The board block uses this pattern for its inline search field (`.board__search`).
 
+**Icon variant** — add `asc-ui-segmented--icon` for icon-only controls. Each option renders as a bordered circle: inactive = white, active = muted grey. Use square padding (or override at block level) so the options are circular. The `search-bar` block uses this pattern.
+```html
+<div class="asc-ui-segmented asc-ui-segmented--sm asc-ui-segmented--icon" role="group" aria-label="View">
+  <button class="asc-ui-segmented__option is-active" type="button" aria-pressed="true" aria-label="Masonry view"><!-- svg --></button>
+  <button class="asc-ui-segmented__option" type="button" aria-pressed="false" aria-label="Cards view"><!-- svg --></button>
+  <button class="asc-ui-segmented__option" type="button" aria-pressed="false" aria-label="List view"><!-- svg --></button>
+</div>
+```
+
 ### Popover menu — `@kit menu` · `styles/ui-kit.css`
 Menu of selectable rows / actions. Drop inside an `.asc-panel --no-pad` or
 `.asc-ui-dropdown__panel`; anchor with `.asc-ui-dropdown` for a real popover. Items can be

@@ -98,7 +98,7 @@ async function downloadAsZip(targets) {
 export default async function decorate(block) {
   const ctx = window.asc?.pendingAction || {};
   const collection = ctx.collectionId ? await services.collections.get(ctx.collectionId) : null;
-  const assets = collection?.assets || [];
+  const assets = collection?.assets || ctx.assets || [];
 
   const allDefs = configurations.renditions?.definitions || [];
   const defsById = new Map(allDefs.map((d) => [d.id, d]));
@@ -168,7 +168,7 @@ export default async function decorate(block) {
         return;
       }
 
-      const archiveName = `${collection?.name || 'collection'}.zip`;
+      const archiveName = `${collection?.name || ctx.title || 'assets'}.zip`;
       const targets = buildTargets(resolvedAssets, selectedRenditionIds, archiveName);
 
       btn.disabled = true;

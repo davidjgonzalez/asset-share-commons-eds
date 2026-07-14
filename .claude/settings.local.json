@@ -24,11 +24,11 @@
       {
         "hooks": [
           {
-            "command": "\"/Users/davidg/.local/bin/scout\" hook compact",
+            "command": "\"/Users/davidg/.local/bin/scout\" hook session --host claude",
             "type": "command"
           }
         ],
-        "matcher": "compact"
+        "matcher": "startup|resume|clear|compact"
       }
     ],
     "Stop": [
@@ -41,16 +41,7 @@
         ]
       }
     ],
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "command": "\"/Users/davidg/.local/bin/scout\" hook session",
-            "type": "command"
-          }
-        ]
-      }
-    ]
+    "UserPromptSubmit": []
   },
   "permissions": {
     "allow": [
@@ -143,23 +134,7 @@
       "mcp__scout__affected_flows",
       "mcp__scout__architecture_overview",
       "mcp__scout__dead_code",
-      "mcp__scout__docs_broken_links",
-      "mcp__scout__docs_orphan_documents",
-      "mcp__scout__docs_topic_clusters",
-      "mcp__scout__docs_tag_graph",
-      "mcp__scout__docs_stats",
       "mcp__scout__file_read",
-      "mcp__scout__peer_register",
-      "mcp__scout__peer_update_status",
-      "mcp__scout__peer_list",
-      "mcp__scout__peer_broadcast",
-      "mcp__scout__peer_send_message",
-      "mcp__scout__peer_read_messages",
-      "mcp__scout__peer_wait",
-      "mcp__scout__peer_inbox",
-      "mcp__scout__peer_claim_files",
-      "mcp__scout__peer_release_files",
-      "mcp__scout__peer_reset",
       "Bash(scout search:*)",
       "Bash(scout keyword-search:*)",
       "Bash(scout regex-search:*)",
@@ -182,7 +157,15 @@
       "Bash(scout tag-graph:*)",
       "Bash(scout doc-stats:*)",
       "Bash(scout evaluate:*)",
-      "Bash(scout board:*)"
+      "mcp__scout__memory_search",
+      "mcp__scout__memory_read",
+      "mcp__scout__memory_list",
+      "mcp__scout__memory_related",
+      "mcp__scout__memory_write",
+      "mcp__scout__memory_vote",
+      "mcp__scout__memory_lint",
+      "mcp__scout__memory_consolidate",
+      "mcp__scout__memory_infer"
     ]
   }
 }

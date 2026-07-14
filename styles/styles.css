@@ -106,13 +106,23 @@
   --spacing-2xl: 3rem;
   --spacing-3xl: 4rem;
 
-  /* Z-index scale */
-  --z-behind:  -1;
-  --z-header:   2;
-  --z-dropdown: 1000;
-  --z-sticky:   1020;
-  --z-fixed:    1030;
-  --z-modal:    1050;
+  /* ── Z-index scale ───────────────────────────────────────────────────────
+     Two-context rule: modal context is always above the page context.
+     Use --z-modal-* for anything rendered inside a modal or dialog.
+     Blocks with an internal canvas (e.g. board) must use isolation: isolate
+     so their children don't compete with page-level stacking values.    */
+
+  /* Page context */
+  --z-behind:         -1;   /* behind siblings — hero bg, absolute overlays  */
+  --z-raised:          1;   /* minor boost within a component stacking ctx   */
+  --z-sticky:        100;   /* sticky header, sticky toolbars                */
+  --z-dropdown:      200;   /* page dropdowns, popovers, tooltip panels      */
+  --z-float:         300;   /* toasts, floating action buttons               */
+
+  /* Modal context — always above every page-context value */
+  --z-modal-backdrop: 400;  /* semi-transparent scrim behind the dialog      */
+  --z-modal:          500;  /* the dialog / modal container                  */
+  --z-modal-dropdown: 600;  /* dropdowns / panels rendered inside a modal    */
 
   /* Select arrow (overridden to light in dark themes) */
   --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23555'/%3E%3C/svg%3E");
@@ -155,6 +165,10 @@ header {
   top: 0;
   z-index: var(--z-sticky);
   height: var(--nav-height);
+}
+
+header:has(.block.search-active-filters:not(:empty)) {
+  height: auto;
 }
 
 header .header,

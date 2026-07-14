@@ -30,9 +30,9 @@
       "details-renditions",
       "details-actions",
       "stub",
-      "sheet",
       "collections",
-      "collection",
+      "collection-controls",
+      "sheet-controls",
       "board",
       "collection-switcher"
     ]

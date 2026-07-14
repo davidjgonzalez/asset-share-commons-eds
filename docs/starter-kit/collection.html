@@ -11,15 +11,34 @@
   <main>
 
     <!--
-      Section 1: Collection header.
-      Reads the ?id= URL parameter. Renders the collection name (editable),
-      asset count, Share / Download buttons, jobs indicator, and the
-      actions menu (Rename / Delete).
+      Section 1: Collection header + toolbar.
+
+      Authored content (h1, p) uses {{collection.*}} tokens resolved by the
+      collection-controls block after it loads collection data.
+
+      Tokens available:
+        {{collection.title}}       — collection name (editable via Edit › Rename)
+        {{collection.description}} — optional description (empty if unset)
+        {{collection.count}}       — number of assets in the collection
+        {{collection.lastUpdated}} — human-readable last-modified date
+
+      collection-controls block: rows declare which controls to show (in order).
+      Left col = control ID, right col = button label.
+      Valid IDs: past-shares, edit, share, download
     -->
     <div>
 
-      <!-- collection block (zero-config — reads ?id= from URL) -->
-      <div class="collection"></div>
+      <p><a href="/collections/">&#8592; Collections</a></p>
+      <h1>{{collection.title}}</h1>
+      <p>{{collection.description}}</p>
+      <p>{{collection.count}} assets &#8212; Last updated {{collection.lastUpdated}}</p>
+
+      <div class="collection-controls">
+        <div><div>past-shares</div><div>Past Shares</div><div>ghost</div></div>
+        <div><div>edit</div><div>Edit</div><div>ghost</div></div>
+        <div><div>share</div><div>Share</div><div>secondary</div></div>
+        <div><div>download</div><div>Download</div><div>primary</div></div>
+      </div>
 
     </div>
 

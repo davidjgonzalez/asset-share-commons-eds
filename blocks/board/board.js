@@ -256,16 +256,6 @@ function viewportHtml(assetItems, textItems, config) {
     </div>`;
 }
 
-function sheetHeaderHtml(title, description, assetCount) {
-  return `
-    <a href="/" class="board__back">&#8592; Back to search</a>
-    <div class="board__sheet-header">
-      <h1 class="board__sheet-title">${escHtml(title) || 'Download Sheet'}</h1>
-      ${description ? `<p class="board__sheet-description">${escHtml(description)}</p>` : ''}
-      <p class="board__sheet-count">${assetCount} asset${assetCount === 1 ? '' : 's'}</p>
-    </div>`;
-}
-
 // ─── Data loading ─────────────────────────────────────────────────────────────
 
 function parseSectionEntry(entry) {
@@ -1145,9 +1135,7 @@ export default async function decorate(block) {
       return;
     }
 
-    const assetCount = assetItems.length;
-    block.innerHTML = sheetHeaderHtml(meta.title, meta.description, assetCount)
-      + viewportHtml(assetItems, textItems, config);
+    block.innerHTML = viewportHtml(assetItems, textItems, config);
 
     initBoard(block, config, null);
   }

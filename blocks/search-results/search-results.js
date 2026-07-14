@@ -131,8 +131,8 @@ function renderListView(assets, renditionId) {
     </div>`;
 }
 
-function getDisplayMode(block) {
-  return block.querySelector('[name="asc.search-results.display"]')?.value || 'masonry';
+function getDisplayMode() {
+  return document.querySelector('[name="asc.search-results.display"]')?.value || 'masonry';
 }
 
 // Promote the first N result images to eager + high priority for LCP.
@@ -209,39 +209,15 @@ export default async function decorate(block) {
 
   block.innerHTML = html(config);
 
-  // Sync data-display from the rendered select (which has the URL-resolved initial value)
-  block.querySelector('[data-asc-results]').dataset.display = block.querySelector('[name="asc.search-results.display"]').value;
+  const params = new URLSearchParams(window.location.search);
+  block.querySelector('[data-asc-results]').dataset.display = params.get('asc.search-results.display') || config['asc.search-results.display'] || 'masonry';
 
   await addEventListeners(block, config);
   await emitEvents(block, config);
 }
 
 function html(config) {
-  const params = new URLSearchParams(window.location.search);
-  const display = params.get('asc.search-results.display') || config['asc.search-results.display'] || 'masonry';
-  const orderby = params.get('orderby') || '';
-  const orderbySort = params.get('orderby.sort') || '';
-
-  const sel = (val, match) => (val === match ? 'selected' : '');
-
   return `
-    <div class="search-results__toolbar">
-      <select name="asc.search-results.display" form="${SEARCH_FORM}" aria-label="View">
-        <option value="cards" ${sel(display, 'cards')}>Cards</option>
-        <option value="list" ${sel(display, 'list')}>List</option>
-        <option value="masonry" ${sel(display, 'masonry')}>Masonry</option>
-      </select>
-      <select name="orderby" form="${SEARCH_FORM}" aria-label="Sort by">
-        <option value="@jcr:score" ${sel(orderby, '@jcr:score')}>Relevance</option>
-        <option value="@jcr:content/metadata/dc:created" ${sel(orderby, '@jcr:content/metadata/dc:created')}>Created Date</option>
-        <option value="@jcr:content/metadata/dc:title" ${sel(orderby, '@jcr:content/metadata/dc:title')}>Title</option>
-      </select>
-      <select name="orderby.sort" form="${SEARCH_FORM}" aria-label="Order">
-        <option value="desc" ${sel(orderbySort, 'desc')}>Descending</option>
-        <option value="asc" ${sel(orderbySort, 'asc')}>Ascending</option>
-      </select>
-    </div>
-
     <input type="hidden" name="p.limit" value="${config.limit || 24}" form="${SEARCH_FORM}"/>
     <input type="hidden" name="p.offset" value="0" form="${SEARCH_FORM}"/>
     <input type="hidden" name="asc.search-results.more" value="true"/>
@@ -253,17 +229,6 @@ function html(config) {
 
 async function addEventListeners(block, _config) {
   const quickDownloadRendition = configurations.searchResults?.quickActions?.downloadRendition || 'original';
-
-  block.querySelectorAll('[name="asc.search-results.display"], [name="orderby"], [name="orderby.sort"]').forEach((input) => {
-    input.addEventListener('change', () => {
-      if (input.name === 'asc.search-results.display') {
-        block.querySelector('[data-asc-results]').dataset.display = input.value;
-      }
-      document.dispatchEvent(new CustomEvent('asc:search:execute', {
-        detail: { type: 'page-load' },
-      }));
-    });
-  });
 
   let isLoadingMore = false;
   let sentinel = null;
@@ -309,7 +274,7 @@ async function addEventListeners(block, _config) {
     const newOffset = (results.offset || 0) + (results.size || 0);
     block.querySelector('[name="p.offset"]').value = newOffset;
 
-    const display = getDisplayMode(block);
+    const display = getDisplayMode();
     const resultsEl = block.querySelector('[data-asc-results]');
     resultsEl.dataset.display = display;
     // Drop the loading placeholder so the grid cell height is no longer constrained.
