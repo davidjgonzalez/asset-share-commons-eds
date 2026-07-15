@@ -15,47 +15,77 @@ sidebar:
         url: "#search-date-range"
       - title: search-tags
         url: "#search-tags"
-      - title: search-sort
-        url: "#search-sort"
+      - title: search-active-filters
+        url: "#search-active-filters"
+      - title: search-statistics
+        url: "#search-statistics"
       - title: search-results
         url: "#search-results"
-      - title: search-pagination
-        url: "#search-pagination"
-      - title: search-hidden
-        url: "#search-hidden"
   - label: Asset Details
     items:
       - title: details-modal
         url: "#details-modal"
+      - title: details-header
+        url: "#details-header"
       - title: details-preview
         url: "#details-preview"
       - title: details-property
         url: "#details-property"
-      - title: details-download
-        url: "#details-download"
+      - title: details-asset-metadata
+        url: "#details-asset-metadata"
+      - title: details-metadata
+        url: "#details-metadata"
+      - title: details-renditions
+        url: "#details-renditions"
+      - title: details-rendition-metadata
+        url: "#details-rendition-metadata"
       - title: details-actions
         url: "#details-actions"
       - title: details-similar
         url: "#details-similar"
-  - label: Collections
+      - title: details-map
+        url: "#details-map"
+      - title: details-video
+        url: "#details-video"
+  - label: Collections & Board
     items:
       - title: collection-switcher
         url: "#collection-switcher"
       - title: collections
         url: "#collections"
-      - title: collection
-        url: "#collection"
+      - title: collection-controls
+        url: "#collection-controls"
+      - title: sheet-controls
+        url: "#sheet-controls"
+      - title: board
+        url: "#board"
       - title: stub
         url: "#stub"
-      - title: sheet
-        url: "#sheet"
+  - label: Actions
+    items:
+      - title: action-download
+        url: "#action-download"
+      - title: action-share
+        url: "#action-share"
+  - label: Layout & Content
+    items:
+      - title: hero
+        url: "#hero"
+      - title: columns
+        url: "#columns"
+      - title: content
+        url: "#content"
+      - title: fragment
+        url: "#fragment"
+      - title: header / footer
+        url: "#header-footer"
 ---
 
 # Block Reference
 
 Every block is authored as a table in da.live. The first row is the block name; subsequent rows are key/value configuration pairs. Edge Delivery Services converts each table into a `.block.{name}` div and calls its `decorate(block)` function.
 
-> **Provider-agnostic search blocks** — All search filter blocks emit QueryBuilder-style field names. The active search provider translates them to its API format transparently — no block changes needed when switching providers.
+> **Provider-agnostic search blocks** — All search filter blocks emit QueryBuilder-style field names. The active search provider translates them to its API format transparently — no block changes needed when switching providers. See the [Search Provider](/developer#search-provider) reference for the translation rules.
 
 ![Block authoring in da.live](https://placehold.co/860x380/111111/e91e8c?text=Block+Authoring+in+da.live&font=inter)
 
@@ -65,7 +95,7 @@ Every block is authored as a table in da.live. The first row is the block name; 
 
 ## search-bar {#search-bar}
 
-**Search** · Keyword full-text search input. Dispatches `asc:search:execute` on input.
+**Search** · Full-text search input, plus optional view / sort / order controls in the same toolbar. Dispatches `asc:search:execute` on input and persists view/sort choices to `localStorage` (`asc.search-results.display`, `asc.orderby`, `asc.orderby.sort`).
 
 | Provider | Support |
 |----------|---------|
@@ -73,14 +103,27 @@ Every block is authored as a table in da.live. The first row is the block name; 
 | OpenAPI | `q` parameter |
 
 ```
-| search-bar   |              |
-|--------------|--------------|
-| placeholder  | Search DAM…  |
+| search-bar  |                                             |
+|-------------|---------------------------------------------|
+| placeholder | Search DAM…                                  |
+| view        | Masonry : masonry                            |
+|             | Cards : cards                                 |
+|             | List : list                                   |
+| sort        | Relevance : @jcr:score                        |
+|             | Created : @jcr:content/metadata/dc:created    |
+| order       | Descending : desc                             |
+|             | Ascending : asc                               |
 ```
 
 | Key | Default | Description |
 |-----|---------|-------------|
 | `placeholder` | Search assets… | Input placeholder text |
+| `redirect` | `search.page` config | Cross-page redirect target when used from a page with no `search-results` block (e.g. the site header), appends `?fulltext=<value>` |
+| `view` | Masonry, Cards, List | Display-mode options; each line is `Label : value`. First option is the default. |
+| `sort` | Relevance, Created, Title | Sort-field options; `Label : @jcr:path` pairs. First option is the default. |
+| `order` | Descending, Ascending | Sort-direction options. First option is the default. |
+
+Priority for the active sort/order on load: **URL param > localStorage > first authored option.** The display mode (view) is different: it is stored in `localStorage` only and never appears in the URL, so switching views doesn't change the shareable link.
 
 ---
 
@@ -96,21 +139,22 @@ Every block is authored as a table in da.live. The first row is the block name; 
 ```
 | search-property  |                                |
 |------------------|--------------------------------|
-| label            | Asset Type                     |
+| title            | Asset Type                     |
 | property         | jcr:content/metadata/dc:format |
 | type             | checkbox                       |
-| options          | Image: image/jpeg              |
-|                  | Video: video/mp4               |
-|                  | Document: application/pdf      |
+| options          | Image : image/jpeg             |
+|                  | Video : video/mp4               |
+|                  | Document : application/pdf      |
 ```
 
 | Key | Default | Description |
 |-----|---------|-------------|
-| `label` | — | Filter heading |
-| `property` | — | JCR metadata property path |
+| `title` | — | Filter heading (rendered as a `<legend>` or label above the options) |
+| `property` | `jcr:content/metadata/dc:format` | JCR metadata property path |
 | `type` | `checkbox` | `checkbox` \| `radio` \| `dropdown` |
-| `options` | — | One per line: `Label: value` |
+| `options` | — | One per line: `Label : value` |
 | `and` | `false` | AND vs OR multi-select logic |
+| `operation` | `equals` | QueryBuilder `property.operation` |
 
 ---
 
@@ -120,23 +164,27 @@ Every block is authored as a table in da.live. The first row is the block name; 
 
 | Provider | Support |
 |----------|---------|
-| QueryBuilder | `path` predicate with `exact`, `flat`, `self` modifiers |
-| OpenAPI | `filter[assetAncestorPath]` — first selected path value; `exact`/`flat`/`self` flags are ignored |
+| QueryBuilder | `path` predicate with `exact`, `flat` modifiers (`path.self` is deprecated by AEM and never emitted) |
+| OpenAPI | `filter[assetAncestorPath]` — first selected path value; `exact`/`flat` flags are ignored |
 
 ```
-| search-path   |                           |
-|---------------|---------------------------|
-| label         | Folder                    |
-| type          | radio                     |
-| options       | Brand: /content/dam/brand |
-|               | Products: /content/dam/products |
+| search-path   |                                  |
+|---------------|----------------------------------|
+| title         | Folder                           |
+| type          | radio                            |
+| options       | Brand : /content/dam/brand       |
+|               | Products : /content/dam/products |
 ```
 
 | Key | Default | Description |
 |-----|---------|-------------|
-| `label` | — | Filter heading |
+| `title` | — | Filter heading |
 | `type` | `checkbox` | `checkbox` \| `radio` \| `dropdown` |
-| `options` | — | One per line: `Label: /dam/path` |
+| `options` | — | One per line: `Label : /dam/path` |
+| `exact` | `false` | Exact path only vs. full subtree |
+| `flat` | `false` | Direct children only |
+
+**Field names:** radio/dropdown emit `{n}_group.path=<value>`; checkboxes emit `{n}_group.1_path=<v1>`, `{n}_group.2_path=<v2>`, … plus `{n}_group.p.or=true`.
 
 ---
 
@@ -149,26 +197,20 @@ Every block is authored as a table in da.live. The first row is the block name; 
 | QueryBuilder | `daterange` predicate |
 | OpenAPI | `filter[createdAt][from/to]` or `filter[modifiedAt][from/to]` depending on `property` |
 
-Supported `property` values for OpenAPI:
-
-| JCR property | OpenAPI filter key |
-|---|---|
-| `jcr:content/metadata/jcr:created` | `createdAt` |
-| `jcr:content/metadata/dam:assetCreated` | `createdAt` |
-| `jcr:content/metadata/jcr:lastModified` | `modifiedAt` |
-| `jcr:content/metadata/dam:assetLastModified` | `modifiedAt` |
-
 ```
-| search-date-range  |                                  |
-|--------------------|----------------------------------|
-| label              | Created Date                     |
-| property           | jcr:content/metadata/jcr:created |
+| search-date-range  |                                            |
+|--------------------|--------------------------------------------|
+| title              | Modified Date                              |
+| property           | jcr:content/metadata/dam:assetLastModified |
 ```
 
 | Key | Default | Description |
 |-----|---------|-------------|
-| `label` | — | Filter heading |
-| `property` | — | JCR date property to filter on |
+| `title` | — | Filter heading |
+| `property` | `jcr:content/metadata/dam:assetLastModified` | JCR date property to filter on |
+| `name` | `daterange` | QB predicate name — rarely changed |
+
+Both "From" and "To" inputs are optional at query time — omitting either end leaves that bound open.
 
 ---
 
@@ -182,201 +224,292 @@ Supported `property` values for OpenAPI:
 | OpenAPI | `filter[assetTagIds][]` |
 
 ```
-| search-tags  |                   |
-|--------------|-------------------|
-| label        | Tags              |
-| root         | /content/cq:tags/ |
+| search-tags  |                                       |
+|--------------|---------------------------------------|
+| title        | Tags                                  |
+| property     | jcr:content/metadata/cq:tags          |
+| type         | checkbox                              |
+| options      | Approved : dam:status/approved        |
+|              | Landscape : properties:orientation/landscape |
 ```
 
 | Key | Default | Description |
 |-----|---------|-------------|
-| `label` | — | Filter heading |
-| `root` | — | Limit tags to this namespace |
+| `title` | — | Filter heading |
+| `property` | `jcr:content/metadata/cq:tags` | Tag property path |
+| `type` | `checkbox` | `checkbox` \| `radio` \| `dropdown` |
+| `options` | — | One per line: `Label : namespace:tag/path` |
+| `and` | `false` | `true` → all selected tags must match |
 
 ---
 
-## search-sort {#search-sort}
+## search-active-filters {#search-active-filters}
 
-**Search** · Dropdown to change sort field and direction.
+**Search** · Displays currently-active filter selections as dismissible pills, plus a **Clear all** button. Removing a pill re-runs the search.
 
 ```
-| search-sort  |                                      |
-|--------------|--------------------------------------|
-| options      | Newest: jcr:created desc             |
-|              | Oldest: jcr:created asc              |
-|              | Title A-Z: jcr:content/jcr:title asc |
+| search-active-filters  |   |
+|------------------------|---|
 ```
 
-| Key | Default | Description |
-|-----|---------|-------------|
-| `options` | — | One per line: `Label: field direction` |
+No configuration required — reads active state directly from every filter input on the page. On load, the block automatically **teleports itself into the sticky site header** (`header .nav-wrapper`) so pills stay visible while scrolling, waiting via `MutationObserver` if the header hasn't loaded yet.
+
+The full-text `search-bar` input is intentionally excluded from the pill list.
+
+---
+
+## search-statistics {#search-statistics}
+
+**Search** · Displays result counts as a live region ("Showing 24 of 456 assets", "456 assets", or "No results").
+
+```
+| search-statistics  |   |
+|---------------------|---|
+```
+
+No configuration required. Purely read-only — listens to `asc:search:complete`.
 
 ---
 
 ## search-results {#search-results}
 
-**Search** · Renders the asset grid or list. Listens to `asc:search:complete` and renders asset teasers. Supports four layout modes.
+**Search** · Renders the asset grid or list. Listens to `asc:search:complete` and renders asset teasers. Supports four layout modes: the active mode is controlled by `search-bar`'s view control and persisted in `localStorage` (never the URL); sort/order are also controlled by `search-bar`.
+
+![search-results layout modes](https://placehold.co/860x420/111111/e91e8c?text=search-results+%E2%80%94+Cards%2C+List%2C+Masonry&font=inter)
+
+*search-results block: cards, list, and masonry modes*
 
 ```
-| search-results  |           |
-|-----------------|-----------|
-| display         | waterfall |
-| limit           | 24        |
+| search-results  |     |
+|-----------------|-----|
+| limit           | 24  |
 ```
 
 | Key | Default | Description |
 |-----|---------|-------------|
-| `display` | `waterfall` | `cards` \| `list` \| `masonry` \| `waterfall` |
-| `limit` | `24` | Results per page — also controls the infinite-scroll page size |
+| `limit` | `24` | Results per page, also controls the infinite-scroll page size |
+| `no-more-results-text` | `No more results` | Text shown in the badge once every result has loaded |
 
-**Display modes:**
+**Viewport fill:** search-results auto-loads additional pages as needed until the viewport is filled or there are no more results, not just one page at a time. It also keeps loading further as you scroll, well before you reach the current bottom, so there's no visible pop-in. Once every matching result has loaded, a small "No more results" badge appears below the last row.
+
+**Display modes** (chosen via `search-bar`'s `view` options, or restored from `localStorage`):
 
 | Mode | Layout | Thumbnail shape |
 |------|--------|-----------------|
 | `cards` | Uniform grid | Square crop |
-| `list` | Single-column rows with metadata | Thumbnail |
-| `masonry` | CSS columns, uniform square crops | Square crop |
-| `waterfall` | CSS columns, natural proportions | Natural |
+| `list` | Single-column rows with metadata columns | Thumbnail |
+| `masonry` | JS-managed flex columns, load-more never reflows existing items | Natural |
 
-**Drag and drop:** Every asset teaser has `draggable="true"`. Users can drag any result card directly into Finder, Photoshop, Slack, or any OS-level file target. The dragged file is the asset's `original` rendition (falls back to `web`). Requires Chrome or Edge — gracefully degrades to URI copy in Firefox/Safari.
+Card/list/masonry columns are controlled by `configurations.searchResults.views`, see the [Quick Start](/quickstart#custom-properties) config example.
 
-![search-results four layout modes](https://placehold.co/860x420/111111/e91e8c?text=search-results+%E2%80%94+Four+Layout+Modes&font=inter)
-
-*search-results block — cards, list, masonry, and waterfall modes*
-
----
-
-## search-pagination {#search-pagination}
-
-**Search** · Previous/next pagination. Syncs with `search-results` via `asc:search:complete`.
-
-```
-| search-pagination  |   |
-|--------------------|---|
-```
-
-No configuration required.
-
----
-
-## search-hidden {#search-hidden}
-
-**Search** · Injects hidden search predicates as hidden form inputs. Use this block to enforce content-authorable, always-on filters on a specific search page — without editing `configurations.js`.
-
-| Provider | Support |
-|----------|---------|
-| QueryBuilder | Any predicate name — passed verbatim |
-| OpenAPI | Use `filter[*]` param names — passed verbatim |
-
-Each row in the block table is a predicate `name → value` pair.
-
-**QueryBuilder provider** — use exact QB predicate names from the [QueryBuilder reference](/querybuilder):
-
-```
-| search-hidden  |                        |
-|----------------|------------------------|
-| path           | /content/dam/brand     |
-| excludepaths   | .*subassets.*          |
-| mainasset      | true                   |
-```
-
-**OpenAPI provider** — use `filter[*]` param names from the OpenAPI Search API:
-
-```
-| search-hidden                  |                        |
-|--------------------------------|------------------------|
-| filter[assetAncestorPath]      | /content/dam/brand     |
-| filter[assetTagIds][]          | my-namespace:my/tag    |
-```
-
-> **search-hidden vs basePredicates** — Both inject always-on filters. Use `basePredicates` in `configurations.js` for site-wide defaults; use `search-hidden` for page-specific overrides authored in da.live.
-
-No visible UI is rendered — the block sets `display: none`.
+**Drag and drop:** Every asset teaser has `draggable="true"`. Users can drag any result card directly into Finder, Photoshop, Slack, or any OS-level file target. Requires Chrome or Edge, gracefully degrades to URI copy in Firefox/Safari.
 
 ---
 
 ## details-modal {#details-modal}
 
-**Asset Details** · The modal shell that loads MIME-type-specific detail templates. Opens when the URL contains `?asset={uuid}`.
+**Asset Details** · The modal shell that loads MIME-type-specific detail templates. Opens when the URL contains `?asset={uuid}`. Auto-injected by the `AssetDetails` service. You don't author this block directly on a details page, but the **details fragment page itself** is where the other `details-*` blocks below are assembled.
 
+![details-modal — the asset details dialog shell]({{ '/assets/images/blocks/details-modal.jpg' | relative_url }})
+
+*details-modal — the dialog shell that assembles the details-* blocks below for the open asset*
+
+The template to render is determined by `configurations.assetDetails.templates`, a function that receives the `Asset` and returns a fragment path (default `/details`).
+
+**Browser history navigation:** every asset open pushes a history entry so the URL stays shareable and back/forward navigation works naturally.
+
+---
+
+## details-header {#details-header}
+
+**Asset Details** · Title + meta-subtitle bar for the open asset. Authored content is a **token template**: any {% raw %}`{{ accessor }}` / `{{ accessor | fallback }}`{% endraw %} in the block's rows is resolved against the asset.
+
+![details-header — title and meta-subtitle bar]({{ '/assets/images/blocks/details-header.jpg' | relative_url }})
+
+*details-header — title and file-type/size/dimensions subtitle, resolved from the open asset*
+
+{% raw %}
 ```
-| details-modal  |   |
-|----------------|---|
+| details-header                                  |
+| {{title}}                                        |
+| {{file-type}} · {{file-size}} · {{dimensions}}   |
 ```
+{% endraw %}
 
-The template to render is determined by `configurations.assetDetails.templates`. The default path is `/details` (authored as `details/index` in da.live).
-
-**Browser history navigation:** Every asset open pushes a history entry so the URL stays shareable and back/forward navigation works naturally:
-
-- Opening an asset → `pushState` adds an entry with `?asset={uuid}`
-- Browser back → reopens the previous asset, or closes the modal if there is none
-- Browser forward → reopens the next asset
-- Close button → `replaceState` removes `?asset` without adding a history entry
-- Page loaded with `?asset=uuid` already in the URL (shared link) → `replaceState` marks the current entry; back navigates out of the page rather than closing the modal
+See [Content Variables](/developer#tokens) for the full accessor list.
 
 ---
 
 ## details-preview {#details-preview}
 
-**Asset Details** · Renders the asset preview — image, video embed, PDF viewer, or a generic icon fallback.
+**Asset Details** · Unified media previewer for all rendition types. Detects the selected rendition's MIME type (and filename extension as fallback) and routes to a matching sub-renderer: image, video, PDF, or Office. Enables cross-type rendition switching, e.g. a video asset can display its JPEG poster rendition.
+
+![details-preview — image and video preview]({{ '/assets/images/blocks/details-preview.jpg' | relative_url }})
+
+*details-preview — supports images, video, PDFs, Office documents, and generic fallback icons*
 
 ```
-| details-preview  |   |
-|------------------|---|
+| details-preview  |         |
+|-------------------|--------|
+| renditions        | original |
+| height            | 600px  |
+| client-id         |        |
 ```
 
-Preview type is determined automatically from the asset's MIME type.
+| Key | Default | Description |
+|-----|---------|-------------|
+| `renditions` | `original` | Comma-delimited priority list, walked in order to pick the initial display rendition |
+| `height` | `600px` | Viewer height for video/PDF/Office |
+| `client-id` | (none) | Adobe PDF Embed API key, optional; falls back to a native `<iframe>` |
 
-![details-preview — image and video preview](https://placehold.co/860x420/111111/9333ea?text=details-preview+%E2%80%94+Image+%26+Video+Preview&font=inter)
-
-*details-preview — supports images, video, PDFs, and generic fallback icons*
+Responds to `asc:rendition:activate` (sticky, click) and `asc:rendition:preview` (transient hover).
 
 ---
 
 ## details-property {#details-property}
 
-**Asset Details** · Renders a single metadata property value from the currently-open asset.
+**Asset Details** · Renders a single metadata property value from the currently-open asset. Use `pill` display for a badge-style value.
 
 ```
 | details-property  |                               |
 |-------------------|-------------------------------|
 | label             | Title                         |
-| property          | jcr:content/metadata/dc:title |
+| property          | dc:title                      |
 ```
 
 | Key | Default | Description |
 |-----|---------|-------------|
 | `label` | — | Display label |
-| `property` | — | JCR property path or custom property name |
-| `format` | — | `date` \| `bytes` \| `list` |
+| `property` | — | Property name from the [accessor list](/developer#tokens) or a raw JCR path |
+| `display` | — | `pill` for a badge-style value |
 
 ---
 
-## details-download {#details-download}
+## details-asset-metadata {#details-asset-metadata}
 
-**Asset Details** · Rendition download links for the open asset. Reads rendition definitions from `configurations.renditions`.
+**Asset Details** · A panel of asset property rows, rendered as a definition list (`asc-ui-metadata`). Each row is `Label | property`; multi-value properties (tags, keywords, smart-tags) render as `asc-ui-chip` pills with a "View more" expander past 10 items.
+
+![details-asset-metadata — asset property definition list]({{ '/assets/images/blocks/details-asset-metadata.jpg' | relative_url }})
+
+*details-asset-metadata — definition-list panel of asset properties, with multi-value chip pills*
 
 ```
-| details-download  |   |
-|-------------------|---|
+| details-asset-metadata |                     |
+|-------------------------|--------------------|
+| Title                   | dc:title           |
+| Description             | dc:description     |
+| Format                  | file-type          |
+| File size               | file-size          |
+| Uploaded                | uploaded-date      |
+| Uploaded by             | uploaded-by        |
+| Modified                | last-modified-date |
+| Author                  | author             |
+| Keywords                | keywords           |
+| Tags                    | tags               |
 ```
+
+Any property registered in `configurations.properties.custom` also works here. Rows whose value resolves empty are omitted automatically.
+
+---
+
+## details-metadata {#details-metadata}
+
+**Asset Details** · A panel of property rows in `list` or `grid` display. Functionally similar to `details-asset-metadata` but with a `display` option and no automatic multi-value chip expander.
+
+```
+| details-metadata  |               |
+|--------------------|--------------|
+| display            | list         |
+| Title              | dc:title     |
+| Tags               | tags         |
+```
+
+| Key | Default | Description |
+|-----|---------|-------------|
+| `display` | `list` | `list` \| `grid` |
+
+Array values (e.g. `tags`) render as `asc-ui-chip` pills.
+
+---
+
+## details-renditions {#details-renditions}
+
+**Asset Details** · Lists an asset's renditions as an `asc-ui-table` (default) or card grid. Author-configurable columns; highlights the `original` rendition as active on load and dispatches `asc:rendition:activate`.
+
+![details-renditions — card grid of rendition options]({{ '/assets/images/blocks/details-renditions.jpg' | relative_url }})
+
+*details-renditions — card display mode, showing every configured and auto-detected rendition*
+
+{% raw %}
+```
+| details-renditions |                                                              |
+|---------------------|-------------------------------------------------------------|
+| renditions          | original, web                                                |
+| display             | cards                                                        |
+| instructions        | Select a format below. <strong>Web</strong> is recommended.  |
+| Name                | name                                                          |
+| File size           | file-size                                                     |
+| Dimensions          | {{ width }}×{{ height }}                                     |
+|                     | download, share                                               |
+```
+{% endraw %}
+
+| Key | Default | Description |
+|-----|---------|-------------|
+| `renditions` | every visible rendition | Optional row list by name; omit for every visible rendition (`original` first, then A→Z) |
+| `display` | table | `cards` for a card grid |
+| `instructions` | — | Inline HTML (`<strong>`, `<em>`, `<code>`, `<br>`) shown above the table/cards |
+
+**Columns** (table mode) are `Title | value` rows:
+- **Values** resolve through the shared token engine against the current rendition: a bare path (`name`, `file-size`) or {% raw %}`{{ }}` tokens for mixed text (`{{ width }}×{{ height }}`), both with optional `{{ accessor | fallback }}`{% endraw %}.
+- **Rendition fields**: `name`, `label`, `url`, `format`, `file-type`, `file-size` (lazily fetched via `HEAD` request if absent from metadata), `dimensions`, `width`, `height`, `mimeType`, `filename`, `downloadUrl`, `type`, `path`, `usecase`.
+- **Asset paths**: `asset.properties.title`, `asset.renditions['web'].url`, or a bare term resolved via `asset.getProperty('…')`.
+- **Action columns**: a column whose value is one or more of `download`, `copy-url`, `share`, `preview` renders icon buttons instead of text.
+
+See [Content Variables](/developer#tokens) for the full token syntax.
+
+---
+
+## details-rendition-metadata {#details-rendition-metadata}
+
+**Asset Details** · Displays metadata for the *active* rendition (defaults to `original`). Updates live on `asc:rendition:activate` (click) and `asc:rendition:preview` (hover).
+
+```
+| details-rendition-metadata |            |
+|------------------------------|----------|
+| Rendition                    | label    |
+| Format                       | file-type |
+| File size                    | file-size |
+| Dimensions                   | dimensions |
+```
+
+Available fields: `label`/`id`/`name`, `file-type`, `format`, `file-size`, `width`/`height`/`dimensions`, `url`, `type`, `usecase`, `description`.
 
 ---
 
 ## details-actions {#details-actions}
 
-**Asset Details** · Action buttons (Add to Cart, Share link, etc.) in the details modal.
+**Asset Details** · Action buttons (circle-icon + label) for the open asset. Updates `href`/`data-copy-url` on `asc:rendition:activate` so **download** and **copy-url** always target the currently-selected rendition.
+
+![details-actions — download, copy link, share, and collection buttons]({{ '/assets/images/blocks/details-actions.jpg' | relative_url }})
+
+*details-actions — circle-icon action buttons, always targeting the currently-active rendition*
 
 ```
 | details-actions  |              |
-|------------------|--------------|
-| actions          | add-to-cart  |
-|                  | share-link   |
+|-------------------|-------------|
+| Download          | download    |
+| Copy link         | copy-url    |
+| Share             | share       |
+| Add to collection | collection  |
 ```
 
-| Key | Default | Description |
-|-----|---------|-------------|
-| `actions` | `add-to-cart` | Comma-separated action names |
+| Action | Behavior |
+|--------|----------|
+| `download` | Downloads the active rendition. Filename: `asset-base + rendition.label + ext`. |
+| `copy-url` | Copies the active rendition's URL to the clipboard |
+| `share` | Triggers the `/actions/share` action dialog |
+| `collection` | Add/remove-from-collection toggle (same behavior as `collectionToggle`) |
 
 ---
 
@@ -384,15 +517,19 @@ Preview type is determined automatically from the asset's MIME type.
 
 **Asset Details** · Horizontal strip of assets similar to the currently-open asset. Uses the QueryBuilder `similar` predicate to find related assets by shared tags and MIME type.
 
-> **QueryBuilder only** — This block makes a direct QueryBuilder API call. It is not available when using the OpenAPI search provider.
+![details-similar — horizontal similar assets strip]({{ '/assets/images/blocks/details-similar.jpg' | relative_url }})
+
+*details-similar — scrollable strip of visually related assets*
+
+> **QueryBuilder only.** This block makes a direct QueryBuilder API call and is not available when using the OpenAPI search provider.
 
 ```
 | details-similar  |                                     |
-|------------------|-------------------------------------|
-| title            | You may also like                   |
-| description      | Assets with similar tags and format |
-| max              | 8                                   |
-| show-empty       | false                               |
+|-------------------|-------------------------------------|
+| title              | You may also like                   |
+| description        | Assets with similar tags and format |
+| max                | 8                                    |
+| show-empty         | false                                |
 ```
 
 | Key | Default | Description |
@@ -400,20 +537,52 @@ Preview type is determined automatically from the asset's MIME type.
 | `title` | — | Heading rendered above the strip |
 | `description` | — | Subtext rendered below the heading |
 | `max` | `8` | Maximum number of similar assets to show |
-| `show-empty` | `false` | When `true`, the block stays visible even when no similar assets are found; when `false` the block removes itself from the page |
+| `show-empty` | `false` | When `true`, the block stays visible even with no matches; when `false` it removes itself |
 
-All keys are optional — a bare `details-similar` table with no rows works fine.
+---
 
-**Behaviour:**
-- Compares `dc:tags` and `dc:format` metadata between assets
-- Renders up to `max` similar assets as square image-only thumbnails in a horizontally scrollable strip
-- Clicking a thumbnail opens that asset in the details modal and pushes a new browser history entry — the back button returns to the previous asset
+## details-map {#details-map}
 
-**Browser history navigation:** Opening an asset from the similar strip (or from any search result) pushes a history entry (`?asset={uuid}`). The browser back and forward buttons navigate between previously-viewed assets, and back past the first asset closes the modal.
+**Asset Details** · Interactive Leaflet map centered on the asset's GPS capture location. Hides itself completely when coordinates are absent or invalid. Loads Leaflet 1.9.4 and OpenStreetMap tiles from a CDN — no API key required.
 
-![details-similar — horizontal similar assets strip](https://placehold.co/860x240/111111/9333ea?text=details-similar+%E2%80%94+Similar+Assets+Strip&font=inter)
+```
+| details-map  |                                        |
+|---------------|----------------------------------------|
+| latitude      | jcr:content/metadata/exif:GPSLatitude  |
+| longitude     | jcr:content/metadata/exif:GPSLongitude |
+| label         | Location                               |
+| zoom          | 10                                      |
+```
 
-*details-similar — scrollable strip of visually related assets*
+| Key | Default | Description |
+|-----|---------|-------------|
+| `latitude` | `jcr:content/metadata/exif:GPSLatitude` | JCR path to the latitude field |
+| `longitude` | `jcr:content/metadata/exif:GPSLongitude` | JCR path to the longitude field |
+| `label` | Location | Marker label |
+| `zoom` | `10` | Initial Leaflet zoom level |
+
+Falls back to coordinates text + a Google Maps link if Leaflet fails to load.
+
+---
+
+## details-video {#details-video}
+
+**Asset Details** · Embeds a video asset using a native `<video>` element, with an unsupported-format fallback and download link. Responds to `asc:rendition:activate` / `asc:rendition:preview` for rendition switching.
+
+```
+| details-video |          |
+|----------------|---------|
+| height         | 600px   |
+| controls       | true    |
+| autoplay       | false   |
+| muted          | false   |
+| loop           | false   |
+| playsinline    | true    |
+| preload        | metadata|
+| poster         |         |
+```
+
+All rows are optional. `preload` accepts `auto` \| `metadata` \| `none`.
 
 ---
 
@@ -426,129 +595,205 @@ All keys are optional — a bare `details-similar` table with no rows works fine
 |----------------------|---|
 ```
 
-No configuration required. The "Manage collections" link targets `configurations.collections.managePath` (default `/collections`).
+No configuration required. The "Manage collections" link targets `configurations.collections.managePath` (default `/collections/`).
 
-**Reactivity:** Re-renders automatically on any `asc:collection:change` event — collection switches, creates, renames, and asset adds/removes all update the badge count and list.
+**Reactivity:** Re-renders automatically on any `asc:collection:change` event.
 
-### Adding the collection-switcher to the site header
+### Adding collection-switcher to the site header
 
-The header block loads `/nav` as a fragment. The nav document has **three sections** separated by horizontal rules (`---`), which map to `nav-brand`, `nav-sections`, and `nav-tools`:
+The header block loads `/nav` as a fragment with **three sections** separated by horizontal rules (`---`), mapping to `nav-brand`, `nav-sections`, and `nav-tools`. Add `collection-switcher` (and, if you want it, `search-active-filters`) to **section 3**:
 
 ```
-Section 1 — nav-brand   → logo / site name
+Your Logo
 ---
-Section 2 — nav-sections → main navigation links
+Home | Products | About
 ---
-Section 3 — nav-tools   → utility area (search, account, cart, etc.)
-```
-
-Add the `collection-switcher` block to **section 3** of your `/nav` document in da.live:
-
-| | |
-|---|---|
-| Your Logo | |
-
----
-
-| Home | Products | About |
-|------|----------|-------|
-
----
-
 | collection-switcher | |
-|---------------------|--|
+```
 
-EDS processes the nav document as a fragment, so the block is decorated normally — the switcher renders in the tools area on every page without any per-page authoring.
-
-> **Custom nav path** — if your site uses a nav document at a path other than `/nav`, set `nav: /path/to/nav` in the page metadata (or globally in a metadata sheet).
+> **Custom nav path** — if your site uses a nav document at a path other than `/nav`, set `nav: /path/to/nav` in the page metadata.
 
 ---
 
 ## collections {#collections}
 
-**Collections** · Index and management page for all user collections. Place this block on `/collections/index`.
+**Collections** · Index and management page for all user collections. Place this block on `/collections/`.
 
 ```
 | collections  |   |
 |--------------|---|
 ```
 
-No configuration required.
+No configuration required. Page title and intro copy are authored above this block in da.live.
 
 **Features:**
-- Grid of collection cards showing name, asset count, and Active / Default badges
-- Inline "New Collection" form — no page navigation required
-- Per-card actions: **Open** (navigates to the collection detail page), **Set Active**, **Delete**
-- The default collection cannot be deleted
+- Grid of collection cards — a mosaic of up to 4 lazy-loaded asset thumbnails, name, asset counts by type, total count, and last-updated date
+- Inline "New collection" form — no page navigation required
+- Per-card **Open** and **Delete** actions; the default collection cannot be deleted
 - Re-renders on any `asc:collection:change` event
 
-The **Open** link navigates to `configurations.collections.collectionPath?id=<uuid>` (default `/collections/collection?id=<uuid>`).
+The **Open** action navigates to `configurations.collections.collectionPath?id=<uuid>` (default `/collections/collection?id=<uuid>`).
 
 ---
 
-## collection {#collection}
+## collection-controls {#collection-controls}
 
-**Collections** · Detail and edit page for a single collection. Place this block on `/collections/collection`. The UUID is read from the `?id=` query parameter — e.g. `/collections/collection?id=abc123`.
+**Collections** · Header for a single collection's page — editable name, asset count, and action buttons (Share / Download / past-shares / edit). Header text (`h1`/`p`) is a **token template**, resolved against the hydrated collection:
+
+{% raw %}
+```
+{{collection.title}}
+{{collection.description}}
+{{collection.count}} assets — Last updated {{collection.lastUpdated}}
+
+| collection-controls |
+| past-shares          | Past Shares | ghost     |
+| edit                 | Edit        | ghost     |
+| share                | Share       | secondary |
+| download             | Download    | primary   |
+```
+{% endraw %}
+
+Each row is `action | label | variant`. Pair `collection-controls` (header) with [`board`](#board) (`source: collection`, `mode: interactive`) in the same page — see [Board page patterns](#board) below.
+
+Reads the `?id=` URL parameter. Reacts to `asc:collection:change`, re-registering its {% raw %}`{{collection.*}}`{% endraw %} tokens on rename or item add/remove.
+
+---
+
+## sheet-controls {#sheet-controls}
+
+**Collections** · Header for a shared, read-only sheet page — Download / Copy Link buttons. Header text is a **token template**, resolved against the decoded `?sheet=` payload:
+
+{% raw %}
+```
+{{sheet.title}}
+{{sheet.description}}
+{{sheet.count}} assets — Expires {{sheet.expiresAt|Never}}
+
+| sheet-controls |
+| download        | Download  | primary   |
+| copy-link       | Copy Link | secondary |
+```
+{% endraw %}
+
+Pair `sheet-controls` (header) with [`board`](#board) (`source: sheet`, `mode: view`) in the same page.
+
+---
+
+## board {#board}
+
+**Collections** · Reusable, header-less canvas — pan/zoom, client-side search, optional details-page routing override. Renders a **collection** or a shared **sheet** depending on `source`.
+
+![Board — pan/zoom canvas with cards](https://placehold.co/860x480/111111/22c55e?text=Board+%E2%80%94+Pan%2FZoom+Canvas&font=inter)
+
+*Board canvas — drag, rubber-band select, notes, and free-floating text in interactive mode*
 
 ```
-| collection  |   |
-|-------------|---|
+| board  |                    |
+|--------|--------------------|
+| source | collection         |
+| mode   | interactive        |
+| search-properties  | title, file-type |
+| display-properties | title · file-type |
+| notes  | true               |
 ```
 
-No configuration required.
+| Property | Values | Default | Notes |
+|----------|--------|---------|-------|
+| `source` | `collection` \| `sheet` | `sheet` | Where to load assets from |
+| `mode` | `view` \| `interactive` | `view` | `view` = pan/zoom + search only; `interactive` = drag, rubber-band select, text elements, notes, "Align to grid", + Text button |
+| `notes` | `true` \| `false` | `true` | When `false`, hides notes UI entirely |
+| `search-properties` | Comma-separated property names | — | Properties to make client-side searchable. Omit to hide the search input. |
+| `display-properties` | `·`-delimited property names | — | Properties shown in the card body. Omitted → shows the asset type label (Image, Video, PDF…). |
+| `details` | Path prefix | — | Override the default ASC details modal — clicking a card navigates to `{details}?asset={uuid}` instead |
 
-**Features:**
-- Click-to-edit collection name (inline, no modal)
-- Asset list with drag-to-reorder (persisted to localStorage)
-- Per-asset remove button
-- **Share** — opens a dialog to enter a sheet title and description, then generates a compressed share URL pointing at `configurations.collections.sheetPath` (default `/sheets/index`)
-- **Download** — opens a rendition picker; submits an async AEM bulk-download job via the Downloads service; auto-triggers the browser download if the job finishes within ~15 s; otherwise surfaces a resumable pending state
-- **Delete** — protected: the default "My Collection" cannot be deleted; navigates to `configurations.collections.managePath` on success
-- Active download jobs for the collection are shown in a live status panel
+**Source: collection** — reads `?id=`, hydrates via `services.collections.get(id, true)`, persists pan/zoom to `localStorage` per collection ID.
 
-**Share URL format:**
+**Source: sheet** — reads `?sheet=`, decompresses the payload, and checks `expiresAt` before rendering (expired sheets show a notice instead of the canvas).
 
-```
-/sheets/index?assets=<compressed>&title=<encoded>&description=<encoded>
-```
+**Client-side search:** appears as the last toolbar item when `search-properties` is set. Non-matching cards dim; matches get a highlight ring; the viewport auto-fits to matches on every keystroke.
+
+### Page patterns
+
+**Collection page** — `collection-controls` (header) + `board` (`source: collection`, `mode: interactive`) in two sections. **Sheet page** — `sheet-controls` (header) + `board` (`source: sheet`, `mode: view`), optionally with a `details` override for a scoped details template.
 
 ---
 
 ## stub {#stub}
 
-**Collections** · Compact summary bar — shows the active collection name, asset count, and a link to the download sheet. Suitable for sidebars or persistent footer areas.
+**Collections** · Compact summary bar — shows the active collection/cart state and a link to the download sheet. Suitable for sidebars or persistent footer areas.
 
 ```
 | stub  |   |
 |-------|---|
 ```
 
-No configuration required. Listens to `asc:collection:change` and re-renders on any collection mutation.
+No configuration required. Re-renders on `asc:collection:change`.
 
 ---
 
-## sheet {#sheet}
+## action-download {#action-download}
 
-**Collections** · Full-page download sheet. Renders collected assets as rows — each with a thumbnail, metadata, per-asset rendition switcher, and a download button.
+**Actions** · The download dialog triggered by `<a href="/actions/download">` links (e.g. `collection-controls`' Download button). Not authored directly on a page — instead, author its dialog content as a DA fragment at `/actions/download` (title, description, rendition list, footer buttons).
+
+Submits an async AEM bulk-download job via `configurations.downloads.binariesUrl`; auto-triggers the browser download when the job resolves quickly, otherwise surfaces a resumable pending state.
+
+See [Action Pages](/developer#actions) for the full DA document structure and context-passing convention.
+
+---
+
+## action-share {#action-share}
+
+**Actions** · The share dialog triggered by `<a href="/actions/share">` links. Generates a compressed share URL for the current collection/board state (pointing at `configurations.collections.sheetPath`, default `/sheets/`) and records it to a local share history shown in the collection page's past-shares panel.
+
+Author its dialog content as a DA fragment at `/actions/share`.
+
+---
+
+## hero {#hero}
+
+**Layout** · The standard EDS auto-block — no `decorate()` logic of its own. Any image + heading combination at the top of a page's first section is automatically promoted into a `hero` block by EDS's `buildAutoBlocks`; style it via `blocks/hero/hero.css`.
+
+---
+
+## columns {#columns}
+
+**Layout** · Multi-column content layout. Adds a `columns-{n}-cols` class based on the number of columns authored, and tags any column whose sole content is an image with `columns-img-col` for full-bleed image styling.
 
 ```
-| sheet  |   |
-|--------|---|
+| columns  |                     |
+|----------|---------------------|
+| Text in column one | ![Image](...) |
 ```
 
-No configuration required. Reads from URL query parameters:
+---
 
-| Parameter | Description |
-|-----------|-------------|
-| `assets` | Compressed array of asset UUIDs (set by the `collection` share dialog or `stub` block) |
-| `renditions` | Compressed array of rendition IDs to pre-select |
-| `title` | URL-encoded sheet title (replaces the default "Download Sheet" heading) |
-| `description` | URL-encoded description shown below the title |
+## content {#content}
 
-**Per-asset rendition switcher:** Each row shows pill buttons for every rendition in the selection. Clicking a pill updates the download link for that row without affecting others.
+**Layout** · Passthrough block for default rich-text content (`h2`, `h3`, `p`, `img`, `ul`, `ol`, etc.). Exists solely so authored content can be assigned a named grid area via [section-metadata](/layouts#named-area-grid) — the table wrapper divs are stripped and the raw markup promoted directly into the block element.
 
-**Drag and drop:** Rows are draggable. Dragging to Finder, Photoshop, or any app copies the currently-selected rendition URL. Chrome/Edge only — degrades to URI copy in Firefox/Safari.
+```
+| content  |
+|----------|
+| <h2>Heading</h2><p>Body text…</p> |
+```
 
-![Sheet block — thumbnails, rendition switcher, drag](https://placehold.co/860x480/111111/22c55e?text=Sheet+%E2%80%94+Thumbnails+%2B+Rendition+Switcher+%2B+Drag&font=inter)
+---
 
-*Sheet block — thumbnail, per-asset rendition pills, download button, and drag-to-app*
+## fragment {#fragment}
+
+**Layout** · Includes another page's content inline (`{: target="_blank"}`[AEM block collection reference](https://www.aem.live/developer/block-collection/fragment)). Used internally by `header` and `footer` to load `/nav` and `/footer`, and available for any authored page that wants to embed a shared fragment.
+
+```
+| fragment  |         |
+|-----------|---------|
+| [Link text](/shared-fragment) |
+```
+
+---
+
+## header / footer {#header-footer}
+
+**Layout** · Standard EDS site chrome. `header` loads `/nav` (or the page's `nav` metadata override) as a three-section fragment (`nav-brand` / `nav-sections` / `nav-tools`, separated by `---`) and adds a scroll-triggered `.scrolled` class via `IntersectionObserver`. `footer` loads `/footer` (or the page's `footer` metadata override) verbatim.
+
+No block-level configuration — content comes entirely from the linked fragment pages.
