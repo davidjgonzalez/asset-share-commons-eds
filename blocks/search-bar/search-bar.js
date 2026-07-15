@@ -84,9 +84,10 @@ export default function decorate(block) {
   const sortOptions  = parseOptions(config.sort,  DEFAULT_SORT_OPTIONS);
   const orderOptions = parseOptions(config.order, DEFAULT_ORDER_OPTIONS);
 
-  // Priority: URL param > localStorage > first authored option
+  // Display mode: localStorage only, never part of the shareable URL.
+  // Sort/order: URL param > localStorage > first authored option (unchanged).
   const params = new URLSearchParams(window.location.search);
-  const display    = params.get(LS_DISPLAY)    || localStorage.getItem(LS_DISPLAY)    || viewOptions[0].value;
+  const display    = localStorage.getItem(LS_DISPLAY) || viewOptions[0].value;
   const orderby    = params.get('orderby')      || localStorage.getItem(LS_ORDERBY)    || sortOptions[0].value;
   const orderbySort= params.get('orderby.sort') || localStorage.getItem(LS_ORDERBY_SORT) || orderOptions[0].value;
 
@@ -121,7 +122,7 @@ function html(config, { display, orderby, orderbySort, viewOptions, sortOptions,
     <div class="asc-ui-segmented asc-ui-segmented--sm asc-ui-segmented--icon search-bar__controls" role="group" aria-label="Search controls">
       <label class="asc-ui-segmented__option search-bar__ctrl" title="View">
         <span aria-hidden="true">${ICONS[display] || ICONS.masonry}</span>
-        <select name="asc.search-results.display" form="${SEARCH_FORM}" aria-label="View">
+        <select name="asc.search-results.display" aria-label="View">
           ${optionHtml(viewOptions, display)}
         </select>
       </label>

@@ -8,6 +8,8 @@ import configurations from '../../scripts/asc/configurations.js';
 
 const MASONRY_SIZES = '(min-width: 1400px) 25vw, (min-width: 1000px) 33vw, (min-width: 640px) 50vw, 100vw';
 const MASONRY_COL_WIDTH = 360; // target column width — smaller value = more columns at wider viewports
+const FILL_LEAD_PX = 1200; // how far below the viewport bottom triggers a load, in px
+const MAX_AUTO_FILL_ROUNDS = 50; // safety cap on consecutive auto-triggered loads per fresh search
 
 // Per-container masonry state: tracks column elements and round-robin index.
 const masonryState = new WeakMap();
@@ -202,6 +204,7 @@ export default async function decorate(block) {
   const config = readBlockConfig(block, {}, {
     'asc.search-results.display': 'masonry',
     limit: 100,
+    'no-more-results-text': 'No more results',
   });
 
   // Support friendly 'Default View' content key (lowercased to 'default-view' by EDS)
@@ -209,8 +212,7 @@ export default async function decorate(block) {
 
   block.innerHTML = html(config);
 
-  const params = new URLSearchParams(window.location.search);
-  block.querySelector('[data-asc-results]').dataset.display = params.get('asc.search-results.display') || config['asc.search-results.display'] || 'masonry';
+  block.querySelector('[data-asc-results]').dataset.display = localStorage.getItem('asc.search-results.display') || config['asc.search-results.display'] || 'masonry';
 
   await addEventListeners(block, config);
   await emitEvents(block, config);
@@ -224,6 +226,9 @@ function html(config) {
     <input type="hidden" name="asc.search-results.total" value="0"/>
 
     <div data-asc-results data-loading></div>
+    <p class="search-results__end" hidden>
+      <span class="asc-ui-badge">${esc(config['no-more-results-text'])}</span>
+    </p>
   `;
 }
 
@@ -233,6 +238,19 @@ async function addEventListeners(block, _config) {
   let isLoadingMore = false;
   let sentinel = null;
   let observer = null;
+  let fillRounds = 0;
+
+  function requestLoadMore() {
+    isLoadingMore = true;
+    document.dispatchEvent(new CustomEvent('asc:search:execute', {
+      detail: { type: 'load-more' },
+    }));
+  }
+
+  function sentinelNearViewport() {
+    if (!sentinel) return false;
+    return sentinel.getBoundingClientRect().top < window.innerHeight + FILL_LEAD_PX;
+  }
 
   function setupSentinel() {
     // Create a sentinel element just below the results; IntersectionObserver
@@ -248,11 +266,11 @@ async function addEventListeners(block, _config) {
       const moreInput = block.querySelector('[name="asc.search-results.more"]');
       if (!moreInput || moreInput.value === 'false' || isLoadingMore) return;
 
-      isLoadingMore = true;
-      document.dispatchEvent(new CustomEvent('asc:search:execute', {
-        detail: { type: 'load-more' },
-      }));
-    }, { rootMargin: '600px 0px' });
+      // A real user scroll is always a fresh not-intersecting -> intersecting
+      // transition, so it always gets its own fill budget.
+      fillRounds = 0;
+      requestLoadMore();
+    }, { rootMargin: `${FILL_LEAD_PX}px 0px` });
 
     observer.observe(sentinel);
   }
@@ -268,6 +286,9 @@ async function addEventListeners(block, _config) {
 
     block.querySelector('[name="asc.search-results.more"]').value = results.more;
     block.querySelector('[name="asc.search-results.total"]').value = results.total || 0;
+
+    const endEl = block.querySelector('.search-results__end');
+    endEl.hidden = results.more || !(results.total > 0);
 
     // Derive next offset from the server-reported values so fresh searches
     // (offset=0) always reset correctly.
@@ -315,15 +336,18 @@ async function addEventListeners(block, _config) {
     attachImageHandlers(resultsEl);
     injectQuickDownloadButtons(resultsEl, display, quickDownloadRendition);
     isLoadingMore = false;
-    setupSentinel();  // no-op after first call; observer handles subsequent loads
+    setupSentinel(); // no-op after first call; observer handles further scroll-driven loads
 
-    // After a page-load search (filter change, new query), the IntersectionObserver
-    // only fires on transitions. If the sentinel was already visible before the new
-    // (potentially shorter) results rendered, no transition occurs and load-more
-    // would never fire. Re-observe to force immediate re-evaluation.
-    if (event.detail.type !== 'load-more' && sentinel && observer) {
-      observer.unobserve(sentinel);
-      observer.observe(sentinel);
+    if (event.detail.type !== 'load-more') fillRounds = 0;
+
+    // IntersectionObserver only fires on a not-intersecting -> intersecting transition.
+    // If a page of results doesn't fill the viewport, the sentinel stays continuously
+    // intersecting across appends and the observer never fires again on its own. Measure
+    // directly and keep requesting more until the viewport is satisfied, results run out,
+    // or the safety cap is hit.
+    if (results.more && fillRounds < MAX_AUTO_FILL_ROUNDS && sentinelNearViewport()) {
+      fillRounds += 1;
+      requestLoadMore();
     }
   });
 

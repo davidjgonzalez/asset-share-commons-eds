@@ -7,6 +7,16 @@
         visibility: hidden;
     }
 
+    .search-results__end {
+        display: flex;
+        justify-content: center;
+        margin-block: var(--spacing-xl) 0;
+    }
+
+    .search-results__end[hidden] {
+        display: none;
+    }
+
     .search-results__toolbar {
         display: flex;
         gap: var(--spacing-sm);
