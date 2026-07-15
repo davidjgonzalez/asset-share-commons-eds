@@ -15,6 +15,10 @@ sidebar:
         url: "#events"
       - title: Login & Merge
         url: "#login"
+  - label: Sharing
+    items:
+      - title: Share URL Format
+        url: "#share-url"
   - label: Downloads
     items:
       - title: Downloads Service
@@ -45,25 +49,26 @@ sidebar:
 
 # Collections & State
 
-Asset Share Commons provides a client-side state management system for asset collections, recently viewed assets, and shareable collection URLs. All state is stored in `localStorage` under the `asc` namespace and is scoped per user.
+Asset Share Commons provides a client-side state management system for asset collections, board layout (position, notes, free-floating text), and shareable sheet URLs. All state is stored in `localStorage` under a per-user namespace.
 
 ---
 
 ## Overview {#overview}
 
-A **collection** is a named, persistent set of asset UUIDs. Every user gets a **default collection** that cannot be deleted. Additional named collections can be created programmatically.
+A **collection** is a named, persistent board of items — asset references plus optional section headings — with positions, notes, and free text. Every user gets a **default collection** that cannot be deleted. Additional named collections can be created programmatically or from the `collections` / `collection-switcher` UI.
 
 Key properties:
 - Collections are user-scoped (isolated by user ID in localStorage)
 - The **active collection** is the target for `Add to Collection` actions when no specific collection is specified
-- Anonymous user selections are automatically **merged into the logged-in user's default collection** on login
+- Anonymous user data is automatically **merged into the logged-in user's default collection** on login
 - Changes in one browser tab propagate to other tabs via the `storage` event
+- The [`board`](/blocks#board) block renders a collection (interactive, editable) or a shared sheet (read-only) from the same canvas UI
 
 ---
 
 ## Storage Schema {#schema}
 
-Stored under `localStorage["asc:{userId}"].collections`:
+Stored under `storage.get('collections')` (user-scoped):
 
 ```js
 {
@@ -74,16 +79,15 @@ Stored under `localStorage["asc:{userId}"].collections`:
       name:       "My Collection",
       createdAt:  "2026-03-31T10:00:00.000Z",
       modifiedAt: "2026-03-31T10:05:00.000Z",
-      assetIds:   ["uuid-1", "uuid-2", "uuid-3"]
+      items: [
+        // Asset item — board position and notes are both optional
+        { type: 'asset', id: 'uuid-1', mimeType: 'image/jpeg', x: 120, y: 40, notes: 'Hero shot' },
+        { type: 'asset', id: 'uuid-2' },
+        // Section item — a heading/body card placed on the board
+        { type: 'section', id: 'sec-1', title: 'Q3 Hero Options', body: 'Pick one for the homepage' },
+      ],
     },
-    "661f9511-f30c-52e5-b827-557766551111": {
-      id:         "661f9511-f30c-52e5-b827-557766551111",
-      name:       "Campaign Spring 2026",
-      createdAt:  "2026-03-31T11:00:00.000Z",
-      modifiedAt: "2026-03-31T11:30:00.000Z",
-      assetIds:   ["uuid-4", "uuid-5"]
-    }
-  }
+  },
 }
 ```
 
@@ -93,6 +97,8 @@ The active collection ID is stored separately:
 localStorage["asc:{userId}"].activeCollectionId  // UUID | null (null → use defaultId)
 ```
 
+> **Board position (`x`/`y`) and `notes`** are per-item, set via drag/drop and the notes UI on the `board` block (`mode: interactive`) and persisted through `collections.updateItem()`.
+
 ---
 
 ## API Reference {#api}
@@ -100,22 +106,16 @@ localStorage["asc:{userId}"].activeCollectionId  // UUID | null (null → use de
 Access via the `services` singleton:
 
 ```js
-import services from '/scripts/asc/services/services.js';
+import services from '../../scripts/asc/core/services/services.js';
 const { collections } = services;
 ```
 
 ### Collection CRUD
 
 ```js
-// Create a new named collection
-const collection = collections.create('Campaign Spring 2026');
-// → { id, name, createdAt, modifiedAt, assetIds: [] }
-
-// Rename a collection
+collections.create('Campaign Spring 2026');   // → Collection (not hydrated)
 collections.rename(id, 'Campaign Summer 2026');
-
-// Delete a collection (the default collection cannot be deleted)
-collections.delete(id);
+collections.delete(id);                       // the default collection is protected
 ```
 
 ### Getters
@@ -123,21 +123,12 @@ collections.delete(id);
 Pass `hydrateAssets = true` to add a resolved `assets: Asset[]` array to each collection.
 
 ```js
-// All collections
-const all = await collections.getAll();           // → Collection[]
-const all = await collections.getAll(true);       // → Collection[] with assets hydrated
-
-// By ID
-const c   = await collections.get(id);            // → Collection | null
-const c   = await collections.get(id, true);      // → with assets hydrated
-
-// Default and active collections
-const def    = await collections.getDefault();
-const active = await collections.getActive();
-const id     = collections.getActiveId();         // synchronous — returns UUID
-
-// Set active collection
-collections.setActive(id);
+await collections.getAll(hydrateAssets?);          // → Collection[]
+await collections.get(id, hydrateAssets?);         // → Collection | null
+await collections.getDefault(hydrateAssets?);      // → Collection
+await collections.getActive(hydrateAssets?);       // → Collection
+      collections.getActiveId();                   // synchronous — → UUID
+      collections.setActive(id);
 ```
 
 ### Asset Management
@@ -145,24 +136,24 @@ collections.setActive(id);
 `collectionId` is optional — omit to target the **active collection**.
 
 ```js
-await collections.addAsset(assetId);               // add to active
-await collections.addAsset(assetId, collectionId); // add to specific collection
-
-await collections.removeAsset(assetId);
-await collections.removeAsset(assetId, collectionId);
-
-const inCollection = await collections.hasAsset(assetId);
-const inSpecific   = await collections.hasAsset(assetId, collectionId);
-// → boolean
+await collections.addAsset(assetId, collectionId?);
+await collections.removeAsset(assetId, collectionId?);
+await collections.hasAsset(assetId, collectionId?);   // → boolean
 ```
 
-### Asset Reordering
+### Board Items — position, notes, sections
 
 ```js
-// Replace the full ordered asset list for a collection
-collections.reorderAssets(collectionId, ['uuid-3', 'uuid-1', 'uuid-2']);
-// Dispatches asc:collection:change with action: "reordered"
-// IDs not present in the collection are silently ignored
+// Partial update of an asset item's board position and/or notes
+collections.updateItem(collectionId, assetId, { x?, y?, notes? });
+
+// Replace the full ordered asset list (programmatic use — the board itself uses x/y, not order)
+collections.reorderAssets(collectionId, newAssetIds);
+
+// Section cards (free-floating headings on the board)
+await collections.addSection(collectionId, { title?, body? });      // → SectionItem
+      collections.updateSection(collectionId, sectionId, { title, body });
+await collections.removeSection(collectionId, sectionId);
 ```
 
 ---
@@ -178,28 +169,11 @@ All collection events are dispatched on `document`.
 | `asc:collection:deleted` | Collection deleted | `{ id }` |
 | `asc:collection:activated` | Active collection switched | `{ id, previous }` |
 
-`action` values in `asc:collection:change`:
-
-| Action | Trigger |
-|--------|---------|
-| `"created"` | `collections.create()` |
-| `"deleted"` | `collections.delete()` |
-| `"renamed"` | `collections.rename()` |
-| `"activated"` | `collections.setActive()` |
-| `"assetAdded"` | `collections.addAsset()` |
-| `"assetRemoved"` | `collections.removeAsset()` |
-| `"reordered"` | `collections.reorderAssets()` |
-| `"login"` | `collections.loginAs()` |
-| `"logout"` | `collections.logout()` |
-| `"external"` | Cross-tab storage event |
-
-Listening example:
+`action` values in `asc:collection:change`: `"created"`, `"deleted"`, `"renamed"`, `"activated"`, `"assetAdded"`, `"assetRemoved"`, `"reordered"`, `"login"`, `"logout"`, or `"external"` (cross-tab).
 
 ```js
 document.addEventListener('asc:collection:change', ({ detail }) => {
-  if (detail.action === 'assetAdded') {
-    updateCartCount();
-  }
+  if (detail.action === 'assetAdded') updateCartCount();
 });
 ```
 
@@ -210,34 +184,63 @@ document.addEventListener('asc:collection:change', ({ detail }) => {
 When a user authenticates, call `loginAs(userId)` to migrate anonymous state:
 
 ```js
-// In your IMS login callback:
 await collections.loginAs(userId);
 ```
 
-This:
-1. Reads all asset IDs from **every anonymous collection**
-2. Merges them (deduplicated) into the logged-in user's **default collection**
-3. Migrates recently viewed assets from anonymous → user storage
-4. Switches the active user context to `userId`
-5. Dispatches `asc:collection:change` with `action: "login"`
-
-### Logout
-
-When the user signs out, call `logout()` to return to the anonymous scope:
+This reads every anonymous collection, merges (deduplicated) into the logged-in user's default collection, migrates recently-viewed assets, switches the active user context, and dispatches `asc:collection:change` with `action: "login"`.
 
 ```js
 collections.logout();
-// Switches storage context back to anonymous
-// Dispatches asc:collection:change with action: "logout"
+// Switches storage context back to anonymous; dispatches action: "logout"
 ```
 
-The logged-in user's data remains in localStorage and will be available again on next login.
+The logged-in user's data remains in localStorage and is available again on next login.
+
+---
+
+## Share URL Format {#share-url}
+
+The **Share** action on `collection-controls` (via the `action-share` block) encodes the full board state as a single compressed JSON payload appended to the configured `sheetPath` (default `/sheets/`):
+
+```
+{sheetPath}?sheet={compressArray([JSON.stringify(payload)])}
+```
+
+Payload structure:
+
+```js
+{
+  title:        string,
+  description?: string,
+  expiresAt?:   ISO string,          // optional expiry — board/sheet-controls show an error/empty state past this
+  items:        string[],            // encoded asset and section items
+  textElements?: { x, y, w, h, content }[],  // free-floating text from the board
+}
+```
+
+Item encoding within `items[]`:
+
+| Item | Encoding |
+|------|----------|
+| Asset, no position/notes | `"uuid"` |
+| Asset, with board position | `"uuid@x,y"` |
+| Asset, with notes | `"uuid@x,y\|\|\|notes text"` or `"uuid\|\|\|notes text"` |
+| Section heading | `"~title\|\|\|body"` |
+
+Both the [`board`](/blocks#board) block (`source: sheet`) and the [`sheet-controls`](/blocks#sheet-controls) block independently decode this same payload — one for the canvas, one for the header. Use `services.url.compressArray` / `decompressToArray` (native `CompressionStream('deflate')`, URL-safe base64) if you need to build or read this payload programmatically.
+
+```js
+import services from '../../scripts/asc/core/services/services.js';
+
+const encoded = await services.url.compressArray([JSON.stringify(payload)]);
+const [json]  = await services.url.decompressToArray(encoded);
+```
 
 ---
 
 ## Downloads Service {#downloads}
 
-`scripts/asc/services/downloads/downloads.js` — manages async AEM bulk-download jobs. Jobs are persisted in user-scoped localStorage and survive page reloads so users can return to check on slow downloads.
+`scripts/asc/core/services/downloads/downloads.js` — manages async AEM bulk-download jobs. Jobs are persisted in user-scoped localStorage and survive page reloads so users can return to check on slow downloads.
 
 **Flow:**
 1. Call `downloads.create(assetPaths, renditionIds)` — submits a job to the AEM download framework via HTTP and returns immediately
@@ -269,30 +272,20 @@ Stored under `storage.get(storage.DOWNLOAD_JOBS).jobs`:
 ### Downloads API {#downloads-api}
 
 ```js
-import services from '/scripts/asc/services/services.js';
+import services from '../../scripts/asc/core/services/services.js';
 const { downloads } = services;
 
 // Initiate a bulk download (returns local job immediately; AEM call is async)
 const job = await downloads.create(
   ['/content/dam/brand/hero.jpg', '/content/dam/brand/logo.png'],
   ['original'],
-  {
-    collectionId: 'abc-123',   // optional — for reference only
-    autoDownload: true,        // default true — trigger download when ready
-  }
+  { collectionId: 'abc-123', autoDownload: true },   // both optional
 );
 
-// Get all jobs for the current user (sorted newest first)
-const jobs = downloads.getAll();
-
-// Get a single job
-const job = downloads.get(jobId);
-
-// Resume polling for a job that didn't finish in the quick-poll window
-const updatedJob = await downloads.resume(jobId);
-
-// Manually trigger the browser download for a completed job
-downloads.triggerDownload(jobId);
+downloads.getAll();               // → all jobs for the current user, newest first
+downloads.get(jobId);             // → single job
+await downloads.resume(jobId);    // resume polling for a job that didn't finish quickly
+downloads.triggerDownload(jobId); // manually trigger the browser download for a completed job
 ```
 
 ### Download Events {#download-events}
@@ -308,21 +301,17 @@ All dispatched on `document`.
 
 ### Configuration
 
-In `configurations.js`:
-
 ```js
+// configurations.js
 downloads: {
-  // AEM servlet path — POST to initiate, GET ?jobId=<id> to poll
-  initiateUrl: '/content/dam.downloads.initiateDownload.json',
+  binariesUrl: '/content/dam.downloadbinaries.json',  // AEM Assets download framework endpoint
+  actionPath: '/actions/download',                     // DA fragment providing the dialog's intro content
 
-  // Fast-poll window in ms before leaving job as "running" (default: 15 s)
-  quickPollTimeout: 15000,
-
-  // Poll interval in ms (default: 2 s)
-  pollInterval: 2000,
-
-  // Job TTL in ms — older jobs are auto-removed on service init (default: 7 days)
-  jobExpiry: 7 * 24 * 60 * 60 * 1000,
+  // Legacy async-polling variant (still available as services.downloads):
+  // initiateUrl: '/content/dam.downloads.initiateDownload.json',
+  // quickPollTimeout: 15000,
+  // pollInterval: 2000,
+  // jobExpiry: 7 * 24 * 60 * 60 * 1000,
 },
 ```
 
@@ -330,7 +319,7 @@ downloads: {
 
 ## Storage Service {#storage}
 
-`scripts/asc/services/storage/storage.js` — the underlying persistence layer.
+`scripts/asc/core/services/storage/storage.js` — the underlying persistence layer.
 
 ### Key constants
 
@@ -346,29 +335,24 @@ downloads: {
 ### API
 
 ```js
-import storage from '/scripts/asc/services/storage/storage.js';
+import storage from '../../scripts/asc/core/services/storage/storage.js';
 
-// User-scoped reads/writes
-storage.get(key)           // → value | null
-storage.set(key, value)
-storage.remove(key)
+// User-scoped
+storage.get(key); storage.set(key, value); storage.remove(key);
 
 // Global (not user-scoped)
-storage.getGlobal(key)
-storage.setGlobal(key, value)
-storage.removeGlobal(key)
+storage.getGlobal(key); storage.setGlobal(key, value); storage.removeGlobal(key);
 
 // Recently viewed assets (user-scoped, capped at 50, deduplicated)
-storage.addRecentlyViewed(uuid)
-storage.getRecentlyViewed()    // → string[]
+storage.addRecentlyViewed(uuid);
+storage.getRecentlyViewed();    // → string[]
 
 // Theme (global)
-storage.getTheme()             // → string | null
-storage.setTheme(name)
+storage.getTheme(); storage.setTheme(name);
 
 // Shared links (global, deduplicated by URL)
-storage.addSharedLink(url, label?)
-storage.getSharedLinks()       // → { url, label, receivedAt }[]
+storage.addSharedLink(url, label?);
+storage.getSharedLinks();       // → { url, label, receivedAt }[]
 ```
 
 ### localStorage Structure {#localstorage}
@@ -385,11 +369,8 @@ localStorage
 Storage changes in one tab fire a native `window.storage` event in other tabs. The Collections service listens via `storage.onExternalChange()` and dispatches `asc:collection:change` with `source: "external"`:
 
 ```js
-// Listen to external (cross-tab) changes only
 document.addEventListener('asc:collection:change', ({ detail }) => {
-  if (detail.source === 'external') {
-    rerender();  // another tab made changes — refresh the UI
-  }
+  if (detail.source === 'external') rerender();  // another tab made changes
 });
 ```
 
@@ -397,30 +378,18 @@ document.addEventListener('asc:collection:change', ({ detail }) => {
 
 ## Collection URLs {#urls}
 
-Asset UUIDs can be encoded into a shareable URL using native browser compression (`CompressionStream('deflate')`). The result is URL-safe base64.
+Low-level compression helpers, used by the sharing flow above:
 
 ```js
-import url from '/scripts/asc/services/url/url.js';
+import services from '../../scripts/asc/core/services/services.js';
 
-// Build a shareable URL for a list of asset IDs
-const shareUrl = await url.toCollectionUrl(assetIds);
-// → "https://example.com/sheet?assets=eJyr..."
+const encoded = await services.url.compressArray(['uuid1', 'uuid2']);
+const values  = await services.url.decompressToArray(encoded);
 
-// Custom param name or base URL
-const shareUrl = await url.toCollectionUrl(assetIds, {
-  param: 'assets',           // default
-  base: 'https://example.com/sheet',
-});
-
-// Read asset IDs back from a URL
-const assetIds = await url.fromCollectionUrl(window.location.search);
-// → ["uuid-1", "uuid-2", ...]
-
-// Custom param name
-const assetIds = await url.fromCollectionUrl(window.location.search, 'assets');
+// Legacy helpers — still available but not used by the board/sheet share flow
+const shareUrl  = await services.url.toCollectionUrl(assetIds, { param: 'assets', base: 'https://example.com/sheet' });
+const assetIds  = await services.url.fromCollectionUrl(window.location.search, 'assets');
 ```
-
-The `sheet` block uses these helpers to receive a list of assets via URL and render a download page.
 
 ---
 
@@ -430,12 +399,12 @@ These are two distinct concepts that are easy to confuse:
 
 | | **Collections** | **Sheets** |
 |---|---|---|
-| **What it is** | A locally-managed set of asset UUIDs | A curated EDS page authored in da.live |
-| **Storage** | `localStorage` (client-side only) | Edge Delivery Services document |
-| **Created by** | End users (dynamically) | Content authors (statically) |
-| **Persistence** | Per browser / device | Permanent URL |
-| **Shareable** | Via encoded URL (`?assets=…`) | Via page URL |
-| **Renditions** | User chooses on download sheet | Author-defined |
+| **What it is** | A locally-managed board of asset/section items | A curated, read-only board rendered from a shared URL |
+| **Storage** | `localStorage` (client-side only) | Encoded entirely in the URL — no server storage |
+| **Created by** | End users (dynamically, via the board) | Generated by the Share action on a collection |
+| **Persistence** | Per browser / device | As long as the URL is kept (optional `expiresAt`) |
+| **Shareable** | Not directly — share a sheet link instead | Via the `?sheet=` URL |
+| **Editing** | `board` in `interactive` mode | `board` in `view` mode — read-only |
 | **AEM Collections** | No relation | No relation |
 
 > **Note:** Neither "Collections" nor "Sheets" in ASC EDS corresponds to [AEM Assets Collections](https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/assets/manage/manage-collections). AEM Collections are server-side; ASC EDS collections are client-side localStorage only.

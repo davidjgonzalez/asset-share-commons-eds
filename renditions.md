@@ -15,45 +15,57 @@ sidebar:
         url: "#accepts"
       - title: Excluding Renditions
         url: "#exclude"
-  - label: Types
+      - title: Filenames
+        url: "#filenames"
+  - label: Resolver Types
     items:
-      - title: Static (JCR)
+      - title: static (JCR)
         url: "#static"
-      - title: URL (Dynamic Media)
+      - title: dm-smartcrop
+        url: "#dm-smartcrop"
+      - title: url-template
+        url: "#url-template"
+      - title: url
         url: "#url"
-      - title: Asset Delivery
-        url: "#asset-delivery"
+      - title: web-optimized-delivery
+        url: "#web-optimized-delivery"
+      - title: dm-openapi
+        url: "#dm-openapi"
+  - label: Thumbnails
+    items:
+      - title: Search result srcset
+        url: "#thumbnails"
 ---
 
 # Renditions
 
-Renditions are downloadable representations of an asset. Asset Share Commons resolves renditions from AEM based on a declarative array configured in `scripts/configurations.js`.
+Renditions are downloadable representations of an asset. Asset Share Commons resolves renditions from AEM through a **resolver registry** — a declarative array configured in `scripts/asc/configurations.js`. This is the client-side equivalent of ASC v1's `AssetRenditionDispatcher` OSGi configurations.
 
 ## Overview {#overview}
 
-When a user clicks **Download** in the details modal or the download sheet, Asset Share Commons walks the `renditions.definitions` array, finds every definition that accepts the current asset, and renders a list of download links.
+When a user opens `details-renditions` or triggers a download, ASC walks the `renditions.definitions` array, finds every definition that accepts the current asset, and resolves each through the matching **resolver type**.
 
 ![Renditions — download options panel](https://placehold.co/860x380/111111/e91e8c?text=Renditions+%E2%80%94+Download+Options+Panel&font=inter)
 
-*details-download block — renders configured renditions for the open asset*
+*details-renditions block — renders configured renditions for the open asset*
 
-Resolution is done by the `renditions` service (`scripts/asc/services/renditions/renditions.js`). For each definition it:
+Resolution is done by the `renditions` service (`scripts/asc/core/services/renditions/renditions.js`). For each definition it:
 
 1. Calls `accepts(asset)` — skips if it returns false
-2. Resolves the URL using the definition's `type`
-3. Returns a `Rendition` model with the resolved URL
+2. Resolves the rendition through the type's resolver (JCR node lookup, URL template, or function)
+3. Returns a `Rendition` model with the resolved URL, and — for node-backed types — auto-detects any additional renditions present on the asset that weren't explicitly configured
 
-**Same-id fallback:** Multiple definitions may share the same `id`. When resolving by id (e.g. `getRendition(asset, 'thumbnail')`), the service returns the first definition whose `accepts` passes for this asset. This gives you DM-over-static priority and per-MIME-type variants of the same logical rendition — for free, just by ordering.
+**Same-id fallback:** Multiple definitions may share the same `id`. When resolving by id (e.g. `getRendition(asset, 'web')`), the service returns the first definition whose `accepts` passes for this asset — DM-over-static priority and per-MIME-type variants of the same logical rendition, for free, just by ordering.
 
 ## Default Renditions {#default-renditions}
 
-Out of the box, Asset Share Commons includes three definitions that work with any standard AEM DAM processing profile:
+Out of the box, Asset Share Commons ships definitions that work with any standard AEM DAM processing profile, plus classic Dynamic Media smart crops:
 
 | ID | Type | Matches | Visible |
 |----|------|---------|---------|
-| `thumbnail` | Static (JCR) | `/^cq5dam\.thumbnail\./` | No (internal) |
-| `web` | Static (JCR) | `/^cq5dam\.web\./` | Yes — images only |
-| `original` | Static (JCR) | `original` (exact) | Yes — all types |
+| `original` | `static` | `original` (exact) | Yes — all types |
+| `web` | `static` | `cq5dam.web.1280.1280` | Yes — images only |
+| `smart-crop-small` / `smart-crop-medium` | `dm-smartcrop` | Auto-detected JCR smart crop nodes | Yes — images only |
 
 ## Configuration {#configuration}
 
@@ -62,25 +74,19 @@ Out of the box, Asset Share Commons includes three definitions that work with an
 ```js
 renditions: {
   definitions: [
-    {
-      id: 'thumbnail',
-      label: 'Thumbnail',
-      type: 'static',
-      name: /^cq5dam\.thumbnail\./,
-      visible: false,
-    },
+    { id: 'original', label: 'Original', type: 'static', name: 'original' },
     {
       id: 'web',
-      label: 'Web',
+      label: 'Web (1280px)',
       type: 'static',
-      name: /^cq5dam\.web\./,
+      name: 'cq5dam.web.1280.1280',
       accepts: (asset) => asset.mimeType?.startsWith('image/'),
     },
     {
-      id: 'original',
-      label: 'Original',
-      type: 'static',
-      name: 'original',
+      id: 'smart-crop-small',
+      label: 'Smart Crop — Small',
+      type: 'dm-smartcrop',
+      accepts: (asset) => asset.mimeType?.startsWith('image/'),
     },
   ],
 },
@@ -89,14 +95,17 @@ renditions: {
 ### Definition properties
 
 | Property | Type | Description |
-|----------|------|-------------|
-| `id` | `string` | Unique key within the array. Multiple definitions may share an id — first match wins per asset. |
+|----------|------|--------------|
+| `id` | `string` | Unique key within the array. Multiple definitions may share an id — first accepted match wins per asset. |
 | `label` | `string` | Display name shown in the download list |
-| `type` | `string` | `'static'` \| `'url'` \| `'asset-delivery'` |
+| `type` | `string` | `'static'` \| `'dm-smartcrop'` \| `'url-template'` \| `'url'` \| `'web-optimized-delivery'` \| `'dm-openapi'` |
 | `accepts` | `(asset) => boolean` | Whether this definition applies to the asset. Omit to match all assets. |
 | `visible` | `boolean` | Show in the download list (default: `true`). Set `false` for internal renditions like thumbnails. |
 | `description` | `string` | Optional sub-label or tooltip |
 | `mimeType` | `string` | Override MIME type hint for the downloaded file |
+| `fileType` | `string` | Human-readable format label shown in the `file-type` column (e.g. `'JPEG'`, `'WebP 1200px'`). Defaults to a label derived from `mimeType`. |
+| `usecase` | `string` | Arbitrary tag (e.g. `'thumbnail'`, `'web'`), exposed as the `usecase` column in `details-renditions` |
+| `filename` | `string \| (rendition, asset) => string` | Override the download filename — see [Filenames](#filenames) |
 
 ## accepts {#accepts}
 
@@ -106,164 +115,257 @@ renditions: {
 // Any image
 accepts: (asset) => asset.mimeType?.startsWith('image/'),
 
-// Specific type
-accepts: (asset) => asset.mimeType === 'application/pdf',
-
-// Only assets synced to Dynamic Media
-accepts: (asset) => !!asset.getProperty('dam:scene7File'),
-
-// Images wider than 2000px
-accepts: (asset) => (asset.getProperty('jcr:content/metadata/tiff:ImageWidth') ?? 0) > 2000,
+// Only assets synced to classic Dynamic Media
+accepts: (asset) => !!asset.getProperty('dam:scene7File').data,
 
 // A specific DAM folder
 accepts: (asset) => asset.path?.startsWith('/content/dam/brand/'),
 ```
 
-**Same id, different accepts — per-type variants:**
-
-```js
-definitions: [
-  // DM web rendition — preferred when asset has a Scene7 file reference
-  {
-    id: 'web',
-    label: 'Web',
-    type: 'url',
-    url: (asset) => {
-      const server = asset.getProperty('dam:scene7APIServer');
-      const file = asset.getProperty('dam:scene7File');
-      return server && file ? `${server}is/image/${file}?$web$` : null;
-    },
-    accepts: (asset) => !!asset.getProperty('dam:scene7File'),
-  },
-  // Static fallback for non-DM assets
-  {
-    id: 'web',
-    label: 'Web',
-    type: 'static',
-    name: /^cq5dam\.web\./,
-    accepts: (asset) => asset.mimeType?.startsWith('image/'),
-  },
-],
-```
-
 ## Excluding Renditions {#exclude}
 
-Use `renditions.exclude` to suppress JCR rendition node names globally — useful for suppressing extra thumbnail sizes generated by processing profiles.
+Use `renditions.exclude` to suppress JCR rendition node names globally — useful for suppressing thumbnail/template nodes generated by processing profiles that should never show up anywhere (including internal auto-detection).
 
 ```js
 renditions: {
   exclude: [
-    'cq5dam.thumbnail.48.48.png',
-    /^cq5dam\.thumbnail\.(?:48|96|140)\./,
+    /^cq5dam\.thumbnail\./,   // cq5dam.thumbnail.48.48.png, etc.
+    /^cqdam\..+\.json$/,      // cqdam.text.json, cqdam.metadata.json
+    'cqdam.metadata.xml',
+    'Swatch',
   ],
-  definitions: [ ... ],
+  definitions: [ /* ... */ ],
 },
 ```
 
-> Exclusions only apply to `type: 'static'` renditions. `url` and `asset-delivery` renditions are unaffected.
+> Exclusions only apply to `type: 'static'` and node-scanning resolvers. `url`, `url-template`, `web-optimized-delivery`, and `dm-openapi` renditions are unaffected — they're constructed, not scanned.
 
 ---
 
-## Rendition Types {#types}
+## Resolver Types
 
-### Static (JCR) {#static}
+Six built-in resolver types cover the three distinct DM delivery patterns plus plain static/custom URLs:
 
-Resolves a rendition node from the asset's `jcr:content/renditions/` tree by matching `name` against the node name.
+| | Classic DM (Scene7 / IS-IR) | Web-optimized delivery | DM with OpenAPI |
+|---|---|---|---|
+| **AEM version** | AEM 6.5 or AEMaaCS + classic DM | AEMaaCS publish | AEMaaCS + DM OpenAPI enabled |
+| **Rendition type** | `dm-smartcrop`, `url-template`, or `url` | `web-optimized-delivery` | `dm-openapi` |
+| **URL prefix** | `{dam:scene7Domain}/is/image/` | `{host}/adobe/dynamicmedia/deliver/dm-aid--{uuid}/` | `{deliveryHost}/adobe/dynamicmedia/deliver/{uuid}/` |
+| **Asset identifier** | `dam:scene7File` metadata | UUID (with `dm-aid--` prefix) | UUID |
+| **Requires DM OpenAPI** | No | No | Yes |
+| **Smart crop / presets** | `:CropName` / `?$preset$` | No | `?smartcrop=Name` / `?imagePreset=name` |
+
+> **`dam:scene7Domain` vs `dam:scene7APIServer`** — `dam:scene7Domain` is the IS/IR delivery CDN host used in image URLs (e.g. `https://s7d1.scene7.com/`). `dam:scene7APIServer` is the Scene7 management API endpoint — **not** used for delivery. Use `${dm.domain}` in `url-template` strings for IS/IR URLs.
+
+### static (JCR) {#static}
+
+Resolves a rendition node from the asset's `jcr:content/renditions/` tree by matching `name` against the node name. Works on any AEM instance.
 
 ```js
 {
   id: 'web',
   label: 'Web (1280px)',
   type: 'static',
-  name: /^cq5dam\.web\./,
+  name: 'cq5dam.web.1280.1280',       // string (exact), RegExp, or (asset) => string
   accepts: (asset) => asset.mimeType?.startsWith('image/'),
 }
 ```
 
-| Property | Description |
-|----------|-------------|
-| `name` | `string` (exact match), `RegExp` (pattern match), or `(asset) => string` (dynamic exact match) |
+### dm-smartcrop {#dm-smartcrop}
 
-### URL (Dynamic Media) {#url}
+Classic Dynamic Media (Scene7) smart crop via the IS protocol: `{dam:scene7APIServer}is/image/{dam:scene7File}:{id}`. The definition's `id` must exactly match the smart-crop name registered in DM (case-sensitive, e.g. `"Small"`, `"Medium"`, `"Large"`).
 
-`url` is a function that receives the asset and returns the full URL string. Use `asset.getProperty()` to pull Dynamic Media metadata directly — no template variables needed.
+```js
+{ id: 'Large', label: 'Smart Crop — Large', type: 'dm-smartcrop', accepts: (asset) => asset.mimeType?.startsWith('image/') },
+```
+
+Smart crops present on the asset but **not listed here are auto-detected and appended automatically** (`autoDetect: true` behavior, built in). Add an explicit definition only when you need a custom label or an `accepts` guard on a specific crop.
+
+### url-template {#url-template}
+
+Declarative `${variable}` token string — the preferred way to build Dynamic Media / Scene7 IS/IR URLs without a JS function. Resolves to `null` automatically if any referenced token has no value on the asset, so an `accepts` guard is optional.
 
 ```js
 {
-  id: 'dm-web',
-  label: 'Web (DM)',
-  type: 'url',
-  url: (asset) => {
-    const server = asset.getProperty('dam:scene7APIServer');
-    const file = asset.getProperty('dam:scene7File');
-    return server && file ? `${server}is/image/${file}?$web$` : null;
-  },
-  accepts: (asset) => !!asset.getProperty('dam:scene7File'),
-},
+  id: 'dm-web-preset',
+  label: 'Web Preset',
+  type: 'url-template',
+  template: '${dm.domain}is/image/${dm.file}?$web$',
+}
+```
 
-// Smart crop
+| Token | Resolves to | JCR metadata path |
+|-------|-------------|--------------------|
+| `${asset.path}` | JCR path | — |
+| `${asset.name}` | Node name (filename) | — |
+| `${asset.extension}` | File extension | — |
+| `${rendition.name}` | This definition's `id` | — |
+| `${dm.name}` | Scene7 asset name | `dam:scene7Name` |
+| `${dm.id}` | Scene7 asset ID | `dam:scene7ID` |
+| `${dm.file}` | Scene7 file path | `dam:scene7File` |
+| `${dm.folder}` | Scene7 folder | `dam:scene7Folder` |
+| `${dm.domain}` | **IS/IR delivery CDN host** (use this for image URLs) | `dam:scene7Domain` |
+| `${dm.api-server}` | Scene7 management API (not for delivery) | `dam:scene7APIServer` |
+
+### url {#url}
+
+Arbitrary JS function — use when `url-template` tokens aren't enough.
+
+```js
 {
-  id: 'dm-crop-small',
-  label: 'Smart Crop — Small',
+  id: 'dm-grayscale',
+  label: 'Grayscale',
   type: 'url',
   url: (asset) => {
-    const server = asset.getProperty('dam:scene7APIServer');
-    const file = asset.getProperty('dam:scene7File');
-    return server && file ? `${server}is/image/${file}:Small` : null;
+    const server = asset.getProperty('dam:scene7APIServer').data;
+    const file = asset.getProperty('dam:scene7File').data;
+    return server && file ? `${server}is/image/${file}?$grayscale$` : null;
   },
-  accepts: (asset) => !!asset.getProperty('dam:scene7File'),
-},
+}
 ```
 
 Returning `null` from `url` is safe — the definition is silently skipped.
 
-**Common Dynamic Media properties** (written by the DM sync process):
+### web-optimized-delivery {#web-optimized-delivery}
 
-| `getProperty()` key | Contains |
-|---------------------|---------|
-| `dam:scene7APIServer` | IS/IR server URL (e.g. `https://s7d1.scene7.com/`) |
-| `dam:scene7File` | File path (e.g. `my-company/my-image`) |
-| `dam:scene7Name` | Asset name in Scene7 |
-| `dam:scene7ID` | Scene7 asset ID |
-| `dam:scene7Domain` | Scene7 domain |
-| `dam:scene7Folder` | Scene7 folder |
-
-### Asset Delivery {#asset-delivery}
-
-Constructs an AEM Asset Delivery API URL. Covers plain image transforms, smart crops, and named presets — they're all different `params` on the same URL format.
-
-Requires `aem.deliveryHost` in `configurations.js`. AEM as a Cloud Service only.
+Web-optimized delivery on AEM as a Cloud Service publish — works **without** requiring the full DM OpenAPI entitlement. URL prefix uses `dm-aid--{uuid}`.
 
 ```js
-// Plain transform
 {
   id: 'web-optimized',
   label: 'Web Optimized',
-  type: 'asset-delivery',
+  type: 'web-optimized-delivery',
   params: 'format=webp&width=1200&quality=85',
   accepts: (asset) => asset.mimeType?.startsWith('image/'),
-},
+}
+```
+
+Uses `aem.deliveryHost` when set, falls back to `aem.host`.
+
+### dm-openapi {#dm-openapi}
+
+Dynamic Media with OpenAPI / AEM Asset Delivery. Requires `aem.deliveryHost` and the DM OpenAPI entitlement. Covers plain transforms, smart crops, and named presets — they're all different `params` on the same URL format.
+
+```js
+// Plain transform
+{ id: 'web-optimized', label: 'Web Optimized', type: 'dm-openapi',
+  params: 'format=webp&preferwebp=true&width=1200&quality=85',
+  accepts: (asset) => asset.mimeType?.startsWith('image/') },
 
 // Smart crop (crop name must match a DM preset)
-{
-  id: 'smart-crop-small',
-  label: 'Smart Crop — Small',
-  type: 'asset-delivery',
-  params: 'smartcrop=Small',
-  accepts: (asset) => asset.mimeType?.startsWith('image/'),
-},
+{ id: 'smart-crop-small', label: 'Smart Crop — Small', type: 'dm-openapi',
+  params: 'smartcrop=Small', accepts: (asset) => asset.mimeType?.startsWith('image/') },
 
 // Named image preset
-{
-  id: 'dm-preset-web',
-  label: 'Web Preset',
-  type: 'asset-delivery',
-  params: 'imagePreset=web',
-  accepts: (asset) => asset.mimeType?.startsWith('image/'),
-},
+{ id: 'dm-preset-web', label: 'Web Preset', type: 'dm-openapi',
+  params: 'imagePreset=web', accepts: (asset) => asset.mimeType?.startsWith('image/') },
 ```
 
 | Property | Description |
-|----------|-------------|
+|----------|--------------|
 | `params` | Query string appended to the delivery URL |
 | `format` | File extension override (default: asset's own extension) |
+
+### Custom resolvers
+
+Register a new type, or override a built-in one, by keying on the type string:
+
+```js
+renditions: {
+  resolvers: {
+    'my-type': {
+      fromDefinition(def, asset, aemConfig) { /* return new Rendition({...}) or null */ },
+      // Optional — for JCR node-scanning types:
+      autoDetect: true,
+      acceptsNode(name, node) { return false; },
+      fromNode(name, node, asset, aemConfig) { /* return new Rendition({...}) or null */ },
+    },
+  },
+},
+```
+
+---
+
+## Service API
+
+```js
+import services from '../../scripts/asc/core/services/services.js';
+
+services.renditions.getRenditions(asset);            // definitions + auto-detected node renditions
+services.renditions.getRendition(asset, 'web');       // single rendition by id
+services.renditions.resolveAllNodes(asset);           // every JCR node through all resolvers
+services.renditions.getThumbnailUrl(asset);           // best thumbnail URL (with fallback)
+services.renditions.getThumbnailSrcset(asset);        // Rendition[] sorted by size.width, for <img srcset>
+services.renditions.getRenditionDefinition('web');    // raw definition object (no asset needed)
+```
+
+## Filenames {#filenames}
+
+Each resolver sets a `filename` on the `Rendition` it constructs; `details-renditions` uses it verbatim when present and falls back to a generic pattern otherwise.
+
+| Type | Filename pattern | Example |
+|------|-------------------|---------|
+| `dm-smartcrop` | `{asset-stem}-smart-crop-{cropName}.jpg` | `hero-banner-smart-crop-Large.jpg` |
+| `static` / `url` / `url-template` / `dm-openapi` | `{asset-stem}-{id}.{ext}` | `hero-banner-web.jpg` |
+| `static` with a JCR node name as id | Extension stripped: `{asset-stem}-{node-base}.{ext}` | `hero-banner-cq5dam.fpo.png` |
+| `original` | `{asset-stem}.{ext}` (no suffix) | `hero-banner.jpg` |
+
+**Definition-level override** — add `filename` to any definition. A plain string is used as-is; a function receives `(rendition, asset)` and returns a string. Applied last, after the resolver runs, so `rendition` already has its `url`, `mimeType`, etc.
+
+```js
+// Plain string
+{ id: 'fpo', label: 'FPO', type: 'static', name: 'cq5dam.fpo', filename: 'fpo-placeholder.png' }
+
+// Function — full access to rendition and asset
+{
+  id: 'web', label: 'Web', type: 'static', name: 'cq5dam.web.1280.1280',
+  filename: (rendition, asset) => {
+    const stem = asset.filename?.replace(/\.[^.]+$/, '') ?? asset.title;
+    return `${stem}-web-optimized.jpg`;
+  },
+}
+```
+
+### File size — lazy HEAD fetch
+
+Static renditions get `fileSize` from JCR metadata for free. Dynamically generated renditions (`dm-smartcrop`, `url`, `url-template`, `web-optimized-delivery`, `dm-openapi`) don't have a known size until the URL is requested — `details-renditions` fires a `HEAD` request for any rendition missing `fileSize` after render, reads `Content-Length`, and updates the cell in place. If the server returns no `Content-Length` (chunked transfer, an un-generated Scene7 crop), the cell stays blank — no error thrown.
+
+---
+
+## Thumbnails — search result srcset {#thumbnails}
+
+Put thumbnail renditions in a **separate `thumbnails` array** (not `definitions`). Entries here are never shown in the download list — they exist solely to generate the `<img srcset>` on asset teasers (cards, masonry, list, board cards, collection mosaics). Each entry needs `size.width` so the browser gets a correct `Nw` descriptor.
+
+```js
+renditions: {
+  thumbnails: [
+    { type: 'web-optimized-delivery', size: { width: 100  }, params: 'width=100&preferwebp=true&quality=85',  accepts: (asset) => asset.mimeType?.startsWith('image/') },
+    { type: 'web-optimized-delivery', size: { width: 320  }, params: 'width=320&preferwebp=true&quality=85',  accepts: (asset) => asset.mimeType?.startsWith('image/') },
+    { type: 'web-optimized-delivery', size: { width: 640  }, params: 'width=640&preferwebp=true&quality=80',  accepts: (asset) => asset.mimeType?.startsWith('image/') },
+    { type: 'web-optimized-delivery', size: { width: 1280 }, params: 'width=1280&preferwebp=true&quality=70', accepts: (asset) => asset.mimeType?.startsWith('image/') },
+  ],
+  definitions: [ /* downloadable renditions — see above */ ],
+},
+```
+
+Use `web-optimized-delivery` for thumbnails — it works on any AEMaaCS publish instance without requiring DM OpenAPI. Reserve `dm-openapi` for `definitions` (downloadable renditions).
+
+`services.renditions.getThumbnailSrcset(asset)` resolves URLs for the asset and returns them sorted smallest to largest. `getThumbnailUrl(asset)` picks the mid-size entry as the `src` fallback. Non-image assets, or when every `thumbnails` entry has an image-only `accepts`, fall back to the static `cq5dam.thumbnail` node URL.
+
+### Asset Model — computed rendition properties
+
+```js
+// CSS aspect-ratio string for the most-portrait rendition across all renditions + the
+// asset's own dimensions. Use as the initial preview container AR so every rendition
+// displays without clipping — falls back to "4 / 3" when no dimension metadata exists.
+asset.renditionsBoundingAspectRatio   // → e.g. "1280 / 960" or "4 / 3"
+
+block.style.setProperty('--preview-ar', asset.renditionsBoundingAspectRatio);
+
+// Snap to actual image dimensions after load (eliminates bars for exact matches)
+img.addEventListener('load', () => {
+  if (img.naturalWidth && img.naturalHeight) {
+    container.style.aspectRatio = `${img.naturalWidth} / ${img.naturalHeight}`;
+  }
+}, { once: true });
+```

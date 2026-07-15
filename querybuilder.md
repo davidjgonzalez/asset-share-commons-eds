@@ -9,6 +9,8 @@ sidebar:
         url: "#overview"
       - title: basePredicates
         url: "#base-predicates"
+      - title: Search config sheet
+        url: "#search-sheet"
       - title: Search blocks → params
         url: "#search-blocks"
   - label: Predicates
@@ -81,6 +83,28 @@ search: {
 
 ---
 
+## Search config sheet — content-author static predicates {#search-sheet}
+
+`configurations.search.sheet` (default `/asc`) points to a da.live workbook. `SearchService` lazily fetches the `search-predicates` sheet (`{sheet}.json?sheet=search-predicates`) on first search and merges it into every query — a third tier between `basePredicates` and live form data, editable by content authors without touching `configurations.js`.
+
+Sheet format — two columns:
+
+| name | value |
+|------|-------|
+| `path` | `/content/dam/brand` |
+| `notexpired.property` | `jcr:content/metadata/dam:expirationDate` |
+| `1000_group.property` | `jcr:content/metadata/dam:status` |
+| `1000_group.property.value` | `approved` |
+
+- **`name`** — full QB predicate name; include a group prefix (`1000_group.*`) when grouping is needed
+- **`value`** — predicate value
+
+Both the QueryBuilder and OpenAPI providers receive the merged sheet params through the normal form-data flow — OpenAPI translates them via its existing predicate mapping (below). `SearchService.searchSilent(formData)` also applies sheet predicates, so blocks that run outside the search page's DOM (like `details-similar`) get them too.
+
+> **`search-hidden` has been replaced** by this config sheet — page-specific always-on filters are now authored here rather than as a hidden block on the page.
+
+---
+
 ## Search blocks → QueryBuilder params {#search-blocks}
 
 Search block inputs map to QB predicates by their `name` attribute. The block
@@ -88,12 +112,11 @@ author controls the name; the QueryBuilder API receives it unchanged.
 
 | Block | What it produces |
 |-------|-----------------|
-| `search-bar` | `fulltext=<value>` |
+| `search-bar` | `fulltext=<value>` (plus view/sort/order preferences, applied client-side) |
 | `search-property` | `property=<path>` + `property.value=<value>` (block-configured) |
 | `search-tags` | `tagid=cq:tags` + `tagid.N_value=<tag>` entries |
 | `search-date-range` | `daterange.property=<path>` + `daterange.lowerBound`/`upperBound` |
 | `search-path` | `path=<dam-path>` |
-| `search-sort` | `orderby=<field>` + `orderby.sort=asc\|desc` |
 
 Custom search blocks can use any predicate name as the input `name` attribute — the
 provider passes everything through.

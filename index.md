@@ -29,7 +29,7 @@ permalink: /
 <div class="highlights">
   <div class="highlights__inner">
     <div class="highlights__item">
-      <div class="highlights__number">15+</div>
+      <div class="highlights__number">30+</div>
       <div class="highlights__label">Ready-to-use Blocks</div>
     </div>
     <div class="highlights__item">
@@ -92,7 +92,7 @@ permalink: /
       <div class="feature-card__blocks">
         <span class="badge badge--purple">details-modal</span>
         <span class="badge badge--purple">details-preview</span>
-        <span class="badge badge--purple">details-download</span>
+        <span class="badge badge--purple">details-renditions</span>
         <span class="badge badge--purple">details-actions</span>
       </div>
     </div>
@@ -100,20 +100,20 @@ permalink: /
     <div class="feature-card">
       <div class="feature-card__screenshot">
         <img
-          src="https://placehold.co/480x240/111111/22c55e?text=Collections+%26+Downloads&font=inter"
-          alt="Collections and downloads screenshot"
+          src="https://placehold.co/480x240/111111/22c55e?text=Collections+%26+Board&font=inter"
+          alt="Collections and board screenshot"
           loading="lazy"
         />
       </div>
       <div class="feature-card__icon">📦</div>
-      <div class="feature-card__title">Collections & Downloads</div>
+      <div class="feature-card__title">Collections & Board</div>
       <p class="feature-card__text">
-        Cart-style collection management. The download sheet shows per-asset thumbnails, a per-asset rendition switcher, and drag-and-drop to Finder, Photoshop, or any OS app.
+        A pan/zoom board for collecting, arranging, and annotating assets. Share a read-only sheet link, or send it straight to an async AEM bulk-download job — with drag-and-drop to Finder, Photoshop, or any OS app.
       </p>
       <div class="feature-card__blocks">
-        <span class="badge badge--green">stub</span>
-        <span class="badge badge--green">sheet</span>
-        <span class="badge badge--green">collections</span>
+        <span class="badge badge--green">board</span>
+        <span class="badge badge--green">collection-controls</span>
+        <span class="badge badge--green">sheet-controls</span>
       </div>
     </div>
 
@@ -132,9 +132,9 @@ permalink: /
         with a body attribute. Ships with dark, light, and high-contrast themes.
       </p>
       <div class="feature-card__blocks">
+        <span class="badge badge--blue">default</span>
         <span class="badge badge--blue">dark</span>
-        <span class="badge badge--blue">light</span>
-        <span class="badge badge--blue">high-contrast</span>
+        <span class="badge badge--blue">studio</span>
       </div>
     </div>
 
@@ -210,9 +210,9 @@ permalink: /
       <div class="screenshot-banner__eyebrow">Single Config File</div>
       <h2 class="screenshot-banner__title">One file. All the configuration.</h2>
       <p class="screenshot-banner__body">
-        <code>scripts/configurations.js</code> is the only file you need to touch.
+        <code>scripts/asc/configurations.js</code> is the only file you need to touch.
         AEM host, search provider, renditions, asset detail templates — all in one place,
-        fully typed.
+        fully documented inline.
       </p>
       <a href="/quickstart" class="btn btn--ghost">See Quick Start →</a>
     </div>
