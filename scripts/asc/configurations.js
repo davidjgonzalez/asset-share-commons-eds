@@ -142,12 +142,6 @@ const configurations = {
   //     // Masonry view — keep it minimal; meta overlays on hover
   //     masonry: ['thumbnail', 'title'],
   //
-  //     // Quick actions shown on card/masonry teasers.
-  //     // Download uses this rendition ID by default (falls back to original, then web).
-  //     // quickActions: {
-  //     //   downloadRendition: 'original',
-  //     // },
-  //
   //     // List view — property name + column layout hints
   //     // 'label' defaults to a sensible built-in name; 'width' is a CSS grid track
   //     list: [

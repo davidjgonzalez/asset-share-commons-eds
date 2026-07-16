@@ -883,6 +883,11 @@ main .section.inline > div > .block {
   margin: 1rem;
   padding: 0;}
 
+main .section.inline.dropdowns.search-filters,
+main .section.top.dropdowns.search-filters {
+  justify-content: center;
+}
+
 main .section.inline.dropdowns.search-filters > div,
 main .section.top.dropdowns.search-filters > div {
   display: flex;

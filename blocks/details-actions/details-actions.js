@@ -17,6 +17,7 @@
 import Asset from '../../scripts/asc/core/models/asset.js';
 import services from '../../scripts/asc/core/services/services.js';
 import collectionToggle from '../../scripts/asc/core/parts/collection-toggle/collection-toggle.js';
+import { toggleRenditionMenu, prefetchRenditionSizes } from '../../scripts/asc/rendition-download-menu.js';
 
 const VALID_ACTIONS = new Set(['download', 'copy-url', 'share', 'collection']);
 
@@ -39,6 +40,16 @@ export default async function decorate(block) {
   block.innerHTML = html(asset, actionPairs, activeRendition);
 
   block.addEventListener('click', (e) => {
+    const downloadBtn = e.target.closest('.details-actions__download');
+    if (downloadBtn) {
+      toggleRenditionMenu(downloadBtn, asset, (rendition) => {
+        downloadRendition(asset, rendition);
+        activeRendition = rendition;
+        document.body.dispatchEvent(new CustomEvent('asc:rendition:activate', { detail: { rendition, asset } }));
+      });
+      return;
+    }
+
     const btn = e.target.closest('[data-copy-url]');
     if (!btn) return;
     const url = btn.dataset.copyUrl;
@@ -53,20 +64,31 @@ export default async function decorate(block) {
     });
   });
 
+  // Warm rendition file sizes on hover so the download menu doesn't show
+  // blank sizes while the user is still deciding whether to click it.
+  block.addEventListener('mouseover', (e) => {
+    if (e.target.closest('.details-actions__download')) prefetchRenditionSizes(asset);
+  });
+
   document.body.addEventListener('asc:rendition:activate', (e) => {
     activeRendition = e.detail.rendition;
-    updateRenditionActions(block, asset, activeRendition);
+    updateRenditionActions(block, activeRendition);
   });
 }
 
-function updateRenditionActions(block, asset, rendition) {
-  if (!rendition) return;
+function downloadRendition(asset, rendition) {
+  if (!rendition?.url) return;
+  const link = document.createElement('a');
+  link.href = rendition.url;
+  link.download = downloadFilename(asset, rendition);
+  link.rel = 'noopener';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
 
-  const downloadLink = block.querySelector('.details-actions__download');
-  if (downloadLink) {
-    downloadLink.href = rendition.url;
-    downloadLink.download = downloadFilename(asset, rendition);
-  }
+function updateRenditionActions(block, rendition) {
+  if (!rendition) return;
 
   const copyBtn = block.querySelector('[data-copy-url]');
   if (copyBtn) {
@@ -81,7 +103,6 @@ function html(asset, actionPairs, rendition) {
 
 function htmlButton(asset, action, rendition, label) {
   const url = rendition?.url || asset.url;
-  const filename = rendition ? downloadFilename(asset, rendition) : (asset.filename || asset.title);
 
   switch (action) {
     case 'collection':
@@ -89,12 +110,11 @@ function htmlButton(asset, action, rendition, label) {
 
     case 'download':
       return `
-        <a class="asc-ui-action details-actions__download"
-           href="${esc(url)}"
-           download="${esc(filename)}">
+        <button type="button" class="asc-ui-action details-actions__download"
+                aria-haspopup="true" aria-expanded="false">
           <span class="asc-ui-action__icon" aria-hidden="true">${ICONS.download}</span>
           <span>${esc(label)}</span>
-        </a>`;
+        </button>`;
 
     case 'copy-url':
       return `

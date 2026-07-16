@@ -5,6 +5,7 @@ import assetTeaser from '../../scripts/asc/core/parts/asset-teaser/asset-teaser.
 import collectionToggle from '../../scripts/asc/core/parts/collection-toggle/collection-toggle.js';
 import services from '../../scripts/asc/core/services/services.js';
 import configurations from '../../scripts/asc/configurations.js';
+import { toggleRenditionMenu, prefetchRenditionSizes } from '../../scripts/asc/rendition-download-menu.js';
 
 const MASONRY_SIZES = '(min-width: 1400px) 25vw, (min-width: 1000px) 33vw, (min-width: 640px) 50vw, 100vw';
 const MASONRY_COL_WIDTH = 360; // target column width — smaller value = more columns at wider viewports
@@ -66,14 +67,14 @@ function renderListCell(col, asset) {
   return esc(asset.getProperty(property).text || '—');
 }
 
-function renderListActionsCell(asset, renditionId) {
+function renderListActionsCell(asset) {
   return `
     <div class="asc-list-view__actions">
       ${collectionToggle(asset, { addLabel: 'Add to collection', removeLabel: 'Remove from collection' })}
       <button type="button"
               class="search-results__quick-download btn btn--secondary btn--circle btn--sm"
               data-asc-asset="${esc(asset.uuid)}"
-              data-rendition-id="${esc(renditionId)}"
+              aria-haspopup="true" aria-expanded="false"
               aria-label="Download asset">
         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       </button>
@@ -105,18 +106,18 @@ function appendMasonryItems(container, assets) {
   });
 }
 
-function renderListRows(assets, cols, renditionId) {
+function renderListRows(assets, cols) {
   return assets.map((asset) => `
     <div class="asc-list-view__row"
          data-asc-asset="${esc(asset.uuid)}"
          data-asc-action="asset:details:open@click"
          role="row">
       ${cols.map((col) => `<div class="asc-list-view__cell" role="cell">${renderListCell(col, asset)}</div>`).join('')}
-      <div class="asc-list-view__cell asc-list-view__cell--actions" role="cell">${renderListActionsCell(asset, renditionId)}</div>
+      <div class="asc-list-view__cell asc-list-view__cell--actions" role="cell">${renderListActionsCell(asset)}</div>
     </div>`).join('');
 }
 
-function renderListView(assets, renditionId) {
+function renderListView(assets) {
   const cols = getListCols();
   const trackSizes = [...cols.map((c) => c.width || 'auto'), '136px'].join(' ');
   const headers = cols.map((col) => {
@@ -128,7 +129,7 @@ function renderListView(assets, renditionId) {
     <div class="asc-list-view" style="--asc-list-cols: ${trackSizes}" role="table">
       <div class="asc-list-view__header" role="row">${headers}<div class="asc-list-view__cell asc-list-view__cell--header asc-list-view__cell--actions-header" role="columnheader">Actions</div></div>
       <div class="asc-list-view__rows" role="rowgroup">
-        ${renderListRows(assets, cols, renditionId)}
+        ${renderListRows(assets, cols)}
       </div>
     </div>`;
 }
@@ -162,7 +163,7 @@ function attachImageHandlers(resultsEl) {
   });
 }
 
-function injectQuickDownloadButtons(resultsEl, display, renditionId = 'original') {
+function injectQuickDownloadButtons(resultsEl, display) {
   if (display === 'list') return;
 
   resultsEl.querySelectorAll('.asc-asset-teaser .asc-collection-toggle').forEach((toggle) => {
@@ -175,18 +176,11 @@ function injectQuickDownloadButtons(resultsEl, display, renditionId = 'original'
       <button type="button"
               class="search-results__quick-download btn btn--secondary btn--circle btn--sm"
               data-asc-asset="${esc(assetId)}"
-              data-rendition-id="${esc(renditionId)}"
+              aria-haspopup="true" aria-expanded="false"
               aria-label="Download asset">
         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       </button>`);
   });
-}
-
-function resolveDownloadRendition(asset, preferredId) {
-  return services.renditions.getRendition(asset, preferredId)
-    || services.renditions.getRendition(asset, 'original')
-    || services.renditions.getRendition(asset, 'web')
-    || null;
 }
 
 function triggerAssetDownload(rendition, asset) {
@@ -233,8 +227,6 @@ function html(config) {
 }
 
 async function addEventListeners(block, _config) {
-  const quickDownloadRendition = configurations.searchResults?.quickActions?.downloadRendition || 'original';
-
   let isLoadingMore = false;
   let sentinel = null;
   let observer = null;
@@ -304,7 +296,7 @@ async function addEventListeners(block, _config) {
     if (event.detail.type === 'load-more') {
       if (display === 'list') {
         resultsEl.querySelector('.asc-list-view__rows')
-          ?.insertAdjacentHTML('beforeend', renderListRows(results.assets || [], getListCols(), quickDownloadRendition));
+          ?.insertAdjacentHTML('beforeend', renderListRows(results.assets || [], getListCols()));
       } else if (display === 'masonry') {
         appendMasonryItems(resultsEl, results.assets || []);
       } else {
@@ -319,7 +311,7 @@ async function addEventListeners(block, _config) {
           <p class="asc-ui-empty-state__hint">Try adjusting your search terms or filters.</p>
         </div>`;
     } else if (display === 'list') {
-      resultsEl.innerHTML = renderListView(results.assets, quickDownloadRendition);
+      resultsEl.innerHTML = renderListView(results.assets);
     } else if (display === 'masonry') {
       resultsEl.innerHTML = '';
       masonryState.delete(resultsEl);
@@ -334,7 +326,7 @@ async function addEventListeners(block, _config) {
     }
 
     attachImageHandlers(resultsEl);
-    injectQuickDownloadButtons(resultsEl, display, quickDownloadRendition);
+    injectQuickDownloadButtons(resultsEl, display);
     isLoadingMore = false;
     setupSentinel(); // no-op after first call; observer handles further scroll-driven loads
 
@@ -351,6 +343,12 @@ async function addEventListeners(block, _config) {
     }
   });
 
+  function resolveAssetFor(el) {
+    const assetContainer = el.closest('[data-asc-asset]');
+    const assetId = el.dataset.ascAsset || assetContainer?.dataset?.ascAsset;
+    return assetId && window.asc?.cache?.assets?.get(assetId);
+  }
+
   block.addEventListener('click', (event) => {
     if (event.target.closest('.asc-list-view__actions')) {
       event.stopPropagation();
@@ -362,16 +360,19 @@ async function addEventListeners(block, _config) {
     event.preventDefault();
     event.stopPropagation();
 
-    const assetContainer = downloadBtn.closest('[data-asc-asset]');
-    const assetId = downloadBtn.dataset.ascAsset || assetContainer?.dataset?.ascAsset;
-    if (!assetId) return;
-
-    const asset = window.asc?.cache?.assets?.get(assetId);
+    const asset = resolveAssetFor(downloadBtn);
     if (!asset) return;
 
-    const preferredId = downloadBtn.dataset.renditionId || quickDownloadRendition;
-    const rendition = resolveDownloadRendition(asset, preferredId);
-    triggerAssetDownload(rendition, asset);
+    toggleRenditionMenu(downloadBtn, asset, (rendition) => triggerAssetDownload(rendition, asset));
+  });
+
+  // Warm rendition file sizes on hover so the download menu doesn't show
+  // blank sizes while the user is still deciding whether to click it.
+  block.addEventListener('mouseover', (event) => {
+    const downloadBtn = event.target.closest('.search-results__quick-download');
+    if (!downloadBtn) return;
+    const asset = resolveAssetFor(downloadBtn);
+    if (asset) prefetchRenditionSizes(asset);
   });
 
   /* Drag-and-drop */
