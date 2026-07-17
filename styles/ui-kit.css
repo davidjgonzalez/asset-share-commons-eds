@@ -482,6 +482,15 @@
     background: color-mix(in srgb, var(--color-muted) 50%, var(--color-bg));
 }
 
+/* Borderless variant — for empty states that ARE the whole content area
+   (e.g. a full results grid), where a dashed inset card reads as a small
+   placeholder rather than the page's primary message. */
+.asc-ui-empty-state--plain {
+    border: 0;
+    border-radius: 0;
+    background: none;
+}
+
 .asc-ui-empty-state__icon {
     font-size: 2rem;
     line-height: 1;
@@ -1015,6 +1024,13 @@
     gap: var(--spacing-xs);
 }
 
+/* --bottom: a second overlay slot, bottom-right instead of top-right — e.g. pairing a
+   top-right remove action with a bottom-right secondary action (notes, etc.). */
+.asc-ui-asset-card__overlay--bottom {
+    top: auto;
+    bottom: var(--spacing-sm);
+}
+
 .asc-ui-asset-card__body {
     display: flex;
     flex-direction: column;
@@ -1390,6 +1406,21 @@
     border: none;
     border-top: 1px solid var(--color-border);
     border-left: 1px solid var(--color-border);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit asset-card --natural: show the image at its own native aspect ratio,
+   never cropped — no fixed aspect-ratio on the thumb, no object-fit crop. Use for
+   preview-first contexts (e.g. the board canvas) where items don't share one shape.
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-asset-card--natural .asc-ui-asset-card__thumb {
+    aspect-ratio: auto;
+    background: none;
+}
+
+.asc-ui-asset-card--natural .asc-ui-asset-card__thumb img {
+    height: auto;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────

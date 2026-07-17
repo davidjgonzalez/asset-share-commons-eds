@@ -91,6 +91,7 @@ function collectionCard(collection, activeId, defaultId) {
         <div class="collections__card-content">
           <div class="asc-ui-card__header">
             <h2 class="collections__card-name asc-ui-card__title">${escHtml(collection.name)}</h2>
+            ${isDefault ? '<span class="asc-ui-badge" title="This is the default collection — it can’t be deleted">Default</span>' : ''}
           </div>
           <div class="asc-ui-card__body">
             ${typeCountsHtml(collection)}
@@ -129,7 +130,8 @@ function mosaicLayout(n) {
 function mosaicHtml(count, thumbIds) {
   if (count === 0) {
     return `<div class="collections__card-mosaic collections__card-mosaic--empty" aria-hidden="true">
-      <span class="collections__card-mosaic-icon">📁</span>
+      <span class="collections__card-mosaic-icon">🦗</span>
+      <span class="collections__card-mosaic-text">So empty…</span>
     </div>`;
   }
   const cells = thumbIds.map(() =>

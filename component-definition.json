@@ -252,6 +252,108 @@
               }
             }
           }
+        },
+        {
+          "title": "Details Header",
+          "id": "details-header",
+          "plugins": {
+            "xwalk": {
+              "page": {
+                "resourceType": "core/franklin/components/block/v1/block",
+                "template": {
+                  "name": "Details Header",
+                  "model": "details-header",
+                  "title": "{{title}}",
+                  "meta": "{{file-type}} · {{file-size}} · {{dimensions}}"
+                }
+              }
+            }
+          }
+        },
+        {
+          "title": "Asset Location Map",
+          "id": "details-map",
+          "plugins": {
+            "xwalk": {
+              "page": {
+                "resourceType": "core/franklin/components/block/v1/block",
+                "template": {
+                  "name": "Details Map",
+                  "model": "details-map",
+                  "key-value": true,
+                  "latitude": "jcr:content/metadata/exif:GPSLatitude",
+                  "longitude": "jcr:content/metadata/exif:GPSLongitude",
+                  "altitude": "jcr:content/metadata/exif:GPSAltitude",
+                  "label": "Location",
+                  "zoom": "10"
+                }
+              }
+            }
+          }
+        },
+        {
+          "title": "Similar Assets",
+          "id": "details-similar",
+          "plugins": {
+            "xwalk": {
+              "page": {
+                "resourceType": "core/franklin/components/block/v1/block",
+                "template": {
+                  "name": "Details Similar",
+                  "model": "details-similar",
+                  "key-value": true,
+                  "description": "",
+                  "max": "8",
+                  "show-empty": "false"
+                }
+              }
+            }
+          }
+        },
+        {
+          "title": "Asset Metadata (Static)",
+          "id": "details-asset-metadata",
+          "plugins": {
+            "xwalk": {
+              "page": {
+                "resourceType": "core/franklin/components/block/v1/block",
+                "template": {
+                  "name": "Details Asset Metadata",
+                  "model": "details-asset-metadata"
+                }
+              }
+            }
+          }
+        },
+        {
+          "title": "Metadata Panel",
+          "id": "details-metadata",
+          "plugins": {
+            "xwalk": {
+              "page": {
+                "resourceType": "core/franklin/components/block/v1/block",
+                "template": {
+                  "name": "Details Metadata",
+                  "model": "details-metadata"
+                }
+              }
+            }
+          }
+        },
+        {
+          "title": "Rendition Metadata",
+          "id": "details-rendition-metadata",
+          "plugins": {
+            "xwalk": {
+              "page": {
+                "resourceType": "core/franklin/components/block/v1/block",
+                "template": {
+                  "name": "Details Rendition Metadata",
+                  "model": "details-rendition-metadata"
+                }
+              }
+            }
+          }
         }
       ]
     },

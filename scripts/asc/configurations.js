@@ -274,6 +274,21 @@ const configurations = {
     default: 'default',
   },
 
+  // ─── Board ───────────────────────────────────────────────────────────────────
+  board: {
+    // Fully custom renderer for board/collection canvas items — see the markup
+    // contract documented at the top of scripts/asc/board-item.js (the default
+    // implementation) for what's required to keep drag/select/remove/notes/search
+    // working. Import your own module at the top of this file and assign it here,
+    // the same way custom property handlers are wired up below:
+    //
+    //   import myBoardItem from './my-board-item.js';
+    //   ...
+    //   board: { itemRenderer: myBoardItem },
+    //
+    // itemRenderer: myBoardItem,
+  },
+
   // ─── Asset Properties ────────────────────────────────────────────────────────
   // Each property handler lives in scripts/asc/core/services/properties/<name>.js
   properties: {
@@ -346,12 +361,17 @@ const configurations = {
   //
   // ── type: 'dm-smartcrop' ─────────────────────────────────────────────────────
   // Classic Dynamic Media (Scene7) smart crop via the IS protocol.
-  // URL: {dam:scene7APIServer}is/image/{dam:scene7File}:{id}
-  // The definition `id` must exactly match the smart crop name registered in DM
-  // (e.g. "Small", "Medium", "Large" — case-sensitive).
-  // Smart crops present on the asset but not listed here are auto-detected and
-  // appended automatically. Use explicit definitions when you need custom labels,
-  // accepts guards, or a specific ordering.
+  // URL: {dam:scene7APIServer}is/image/{dam:scene7File}:{cropName}
+  // No definitions needed for the common case — every smart crop present on the
+  // asset (sling:resourceType dam/rendition/smartcrop nodes) is auto-detected and
+  // appended automatically, using its real JCR node name as both id and crop name.
+  // Add an explicit definition only to customize one specific crop's label/order/
+  // accepts guard. The definition never hardcodes the DM crop name as its own
+  // `id` — it looks the real node up from the asset's renditions tree via:
+  //   smartCropId   {string}   The exact, case-sensitive DM-registered crop name
+  //                            to look up (e.g. "Small"). Falls back to `id` if omitted.
+  // `id` is optional — the resolved rendition's id defaults to the matched node's
+  // real name; set `id` only if you want a stable slug for getRendition() lookups.
   //
   // ── type: 'url-template' ─────────────────────────────────────────────────────
   // Dynamic Media / Scene7 IS/IR protocol using declarative token strings.
@@ -403,8 +423,12 @@ const configurations = {
     definitions: [
       { id: 'original', label: 'Original', type: 'static', name: 'original' },
       { id: 'web', label: 'Web (1280px)', type: 'static', name: 'cq5dam.web.1280.1280', accepts: (asset) => asset.mimeType?.startsWith('image/') },
-      { id: 'smart-crop-small', label: 'Smart Crop — Small', type: 'dm-smartcrop', accepts: (asset) => asset.mimeType?.startsWith('image/') },
-      { id: 'smart-crop-medium', label: 'Smart Crop — Medium', type: 'dm-smartcrop', accepts: (asset) => asset.mimeType?.startsWith('image/') },
+      // `smartCropId` picks the real smart-crop node to customize (by its
+      // DM-registered name, case-sensitive) — no `id` needed; it defaults to it.
+      { id: 'smartcrop-small', label: 'Smart Crop — Small', type: 'dm-smartcrop', smartCropId: 'Small', accepts: (asset) => asset.mimeType?.startsWith('image/') },
+      { id: 'smartcrop-medium', label: 'Smart Crop — Medium', type: 'dm-smartcrop', smartCropId: 'Medium', accepts: (asset) => asset.mimeType?.startsWith('image/') },
+      { id: 'smartcrop-large', label: 'Smart Crop — Large', type: 'dm-smartcrop', smartCropId: 'Large', accepts: (asset) => asset.mimeType?.startsWith('image/') },
+
   //
   //     // ── Static renditions ─────────────────────────────────────────────────
   //     // Works with any AEM instance that runs standard DAM processing profiles.
@@ -447,25 +471,26 @@ const configurations = {
   //       template: '${dm.api-server}is/image/${dm.file}?$web$',
   //     },
   //     //
-  //     // Smart crops — id must match the DM-registered crop name exactly.
-  //     // Any crop NOT listed here is auto-detected from the asset's JCR renditions tree.
-  //     // Use explicit definitions only when you need custom labels or accepts guards.
+  //     // Smart crops — auto-detected from the asset's JCR renditions tree; no
+  //     // definitions needed. Add one only to customize a specific crop's label/
+  //     // order/accepts guard — `smartCropId` (not `id`!) picks which real
+  //     // DM-registered crop (case-sensitive) it applies to; `id` defaults to it.
   //     {
-  //       id: 'Large',
   //       label: 'Smart Crop — Large',
   //       type: 'dm-smartcrop',
+  //       smartCropId: 'Large',
   //       accepts: (asset) => asset.mimeType?.startsWith('image/'),
   //     },
   //     {
-  //       id: 'Medium',
   //       label: 'Smart Crop — Medium',
   //       type: 'dm-smartcrop',
+  //       smartCropId: 'Medium',
   //       accepts: (asset) => asset.mimeType?.startsWith('image/'),
   //     },
   //     {
-  //       id: 'Small',
   //       label: 'Smart Crop — Small',
   //       type: 'dm-smartcrop',
+  //       smartCropId: 'Small',
   //       accepts: (asset) => asset.mimeType?.startsWith('image/'),
   //     },
   //     //

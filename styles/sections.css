@@ -1,7 +1,11 @@
 /* ── Section layout variants ──────────────────────────────────────────────
- * Consolidated from styles/sections/{inline,grid,aside,grid-layout,full-width}.css
- * to keep them on the critical CSS path with a single @import instead of five.
- * Individual source files in styles/sections/ remain for reference.
+ * This is the single source of truth for all section layout variants
+ * (inline, grid, aside, grid-layout, full-width, fixed-width) — edit here
+ * directly. There is no separate styles/sections/ directory; a prior version
+ * kept per-layout files there as "reference" copies alongside this
+ * consolidated file, but that let them drift out of sync with what's
+ * actually loaded (styles.css only @imports this file) — do not recreate
+ * that split.
  * ────────────────────────────────────────────────────────────────────────── */
 
 /* ── inline — side-by-side blocks in one row ────────────────────────────── */
@@ -83,6 +87,8 @@ main .section.aside > div {
  *   layout: grid
  *   areas:  preview actions / preview metadata
  *   columns: 1.5fr 1fr   (optional)
+ * Blocks claim a cell with `area`, and may add `align` (e.g. `top left`, `bottom right`,
+ * `center`) to position themselves within that cell instead of stretching to fill it.
  */
 
 main .section[data-layout="grid"] {
@@ -117,6 +123,7 @@ main .section[data-layout="grid"] > div {
     margin: 0;
     padding: 0;
     grid-area: var(--grid-area, auto);
+    place-self: var(--grid-align-self, auto) var(--grid-justify-self, auto);
 }
 
 @media (width >= 900px) {
@@ -138,17 +145,25 @@ main .section[data-layout="grid"] > div {
 
 /* ── full-width — breaks out of the max-width constraint ─────────────────
  * style: full-width
+ * Spans the full viewport instead of the standard max-width, but keeps the
+ * same edge gutter as a regular section (--section-padding) so content
+ * doesn't touch the viewport edge. For true edge-to-edge bleed, zero out
+ * padding on the specific block/element that needs it instead.
  */
 
 main .section.full-width {
     max-width: 100%;
-    padding-left: 0;
-    padding-right: 0;
 }
 
 main .section.full-width > div {
     max-width: 100%;
-    padding: 0;
+    padding-inline: var(--section-padding, 24px);
+}
+
+@media (width >= 900px) {
+    main .section.full-width > div {
+        padding-inline: var(--section-padding-wide, 32px);
+    }
 }
 
 /* ── fixed-width — explicit max-width constraint ─────────────────────────────

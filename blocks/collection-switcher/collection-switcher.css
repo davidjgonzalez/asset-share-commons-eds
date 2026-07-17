@@ -66,6 +66,24 @@
         overflow-y: auto;
     }
 
+    /* Row = the selectable .asc-ui-menu__item + a small "open" link, side by side */
+    .collection-switcher__option-row {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-2xs);
+        padding-inline-end: var(--spacing-2xs);
+
+        .asc-ui-menu__item {
+            flex: 1;
+            width: auto;
+            min-width: 0;
+        }
+    }
+
+    .collection-switcher__option-open {
+        flex-shrink: 0;
+    }
+
     /* ── Create form area ────────────────────────────────────────────── */
 
     .collection-switcher__create-wrap {

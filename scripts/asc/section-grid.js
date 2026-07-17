@@ -25,6 +25,15 @@
  *   | details-preview |         |
  *   | _area             | preview |
  *
+ * A block may also declare `_align` to position itself within its cell instead of
+ * stretching to fill it — one vertical keyword (`top`|`bottom`) and/or one horizontal
+ * keyword (`left`|`right`), plus `center`, which fills whichever axis isn't otherwise
+ * given (or both, alone):
+ *
+ *   | details-preview |            |
+ *   | _area             | preview    |
+ *   | _align            | top center |
+ *
  * ## Execution order (see scripts.js)
  *
  * decorateASCSections(main) is called AFTER decorateBlocks. At that point:
@@ -39,8 +48,8 @@
  * The _area key in individual block configs is read directly from block DOM text
  * content, so the underscore is preserved and matched explicitly.
  *
- * styles/sections/grid-layout.css turns the --grid-* custom properties into
- * the actual grid and collapses to a single column on narrow viewports.
+ * styles/sections.css turns the --grid-* custom properties into the actual grid
+ * and collapses to a single column on narrow viewports.
  */
 
 /**
@@ -81,6 +90,13 @@ export function decorateASCSections(main) {
     section.querySelectorAll(':scope > div > div').forEach((block) => {
       const area = extractArea(block);
       if (area) block.parentElement.style.setProperty('--grid-area', area);
+
+      const align = extractAlign(block);
+      if (align) {
+        const { alignSelf, justifySelf } = parseAlign(align);
+        if (alignSelf) block.parentElement.style.setProperty('--grid-align-self', alignSelf);
+        if (justifySelf) block.parentElement.style.setProperty('--grid-justify-self', justifySelf);
+      }
     });
 
     // When multiple wrappers share the same area name they would overlap in the
@@ -156,14 +172,71 @@ function parseAreas(raw) {
  * Reads raw textContent so the `_` prefix is preserved (not stripped by toClassName).
  */
 function extractArea(block) {
+  return extractConfigRow(block, '_area', 'area');
+}
+
+/**
+ * Find and remove a block's `_align` (or legacy `align`) config row, returning its value.
+ */
+function extractAlign(block) {
+  return extractConfigRow(block, '_align', 'align');
+}
+
+/** Find and remove a block config row matching one of the given keys (case-insensitive). */
+function extractConfigRow(block, ...keys) {
+  const wanted = keys.map((k) => k.toLowerCase());
   for (const row of [...block.children]) {
     const cells = [...row.children];
-    const areaKey = cells[0]?.textContent.trim().toLowerCase();
-    if (cells.length >= 2 && (areaKey === '_area' || areaKey === 'area')) {
+    const key = cells[0]?.textContent.trim().toLowerCase();
+    if (cells.length >= 2 && wanted.includes(key)) {
       const value = cells[1].textContent.trim();
       row.remove();
       return value || null;
     }
   }
   return null;
+}
+
+// `_align` keyword → { axis, value } — one vertical keyword and/or one horizontal keyword.
+// `center`/`middle` are axis-agnostic: they fill whichever axis isn't otherwise specified,
+// or both axes when given alone.
+const ALIGN_KEYWORDS = {
+  top: { axis: 'vertical', value: 'start' },
+  bottom: { axis: 'vertical', value: 'end' },
+  left: { axis: 'horizontal', value: 'start' },
+  right: { axis: 'horizontal', value: 'end' },
+};
+
+/**
+ * Parse an `_align` value into CSS `align-self` (vertical) / `justify-self` (horizontal)
+ * keywords. Accepts any order/combination of one vertical + one horizontal keyword:
+ * "top left", "bottom right", "top", "center", "center left", etc.
+ */
+function parseAlign(raw) {
+  let alignSelf = null;
+  let justifySelf = null;
+  let centerCount = 0;
+
+  raw.toLowerCase().split(/\s+/).filter(Boolean).forEach((token) => {
+    if (token === 'center' || token === 'middle') {
+      centerCount += 1;
+      return;
+    }
+    const known = ALIGN_KEYWORDS[token];
+    if (!known) return;
+    if (known.axis === 'vertical') alignSelf = known.value;
+    else justifySelf = known.value;
+  });
+
+  if (centerCount) {
+    if (alignSelf == null && justifySelf == null) {
+      alignSelf = 'center';
+      justifySelf = 'center';
+    } else {
+      if (alignSelf == null) alignSelf = 'center';
+      if (justifySelf == null) justifySelf = 'center';
+    }
+  }
+
+  return { alignSelf, justifySelf };
 }

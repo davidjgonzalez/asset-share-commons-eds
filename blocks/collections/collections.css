@@ -109,15 +109,23 @@
     /* Empty-state mosaic for 0-asset collections */
     .collections__card-mosaic--empty {
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
+        gap: var(--spacing-2xs);
         height: 280px;
         background: var(--color-muted);
     }
 
     .collections__card-mosaic-icon {
         font-size: 2rem;
-        opacity: 0.4;
+        opacity: 0.5;
+    }
+
+    .collections__card-mosaic-text {
+        font-size: var(--body-font-size-xs);
+        color: var(--color-muted-fg);
+        font-style: italic;
     }
 
     /* ── Card content (padded area below the mosaic) ─────────────────── */
@@ -158,6 +166,16 @@
 
     .collections__card-updated time {
         font-variant-numeric: tabular-nums;
+    }
+
+    /*
+     * The footer is a sibling of .collections__card-content, not nested inside it (so
+     * the flush mosaic above can span edge-to-edge) — .asc-ui-card__footer only supplies
+     * top padding/border, so it needs the side + bottom padding the content div gets.
+     */
+    .collections__card-actions {
+        padding-inline: var(--spacing-md);
+        padding-block-end: var(--spacing-md);
     }
 
     /* Destructive action pushed to the end of the card footer */

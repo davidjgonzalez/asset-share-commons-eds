@@ -13,7 +13,7 @@ each block declaring which cell it occupies — no per-layout CSS required.
 3. `scripts/asc/section-grid.js` runs (called from `decorateMain`, before blocks render) and
    reads those attributes into CSS custom properties on the section
 4. Each block wrapper picks up its `--grid-area` from the block's own `area` config row
-5. `styles/sections/grid-layout.css` turns those custom properties into the live grid
+5. `styles/sections.css` turns those custom properties into the live grid
 
 This means grid layouts work everywhere `decorateMain` runs — including inside the
 asset-details modal (loaded via `loadFragment`).
@@ -93,6 +93,28 @@ The area value must match one of the names used in the section's `areas` metadat
 `section-grid.js` reads and **removes** the `area` row before the block's own `decorate()`
 function runs — so the area declaration is never visible to the block's own config reader.
 
+### `align` (optional)
+
+By default a block stretches to fill its grid cell. Add an `align` row to position it
+within the cell instead — one vertical keyword and/or one horizontal keyword:
+
+| Axis | Keywords |
+|---|---|
+| Vertical | `top`, `bottom` |
+| Horizontal | `left`, `right` |
+| Either / both | `center` (fills whichever axis isn't otherwise given, or both when given alone) |
+
+```
+| details-preview |            |
+| area              | preview    |
+| align             | top center |
+```
+
+Examples: `top left`, `bottom right`, `center` (centers both axes), `top` (top, full width),
+`center left` (vertically centered, left-aligned).
+
+`section-grid.js` reads and **removes** the `align` row the same way it does `area`.
+
 ---
 
 ## CSS custom properties set by `section-grid.js`
@@ -107,8 +129,10 @@ These are set as inline styles on the `.section` element and on each block wrapp
 | `--grid-rows` | `.section` | Resolved `rows` value or `auto 1fr` |
 | `--grid-gap` | `.section` | Resolved `gap` value (token → `var(--spacing-*)` or raw length) |
 | `--grid-area` | Block wrapper `div` | The block's area name |
+| `--grid-align-self` | Block wrapper `div` | Resolved vertical `align` keyword (`start`\|`center`\|`end`) |
+| `--grid-justify-self` | Block wrapper `div` | Resolved horizontal `align` keyword (`start`\|`center`\|`end`) |
 
-`styles/sections/grid-layout.css` applies these properties to produce the live grid.
+`styles/sections.css` applies these properties to produce the live grid.
 
 ---
 
@@ -206,8 +230,8 @@ export function decorateMain(main) {
 ```
 
 Re-apply this edit after any EDS boilerplate upgrade. The logic lives in the user-owned
-`scripts/asc/section-grid.js`; the styling in `styles/sections/grid-layout.css` (imported by
-`styles.css`).
+`scripts/asc/section-grid.js`; the styling in `styles/sections.css` (imported by `styles.css` —
+consolidated from the former per-layout files in `styles/sections/`, which no longer exist).
 
 ---
 
@@ -216,6 +240,6 @@ Re-apply this edit after any EDS boilerplate upgrade. The logic lives in the use
 | File | Purpose |
 |---|---|
 | `scripts/asc/section-grid.js` | Reads section metadata, sets CSS custom properties |
-| `styles/sections/grid-layout.css` | Applies custom properties to produce the grid |
+| `styles/sections.css` | Applies custom properties to produce the grid |
 | `scripts/scripts.js` | Must import and call `decorateGridLayouts` in `decorateMain` |
 | `AGENTS.md` → "Section Layouts" | Shorter summary for AI assistant context |

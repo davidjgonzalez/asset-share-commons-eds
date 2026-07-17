@@ -173,7 +173,7 @@ styles/
 | Lives in `scripts/asc/core/` | ASC Core |
 | Named `aem.js`, `scripts.js`, `delayed.js` | EDS boilerplate |
 | Lives in `blocks/` | User-owned |
-| Lives in `styles/themes/` or `styles/sections/` | User-owned |
+| Lives in `styles/themes/` or `styles/sections.css` | User-owned |
 | Lives in `scripts/asc/` (but not `core/`) | User-owned |
 | `scripts/asc.js` | User-owned |
 

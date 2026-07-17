@@ -1,11 +1,12 @@
 /** @owner user */
 import services from '../../scripts/asc/core/services/services.js';
 import { Events as CollectionEvents } from '../../scripts/asc/core/services/collections/collections.js';
-import { escHtml } from '../../scripts/asc/html.js';
+import { escHtml, escAttr } from '../../scripts/asc/html.js';
 
 const configurations = (await import('../../scripts/asc/configurations.js')).default;
 
 const MANAGE_PATH = configurations.collections?.managePath || '/collections/';
+const COLLECTION_PATH = configurations.collections?.collectionPath || '/collections/collection';
 
 /**
  * Collection-switcher block — persistent header widget.
@@ -81,7 +82,7 @@ function collectionOption(collection, activeId) {
   const isActive = collection.id === activeId;
   const count = collection.assetIds?.length ?? 0;
   return `
-    <li>
+    <li class="collection-switcher__option-row">
       <button class="asc-ui-menu__item${isActive ? ' asc-ui-menu__item--active' : ''}"
               type="button"
               role="option"
@@ -91,6 +92,12 @@ function collectionOption(collection, activeId) {
         <span class="asc-ui-menu__item-meta">${count}</span>
         ${isActive ? '<span class="asc-ui-menu__item-check" aria-hidden="true">✓</span>' : ''}
       </button>
+      <a href="${COLLECTION_PATH}?id=${escAttr(collection.id)}"
+         class="btn btn--ghost btn--circle btn--sm collection-switcher__option-open"
+         aria-label="Open ${escAttr(collection.name)}"
+         title="Open collection">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      </a>
     </li>`;
 }
 

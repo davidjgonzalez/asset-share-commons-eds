@@ -83,7 +83,7 @@ function renderListActionsCell(asset) {
 
 function getMasonryState(container) {
   if (masonryState.has(container)) return masonryState.get(container);
-  const count = Math.min(8, Math.max(2, Math.floor((container.offsetWidth || window.innerWidth) / MASONRY_COL_WIDTH)));
+  const count = idealMasonryColCount(container);
   const cols = Array.from({ length: count }, () => {
     const col = document.createElement('div');
     col.className = 'masonry-col';
@@ -93,6 +93,41 @@ function getMasonryState(container) {
   const state = { cols, next: 0 };
   masonryState.set(container, state);
   return state;
+}
+
+function idealMasonryColCount(container) {
+  return Math.min(8, Math.max(2, Math.floor((container.offsetWidth || window.innerWidth) / MASONRY_COL_WIDTH)));
+}
+
+// Redistribute existing masonry items across a new column count on resize —
+// getMasonryState() only picks a count once (at first render), so without this
+// the columns just stretch/shrink instead of adding/removing as the viewport changes.
+function reflowMasonryColumns(container) {
+  const state = masonryState.get(container);
+  if (!state) return;
+
+  const targetCount = idealMasonryColCount(container);
+  if (targetCount === state.cols.length) return;
+
+  // Recover original round-robin insertion order by reading row-by-row across columns.
+  const maxRows = Math.max(0, ...state.cols.map((col) => col.children.length));
+  const items = [];
+  for (let row = 0; row < maxRows; row += 1) {
+    state.cols.forEach((col) => {
+      if (col.children[row]) items.push(col.children[row]);
+    });
+  }
+
+  const newCols = Array.from({ length: targetCount }, () => {
+    const col = document.createElement('div');
+    col.className = 'masonry-col';
+    return col;
+  });
+  items.forEach((item, i) => newCols[i % targetCount].appendChild(item));
+
+  container.replaceChildren(...newCols);
+  state.cols = newCols;
+  state.next = items.length;
 }
 
 function appendMasonryItems(container, assets) {
@@ -232,6 +267,9 @@ async function addEventListeners(block, _config) {
   let observer = null;
   let fillRounds = 0;
 
+  const resultsEl = block.querySelector('[data-asc-results]');
+  new ResizeObserver(() => reflowMasonryColumns(resultsEl)).observe(resultsEl);
+
   function requestLoadMore() {
     isLoadingMore = true;
     document.dispatchEvent(new CustomEvent('asc:search:execute', {
@@ -305,7 +343,7 @@ async function addEventListeners(block, _config) {
       }
     } else if (results.size === 0) {
       resultsEl.innerHTML = `
-        <div class="asc-ui-empty-state">
+        <div class="asc-ui-empty-state asc-ui-empty-state--plain">
           <span class="asc-ui-empty-state__icon" aria-hidden="true">🔍</span>
           <p class="asc-ui-empty-state__title">No results found</p>
           <p class="asc-ui-empty-state__hint">Try adjusting your search terms or filters.</p>

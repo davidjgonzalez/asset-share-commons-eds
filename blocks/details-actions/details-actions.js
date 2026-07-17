@@ -98,7 +98,7 @@ function updateRenditionActions(block, rendition) {
 
 function html(asset, actionPairs, rendition) {
   const buttons = actionPairs.map(([label, action]) => htmlButton(asset, action, rendition, label)).filter(Boolean).join('');
-  return `<div class="asc-ui-actions">${buttons}</div>`;
+  return `<div class="asc-ui-actions" role="toolbar" aria-label="Asset actions">${buttons}</div>`;
 }
 
 function htmlButton(asset, action, rendition, label) {

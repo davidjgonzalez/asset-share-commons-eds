@@ -7,8 +7,7 @@ const BINARIES_POLL_INTERVAL = 1000;
 const BINARIES_MAX_ATTEMPTS = 10;
 
 function buildTargets(assets, selectedRenditionIds, archiveName) {
-  const allDefs = configurations.renditions?.definitions || [];
-  const defsById = new Map(allDefs.map((d) => [d.id, d]));
+  const defsById = new Map(services.renditions.definitions.map((d) => [d.id, d]));
   const targets = [];
 
   assets.forEach((asset) => {
@@ -100,14 +99,13 @@ export default async function decorate(block) {
   const collection = ctx.collectionId ? await services.collections.get(ctx.collectionId) : null;
   const assets = collection?.assets || ctx.assets || [];
 
-  const allDefs = configurations.renditions?.definitions || [];
-  const defsById = new Map(allDefs.map((d) => [d.id, d]));
+  const allDefs = services.renditions.definitions;
 
   const parsed = parseActionFragment(block, { 'asset-count': assets.length });
 
   const renditionIds = parsed.renditionIds
     ?? allDefs.filter((d) => d.visible !== false).map((d) => d.id);
-  const renditionDefs = renditionIds.map((id) => defsById.get(id) ?? { id, label: id });
+  const renditionDefs = renditionIds.map((id) => services.renditions.getRenditionDefinition(id) ?? { id, label: id });
 
   const closeButtons = parsed.actions.filter(({ hash }) => hash === '#close');
   const actionButtons = parsed.actions.filter(({ hash }) => hash !== '#close');

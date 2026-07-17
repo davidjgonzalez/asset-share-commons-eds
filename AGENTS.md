@@ -317,9 +317,10 @@ declaring which cell it occupies — no per-layout CSS required.
 >
 > `scripts.js` is boilerplate (not `scripts/asc/`), so **re-apply this edit after any EDS
 > boilerplate upgrade.** The logic itself lives in the user-owned `scripts/asc/section-grid.js`; the
-> styling in `styles/sections/grid-layout.css` (imported by `styles.css`). Because `decorateMain`
-> also runs for fragments loaded via `loadFragment` (e.g. the asset-details modal), grid layouts
-> work inside the modal too.
+> styling in `styles/sections.css` (imported by `styles.css` — consolidated from the former
+> per-layout files in `styles/sections/`, which no longer exist; edit `sections.css` directly).
+> Because `decorateMain` also runs for fragments loaded via `loadFragment` (e.g. the asset-details
+> modal), grid layouts work inside the modal too.
 
 **Authoring** (section metadata):
 
@@ -345,18 +346,24 @@ declaring which cell it occupies — no per-layout CSS required.
   raw length (e.g. `1.5rem`) passes through.
 - Collapses to a single stacked column below 768px (named placement is dropped → source order).
 
-**Block placement** — each block claims a cell with a `_area` config row:
+**Block placement** — each block claims a cell with a `_area` config row, and may add a
+`_align` row to position itself within that cell instead of stretching to fill it:
 
 ```
-| details-preview |         |
-| _area             | preview |
+| details-preview |            |
+| _area             | preview    |
+| _align            | top center |
 ```
+
+`_align` — one vertical keyword (`top`|`bottom`) and/or one horizontal keyword (`left`|`right`);
+`center` fills whichever axis isn't otherwise given, or both when given alone (e.g. `center` on
+its own centers the block in both axes).
 
 `scripts/asc/section-grid.js` (called from `decorateMain`, before `decorateSections`) reads the
 section-metadata block directly for `_`-prefixed keys, removes them (so EDS never sees them),
 then writes `--grid-areas` / `--grid-columns` / `--grid-cols` / `--grid-rows` / `--grid-gap`
-custom properties on the section and `--grid-area` on each block wrapper.
-`grid-layout.css` turns those into the grid.
+custom properties on the section and `--grid-area` / `--grid-align-self` / `--grid-justify-self`
+on each block wrapper. `grid-layout.css` turns those into the grid.
 
 ### Token Placeholders
 
@@ -990,7 +997,7 @@ Six built-in resolver types map to AEM delivery patterns:
 
 `${rendition.name}` equals the definition's `id` field — useful for DM IS/IR presets where the preset name must appear in the URL.
 
-> **Smart crops** — use `type: 'dm-smartcrop'` instead of `url-template`. The resolver auto-detects all `sling:resourceType: dam/rendition/smartcrop` nodes from the asset's JCR renditions tree so no definitions are needed. Use explicit definitions only when you need a custom label or an `accepts` guard on a specific crop name.
+> **Smart crops** — use `type: 'dm-smartcrop'` instead of `url-template`. The resolver auto-detects all `sling:resourceType: dam/rendition/smartcrop` nodes from the asset's JCR renditions tree so no definitions are needed. Use explicit definitions only when you need a custom label or an `accepts` guard on a specific crop. An explicit definition never hardcodes the DM crop name as its own `id` — instead it looks up the real node among the asset's smart-crop renditions via `smartCropId` (the exact, case-sensitive DM-registered crop name, e.g. `smartCropId: 'Small'`; falls back to `id` if omitted); `id` is optional and defaults to the matched node's real name, so you only need it when you want a stable slug for `getRendition()` lookups. If a definition's `smartCropId` finds no corresponding node on a given asset, it resolves to `null` — it never fabricates a URL for a crop that doesn't exist.
 
 ### `accepts` filter
 
@@ -1106,6 +1113,9 @@ renditions: {
     // Smart crops are auto-detected from the asset's JCR renditions tree
     // (sling:resourceType: dam/rendition/smartcrop nodes). No definitions needed.
     // Add an explicit dm-smartcrop definition only to override label or add an accepts guard.
+    // `smartCropId` (not `id`!) picks the real DM-registered crop name (case-sensitive)
+    // to customize; `id` is optional and defaults to the matched crop name:
+    // { label: 'Smart Crop — Small', type: 'dm-smartcrop', smartCropId: 'Small' },
 
     // IS/IR image preset — url-template with ${dm.domain} (delivery CDN host).
     {
@@ -1350,11 +1360,29 @@ The project ships three JSON files at the project root for Universal Editor supp
 
 | File | Purpose |
 |------|---------|
-| `component-definition.json` | Component library (palette) — three groups: Search, Asset Details, Collections |
+| `component-definition.json` | Component library (palette) — grouped: Search, Asset Details, Collections, Standard |
 | `component-models.json` | Sidebar field definitions for each block |
 | `component-filters.json` | Containment rules — what blocks can go in which sections |
 
 To activate page-level filters (e.g. `asc-details-page`), add `data-aue-filter="asc-details-page"` to the `<main>` element of the page template.
+
+If a block's JS reads config via `readBlockConfig()` (fixed `key | value` rows), its
+`component-definition.json` template **must** set `"key-value": true` — otherwise Universal
+Editor renders fields positionally (bare values, no key cell), which `readBlockConfig()` can't
+parse. Blocks that take unbounded/free-form rows (`Label | property` lists like
+`details-metadata`) aren't a good fit for fixed model fields — register a single descriptive
+`richtext` field instead (see `search-hidden`'s model) and keep the row format documented in the
+block's own header comment.
+
+### Block Authoring Registration — required for every new author-placed block
+
+New blocks must be registered in **both** Universal Editor (above) **and** the DA.live block
+library (`library/blocks` sheet in DA content, not this repo — one `{ name, path }` row per
+block, pointing at an example doc under `/blocks/<block-name>`). See
+`https://docs.da.live/administrators/guides/setup-library`. Skip both for blocks that are never
+section-placed (`action-*`, invoked via the actions service) and for stock EDS blocks (`columns`,
+`content`, `header`, `footer`, `fragment`). New DA documents/sheets need to be previewed and
+published before the library reflects them.
 
 ---
 

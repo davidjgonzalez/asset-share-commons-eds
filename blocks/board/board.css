@@ -26,8 +26,8 @@
     .board__viewport {
         position: relative;
         width: 100%;
-        height: 70vh;
-        min-height: 500px;
+        height: 60vh;
+        min-height: 420px;
         overflow: hidden;
         background: radial-gradient(circle, var(--color-border) 1px, transparent 1px) 0 0 / 24px 24px;
         border: 1px solid var(--color-border);
@@ -90,6 +90,47 @@
         }
     }
 
+    /* ── Minimap ──────────────────────────────────────────────────────
+       Composed from .asc-panel (background/border/radius/shadow) — only layout/
+       sizing is board-specific. */
+
+    .board__minimap {
+        position: absolute;
+        right: var(--spacing-sm, 8px);
+        bottom: var(--spacing-sm, 8px);
+        width: 180px;
+        height: 120px;
+        z-index: 10;
+    }
+
+    .board__minimap-inner {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        cursor: pointer;
+        overflow: hidden;
+    }
+
+    .board__minimap-marker {
+        position: absolute;
+        background: var(--color-muted-fg);
+        border-radius: 1px;
+        pointer-events: none;
+
+        &.board__minimap-marker--text {
+            background: transparent;
+            border: 1px dashed var(--color-muted-fg);
+        }
+    }
+
+    .board__minimap-viewport {
+        position: absolute;
+        z-index: 1; /* stay above markers regardless of DOM insertion order */
+        border: 1px solid var(--color-primary);
+        background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+        pointer-events: none;
+    }
+
     /* ── Rubber-band selection rect ─────────────────────────────────── */
 
     .board__selection-rect {
@@ -130,16 +171,27 @@
             user-select: text;
         }
 
-        &.board__card--selected {
+        &.board__item--selected {
             outline: 2px solid var(--color-primary);
             outline-offset: 2px;
             border-color: var(--color-primary);
         }
 
-        &.board__card--dragging {
+        &.board__item--dragging {
             opacity: 0.85;
             cursor: grabbing;
             z-index: 100;
+        }
+
+        /* Read-only boards (view mode) render text elements as plain text — the
+           dashed border/background are editing affordances with nothing to signal. */
+        &.board__text-element--readonly {
+            background: none;
+            border-color: transparent;
+
+            &:hover {
+                border-color: transparent;
+            }
         }
     }
 
@@ -178,6 +230,51 @@
         display: flex;
         flex-direction: column;
         gap: var(--spacing-sm);
+        overflow: visible; /* let the tail protrude past the panel's own edge */
+    }
+
+    /* Tail: rotated square — two visible border sides form the triangle tip, pointing
+       back at the item's card. Side is picked by positionPanel() (data-side); --tail-pos
+       is the offset along that edge, also set by positionPanel(). */
+    .board__notes-panel::after {
+        content: '';
+        position: absolute;
+        width: 12px;
+        height: 12px;
+        background: var(--panel-bg);
+        transform: rotate(45deg);
+    }
+
+    .board__notes-panel[data-side="bottom"]::after {
+        top: -6px;
+        left: var(--tail-pos, 50%);
+        margin-left: -6px;
+        border-top: var(--panel-border);
+        border-left: var(--panel-border);
+    }
+
+    .board__notes-panel[data-side="top"]::after {
+        bottom: -6px;
+        left: var(--tail-pos, 50%);
+        margin-left: -6px;
+        border-bottom: var(--panel-border);
+        border-right: var(--panel-border);
+    }
+
+    .board__notes-panel[data-side="right"]::after {
+        left: -6px;
+        top: var(--tail-pos, 50%);
+        margin-top: -6px;
+        border-bottom: var(--panel-border);
+        border-left: var(--panel-border);
+    }
+
+    .board__notes-panel[data-side="left"]::after {
+        right: -6px;
+        top: var(--tail-pos, 50%);
+        margin-top: -6px;
+        border-top: var(--panel-border);
+        border-right: var(--panel-border);
     }
 
     .board__notes-textarea {
@@ -212,26 +309,19 @@
 
     /* ── Board cards (extend .asc-ui-asset-card) ────────────────────── */
 
-    .board__card.asc-ui-asset-card {
+    .board__item.asc-ui-asset-card {
         position: absolute;
-        width: 160px;
+        width: 240px;
         cursor: default;
         transition: opacity var(--transition-fast), outline-color var(--transition-fast), box-shadow var(--transition-fast);
 
-        .asc-ui-asset-card__title {
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            overflow-wrap: unset;
-        }
-
-        &.board__card--selected {
+        &.board__item--selected {
             outline: 2px solid var(--color-primary);
             outline-offset: 2px;
             box-shadow: var(--shadow-md);
         }
 
-        &.board__card--dragging {
+        &.board__item--dragging {
             opacity: 0.85;
             box-shadow: var(--shadow-lg);
             cursor: grabbing;
@@ -239,42 +329,33 @@
         }
 
         .asc-ui-asset-card__overlay {
+            gap: var(--spacing-sm);
             opacity: 0;
             transition: opacity var(--transition-fast);
         }
 
         &:hover .asc-ui-asset-card__overlay,
-        &.board__card--selected .asc-ui-asset-card__overlay {
+        &.board__item--selected .asc-ui-asset-card__overlay {
             opacity: 1;
         }
     }
 
-    /* Notes button states */
-    .board__card .board__notes-btn {
-        color: var(--color-muted-fg);
-        border-color: var(--color-border);
-        background: transparent;
-    }
-
-    .board__card--has-note .board__notes-btn {
+    /* Notes button — an overlay icon button like remove; kit default look covers the
+       base state (semi-opaque circle, visible over any image). Only the "has a note"
+       filled state needs a board-specific override. */
+    .board__item--has-note .board__notes-btn {
         color: var(--color-card);
         border-color: var(--color-fg);
         background: var(--color-fg);
     }
 
-    .board__card .board__notes-btn:hover {
-        color: var(--color-fg);
-        border-color: color-mix(in srgb, var(--color-border) 85%, var(--color-fg));
-        background: color-mix(in srgb, var(--color-card) 90%, white);
-    }
-
     /* ── Search highlight ───────────────────────────────────────────── */
 
-    .board__viewport[data-board-searching] .board__card:not(.board__card--match) {
+    .board__viewport[data-board-searching] .board__item:not(.board__item--match) {
         opacity: 0.2;
     }
 
-    .board__viewport[data-board-searching] .board__card.board__card--match {
+    .board__viewport[data-board-searching] .board__item.board__item--match {
         outline: 2px solid var(--color-primary);
         outline-offset: 3px;
         box-shadow: 0 0 0 6px color-mix(in srgb, var(--color-primary) 18%, transparent), var(--shadow-md);

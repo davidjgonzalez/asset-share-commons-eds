@@ -75,9 +75,15 @@
         }
     }
 
-    /* Empty state (asc-ui-empty-state) spans the whole results area */
-    [data-asc-results]:has(.asc-ui-empty-state) {
-        display: block;
+    /* Empty state (asc-ui-empty-state) spans the whole results area and is
+       centered on both axes. Specificity bumped with [data-display] so this
+       reliably wins over the display-mode grid rules below — both would
+       otherwise tie at the same specificity, and source order would decide. */
+    [data-asc-results][data-display]:has(.asc-ui-empty-state) {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 50vh;
     }
 
     /* ── Display modes ─────────────────────────────────────────────────── */

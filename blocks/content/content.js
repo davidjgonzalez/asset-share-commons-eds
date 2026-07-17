@@ -16,7 +16,11 @@
  *   | notes          |
  */
 export default function decorate(block) {
-  block.innerHTML = [...block.querySelectorAll(':scope > div > div')]
-    .map((cell) => cell.innerHTML)
-    .join('');
+  // Move the actual child nodes rather than round-tripping through innerHTML strings —
+  // serializing and reparsing would create brand-new elements, severing any {{ }} token
+  // element already recorded by scripts/asc/tokens.js's page-wide registry (registerTokens()
+  // re-resolves onto the original elements; a rebuilt element never gets re-scanned since it
+  // no longer contains the raw {{ }} text once the first pass has emptied it).
+  const cells = [...block.querySelectorAll(':scope > div > div')];
+  block.replaceChildren(...cells.flatMap((cell) => [...cell.childNodes]));
 }

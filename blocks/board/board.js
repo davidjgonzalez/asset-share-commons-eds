@@ -2,12 +2,17 @@
 import services from '../../scripts/asc/core/services/services.js';
 import { Events as CollectionEvents } from '../../scripts/asc/core/services/collections/collections.js';
 import { escHtml, escAttr } from '../../scripts/asc/html.js';
+import defaultBoardItemHtml from '../../scripts/asc/board-item.js';
 
 const configurations = (await import('../../scripts/asc/configurations.js')).default;
 
+// Swap in a fully custom item renderer via configurations.board.itemRenderer — see
+// scripts/asc/board-item.js (the default implementation) for the markup contract.
+const boardItemHtml = configurations.board?.itemRenderer || defaultBoardItemHtml;
+
 // ─── Module-level drag / selection state ─────────────────────────────────────
 
-let _cardDragMoved = false;
+let _itemDragMoved = false;
 let _rubberBandJustSelected = false;
 let _openPanelState = null;
 let _noteHoverTimer = null;
@@ -26,7 +31,6 @@ function parseConfig(block) {
     mode: 'view',
     notes: true,
     searchProperties: [],
-    displayProperties: [],
     details: null,
   };
   [...block.children].forEach((row) => {
@@ -39,26 +43,9 @@ function parseConfig(block) {
     else if (key === 'notes') config.notes = val.toLowerCase() !== 'false';
     else if (key === 'search-properties') {
       config.searchProperties = val ? val.split(',').map((p) => p.trim()).filter(Boolean) : [];
-    } else if (key === 'display-properties') {
-      config.displayProperties = val ? val.split(/[\n,·•]+/).map((p) => p.trim()).filter(Boolean) : [];
     } else if (key === 'details') config.details = val || null;
   });
   return config;
-}
-
-// ─── Asset type label ─────────────────────────────────────────────────────────
-
-function assetTypeLabel(mimeType) {
-  if (!mimeType) return 'Asset';
-  if (mimeType.startsWith('image/')) return 'Image';
-  if (mimeType.startsWith('video/')) return 'Video';
-  if (mimeType.startsWith('audio/')) return 'Audio';
-  if (mimeType === 'application/pdf') return 'PDF';
-  if (mimeType.includes('word') || mimeType.includes('document')) return 'Document';
-  if (mimeType.includes('sheet') || mimeType.includes('excel')) return 'Spreadsheet';
-  if (mimeType.includes('presentation') || mimeType.includes('powerpoint')) return 'Presentation';
-  const ext = services.fileType.getExtension(mimeType);
-  return ext ? ext.toUpperCase() : 'Asset';
 }
 
 // ─── Details path resolution ──────────────────────────────────────────────────
@@ -134,14 +121,28 @@ function saveTextItem(id, el) {
 
 function getViewport(id) {
   try {
-    return JSON.parse(localStorage.getItem(VIEWPORT_KEY(id))) || { panX: 0, panY: 0, zoom: 1 };
+    return JSON.parse(localStorage.getItem(VIEWPORT_KEY(id)));
   } catch {
-    return { panX: 0, panY: 0, zoom: 1 };
+    return null;
   }
 }
 
 function setViewport(id, state) {
   localStorage.setItem(VIEWPORT_KEY(id), JSON.stringify(state));
+}
+
+/**
+ * Stable signature for "which items are currently on the board" (membership only, not
+ * position) — lets a persisted *automatic* fit be trusted on a later load only if the
+ * board's contents haven't changed since, and safely discarded (recomputed fresh) if they
+ * have. A *manual* pan/zoom/centerOn is saved without a signature and is always trusted
+ * regardless of content changes — the user chose that view deliberately.
+ */
+function contentSignature(items) {
+  return items
+    .map((el) => el.dataset.ascAsset || el.dataset.textId || '')
+    .sort()
+    .join(',');
 }
 
 // ─── HTML renderers ───────────────────────────────────────────────────────────
@@ -157,71 +158,9 @@ function expiredHtml(expiresAt) {
     </div>`;
 }
 
-function buildSearchStr(asset, config) {
-  if (!config.searchProperties.length) return '';
-  return config.searchProperties.map((prop) => asset.getProperty(prop).text).join(' ').toLowerCase().trim();
-}
-
-function cardBodyHtml(asset, config) {
-  if (config.displayProperties.length) {
-    return config.displayProperties.map((prop) => {
-      const pv = asset.getProperty(prop);
-      if (!pv.html) return '';
-      return `<p class="asc-ui-asset-card__meta">${pv.html}</p>`;
-    }).filter(Boolean).join('');
-  }
-  const mimeType = asset.getProperty('mime-type').data || asset.mimeType || '';
-  return `<p class="asc-ui-asset-card__title" title="${escHtml(asset.title)}">${escHtml(assetTypeLabel(mimeType))}</p>`;
-}
-
-function boardCardHtml(item, index, config) {
-  const { asset, notes: itemNotes } = item;
-  const x = item.x !== undefined ? item.x : 80 + (index % 10) * 180;
-  const y = item.y !== undefined ? item.y : 80 + Math.floor(index / 10) * 160;
-  const srcset = services.renditions.getThumbnailSrcset(asset);
-  const thumbnailUrl = srcset.length
-    ? srcset[Math.floor(srcset.length / 2)].url
-    : services.renditions.getThumbnailUrl(asset);
-  const srcsetAttr = srcset.length
-    ? srcset.map((r) => `${r.url} ${r.size.width}w`).join(', ')
-    : '';
-  const searchStr = buildSearchStr(asset, config);
-  const interactive = config.mode === 'interactive';
-  const showNotes = config.notes;
-
-  return `
-    <article class="asc-ui-asset-card board__card${showNotes && itemNotes ? ' board__card--has-note' : ''}"
-             style="left: ${x}px; top: ${y}px"
-             data-asc-asset="${escAttr(asset.uuid)}"
-             ${searchStr ? `data-filter="${escAttr(searchStr)}"` : ''}
-             ${interactive && showNotes ? `data-asc-notes="${escAttr(itemNotes || '')}"` : ''}>
-      <div class="asc-ui-asset-card__thumb">
-        ${interactive ? `
-        <div class="asc-ui-asset-card__overlay">
-          <button type="button"
-                  class="asc-ui-icon-btn asc-ui-icon-btn--sm board__card-remove"
-                  data-asc-asset="${escAttr(asset.uuid)}"
-                  aria-label="Remove ${escHtml(asset.title)} from collection">&#x2715;</button>
-        </div>` : ''}
-        <img src="${escAttr(thumbnailUrl)}"${srcsetAttr ? ` srcset="${srcsetAttr}" sizes="(min-width: 1024px) 160px, 140px"` : ''} alt="${escHtml(asset.description || asset.title || asset.name || '')}" loading="lazy" draggable="false">
-      </div>
-      <div class="asc-ui-asset-card__body">
-        ${cardBodyHtml(asset, config)}
-      </div>
-      ${interactive && showNotes ? `
-      <div class="asc-ui-asset-card__footer">
-        <button type="button"
-                class="asc-ui-icon-btn asc-ui-icon-btn--sm board__notes-btn"
-                data-asc-asset="${escAttr(asset.uuid)}"
-                aria-label="Notes"
-                title="Notes">&#9998;</button>
-      </div>` : ''}
-    </article>`;
-}
-
 function textElementHtml(t, interactive) {
   return `
-    <div class="board__text-element"
+    <div class="board__text-element${interactive ? '' : ' board__text-element--readonly'}"
          style="left:${t.x}px;top:${t.y}px;width:${t.w}px;height:${t.h}px"
          data-text-id="${escAttr(t.id)}">
       ${interactive ? `
@@ -235,7 +174,7 @@ function textElementHtml(t, interactive) {
 
 function viewportHtml(assetItems, textItems, config) {
   const interactive = config.mode === 'interactive';
-  const cards = assetItems.map((item, i) => boardCardHtml(item, i, config)).join('');
+  const cards = assetItems.map((item, i) => boardItemHtml(item, i, config)).join('');
   const texts = textItems.map((t) => textElementHtml(t, interactive)).join('');
 
   return `
@@ -251,6 +190,11 @@ function viewportHtml(assetItems, textItems, config) {
           <button type="button" class="asc-ui-segmented__option board__align-grid">Align to grid</button>
           <button type="button" class="asc-ui-segmented__option board__add-text">+ Text</button>` : ''}
           ${config.searchProperties.length ? `<input type="search" class="board__search" placeholder="Search…" aria-label="Search assets">` : ''}
+        </div>
+      </div>
+      <div class="board__minimap asc-panel asc-panel--no-pad" hidden aria-hidden="true">
+        <div class="board__minimap-inner">
+          <div class="board__minimap-viewport"></div>
         </div>
       </div>
     </div>`;
@@ -330,17 +274,17 @@ async function loadFromSheet(sheetParam) {
 // ─── Selection helpers ────────────────────────────────────────────────────────
 
 function selectItem(el) {
-  el.classList.add('board__card--selected');
+  el.classList.add('board__item--selected');
   _selectedItems.add(el);
 }
 
 function deselectItem(el) {
-  el.classList.remove('board__card--selected');
+  el.classList.remove('board__item--selected');
   _selectedItems.delete(el);
 }
 
 function deselectAll() {
-  _selectedItems.forEach((el) => el.classList.remove('board__card--selected'));
+  _selectedItems.forEach((el) => el.classList.remove('board__item--selected'));
   _selectedItems.clear();
 }
 
@@ -360,14 +304,15 @@ function computeFitViewport(cards, viewport) {
   cards.forEach((card) => {
     const x = parseFloat(card.style.left) || 0;
     const y = parseFloat(card.style.top) || 0;
-    const w = card.offsetWidth || 160;
-    const h = card.offsetHeight || 200;
+    const w = card.offsetWidth || 240;
+    const h = card.offsetHeight || 180;
     minX = Math.min(minX, x);
     minY = Math.min(minY, y);
     maxX = Math.max(maxX, x + w);
     maxY = Math.max(maxY, y + h);
   });
   const PAD = 72;
+  const PAD_TOP = 112; // extra clearance under the floating toolbar so cards aren't tucked under it
   const contentW = maxX - minX;
   const contentH = maxY - minY;
   const vw = viewport.clientWidth;
@@ -375,58 +320,85 @@ function computeFitViewport(cards, viewport) {
   if (!contentW || !contentH || !vw || !vh) return { panX: 0, panY: 0, zoom: 1 };
   const zoom = Math.min(
     (vw - 2 * PAD) / contentW,
-    (vh - 2 * PAD) / contentH,
+    (vh - PAD_TOP - PAD) / contentH,
     1.0,
   );
   const panX = (vw - contentW * zoom) / 2 - minX * zoom;
-  const panY = PAD - minY * zoom;
+  const panY = PAD_TOP - minY * zoom;
   return { panX, panY, zoom };
 }
 
 // ─── Notes panel ──────────────────────────────────────────────────────────────
 
-function positionPanel(panel, btn, viewport) {
-  const btnRect = btn.getBoundingClientRect();
+const PANEL_SIDE_ORDER = ['bottom', 'right', 'top', 'left'];
+const PANEL_TAIL_SIZE = 12;
+
+/**
+ * Position the notes panel relative to the item's card, not the notes button. Sides are
+ * tried in order of preference — bottom, right, top, left — and the first one the panel
+ * actually fits in wins; if none fit, whichever has the most free space is used instead.
+ * The panel is then centered along that side and a CSS tail (::after, driven by
+ * data-side + --tail-pos) points back at the card's center, clamped to stay on the panel.
+ */
+function positionPanel(panel, card, viewport) {
+  const cardRect = card.getBoundingClientRect();
   const vRect = viewport.getBoundingClientRect();
   const pw = panel.offsetWidth || 220;
   const ph = panel.offsetHeight || 160;
   const gap = 10;
-  const tailCenter = 26;
+  const margin = 4;
 
-  const btnCX = btnRect.left - vRect.left + btnRect.width / 2;
-  let left = btnCX - tailCenter;
-  let useRightTail = false;
+  const cardLeft = cardRect.left - vRect.left;
+  const cardTop = cardRect.top - vRect.top;
+  const cardRight = cardRect.right - vRect.left;
+  const cardBottom = cardRect.bottom - vRect.top;
+  const cardCenterX = cardLeft + cardRect.width / 2;
+  const cardCenterY = cardTop + cardRect.height / 2;
 
-  if (left + pw > vRect.width - 4) {
-    left = btnCX - (pw - tailCenter);
-    useRightTail = true;
-  }
-  left = Math.max(4, left);
+  const space = {
+    bottom: vRect.height - cardBottom,
+    right: vRect.width - cardRight,
+    top: cardTop,
+    left: cardLeft,
+  };
+  const needed = {
+    top: ph + gap, bottom: ph + gap, left: pw + gap, right: pw + gap,
+  };
 
-  const aboveTop = btnRect.top - vRect.top - ph - gap;
-  const belowTop = btnRect.bottom - vRect.top + gap;
-  const goAbove = aboveTop >= 4;
-  const top = goAbove ? aboveTop : belowTop;
+  const side = PANEL_SIDE_ORDER.find((s) => space[s] >= needed[s])
+    ?? PANEL_SIDE_ORDER.slice().sort((a, b) => space[b] - space[a])[0];
 
-  panel.classList.remove('asc-ui-bubble--br', 'asc-ui-bubble--tl', 'asc-ui-bubble--tr');
-  if (goAbove) {
-    if (useRightTail) panel.classList.add('asc-ui-bubble--br');
+  let left;
+  let top;
+  if (side === 'top' || side === 'bottom') {
+    left = cardCenterX - pw / 2;
+    top = side === 'top' ? cardTop - ph - gap : cardBottom + gap;
   } else {
-    panel.classList.add(useRightTail ? 'asc-ui-bubble--tr' : 'asc-ui-bubble--tl');
+    top = cardCenterY - ph / 2;
+    left = side === 'left' ? cardLeft - pw - gap : cardRight + gap;
   }
 
-  panel.style.left = `${left}px`;
-  panel.style.top = `${top}px`;
+  const clampedLeft = Math.max(margin, Math.min(left, vRect.width - pw - margin));
+  const clampedTop = Math.max(margin, Math.min(top, vRect.height - ph - margin));
+
+  panel.style.left = `${clampedLeft}px`;
+  panel.style.top = `${clampedTop}px`;
+  panel.dataset.side = side;
+
+  const tailPos = side === 'top' || side === 'bottom'
+    ? Math.max(PANEL_TAIL_SIZE, Math.min(cardCenterX - clampedLeft, pw - PANEL_TAIL_SIZE))
+    : Math.max(PANEL_TAIL_SIZE, Math.min(cardCenterY - clampedTop, ph - PANEL_TAIL_SIZE));
+  panel.style.setProperty('--tail-pos', `${tailPos}px`);
 }
 
 function repositionOpenPanel() {
   if (!_openPanelState) return;
-  const { panel, btn, viewport } = _openPanelState;
+  const { panel, card, viewport } = _openPanelState;
   if (!document.contains(panel)) { _openPanelState = null; return; }
-  positionPanel(panel, btn, viewport);
+  positionPanel(panel, card, viewport);
 }
 
-function openNotePanel(block, card, btn, className, innerHtml, mode) {
+function openNotePanel(block, card, className, innerHtml, mode) {
   block.querySelector('.board__notes-panel')?.remove();
   _openPanelState = null;
   const panel = document.createElement('div');
@@ -434,30 +406,31 @@ function openNotePanel(block, card, btn, className, innerHtml, mode) {
   panel.innerHTML = innerHtml;
   const viewport = block.querySelector('.board__viewport');
   viewport.appendChild(panel);
-  positionPanel(panel, btn, viewport);
+  positionPanel(panel, card, viewport);
   _openPanelState = {
-    panel, card, btn, viewport, mode,
+    panel, card, viewport, mode,
   };
   return { panel, viewport };
 }
 
-function openNotePreview(block, card, btn) {
+function openNotePreview(block, card) {
   const notes = card.dataset.ascNotes || '';
   if (!notes) return;
 
   const { panel } = openNotePanel(
-    block, card, btn,
-    'asc-ui-bubble board__notes-panel board__notes-panel--preview',
+    block, card,
+    'asc-panel board__notes-panel board__notes-panel--preview',
     `<p class="board__notes-preview-text">${escHtml(notes)}</p>`,
     'preview',
   );
 
   panel.addEventListener('mouseenter', () => clearTimeout(_noteHoverTimer));
   panel.addEventListener('mouseleave', () => {
-    if (_openPanelState?.mode === 'preview') {
+    const state = _openPanelState;
+    if (state?.mode === 'preview') {
       _noteHoverTimer = setTimeout(() => {
-        if (_openPanelState?.mode === 'preview') {
-          _openPanelState.panel.remove();
+        if (_openPanelState === state) {
+          state.panel.remove();
           _openPanelState = null;
         }
       }, 150);
@@ -468,11 +441,10 @@ function openNotePreview(block, card, btn) {
 function openNoteEdit(block, collectionId, card) {
   const assetId = card.dataset.ascAsset;
   const currentNotes = card.dataset.ascNotes || '';
-  const btn = card.querySelector('.board__notes-btn');
 
   const { panel } = openNotePanel(
-    block, card, btn,
-    'asc-ui-bubble board__notes-panel',
+    block, card,
+    'asc-panel board__notes-panel',
     `<div class="asc-ui-field">
       <textarea class="board__notes-textarea"
                 placeholder="Add a note about this asset…"
@@ -492,7 +464,7 @@ function openNoteEdit(block, collectionId, card) {
   function saveAndClose() {
     const notes = textarea.value.trim();
     services.collections.updateItem(collectionId, assetId, { notes });
-    updateCardNotes(card, notes);
+    updateItemNotes(card, notes);
     removeOutsideClick();
     panel.remove();
     _openPanelState = null;
@@ -514,20 +486,32 @@ function openNoteEdit(block, collectionId, card) {
   }, 0);
 }
 
-function updateCardNotes(card, notes) {
-  card.classList.toggle('board__card--has-note', !!notes);
+function updateItemNotes(card, notes) {
+  card.classList.toggle('board__item--has-note', !!notes);
   card.dataset.ascNotes = notes || '';
 }
 
 // ─── Pan/zoom engine ──────────────────────────────────────────────────────────
 
-function initPanZoom(block, persistId) {
+function initPanZoom(block, persistId, onChange) {
   const viewport = block.querySelector('.board__viewport');
   const canvas = block.querySelector('.board__canvas');
-  if (!viewport || !canvas) return { getState: () => ({ panX: 0, panY: 0, zoom: 1 }), applyFit() {}, fitView() {} };
+  if (!viewport || !canvas) {
+    return {
+      getState: () => ({ panX: 0, panY: 0, zoom: 1 }),
+      applyFit() {},
+      fitView() {},
+      centerOn() {},
+      hasValidSavedViewport: false,
+    };
+  }
 
-  const saved = persistId ? getViewport(persistId) : { panX: 0, panY: 0, zoom: 1 };
-  let { panX, panY, zoom } = saved;
+  const currentItems = () => [...canvas.querySelectorAll('.board__item, .board__text-element')];
+
+  const savedRaw = persistId ? getViewport(persistId) : null;
+  const hasValidSavedViewport = !!savedRaw
+    && (savedRaw.sig == null || savedRaw.sig === contentSignature(currentItems()));
+  let { panX, panY, zoom } = hasValidSavedViewport ? savedRaw : { panX: 0, panY: 0, zoom: 1 };
 
   canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
 
@@ -555,6 +539,7 @@ function initPanZoom(block, persistId) {
     lastY = e.clientY;
     canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
     repositionOpenPanel();
+    onChange?.();
   });
 
   function endPan(save) {
@@ -585,24 +570,45 @@ function initPanZoom(block, persistId) {
     canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
     if (persistId) setViewport(persistId, { panX, panY, zoom });
     repositionOpenPanel();
+    onChange?.();
   }, { passive: false });
 
-  function applyFit(fit) {
+  // `persist` defaults to true for deliberate user actions (manual pan/wheel already persist
+  // directly above, with no signature — always trusted; this covers applyFit()/fitView()
+  // callers like the "Fit view" button and Align-to-grid). The live-search narrowed-to-matches
+  // fit must always pass persist=false — it's a temporary view of a subset, never the user's
+  // chosen viewport. Every other persisted fit is tagged with a content signature, so a later
+  // load only restores it if the board's contents haven't changed since (otherwise it recomputes
+  // fresh) — this is what caused boards to load "not fitting": a stale fit for a smaller/older
+  // set of cards was being trusted verbatim regardless of what's actually on the board now.
+  function applyFit(fit, persist = true) {
     ({ panX, panY, zoom } = fit);
     canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
-    if (persistId) setViewport(persistId, fit);
+    if (persist && persistId) setViewport(persistId, { ...fit, sig: contentSignature(currentItems()) });
     repositionOpenPanel();
+    onChange?.();
   }
 
-  function fitView() {
-    const allCards = [...canvas.querySelectorAll('.board__card, .board__text-element')];
-    applyFit(computeFitViewport(allCards, viewport));
+  function fitView(persist = true) {
+    const allCards = [...canvas.querySelectorAll('.board__item, .board__text-element')];
+    applyFit(computeFitViewport(allCards, viewport), persist);
+  }
+
+  function centerOn(x, y) {
+    panX = viewport.clientWidth / 2 - x * zoom;
+    panY = viewport.clientHeight / 2 - y * zoom;
+    canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
+    if (persistId) setViewport(persistId, { panX, panY, zoom });
+    repositionOpenPanel();
+    onChange?.();
   }
 
   return {
     getState: () => ({ panX, panY, zoom }),
     applyFit,
     fitView,
+    centerOn,
+    hasValidSavedViewport,
   };
 }
 
@@ -616,19 +622,20 @@ function initSearch(block, panZoom) {
     const q = input.value.toLowerCase().trim();
     if (!q) {
       viewport.removeAttribute('data-board-searching');
-      block.querySelectorAll('.board__card').forEach((card) => card.classList.remove('board__card--match'));
-      panZoom.fitView();
+      block.querySelectorAll('.board__item').forEach((card) => card.classList.remove('board__item--match'));
+      panZoom.fitView(false);
       return;
     }
     viewport.setAttribute('data-board-searching', '');
     const matches = [];
-    block.querySelectorAll('.board__card').forEach((card) => {
+    block.querySelectorAll('.board__item').forEach((card) => {
       const haystack = [card.dataset.filter, card.dataset.ascNotes].filter(Boolean).join(' ').toLowerCase();
       const hit = haystack.includes(q);
-      card.classList.toggle('board__card--match', hit);
+      card.classList.toggle('board__item--match', hit);
       if (hit) matches.push(card);
     });
-    if (matches.length) panZoom.applyFit(computeFitViewport(matches, viewport));
+    // Never persist a search-narrowed fit — it's a temporary view, not the user's chosen viewport.
+    if (matches.length) panZoom.applyFit(computeFitViewport(matches, viewport), false);
   });
 }
 
@@ -641,7 +648,7 @@ function initRubberBand(block, panZoom) {
 
   viewport.addEventListener('pointerdown', (e) => {
     if (e.button === 1) return;
-    if (e.target.closest('.board__card, .board__text-element')) return;
+    if (e.target.closest('.board__item, .board__text-element')) return;
     if (e.target.closest('.board__notes-panel, .board__toolbar, .board__controls')) return;
 
     const viewportRect = viewport.getBoundingClientRect();
@@ -679,7 +686,7 @@ function initRubberBand(block, panZoom) {
       const { panX, panY, zoom } = panZoom.getState();
 
       deselectAll();
-      canvas.querySelectorAll('.board__card, .board__text-element').forEach((item) => {
+      canvas.querySelectorAll('.board__item, .board__text-element').forEach((item) => {
         const cx = parseFloat(item.style.left) || 0;
         const cy = parseFloat(item.style.top) || 0;
         const itemVpLeft = cx * zoom + panX;
@@ -701,20 +708,20 @@ function initRubberBand(block, panZoom) {
 
 // ─── Card drag ────────────────────────────────────────────────────────────────
 
-function initCardDrag(block, collectionId, panZoom) {
+function initItemDrag(block, collectionId, panZoom) {
   const viewport = block.querySelector('.board__viewport');
   if (!viewport) return;
 
   viewport.addEventListener('pointerdown', (e) => {
-    const card = e.target.closest('.board__card');
+    const card = e.target.closest('.board__item');
     if (!card) return;
-    if (e.target.closest('.board__card-remove, .board__notes-btn')) return;
+    if (e.target.closest('.board__item-remove, .board__notes-btn')) return;
 
     e.stopPropagation();
 
     const startX = e.clientX;
     const startY = e.clientY;
-    _cardDragMoved = false;
+    _itemDragMoved = false;
 
     const { zoom } = panZoom.getState();
 
@@ -731,25 +738,26 @@ function initCardDrag(block, collectionId, panZoom) {
     }));
 
     card.setPointerCapture(e.pointerId);
-    dragGroup.forEach((c) => c.classList.add('board__card--dragging'));
+    dragGroup.forEach((c) => c.classList.add('board__item--dragging'));
 
     function onMove(ev) {
       const dx = ev.clientX - startX;
       const dy = ev.clientY - startY;
-      if (Math.abs(dx) > 5 || Math.abs(dy) > 5) _cardDragMoved = true;
-      if (!_cardDragMoved) return;
+      if (Math.abs(dx) > 5 || Math.abs(dy) > 5) _itemDragMoved = true;
+      if (!_itemDragMoved) return;
       startPositions.forEach(({ el, left, top }) => {
         el.style.left = `${left + dx / zoom}px`;
         el.style.top = `${top + dy / zoom}px`;
       });
+      if (_openPanelState && dragGroup.includes(_openPanelState.card)) repositionOpenPanel();
     }
 
     function onUp() {
       card.removeEventListener('pointermove', onMove);
       card.removeEventListener('pointerup', onUp);
       card.removeEventListener('pointercancel', onUp);
-      dragGroup.forEach((c) => c.classList.remove('board__card--dragging'));
-      if (_cardDragMoved) {
+      dragGroup.forEach((c) => c.classList.remove('board__item--dragging'));
+      if (_itemDragMoved) {
         startPositions.forEach(({ el }) => {
           if (el.dataset.ascAsset) {
             const x = Math.round(parseFloat(el.style.left));
@@ -773,20 +781,20 @@ function initBoardClicks(block, collectionId, config) {
   if (!viewport) return;
 
   viewport.addEventListener('click', (e) => {
-    if (!e.target.closest('.board__card, .board__notes-panel, .board__toolbar, .board__controls, .board__text-element')) {
+    if (!e.target.closest('.board__item, .board__notes-panel, .board__toolbar, .board__controls, .board__text-element')) {
       if (_rubberBandJustSelected) { _rubberBandJustSelected = false; return; }
       deselectAll();
     }
 
-    const removeBtn = e.target.closest('.board__card-remove');
+    const removeBtn = e.target.closest('.board__item-remove');
     if (removeBtn) {
-      services.collections.removeAsset(collectionId, removeBtn.dataset.ascAsset);
+      services.collections.removeAsset(removeBtn.dataset.ascAsset, collectionId);
       return;
     }
 
     const notesBtn = e.target.closest('.board__notes-btn');
     if (notesBtn) {
-      const card = notesBtn.closest('.board__card');
+      const card = notesBtn.closest('.board__item');
       if (card) {
         clearTimeout(_noteHoverTimer);
         if (_openPanelState?.mode === 'preview') {
@@ -798,9 +806,9 @@ function initBoardClicks(block, collectionId, config) {
       return;
     }
 
-    const card = e.target.closest('.board__card');
+    const card = e.target.closest('.board__item');
     if (card) {
-      if (!_cardDragMoved) {
+      if (!_itemDragMoved) {
         if (e.shiftKey) {
           toggleItem(card);
         } else if (card.dataset.ascAsset) {
@@ -810,27 +818,32 @@ function initBoardClicks(block, collectionId, config) {
           selectItem(card);
         }
       }
-      _cardDragMoved = false;
+      _itemDragMoved = false;
     }
   });
 
+  // Hovering anywhere on an item with a note shows the preview — the notes button itself
+  // is only for opening the add/edit panel (click), not for triggering the hover preview.
   viewport.addEventListener('mouseover', (e) => {
-    const btn = e.target.closest('.board__notes-btn');
-    if (!btn) return;
+    const card = e.target.closest('.board__item');
+    if (!card) return;
     clearTimeout(_noteHoverTimer);
-    const card = btn.closest('.board__card');
-    if (card?.classList.contains('board__card--has-note') && !_openPanelState) {
-      openNotePreview(block, card, btn);
-    }
+    if (!card.classList.contains('board__item--has-note')) return;
+    if (_openPanelState?.mode === 'edit') return;
+    if (_openPanelState?.card === card) return;
+    openNotePreview(block, card);
   });
 
   viewport.addEventListener('mouseout', (e) => {
-    if (!e.target.closest('.board__notes-btn')) return;
+    const card = e.target.closest('.board__item');
+    if (!card) return;
+    if (e.relatedTarget?.closest('.board__item') === card) return;
     if (e.relatedTarget?.closest('.board__notes-panel')) return;
-    if (_openPanelState?.mode === 'preview') {
+    const state = _openPanelState;
+    if (state?.mode === 'preview') {
       _noteHoverTimer = setTimeout(() => {
-        if (_openPanelState?.mode === 'preview') {
-          _openPanelState.panel.remove();
+        if (_openPanelState === state) {
+          state.panel.remove();
           _openPanelState = null;
         }
       }, 150);
@@ -845,7 +858,7 @@ function initAlignGrid(block, collectionId, panZoom) {
   const viewport = block.querySelector('.board__viewport');
 
   block.querySelector('.board__align-grid')?.addEventListener('click', () => {
-    const allItems = [...canvas.querySelectorAll('.board__card, .board__text-element')];
+    const allItems = [...canvas.querySelectorAll('.board__item, .board__text-element')];
     if (!allItems.length) return;
 
     const SNAP = 24;
@@ -855,8 +868,8 @@ function initAlignGrid(block, collectionId, panZoom) {
       el,
       x: Math.round((parseFloat(el.style.left) || 0) / SNAP) * SNAP,
       y: Math.round((parseFloat(el.style.top) || 0) / SNAP) * SNAP,
-      w: el.offsetWidth || 160,
-      h: el.offsetHeight || 200,
+      w: el.offsetWidth || 240,
+      h: el.offsetHeight || 180,
     }));
 
     for (let pass = 0; pass < layout.length; pass++) {
@@ -897,7 +910,7 @@ function initAlignGrid(block, collectionId, panZoom) {
           saveTextItem(collectionId, el);
         }
       });
-      const allCards = [...canvas.querySelectorAll('.board__card, .board__text-element')];
+      const allCards = [...canvas.querySelectorAll('.board__item, .board__text-element')];
       panZoom.applyFit(computeFitViewport(allCards, viewport));
       repositionOpenPanel();
     }, 230);
@@ -965,7 +978,7 @@ function initTextElement(el, storeId) {
     }));
 
     el.setPointerCapture(ev.pointerId);
-    dragGroup.forEach((item) => item.classList.add('board__card--dragging'));
+    dragGroup.forEach((item) => item.classList.add('board__item--dragging'));
 
     function onMove(mev) {
       const dx = mev.clientX - startX;
@@ -988,7 +1001,7 @@ function initTextElement(el, storeId) {
       el.removeEventListener('pointermove', onMove);
       el.removeEventListener('pointerup', onUp);
       el.removeEventListener('pointercancel', onUp);
-      dragGroup.forEach((item) => item.classList.remove('board__card--dragging'));
+      dragGroup.forEach((item) => item.classList.remove('board__item--dragging'));
 
       if (moved) {
         startPositions.forEach(({ item }) => {
@@ -1059,10 +1072,149 @@ function initViewClicks(block, config) {
   if (!viewport) return;
 
   viewport.addEventListener('click', (e) => {
-    const card = e.target.closest('.board__card');
+    const card = e.target.closest('.board__item');
     if (!card?.dataset.ascAsset) return;
     openDetails(card.dataset.ascAsset, null, config);
   });
+}
+
+// ─── Minimap ──────────────────────────────────────────────────────────────────
+
+const MINIMAP_PAD = 6;
+
+function minimapContentBounds(items) {
+  if (!items.length) return null;
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  items.forEach((el) => {
+    const x = parseFloat(el.style.left) || 0;
+    const y = parseFloat(el.style.top) || 0;
+    const w = el.offsetWidth || 240;
+    const h = el.offsetHeight || 180;
+    minX = Math.min(minX, x);
+    minY = Math.min(minY, y);
+    maxX = Math.max(maxX, x + w);
+    maxY = Math.max(maxY, y + h);
+  });
+  return {
+    minX, minY, maxX, maxY,
+  };
+}
+
+/**
+ * Small overview panel showing every card/text element scaled down, plus a rectangle
+ * marking the current visible viewport — click anywhere on it to jump there (zoom unchanged).
+ * Recomputes markers whenever the canvas's content changes (add/remove/drag any item), via
+ * MutationObserver rather than threading a refresh call through every interaction handler.
+ * The viewport indicator alone is cheap to update on every pan/zoom change (see onChange
+ * callback wired in initPanZoom).
+ */
+function initMinimap(block, panZoom) {
+  const viewport = block.querySelector('.board__viewport');
+  const canvas = block.querySelector('.board__canvas');
+  const minimap = block.querySelector('.board__minimap');
+  const inner = block.querySelector('.board__minimap-inner');
+  const indicator = block.querySelector('.board__minimap-viewport');
+  if (!viewport || !canvas || !minimap || !inner || !indicator) return { updateIndicator() {} };
+
+  let bounds = null;
+  let scale = 1;
+  let offsetX = 0;
+  let offsetY = 0;
+
+  function updateIndicator() {
+    if (!bounds) return;
+    const { panX, panY, zoom } = panZoom.getState();
+    const vx = -panX / zoom;
+    const vy = -panY / zoom;
+    const vw = viewport.clientWidth / zoom;
+    const vh = viewport.clientHeight / zoom;
+    indicator.style.left = `${offsetX + vx * scale}px`;
+    indicator.style.top = `${offsetY + vy * scale}px`;
+    indicator.style.width = `${Math.max(4, vw * scale)}px`;
+    indicator.style.height = `${Math.max(4, vh * scale)}px`;
+  }
+
+  function refresh() {
+    const items = [...canvas.querySelectorAll('.board__item, .board__text-element')];
+    bounds = minimapContentBounds(items);
+    if (!bounds) {
+      minimap.hidden = true;
+      return;
+    }
+    minimap.hidden = false;
+
+    const w = Math.max(1, bounds.maxX - bounds.minX);
+    const h = Math.max(1, bounds.maxY - bounds.minY);
+    scale = Math.min(
+      (inner.clientWidth - 2 * MINIMAP_PAD) / w,
+      (inner.clientHeight - 2 * MINIMAP_PAD) / h,
+    );
+    offsetX = MINIMAP_PAD - bounds.minX * scale;
+    offsetY = MINIMAP_PAD - bounds.minY * scale;
+
+    inner.querySelectorAll('.board__minimap-marker').forEach((m) => m.remove());
+    items.forEach((el) => {
+      const x = parseFloat(el.style.left) || 0;
+      const y = parseFloat(el.style.top) || 0;
+      const w2 = el.offsetWidth || 240;
+      const h2 = el.offsetHeight || 180;
+      const isText = el.classList.contains('board__text-element');
+      const marker = document.createElement('div');
+      marker.className = `board__minimap-marker${isText ? ' board__minimap-marker--text' : ''}`;
+      marker.style.left = `${offsetX + x * scale}px`;
+      marker.style.top = `${offsetY + y * scale}px`;
+      marker.style.width = `${Math.max(2, w2 * scale)}px`;
+      marker.style.height = `${Math.max(2, h2 * scale)}px`;
+      inner.appendChild(marker);
+    });
+
+    updateIndicator();
+  }
+
+  function jumpTo(e) {
+    const rect = inner.getBoundingClientRect();
+    const targetX = (e.clientX - rect.left - offsetX) / scale;
+    const targetY = (e.clientY - rect.top - offsetY) / scale;
+    panZoom.centerOn(targetX, targetY);
+  }
+
+  // Drag anywhere on the minimap to continuously pan, not just a single jump on click.
+  inner.addEventListener('pointerdown', (e) => {
+    if (!bounds) return;
+    e.stopPropagation();
+    inner.setPointerCapture(e.pointerId);
+    jumpTo(e);
+
+    const onMove = (mev) => jumpTo(mev);
+    const onUp = () => {
+      inner.removeEventListener('pointermove', onMove);
+      inner.removeEventListener('pointerup', onUp);
+      inner.removeEventListener('pointercancel', onUp);
+    };
+    inner.addEventListener('pointermove', onMove);
+    inner.addEventListener('pointerup', onUp);
+    inner.addEventListener('pointercancel', onUp);
+  });
+
+  let refreshScheduled = false;
+  const observer = new MutationObserver(() => {
+    if (refreshScheduled) return;
+    refreshScheduled = true;
+    requestAnimationFrame(() => { refreshScheduled = false; refresh(); });
+  });
+  observer.observe(canvas, {
+    childList: true, subtree: true, attributes: true, attributeFilter: ['style'],
+  });
+
+  // Defer the first refresh (double rAF, matching the main fitView's timing) rather than
+  // computing synchronously right after the DOM was replaced — belt-and-braces against any
+  // layout not being settled yet immediately after a full block re-render.
+  requestAnimationFrame(() => requestAnimationFrame(refresh));
+
+  return { updateIndicator };
 }
 
 // ─── Board orchestrator ───────────────────────────────────────────────────────
@@ -1070,9 +1222,8 @@ function initViewClicks(block, config) {
 function initBoard(block, config, collectionId) {
   _selectedItems.clear();
 
-  const hasSavedViewport = collectionId && localStorage.getItem(VIEWPORT_KEY(collectionId)) !== null;
-
-  const panZoom = initPanZoom(block, collectionId);
+  const panZoom = initPanZoom(block, collectionId, () => minimap?.updateIndicator());
+  const minimap = initMinimap(block, panZoom);
 
   block.querySelector('.board__fit')?.addEventListener('click', () => panZoom.fitView());
 
@@ -1080,7 +1231,7 @@ function initBoard(block, config, collectionId) {
 
   if (config.mode === 'interactive' && collectionId) {
     initRubberBand(block, panZoom);
-    initCardDrag(block, collectionId, panZoom);
+    initItemDrag(block, collectionId, panZoom);
     initBoardClicks(block, collectionId, config);
     initTextElements(block, collectionId);
     initAddText(block, collectionId, panZoom);
@@ -1089,8 +1240,8 @@ function initBoard(block, config, collectionId) {
     initViewClicks(block, config);
   }
 
-  if (!hasSavedViewport) {
-    requestAnimationFrame(() => requestAnimationFrame(() => panZoom.fitView()));
+  if (!panZoom.hasValidSavedViewport) {
+    requestAnimationFrame(() => requestAnimationFrame(() => panZoom.fitView(false)));
   }
 }
 

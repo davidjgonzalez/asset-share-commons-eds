@@ -189,6 +189,42 @@ The kit is theme-driven (`.asc-ui-*` + `.btn`) and lives in `styles/ui-kit.css` 
 If the user names specific kit elements, read those entries in `docs/UI_KIT.md` for exact markup.
 Need a new primitive? Workshop it in the kit first, then deploy into blocks.
 
+## Block Authoring Registration — mandatory
+
+**Every new author-placed block must be registered in both places below before it's considered
+done.** This is a hard requirement, not a nice-to-have — a block that only exists as code is not
+authorable by content editors.
+
+Skip this for blocks that are never placed via the section canvas (invoked programmatically, e.g.
+`action-*` blocks driven by the actions service) and for stock EDS boilerplate (`columns`,
+`content`, `header`, `footer`, `fragment`) — those stay code-only.
+
+1. **Universal Editor component JSON** (repo root): add the block to `component-definition.json`
+   (id + template defaults), `component-models.json` (authorable fields), and
+   `component-filters.json` (add the id to the `section` filter's `components` array, and to any
+   page-specific filter it belongs in, e.g. `asc-details-page`).
+   - If the block's own JS reads rows via `readBlockConfig()` / a fixed `key | value` shape, the
+     template object **must** set `"key-value": true` — without it, Universal Editor renders
+     fields positionally (one bare value per row, no key cell), which does not match what
+     `readBlockConfig()` expects. See `https://www.aem.live/developer/component-model-definitions`.
+   - Blocks that take arbitrary/unbounded rows (a free-form `Label | property` list, e.g.
+     `details-metadata`) can't be modeled as fixed fields — register them with a single
+     descriptive `richtext` field (see `search-hidden` in `component-models.json` for the
+     established pattern), and keep documenting the row format in the block's own header comment.
+2. **DA.live block library**: add an example document under `/blocks/<block-name>` (DA content,
+   not this repo) showing the block's real authored markup, then add a `{ name, path }` row for it
+   to the `library/blocks` sheet. `path` is the `https://content.da.live/{org}/{site}/...` source
+   link. See `https://docs.da.live/administrators/guides/setup-library` for the full mechanism —
+   the library sheet is registered once in the site's `config.json` (`library` tab, `Blocks` row
+   pointing at the published `library/blocks.json`); adding a new block only means adding a row to
+   the existing sheet and creating its example doc.
+   - New documents/sheets must be **previewed and published** (via Sidekick, or the Admin API) to
+     take effect — creating the DA source alone does not update the live `.json` the library reads.
+
+Both steps apply even when the block is only used inside a fragment (e.g. the asset-details
+modal) — Universal Editor and the DA library both need to know about it regardless of where it's
+ultimately placed.
+
 ## CSS Conventions (see docs/CSS_CONVENTION.md)
 
 - Root selector: `.block.<block-name> { ... }` — never a bare class

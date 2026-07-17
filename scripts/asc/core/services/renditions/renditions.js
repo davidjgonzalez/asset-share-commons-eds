@@ -107,9 +107,14 @@ const DEFAULT_DEFINITIONS = [
  *
  * ### `type: 'dm-smartcrop'`
  * Classic Dynamic Media (Scene7) IS-protocol smart crop.
- * URL: {dam:scene7Domain}/is/image/{dam:scene7File}:{def.id}
+ * URL: {dam:scene7Domain}/is/image/{dam:scene7File}:{cropName}
  * Auto-detected from jcr:content/renditions nodes with
  * sling:resourceType "dam/rendition/smartcrop" — no definitions needed.
+ * An explicit definition never hardcodes the DM crop name as `def.id` — it looks
+ * the real node up from the asset's renditions tree via `def.smartCropId` (the
+ * exact, case-sensitive DM-registered crop name; falls back to `def.id` if
+ * omitted). The resolved rendition's `id` defaults to the matched node's real
+ * name; `def.id` only overrides it if explicitly set.
  *
  * ### `type: 'dm-openapi'`
  * AEM Asset Delivery API (AEMaaCS). Requires aem.deliveryHost in configurations.js.

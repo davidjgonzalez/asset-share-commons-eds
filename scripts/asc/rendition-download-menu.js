@@ -32,6 +32,27 @@ function formatBytes(bytes) {
   return `${(Math.ceil((bytes / (1024 * 1024 * 1024)) * 10) / 10).toFixed(1)} GB`;
 }
 
+const MIME_TO_FORMAT = {
+  'image/jpeg': 'JPG', 'image/png': 'PNG', 'image/gif': 'GIF', 'image/webp': 'WEBP',
+  'image/tiff': 'TIFF', 'image/svg+xml': 'SVG', 'video/mp4': 'MP4', 'video/quicktime': 'MOV',
+  'video/x-msvideo': 'AVI', 'application/pdf': 'PDF', 'application/zip': 'ZIP',
+};
+
+/** Human-readable file format (e.g. "JPG"), from mimeType or the rendition's filename extension. */
+function formatType(rendition) {
+  if (rendition.mimeType) {
+    const mapped = MIME_TO_FORMAT[rendition.mimeType];
+    if (mapped) return mapped;
+  }
+  const ext = rendition.filename?.split('.').pop();
+  return ext ? ext.toUpperCase() : '';
+}
+
+/** Combine file size and format into a single meta string, e.g. "151 KB · JPG". */
+function formatMeta(rendition) {
+  return [formatBytes(rendition.fileSize), formatType(rendition)].filter(Boolean).join(' · ');
+}
+
 // Curated, site-owner-defined renditions only (configurations.renditions.definitions)
 // — mirrors the action-download dialog's rendition checklist. Deliberately narrower
 // than services.renditions.getRenditions(), which also surfaces auto-detected
@@ -127,7 +148,7 @@ async function fetchAndApplySize(rendition) {
     rendition.fileSize = parseInt(contentLength, 10);
     if (!panelEl || panelEl.hidden || renditionsById?.get(rendition.id) !== rendition) return;
     panelEl.querySelector(`[data-rendition-id="${escAttr(rendition.id)}"] .asc-ui-menu__item-meta`)
-      ?.replaceChildren(document.createTextNode(formatBytes(rendition.fileSize)));
+      ?.replaceChildren(document.createTextNode(formatMeta(rendition)));
   } catch {
     // Network error — leave the size blank rather than blocking the menu.
   }
@@ -159,7 +180,7 @@ export function toggleRenditionMenu(trigger, asset, onSelect) {
   el.innerHTML = `<ul class="asc-ui-menu">${renditions.map((r) => `
     <li><button type="button" class="asc-ui-menu__item" data-rendition-id="${escAttr(r.id)}">
       <span class="asc-ui-menu__item-label">${escHtml(r.label || r.id)}</span>
-      <span class="asc-ui-menu__item-meta">${r.fileSize ? escHtml(formatBytes(r.fileSize)) : ''}</span>
+      <span class="asc-ui-menu__item-meta">${escHtml(formatMeta(r))}</span>
     </button></li>`).join('')}</ul>`;
 
   openTrigger = trigger;

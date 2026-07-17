@@ -231,9 +231,16 @@ Children: `__thumbs[data-count]` `__thumb`.
 Compact horizontal asset row (list view). Children: `__thumb` `__title` `__meta`.
 
 ### Asset card — `@kit asset-card` · `styles/ui-kit.css`
-Vertical asset tile: thumbnail + title + metadata. Modifier: `--interactive`.
+Vertical asset tile: thumbnail + title + metadata. Modifiers: `--interactive`, `--natural`.
 Slots: `__thumb` (put `<img>` or `.asc-ui-filetype` inside), `__badge`, `__overlay`
-(hover actions), `__body` / `__title` / `__meta`, `__footer`.
+(hover actions, top-right) / `__overlay--bottom` (a second slot, bottom-right — e.g. pairing
+a top-right remove action with a bottom-right secondary one), `__body` / `__title` / `__meta`,
+`__footer`.
+
+`--natural` shows the thumb image at its own native aspect ratio, never cropped — no
+fixed `aspect-ratio` on the thumb, no `object-fit` crop. Use for preview-first contexts
+where items don't share a uniform shape (e.g. the board canvas); typically paired with
+no `__body`/`__footer` at all so the card is just the image.
 
 **Alt text rules for `<img>` inside cards:**
 - Meaningful image (asset thumbnail shown to user): `alt="<asset title or description>"` — use `asset.description || asset.title || asset.name`
@@ -248,6 +255,18 @@ Slots: `__thumb` (put `<img>` or `.asc-ui-filetype` inside), `__badge`, `__overl
   <div class="asc-ui-asset-card__body">
     <p class="asc-ui-asset-card__title">Summer Campaign Hero</p>
     <p class="asc-ui-asset-card__meta">JPEG · 4.2 MB · 1200 × 800</p>
+  </div>
+</article>
+```
+
+`--natural`, preview-only (board canvas pattern):
+```html
+<article class="asc-ui-asset-card asc-ui-asset-card--natural">
+  <div class="asc-ui-asset-card__thumb">
+    <div class="asc-ui-asset-card__overlay">
+      <button class="asc-ui-icon-btn asc-ui-icon-btn--sm" type="button" aria-label="Remove">✕</button>
+    </div>
+    <img src="…" alt="…">
   </div>
 </article>
 ```
@@ -267,8 +286,11 @@ Stand-in for assets with no image preview (PDF, video, doc). Drop inside a thumb
 
 ### Labeled action bar — `@kit actions` · `styles/ui-kit.css`
 Stacked icon + text so each option is self-explanatory. Action variants: `--primary`, `--danger`.
+A row of standalone action buttons is a **toolbar**, not a list — use `role="toolbar"` +
+`aria-label` rather than `<ul><li>` (a list announces "list, N items" for what's really a group
+of controls; save `<ul>`/`asc-ui-menu` for actual enumerable content/menus).
 ```html
-<div class="asc-ui-actions">
+<div class="asc-ui-actions" role="toolbar" aria-label="Asset actions">
   <button class="asc-ui-action asc-ui-action--primary" type="button">
     <span class="asc-ui-action__icon"><!-- svg icon --></span>
     <span>Download</span>
@@ -343,12 +365,21 @@ Column-flow gallery. `__item` > `__photo` (`--tall` / `--wide` / `--square`) + `
 
 ### Empty state — `@kit empty-state` · `styles/ui-kit.css`
 Use `<section>` so AT users can navigate to it as a landmark. Always add `aria-hidden="true"` to decorative icons.
+Modifier: `--plain` drops the dashed border/background — use when the empty state
+fills its whole containing section (e.g. a full results grid) rather than sitting
+as a small inset placeholder within other content.
 ```html
 <section class="asc-ui-empty-state">
   <span class="asc-ui-empty-state__icon" aria-hidden="true">📁</span>
   <p class="asc-ui-empty-state__title">No collections yet</p>
   <p class="asc-ui-empty-state__hint">Create a collection to start building a set of assets.</p>
   <div class="asc-ui-empty-state__actions"><button class="btn btn--primary btn--sm" type="button">New</button></div>
+</section>
+
+<section class="asc-ui-empty-state asc-ui-empty-state--plain">
+  <span class="asc-ui-empty-state__icon" aria-hidden="true">🔍</span>
+  <p class="asc-ui-empty-state__title">No results found</p>
+  <p class="asc-ui-empty-state__hint">Try adjusting your search terms or filters.</p>
 </section>
 ```
 

@@ -344,7 +344,9 @@ function wireCopyUrl(block) {
  * - Explicit names → that order.
  * - Empty list → visible definition-resolved renditions (default sort).
  * - "all" keyword → every physical JCR static rendition, minus excluded/invisible ones,
- *   original first. Bypasses definition deduplication so all nodes are listed.
+ *   original first. Bypasses definition deduplication so all nodes are listed, but still
+ *   prefers a matching definition's authored `label` (by URL) over the generic
+ *   derived-from-node-name label when one exists.
  */
 function resolveRenditions(asset, ids) {
   const sortFn = (a, b) => {
@@ -360,8 +362,23 @@ function resolveRenditions(asset, ids) {
     const invisibleUrls = new Set(
       asset.renditions.filter((r) => r.visible === false).map((r) => r.url),
     );
+    // resolveAllNodes() resolves every node generically (Rendition.deriveLabel on the raw
+    // JCR name) — it doesn't know a definition also targets that same node. Prefer the
+    // definition's authored label, matched by URL, wherever one exists.
+    const definedLabelsByUrl = new Map(
+      services.renditions.definitions
+        .filter((def) => def.label)
+        .map((def) => services.renditions.getRendition(asset, def.id))
+        .filter((r) => r?.url)
+        .map((r) => [r.url, r.label]),
+    );
     return services.renditions.resolveAllNodes(asset)
       .filter((r) => !invisibleUrls.has(r.url))
+      .map((r) => {
+        const definedLabel = definedLabelsByUrl.get(r.url);
+        if (definedLabel) r.label = definedLabel;
+        return r;
+      })
       .sort(sortFn);
   }
 

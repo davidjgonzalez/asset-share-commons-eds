@@ -145,7 +145,30 @@ Only after the kit is extended: use the new variant class in the block.
 
 ---
 
-## Step 5 — Verify
+## Step 5 — Register for authoring (mandatory, unless excluded)
+
+Skip this step only for blocks invoked programmatically (never placed via the section canvas,
+e.g. `action-*` blocks) or stock EDS boilerplate (`columns`, `content`, `header`, `footer`,
+`fragment`). Every other new block must be registered in both places below:
+
+1. **Universal Editor** — add the block to the three root JSON files:
+   - `component-definition.json`: id + title + template defaults (under the relevant group)
+   - `component-models.json`: authorable fields
+   - `component-filters.json`: add the id to `section`'s `components`, plus any page-specific
+     filter (e.g. `asc-details-page`)
+   - If the block reads config via `readBlockConfig()` (fixed `key | value` rows), set
+     `"key-value": true` in the template — without it, fields render positionally (bare values,
+     no key cell) and `readBlockConfig()` won't find them.
+   - Free-form/unbounded-row blocks (`Label | property` lists) aren't fixed-field material —
+     register a single descriptive `richtext` field instead (see `search-hidden`'s model).
+2. **DA.live block library** — in DA content (not this repo): create an example document at
+   `/blocks/<block-name>` showing real authored markup, then add a `{ name, path }` row for it to
+   the `library/blocks` sheet. Preview and publish both before they show up in the Sidekick
+   Library panel. Full mechanism: `https://docs.da.live/administrators/guides/setup-library`.
+
+---
+
+## Step 6 — Verify
 
 Run these checks before considering the block done:
 
@@ -178,3 +201,5 @@ Manual checks:
 | ASC event names | `AGENTS.md` → "Custom Events" |
 | Data attributes | `AGENTS.md` → "Data Attributes" |
 | Block examples | `blocks/` — existing blocks are reference implementations |
+| Universal Editor JSON | `component-definition.json` / `component-models.json` / `component-filters.json` (repo root) |
+| DA.live block library setup | `AGENTS.md` → "Universal Editor" / `https://docs.da.live/administrators/guides/setup-library` |

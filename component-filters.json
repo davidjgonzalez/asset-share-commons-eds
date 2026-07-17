@@ -29,6 +29,12 @@
       "details-property",
       "details-renditions",
       "details-actions",
+      "details-header",
+      "details-map",
+      "details-similar",
+      "details-asset-metadata",
+      "details-metadata",
+      "details-rendition-metadata",
       "stub",
       "collections",
       "collection-controls",
@@ -58,7 +64,13 @@
       "details-video",
       "details-property",
       "details-renditions",
-      "details-actions"
+      "details-actions",
+      "details-header",
+      "details-map",
+      "details-similar",
+      "details-asset-metadata",
+      "details-metadata",
+      "details-rendition-metadata"
     ]
   }
 ]

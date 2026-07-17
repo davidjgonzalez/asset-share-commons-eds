@@ -83,7 +83,7 @@ function html(controls, isDefault, assetCount) {
     .join('');
   return `
     <div class="collection-controls__toolbar">
-      <div class="collection-controls__toolbar-end">${items}</div>
+      <div class="collection-controls__toolbar-end" role="toolbar" aria-label="Collection actions">${items}</div>
     </div>`;
 }
 
@@ -97,7 +97,7 @@ function renderEditMenu(label, isDefault, variant) {
           <li role="none">
             <button type="button" class="collection-controls__rename-btn asc-ui-menu__item" role="menuitem">Rename</button>
           </li>
-          <li role="none"><hr class="asc-ui-menu__separator"></li>
+          <li role="none"${isDefault ? ' hidden' : ''}><hr class="asc-ui-menu__separator"></li>
           <li role="none"${isDefault ? ' hidden' : ''}>
             <button type="button" class="collection-controls__delete-btn asc-ui-menu__item collection-controls__menu-item--danger" role="menuitem">Delete collection</button>
           </li>
