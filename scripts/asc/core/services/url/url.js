@@ -44,22 +44,30 @@ class Url {
     return this.toBase64Url(new Uint8Array(compressed));
   }
 
-  // 2. Decompress back into an array of values
+  // 2. Decompress back into an array of values.
+  // Returns null (rather than throwing) on a corrupted/tampered `encoded`
+  // value — e.g. a hand-edited `?sheet=` URL — so callers can show an
+  // explicit invalid-link state instead of an uncaught exception.
   async decompressToArray(encoded) {
     if (!encoded) {
       return [];
     }
 
-    const bytes = this.fromBase64Url(encoded);
+    try {
+      const bytes = this.fromBase64Url(encoded);
 
-    const ds = new DecompressionStream("deflate");
-    const writer = ds.writable.getWriter();
-    writer.write(bytes);
-    writer.close();
+      const ds = new DecompressionStream("deflate");
+      const writer = ds.writable.getWriter();
+      writer.write(bytes);
+      writer.close();
 
-    const decompressed = await new Response(ds.readable).arrayBuffer();
-    const text = new TextDecoder().decode(decompressed);
-    return text.split(","); // Split back into array
+      const decompressed = await new Response(ds.readable).arrayBuffer();
+      const text = new TextDecoder().decode(decompressed);
+      return text.split(","); // Split back into array
+    } catch (err) {
+      console.warn("[ASC] Failed to decompress URL payload — treating as invalid:", err);
+      return null;
+    }
   }
 
   // 3. Build a collection URL from an array of asset IDs

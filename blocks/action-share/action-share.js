@@ -73,11 +73,8 @@ export default async function decorate(block) {
     <footer class="asc-dialog__footer">
       ${closeButtons.map(({ label }) => `<button type="button" class="btn btn--secondary" data-dialog-close>${escHtml(label)}</button>`).join('')}
       <div class="asc-dialog__footer-end">
-        ${actionButtons.map(({ label, hash }) => {
-    const isCopy = hash === '#action-copy';
-    return `<button type="button" class="action-share__btn btn ${isCopy ? 'btn--primary' : 'btn--secondary'}"
-              data-action="${escAttr(hash.slice(1))}" ${isCopy ? 'hidden' : ''}>${escHtml(label)}</button>`;
-  }).join('')}
+        ${actionButtons.map(({ label, hash }) => `<button type="button" class="action-share__btn btn btn--primary"
+              data-action="${escAttr(hash.slice(1))}">${escHtml(label)}</button>`).join('')}
       </div>
     </footer>`;
 
@@ -93,7 +90,8 @@ export default async function decorate(block) {
 
   const fieldVal = (id) => dialog.querySelector(`[data-field-id="${id}"]`)?.value?.trim() || '';
 
-  dialog.querySelector('[data-action="action-generate"]')?.addEventListener('click', async () => {
+  dialog.querySelector('[data-action="action-copy"]')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
     const title = fieldVal('title');
     const description = fieldVal('description');
     const days = parseInt(fieldVal('expires') || '0', 10);
@@ -135,12 +133,7 @@ export default async function decorate(block) {
     const wrap = dialog.querySelector('.action-share__url-wrap');
     wrap.removeAttribute('hidden');
     wrap.querySelector('[data-field-id="share-url"]').value = url;
-    dialog.querySelector('[data-action="action-copy"]')?.removeAttribute('hidden');
-  });
 
-  dialog.querySelector('[data-action="action-copy"]')?.addEventListener('click', () => {
-    const btn = dialog.querySelector('[data-action="action-copy"]');
-    const url = dialog.querySelector('[data-field-id="share-url"]').value;
     navigator.clipboard.writeText(url).then(() => {
       const orig = btn.textContent;
       btn.textContent = 'Copied!';

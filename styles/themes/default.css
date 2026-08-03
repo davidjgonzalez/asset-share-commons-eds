@@ -81,3 +81,38 @@
 
   /* ── Collection toggle — styled contextually per block (see details-actions.css, search-results.css) */
 }
+
+/* ── Asset teasers: trade the hairline border for a soft ambient shadow —
+   cosmos.so cards float on elevation rather than being boxed in. Scoped
+   under .theme-default (not a bare .asc-asset-teaser) because this
+   stylesheet loads before the core part's asset-teaser.css — at equal
+   specificity the later rule wins, so an unscoped override here would
+   silently lose the cascade. Hover elevation goes through the part's
+   --asset-teaser-hover-* hooks for the same reason; see
+   docs/THEMING_README.md → "Theme-Scoped Block Overrides". */
+.theme-default .asc-asset-teaser {
+  border-color: transparent;
+  box-shadow: 0 1px 2px rgb(13 13 13 / 4%);
+
+  --asset-teaser-hover-border-color: transparent;
+  --asset-teaser-hover-shadow:
+    0 16px 32px -12px rgb(13 13 13 / 16%),
+    0 2px 8px -2px rgb(13 13 13 / 6%);
+}
+
+/* ── Image hover zoom — a touch of Unsplash-style motion ─────────── */
+.theme-default .asc-asset-teaser__preview { overflow: hidden; }
+
+.theme-default .asc-asset-teaser__preview img {
+  transition: transform var(--transition-slow);
+}
+
+.theme-default .asc-asset-teaser:hover .asc-asset-teaser__preview img {
+  transform: var(--scale-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-default .asc-asset-teaser:hover .asc-asset-teaser__preview img {
+    transform: none;
+  }
+}

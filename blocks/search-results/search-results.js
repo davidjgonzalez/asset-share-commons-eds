@@ -11,6 +11,13 @@ const MASONRY_SIZES = '(min-width: 1400px) 25vw, (min-width: 1000px) 33vw, (min-
 const MASONRY_COL_WIDTH = 360; // target column width — smaller value = more columns at wider viewports
 const FILL_LEAD_PX = 1200; // how far below the viewport bottom triggers a load, in px
 const MAX_AUTO_FILL_ROUNDS = 50; // safety cap on consecutive auto-triggered loads per fresh search
+const SKELETON_COUNT = 12;
+
+const ICONS = {
+  download: '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
+  copyUrl: '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>',
+  check: '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>',
+};
 
 // Per-container masonry state: tracks column elements and round-robin index.
 const masonryState = new WeakMap();
@@ -67,17 +74,25 @@ function renderListCell(col, asset) {
   return esc(asset.getProperty(property).text || '—');
 }
 
+function quickActionButtonsHtml(assetId) {
+  return `
+    <button type="button"
+            class="search-results__quick-action search-results__quick-download btn btn--secondary btn--circle btn--sm"
+            data-asc-asset="${esc(assetId)}"
+            aria-haspopup="true" aria-expanded="false"
+            aria-label="Download asset">${ICONS.download}</button>
+    <button type="button"
+            class="search-results__quick-action search-results__quick-copy-url btn btn--secondary btn--circle btn--sm"
+            data-asc-asset="${esc(assetId)}"
+            aria-haspopup="true" aria-expanded="false"
+            aria-label="Copy rendition URL">${ICONS.copyUrl}</button>`;
+}
+
 function renderListActionsCell(asset) {
   return `
     <div class="asc-list-view__actions">
       ${collectionToggle(asset, { addLabel: 'Add to collection', removeLabel: 'Remove from collection' })}
-      <button type="button"
-              class="search-results__quick-download btn btn--secondary btn--circle btn--sm"
-              data-asc-asset="${esc(asset.uuid)}"
-              aria-haspopup="true" aria-expanded="false"
-              aria-label="Download asset">
-        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      </button>
+      ${quickActionButtonsHtml(asset.uuid)}
     </div>`;
 }
 
@@ -146,7 +161,8 @@ function renderListRows(assets, cols) {
     <div class="asc-list-view__row"
          data-asc-asset="${esc(asset.uuid)}"
          data-asc-action="asset:details:open@click"
-         role="row">
+         role="row"
+         tabindex="0">
       ${cols.map((col) => `<div class="asc-list-view__cell" role="cell">${renderListCell(col, asset)}</div>`).join('')}
       <div class="asc-list-view__cell asc-list-view__cell--actions" role="cell">${renderListActionsCell(asset)}</div>
     </div>`).join('');
@@ -198,7 +214,7 @@ function attachImageHandlers(resultsEl) {
   });
 }
 
-function injectQuickDownloadButtons(resultsEl, display) {
+function injectQuickActionButtons(resultsEl, display) {
   if (display === 'list') return;
 
   resultsEl.querySelectorAll('.asc-asset-teaser .asc-collection-toggle').forEach((toggle) => {
@@ -207,14 +223,7 @@ function injectQuickDownloadButtons(resultsEl, display) {
     const assetId = teaser?.dataset?.ascAsset;
     if (!assetId) return;
 
-    toggle.insertAdjacentHTML('beforeend', `
-      <button type="button"
-              class="search-results__quick-download btn btn--secondary btn--circle btn--sm"
-              data-asc-asset="${esc(assetId)}"
-              aria-haspopup="true" aria-expanded="false"
-              aria-label="Download asset">
-        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      </button>`);
+    toggle.insertAdjacentHTML('beforeend', quickActionButtonsHtml(assetId));
   });
 }
 
@@ -229,6 +238,67 @@ function triggerAssetDownload(rendition, asset) {
   link.remove();
 }
 
+// Briefly swap a quick-action button's icon to a checkmark to confirm the click did
+// something invisible (a clipboard write has no other visible feedback).
+function flashCopyIcon(btn) {
+  const original = btn.innerHTML;
+  btn.innerHTML = ICONS.check;
+  setTimeout(() => {
+    btn.innerHTML = original;
+  }, 1500);
+}
+
+function copyRenditionUrl(btn, rendition) {
+  if (!rendition?.url) return;
+  navigator.clipboard.writeText(rendition.url).then(() => flashCopyIcon(btn));
+}
+
+// Card/masonry-shaped skeleton tile, composed from the same asc-ui-asset-card
+// kit primitive real results use — so the loading state fills the grid with
+// content-shaped placeholders instead of one flat background rectangle.
+function skeletonCardHtml() {
+  return `
+    <article class="asc-ui-asset-card" aria-hidden="true">
+      <div class="asc-ui-asset-card__thumb asc-ui-skeleton"></div>
+      <div class="asc-ui-asset-card__body">
+        <p class="asc-ui-asset-card__title asc-ui-skeleton asc-ui-skeleton--title"></p>
+        <p class="asc-ui-asset-card__meta asc-ui-skeleton asc-ui-skeleton--text"></p>
+      </div>
+    </article>`;
+}
+
+function skeletonListHtml() {
+  const cols = getListCols();
+  const trackSizes = [...cols.map((c) => c.width || 'auto'), '136px'].join(' ');
+  const rows = Array.from({ length: SKELETON_COUNT }, () => `
+    <div class="asc-list-view__row" aria-hidden="true">
+      ${cols.map((col) => `<div class="asc-list-view__cell">${col.property === 'thumbnail'
+    ? '<span class="asc-ui-skeleton asc-list-view__thumb"></span>'
+    : '<span class="asc-ui-skeleton asc-ui-skeleton--text"></span>'}</div>`).join('')}
+      <div class="asc-list-view__cell"></div>
+    </div>`).join('');
+
+  return `<div class="asc-list-view" style="--asc-list-cols: ${trackSizes}">${rows}</div>`;
+}
+
+// Masonry mode lays results out as flex `.masonry-col` columns (see
+// [data-display="masonry"] in search-results.css), not the plain grid cards
+// mode uses — without wrapping skeleton tiles in the same columns, the bare
+// flex container shrinks each tile to its content width instead of the
+// clamped column width, collapsing the skeletons into thin slivers.
+function skeletonMasonryHtml(container) {
+  const count = idealMasonryColCount(container);
+  const cols = Array.from({ length: count }, () => []);
+  Array.from({ length: SKELETON_COUNT }, (_, i) => cols[i % count].push(skeletonCardHtml()));
+  return cols.map((tiles) => `<div class="masonry-col">${tiles.join('')}</div>`).join('');
+}
+
+function skeletonHtml(display, container) {
+  if (display === 'list') return skeletonListHtml();
+  if (display === 'masonry') return skeletonMasonryHtml(container);
+  return Array.from({ length: SKELETON_COUNT }, skeletonCardHtml).join('');
+}
+
 export default async function decorate(block) {
   const config = readBlockConfig(block, {}, {
     'asc.search-results.display': 'masonry',
@@ -241,7 +311,9 @@ export default async function decorate(block) {
 
   block.innerHTML = html(config);
 
-  block.querySelector('[data-asc-results]').dataset.display = localStorage.getItem('asc.search-results.display') || config['asc.search-results.display'] || 'masonry';
+  const resultsEl = block.querySelector('[data-asc-results]');
+  resultsEl.dataset.display = localStorage.getItem('asc.search-results.display') || config['asc.search-results.display'] || 'masonry';
+  resultsEl.innerHTML = skeletonHtml(resultsEl.dataset.display, resultsEl);
 
   await addEventListeners(block, config);
   await emitEvents(block, config);
@@ -364,7 +436,7 @@ async function addEventListeners(block, _config) {
     }
 
     attachImageHandlers(resultsEl);
-    injectQuickDownloadButtons(resultsEl, display);
+    injectQuickActionButtons(resultsEl, display);
     isLoadingMore = false;
     setupSentinel(); // no-op after first call; observer handles further scroll-driven loads
 
@@ -393,23 +465,33 @@ async function addEventListeners(block, _config) {
     }
 
     const downloadBtn = event.target.closest('.search-results__quick-download');
-    if (!downloadBtn) return;
+    const copyUrlBtn = !downloadBtn && event.target.closest('.search-results__quick-copy-url');
+    const trigger = downloadBtn || copyUrlBtn;
+    if (!trigger) return;
 
     event.preventDefault();
     event.stopPropagation();
 
-    const asset = resolveAssetFor(downloadBtn);
+    const asset = resolveAssetFor(trigger);
     if (!asset) return;
 
-    toggleRenditionMenu(downloadBtn, asset, (rendition) => triggerAssetDownload(rendition, asset));
+    if (downloadBtn) {
+      toggleRenditionMenu(downloadBtn, asset, (rendition) => triggerAssetDownload(rendition, asset), {
+        title: 'Downloads',
+      });
+    } else {
+      toggleRenditionMenu(copyUrlBtn, asset, (rendition) => copyRenditionUrl(copyUrlBtn, rendition), {
+        title: 'Copy URL',
+      });
+    }
   });
 
-  // Warm rendition file sizes on hover so the download menu doesn't show
-  // blank sizes while the user is still deciding whether to click it.
+  // Warm rendition file sizes on hover so the menu doesn't show blank sizes
+  // while the user is still deciding whether to click it.
   block.addEventListener('mouseover', (event) => {
-    const downloadBtn = event.target.closest('.search-results__quick-download');
-    if (!downloadBtn) return;
-    const asset = resolveAssetFor(downloadBtn);
+    const trigger = event.target.closest('.search-results__quick-download, .search-results__quick-copy-url');
+    if (!trigger) return;
+    const asset = resolveAssetFor(trigger);
     if (asset) prefetchRenditionSizes(asset);
   });
 

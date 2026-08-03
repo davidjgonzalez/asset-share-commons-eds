@@ -24,6 +24,11 @@
         flex: 1;
         overflow: hidden;
         text-overflow: ellipsis;
+
+        /* .btn sets line-height: 1 for a tight pill — fine everywhere else since
+           descenders simply spill past the (invisible) line box, but overflow:
+           hidden here for the ellipsis truncation clips them instead. */
+        line-height: 1.3;
         font-weight: 500;
     }
 

@@ -397,12 +397,12 @@
     "id": "details-actions",
     "fields": [
       {
-        "component": "text",
-        "name": "actions",
-        "label": "Actions",
-        "value": "add-to-cart download",
+        "component": "richtext",
+        "name": "note",
+        "label": "Action Rows",
+        "value": "",
         "valueType": "string",
-        "description": "Space-separated list of actions to display. Supported values: add-to-cart, download, share. Order controls button order."
+        "description": "Each row is a Label | action pair (e.g. Download | download). Supported action values: download, copy-url, copy-link, collection. Order controls button order. Add/edit rows directly in the document table."
       }
     ]
   },
@@ -439,7 +439,63 @@
 
   {
     "id": "board",
-    "fields": []
+    "fields": [
+      {
+        "component": "select",
+        "name": "source",
+        "label": "Source",
+        "value": "sheet",
+        "valueType": "string",
+        "options": [
+          { "name": "Current collection", "value": "collection" },
+          { "name": "Sheet from URL", "value": "sheet" }
+        ]
+      },
+      {
+        "component": "select",
+        "name": "mode",
+        "label": "Mode",
+        "value": "view",
+        "valueType": "string",
+        "options": [
+          { "name": "View", "value": "view" },
+          { "name": "Interactive collection", "value": "interactive" },
+          { "name": "Static sheet URL", "value": "sheet-url" }
+        ],
+        "description": "Static sheet URL reads the encoded sheet from the Sheet URL field instead of the browser URL."
+      },
+      {
+        "component": "text",
+        "name": "sheet-url",
+        "label": "Sheet URL",
+        "value": "",
+        "valueType": "string",
+        "description": "Paste a generated ASC sheet URL. Used when Mode is Static sheet URL."
+      },
+      {
+        "component": "checkbox",
+        "name": "notes",
+        "label": "Enable Notes",
+        "value": true,
+        "valueType": "boolean"
+      },
+      {
+        "component": "text",
+        "name": "search-properties",
+        "label": "Search Properties",
+        "value": "",
+        "valueType": "string",
+        "description": "Comma-separated asset properties used for board search."
+      },
+      {
+        "component": "text",
+        "name": "details",
+        "label": "Details Path",
+        "value": "",
+        "valueType": "string",
+        "description": "Optional path prefix to navigate to a details page instead of opening the ASC modal."
+      }
+    ]
   },
 
   {

@@ -80,14 +80,15 @@ function collectionCard(collection, activeId, defaultId) {
   const isActive = collection.id === activeId;
   const isDefault = collection.id === defaultId;
   const updated = formatUpdated(collection.modifiedAt);
-  const thumbIds = (collection.assetIds || []).slice(0, 20);
+  const thumbIds = (collection.assetIds || []).slice(0, MAX_MOSAIC_THUMBS);
+  const overflow = count - thumbIds.length;
 
   return `
     <li class="collections__card asc-ui-card asc-ui-card--interactive${isActive ? ' asc-ui-card--active' : ''}"
         data-collection-id="${escAttr(collection.id)}"
         data-thumb-ids="${escAttr(thumbIds.join(','))}">
       <a class="collections__card-link" href="${COLLECTION_PATH}?id=${escAttr(collection.id)}">
-        ${mosaicHtml(count, thumbIds)}
+        ${mosaicHtml(count, thumbIds, overflow)}
         <div class="collections__card-content">
           <div class="asc-ui-card__header">
             <h2 class="collections__card-name asc-ui-card__title">${escHtml(collection.name)}</h2>
@@ -97,7 +98,7 @@ function collectionCard(collection, activeId, defaultId) {
             ${typeCountsHtml(collection)}
             <p class="collections__card-count"><span class="collections__card-count-num">${count}</span> asset${count !== 1 ? 's' : ''}</p>
             ${updated
-    ? `<p class="collections__card-updated"><time datetime="${escAttr(updated.iso)}">${escHtml(updated.label)}</time></p>`
+    ? `<p class="collections__card-updated">Updated <time datetime="${escAttr(updated.iso)}">${escHtml(updated.label)}</time></p>`
     : ''}
           </div>
         </div>
@@ -118,27 +119,53 @@ function collectionCard(collection, activeId, defaultId) {
     </li>`;
 }
 
-// Maps actual thumbnail count to a CSS grid layout group.
-// 1→1×1, 2→2×1, 3→3×1, 4→2×2, 5-10→5×2, 11-15→5×3, 16-20→5×4 (default)
-function mosaicLayout(n) {
-  if (n <= 4) return n;
-  if (n <= 10) return 10;
-  if (n <= 15) return 15;
-  return 20;
+// Bounded to 5 columns × 3 rows (15 visible thumbnails max).
+const MAX_MOSAIC_THUMBS = 15;
+const MOSAIC_HEIGHT_BY_ROWS = { 1: 260, 2: 220, 3: 200 };
+
+// Splits n thumbnails into up to 3 rows of up to 5 columns each, choosing the
+// row count that keeps every row's mini-grid sized to exactly the thumbnails
+// it's given — never more — so a trailing partial row never leaves empty
+// cells; those thumbnails just render wider instead. n<=5 stays a single row
+// (biggest thumbnails); more assets add rows, not blank cells.
+function mosaicRowCounts(n) {
+  if (n <= 5) return [n];
+  const rows = n <= 10 ? 2 : 3;
+  const cols = Math.min(5, Math.ceil(n / rows));
+  const counts = [];
+  let remaining = n;
+  for (let r = 0; r < rows; r += 1) {
+    const rowCount = r === rows - 1 ? remaining : cols;
+    counts.push(rowCount);
+    remaining -= rowCount;
+  }
+  return counts;
 }
 
-function mosaicHtml(count, thumbIds) {
+function mosaicHtml(count, thumbIds, overflow) {
   if (count === 0) {
     return `<div class="collections__card-mosaic collections__card-mosaic--empty" aria-hidden="true">
       <span class="collections__card-mosaic-icon">🦗</span>
       <span class="collections__card-mosaic-text">So empty…</span>
     </div>`;
   }
-  const cells = thumbIds.map(() =>
-    `<div class="asc-ui-collection-card__thumb asc-ui-skeleton" aria-hidden="true"></div>`,
-  ).join('');
+
+  const rowCounts = mosaicRowCounts(thumbIds.length);
+  const height = MOSAIC_HEIGHT_BY_ROWS[rowCounts.length] || 200;
+
+  const rowsHtml = rowCounts.map((rowCount, rowIndex) => {
+    const isLastRow = rowIndex === rowCounts.length - 1;
+    const cells = Array.from({ length: rowCount }, (_, i) => {
+      const isLastCell = isLastRow && i === rowCount - 1;
+      const more = isLastCell && overflow > 0
+        ? `<span class="asc-ui-collection-card__thumb-more">+${overflow}</span>` : '';
+      return `<div class="asc-ui-collection-card__thumb asc-ui-skeleton" aria-hidden="true">${more}</div>`;
+    }).join('');
+    return `<div class="asc-ui-collection-card__thumb-row" style="--collection-card-row-cols: ${rowCount}">${cells}</div>`;
+  }).join('');
+
   return `<div class="collections__card-mosaic" aria-hidden="true">
-    <div class="asc-ui-collection-card__thumbs" data-count="${mosaicLayout(thumbIds.length)}">${cells}</div>
+    <div class="asc-ui-collection-card__thumbs" style="--collection-card-mosaic-height: ${height}px">${rowsHtml}</div>
   </div>`;
 }
 

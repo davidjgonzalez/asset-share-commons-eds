@@ -90,8 +90,13 @@ class Storage {
    * @returns {Object}
    */
   _getGlobalData() {
-    const data = this.storage.getItem(ROOT);
-    return data ? JSON.parse(data) : null;
+    try {
+      const data = this.storage.getItem(ROOT);
+      return data ? JSON.parse(data) : null;
+    } catch (err) {
+      console.warn("[ASC] Failed to read localStorage — degrading to in-memory defaults:", err);
+      return null;
+    }
   }
 
   /**
@@ -99,7 +104,11 @@ class Storage {
    * @param {Object} data
    */
   _setGlobalData(data) {
-    this.storage.setItem(ROOT, JSON.stringify(data));
+    try {
+      this.storage.setItem(ROOT, JSON.stringify(data));
+    } catch (err) {
+      console.warn("[ASC] Failed to write localStorage — data will not persist:", err);
+    }
   }
 
   /**
@@ -108,9 +117,14 @@ class Storage {
    * @returns {Object}
    */
   _getUserData(userId) {
-    const key = `${ROOT}:${userId}`;
-    const data = this.storage.getItem(key);
-    return data ? JSON.parse(data) : null;
+    try {
+      const key = `${ROOT}:${userId}`;
+      const data = this.storage.getItem(key);
+      return data ? JSON.parse(data) : null;
+    } catch (err) {
+      console.warn("[ASC] Failed to read localStorage — degrading to in-memory defaults:", err);
+      return null;
+    }
   }
 
   /**
@@ -119,8 +133,12 @@ class Storage {
    * @param {Object} data
    */
   _setUserData(userId, data) {
-    const key = `${ROOT}:${userId}`;
-    this.storage.setItem(key, JSON.stringify(data));
+    try {
+      const key = `${ROOT}:${userId}`;
+      this.storage.setItem(key, JSON.stringify(data));
+    } catch (err) {
+      console.warn("[ASC] Failed to write localStorage — data will not persist:", err);
+    }
   }
 
   /**

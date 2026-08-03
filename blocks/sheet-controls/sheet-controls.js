@@ -8,7 +8,7 @@ const configurations = (await import('../../scripts/asc/configurations.js')).def
 
 export default async function decorate(block) {
   const controls = parseControls(block);
-  const sheetParam = new URLSearchParams(window.location.search).get('sheet');
+  const sheetParam = getSheetParam();
   const sheet = await loadSheet(sheetParam);
 
   registerTokens({
@@ -26,6 +26,24 @@ export default async function decorate(block) {
 
   block.innerHTML = html(controls, sheet.assetCount);
   initInteractions(block, sheet);
+}
+
+function getSheetParam() {
+  const urlParam = new URLSearchParams(window.location.search).get('sheet');
+  if (urlParam) return urlParam;
+
+  const board = document.querySelector('.board');
+  if (board?.dataset.ascSheetParam) return board.dataset.ascSheetParam;
+  const sheetUrl = [...(board?.children || [])].find((row) => (
+    row.children[0]?.textContent.trim().toLowerCase() === 'sheet-url'
+  ))?.children[1]?.textContent.trim();
+  if (!sheetUrl) return null;
+
+  try {
+    return new URL(sheetUrl, window.location.origin).searchParams.get('sheet');
+  } catch {
+    return null;
+  }
 }
 
 // ─── Parsing ──────────────────────────────────────────────────────────────────
@@ -49,18 +67,24 @@ function parseAssetId(entry) {
 
 async function loadSheet(sheetParam) {
   if (!sheetParam) return null;
-  const parts = await services.url.decompressToArray(sheetParam);
-  const {
-    title = '', description = '', expiresAt = null, items = [],
-  } = JSON.parse(parts.join(','));
+  try {
+    const parts = await services.url.decompressToArray(sheetParam);
+    if (!parts) return null;
+    const {
+      title = '', description = '', expiresAt = null, items = [],
+    } = JSON.parse(parts.join(','));
 
-  const assetIds = items.filter((entry) => !entry.startsWith('~')).map(parseAssetId);
-  const assets = (await Promise.all(assetIds.map((id) => services.search.getAssetById(id))))
-    .filter(Boolean);
+    const assetIds = items.filter((entry) => !entry.startsWith('~')).map(parseAssetId);
+    const assets = (await Promise.all(assetIds.map((id) => services.search.getAssetById(id))))
+      .filter(Boolean);
 
-  return {
-    title, description, expiresAt, assetCount: assetIds.length, assets,
-  };
+    return {
+      title, description, expiresAt, assetCount: assetIds.length, assets,
+    };
+  } catch (err) {
+    console.warn('[ASC] Failed to decode sheet URL:', err);
+    return null;
+  }
 }
 
 // ─── Token resolution ─────────────────────────────────────────────────────────

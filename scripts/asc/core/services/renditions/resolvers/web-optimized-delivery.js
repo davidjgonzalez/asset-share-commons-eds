@@ -10,6 +10,7 @@ export default {
       console.warn('[ASC] Rendition type "web-optimized-delivery" requires aem.host or aem.deliveryHost in configurations.js');
       return null;
     }
+    if (!asset.uuid) return null;
 
     const fullname = asset.path?.split('/').pop() ?? 'asset';
     const params = def.params ? `?${def.params}` : '';

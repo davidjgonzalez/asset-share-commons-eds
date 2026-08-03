@@ -647,15 +647,52 @@ input[type="radio"] {
   min-height: var(--modal-min-height);
   max-height: 90vh;
   overflow: hidden;
+  opacity: 0;
+  transform: translateY(8px) scale(0.98);
+  transition:
+    opacity var(--transition-fast),
+    transform var(--transition-fast),
+    overlay var(--transition-fast) allow-discrete,
+    display var(--transition-fast) allow-discrete;
 
   &[open] {
     display: flex;
     flex-direction: column;
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  @starting-style {
+    &[open] {
+      opacity: 0;
+      transform: translateY(8px) scale(0.98);
+    }
   }
 
   &::backdrop {
     background: rgb(0 0 0 / 55%);
     backdrop-filter: blur(2px);
+    opacity: 0;
+    transition: opacity var(--transition-fast), overlay var(--transition-fast) allow-discrete, display var(--transition-fast) allow-discrete;
+  }
+
+  &[open]::backdrop {
+    opacity: 1;
+  }
+
+  @starting-style {
+    &[open]::backdrop {
+      opacity: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+    transform: none;
+
+    &::backdrop {
+      transition: none;
+    }
   }
 
   &.asc-dialog--narrow {

@@ -245,6 +245,43 @@ All lint errors must be resolved before proceeding.
 
 ---
 
+## Performance Auditing (Chrome DevTools MCP)
+
+This repo has `chrome-devtools-mcp` configured as a **project-scoped MCP server** (`.mcp.json`,
+checked in — every contributor gets it automatically). It drives a real, instrumented Chrome
+instance and exposes tools under `mcp__chrome-devtools__*`, including a literal `lighthouse_audit`
+tool plus lower-level `performance_start_trace` / `performance_stop_trace` /
+`performance_analyze_insight` for targeted Core Web Vitals traces, `list_console_messages` /
+`list_network_requests` for inspection, and `navigate_page` / `click` / `fill` / `take_screenshot`
+for driving the page.
+
+**Setup**: nothing to install by hand — it runs via `npx chrome-devtools-mcp@latest` on demand (first
+invocation downloads the package). Requires Node.js LTS and a stable Chrome install on the machine
+running Claude Code. Verify it's connected with `claude mcp list` (`chrome-devtools: ... ✔
+Connected`); if it was just added, restart/reload the Claude Code session first — MCP servers are
+loaded at session start.
+
+**Use during Step 7 (Final Validation)** whenever a change could affect load performance, layout
+stability, or a11y scoring (new block, image-heavy view, added script, modal/dialog changes):
+
+1. Start the dev server (Step 1), then `mcp__chrome-devtools__navigate_page` to the page under test
+   (e.g. `http://localhost:3000/your-page`).
+2. Run `mcp__chrome-devtools__lighthouse_audit` for a full Lighthouse-equivalent report
+   (Performance/Accessibility/Best Practices/SEO). For a specific interaction (opening the details
+   modal, dragging a board item, running a search), use `performance_start_trace` → perform the
+   interaction via `click`/`fill` → `performance_stop_trace` → `performance_analyze_insight` for a
+   focused LCP/CLS/TBT breakdown instead.
+3. Cross-check `list_console_messages` and `list_network_requests` for errors or oversized/
+   render-blocking requests the audit flags.
+4. Fix the flagged issues in the relevant block/CSS/JS, then re-run to confirm the score improved.
+   Verify against real user flows (search, details modal, board), not just the homepage.
+
+**Caveats**: audits run against `localhost:3000`, not the deployed CDN — checks like cache headers
+or CDN compression won't reflect real `aem.page`/`aem.live` behavior; treat those as directional.
+For real-user field data, use PageSpeed Insights against a published URL instead.
+
+---
+
 ## Step 8: Ship
 
 ```bash
@@ -298,6 +335,7 @@ Create a PR with:
 | Listen to ASC events | Any block or `delayed.js` | [Event reference](references/asc-event-reference.md) |
 | Open a modal | Any block | [Modals guide](references/modals-and-dialogs.md) |
 | Load a fragment | Any block | [Fragments guide](references/fragments.md) |
+| Audit performance / Lighthouse | Chrome DevTools MCP | `lighthouse_audit`, `performance_start_trace` — see [Performance Auditing](#performance-auditing-chrome-devtools-mcp) |
 
 ---
 

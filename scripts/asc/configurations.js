@@ -18,6 +18,13 @@ import colors from './core/services/properties/colors.js';
 import smartTags from './core/services/properties/smart-tags.js';
 import history from './core/services/properties/history.js';
 
+// Which API builds smart-crop rendition URLs — 'scene7' (classic Dynamic Media IS
+// protocol, works on AEM 6.5 and AEMaaCS) or 'openapi' (Dynamic Media with OpenAPI,
+// AEMaaCS only; requires aem.deliveryHost below). Switching to 'openapi' also lets
+// you append any other DM image-serving query param to the smart crop (e.g.
+// 'smartcrop=Small&fit=constrain&contrast=30') via each definition's `params` below.
+const SMARTCROP_API = 'scene7'; // 'scene7' | 'openapi'
+
 const configurations = {
 
   // ─── AEM Connection ──────────────────────────────────────────────────────────
@@ -27,7 +34,7 @@ const configurations = {
     host: 'https://publish-p207002-e2157253.adobeaemcloud.com',
 
     // AEM Asset Delivery host (AEM as a Cloud Service only).
-    // Required when using renditions of type 'dm-openapi'.
+    // Required when using renditions of type 'dm-openapi' (including SMARTCROP_API = 'openapi' above).
     // Format: 'https://delivery-pXXXXX-eYYYYY.adobeaemcloud.com'
     // deliveryHost: '',
   },
@@ -263,11 +270,47 @@ const configurations = {
   //   jobExpiry: 7 * 24 * 60 * 60 * 1000,
   // },
 
+  // ─── Analytics ───────────────────────────────────────────────────────────────
+  //
+  // Configures the analytics bridge (scripts/asc/analytics.js), which listens to
+  // ASC's asc:{noun}:{verb} event bus and normalizes every event into one
+  // trackEvent() call. Full event catalog + payload shapes: docs/ANALYTICS.md
+  //
+  // analytics: {
+  //   enabled: true,   // master kill switch
+  //
+  //   // Consent/PII level for general engagement tracking. Can be a function so
+  //   // a mid-session consent change (e.g. a cookie-consent banner) takes effect
+  //   // on the very next event — no reload required.
+  //   //   'anonymous'  (default) — never attach user identity to events
+  //   //   'identified' — attach the current user (userId + email) to every event
+  //   level: () => (window.myConsentManager?.analyticsConsent ? 'identified' : 'anonymous'),
+  //
+  //   // Events that always carry user identity regardless of `level` above —
+  //   // for audit/governance trails tied to gated access (e.g. per-partner
+  //   // download accountability), which are a condition of access rather than
+  //   // opt-in marketing tracking.
+  //   identifyEvents: ['download_start', 'download_complete'],
+  //
+  //   // Runs on every event after the built-in payload (including captured UTM
+  //   // params) is assembled, before trackers fire. Return null/undefined to
+  //   // drop the event; return a modified payload to redact fields or attach
+  //   // extra context (e.g. asset category/campaign pulled from
+  //   // window.asc.cache.assets).
+  //   enrich: (name, payload) => payload,
+  //
+  //   // One entry per vendor — called for every tracked event.
+  //   trackers: [
+  //     (name, payload) => window.gtag?.('event', name, payload),
+  //     (name, payload) => window.adobeDataLayer?.push({ event: name, ...payload }),
+  //   ],
+  // },
+
   // ─── Theme ───────────────────────────────────────────────────────────────────
   theme: {
     // CSS class applied to <body> to activate a theme.
     // Built-in themes: 'default', 'dark', 'studio'.
-    //   default — Violet Studio (light, violet accents)
+    //   default — Cosmos (warm monochrome, content-first, light)
     //   dark    — Deep Ocean (navy, azure accents)
     //   studio  — Unsplash (near-black, image-first)
     // Custom: add your own in styles/themes/custom.css and set the name here.
@@ -391,8 +434,12 @@ const configurations = {
   // URL: {aem.deliveryHost}/adobe/dynamicmedia/deliver/{uuid}/{filename}.{ext}?{params}
   // Requires aem.deliveryHost to be set.
   //
-  //   params   {string}  Query string appended to the delivery URL (e.g. 'format=webp&width=1200')
+  //   params   {string}  Query string appended to the delivery URL (e.g. 'format=webp&width=1200',
+  //                       or 'smartcrop=Small&fit=constrain' — any DM image-serving param works)
   //   format   {string}  File extension override (default: asset's extension)
+  //
+  // Set SMARTCROP_API above to 'openapi' to switch the smart-crop definitions below from
+  // classic 'dm-smartcrop' to this type — no other code changes needed.
   //
   renditions: {
     // Exclude AEM rendition node names from all resolved renditions.
@@ -422,12 +469,24 @@ const configurations = {
     ],
     definitions: [
       { id: 'original', label: 'Original', type: 'static', name: 'original' },
-      { id: 'web', label: 'Web (1280px)', type: 'static', name: 'cq5dam.web.1280.1280', accepts: (asset) => asset.mimeType?.startsWith('image/') },
-      // `smartCropId` picks the real smart-crop node to customize (by its
-      // DM-registered name, case-sensitive) — no `id` needed; it defaults to it.
-      { id: 'smartcrop-small', label: 'Smart Crop — Small', type: 'dm-smartcrop', smartCropId: 'Small', accepts: (asset) => asset.mimeType?.startsWith('image/') },
-      { id: 'smartcrop-medium', label: 'Smart Crop — Medium', type: 'dm-smartcrop', smartCropId: 'Medium', accepts: (asset) => asset.mimeType?.startsWith('image/') },
-      { id: 'smartcrop-large', label: 'Smart Crop — Large', type: 'dm-smartcrop', smartCropId: 'Large', accepts: (asset) => asset.mimeType?.startsWith('image/') },
+      { id: 'web', label: 'Web (1280 pixels)', type: 'static', name: 'cq5dam.web.1280.1280', accepts: (asset) => asset.mimeType?.startsWith('image/') },
+      // Smart crop rendition definitions — shape depends on SMARTCROP_API above.
+      // `id` uses the "smart-crop-*" spelling (hyphen after "smart") because that's
+      // the literal id authors reference from da.live action fragments (e.g.
+      // /actions/download); keep the two in sync if either changes.
+      // 'scene7': `smartCropId` picks the real smart-crop node to customize (by its
+      //   DM-registered name, case-sensitive) — no `id` needed; it defaults to it.
+      // 'openapi': `params` is the raw query string appended to the deliveryHost
+      //   URL — append any other DM image-serving param here too (e.g. '&contrast=30').
+      ...(SMARTCROP_API === 'openapi' ? [
+        { id: 'smart-crop-small', label: 'Smart Crop — Small', type: 'dm-openapi', params: 'smartcrop=Small&fit=constrain', accepts: (asset) => asset.mimeType?.startsWith('image/') },
+        { id: 'smart-crop-medium', label: 'Smart Crop — Medium', type: 'dm-openapi', params: 'smartcrop=Medium&fit=constrain', accepts: (asset) => asset.mimeType?.startsWith('image/') },
+        { id: 'smart-crop-large', label: 'Smart Crop — Large', type: 'dm-openapi', params: 'smartcrop=Large&fit=constrain', accepts: (asset) => asset.mimeType?.startsWith('image/') },
+      ] : [
+        { id: 'smart-crop-small', label: 'Smart Crop — Small', type: 'dm-smartcrop', smartCropId: 'Small', accepts: (asset) => asset.mimeType?.startsWith('image/') },
+        { id: 'smart-crop-medium', label: 'Smart Crop — Medium', type: 'dm-smartcrop', smartCropId: 'Medium', accepts: (asset) => asset.mimeType?.startsWith('image/') },
+        { id: 'smart-crop-large', label: 'Smart Crop — Large', type: 'dm-smartcrop', smartCropId: 'Large', accepts: (asset) => asset.mimeType?.startsWith('image/') },
+      ]),
 
   //
   //     // ── Static renditions ─────────────────────────────────────────────────

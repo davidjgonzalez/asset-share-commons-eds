@@ -96,7 +96,7 @@ async function downloadAsZip(targets) {
 
 export default async function decorate(block) {
   const ctx = window.asc?.pendingAction || {};
-  const collection = ctx.collectionId ? await services.collections.get(ctx.collectionId) : null;
+  const collection = ctx.collectionId ? await services.collections.get(ctx.collectionId, true) : null;
   const assets = collection?.assets || ctx.assets || [];
 
   const allDefs = services.renditions.definitions;

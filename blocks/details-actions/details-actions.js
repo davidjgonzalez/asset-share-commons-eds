@@ -6,20 +6,27 @@
  * It reads the current asset via the `data-asc-asset` attribute set by the
  * details modal on the enclosing `<main>` element.
  *
- * Supported actions: download, copy-url, share, collection
+ * Rendition-scoped actions (download, copy-url) act on whichever rendition is
+ * currently active — the same "active rendition" concept tracked by
+ * details-renditions (`asc:rendition:activate`), defaulting to "original" until
+ * the user picks a different one there.
+ *
+ * Supported actions: download, copy-url, copy-link, collection
+ * `share` is a deprecated alias for `copy-link`, kept so already-authored "Share"
+ * rows get real behavior instead of the no-op they used to dispatch.
  *
  * Authoring (da.live table):
- *   | Download   | download   |
- *   | Copy URL   | copy-url   |
- *   | Share      | share      |
- *   | Collection | collection |
+ *   | Download        | download       |
+ *   | Copy URL        | copy-url       |
+ *   | Copy asset link | copy-link      |
+ *   | Collection      | collection     |
  */
 import Asset from '../../scripts/asc/core/models/asset.js';
 import services from '../../scripts/asc/core/services/services.js';
 import collectionToggle from '../../scripts/asc/core/parts/collection-toggle/collection-toggle.js';
-import { toggleRenditionMenu, prefetchRenditionSizes } from '../../scripts/asc/rendition-download-menu.js';
+import { escHtml as esc } from '../../scripts/asc/html.js';
 
-const VALID_ACTIONS = new Set(['download', 'copy-url', 'share', 'collection']);
+const VALID_ACTIONS = new Set(['download', 'copy-url', 'copy-link', 'share', 'collection']);
 
 export default async function decorate(block) {
   const actionPairs = [...block.children]
@@ -40,40 +47,33 @@ export default async function decorate(block) {
   block.innerHTML = html(asset, actionPairs, activeRendition);
 
   block.addEventListener('click', (e) => {
-    const downloadBtn = e.target.closest('.details-actions__download');
-    if (downloadBtn) {
-      toggleRenditionMenu(downloadBtn, asset, (rendition) => {
-        downloadRendition(asset, rendition);
-        activeRendition = rendition;
-        document.body.dispatchEvent(new CustomEvent('asc:rendition:activate', { detail: { rendition, asset } }));
-      });
+    if (e.target.closest('.details-actions__download')) {
+      downloadRendition(asset, activeRendition);
       return;
     }
 
-    const btn = e.target.closest('[data-copy-url]');
-    if (!btn) return;
-    const url = btn.dataset.copyUrl;
-    if (!url) return;
-    navigator.clipboard.writeText(url).then(() => {
-      const icon = btn.querySelector('.asc-ui-action__icon');
-      if (icon) {
-        const original = icon.innerHTML;
-        icon.innerHTML = ICONS.check;
-        setTimeout(() => { icon.innerHTML = original; }, 2000);
-      }
-    });
-  });
+    const copyUrlBtn = e.target.closest('[data-copy-url]');
+    if (copyUrlBtn) {
+      copyText(copyUrlBtn, copyUrlBtn.dataset.copyUrl);
+      return;
+    }
 
-  // Warm rendition file sizes on hover so the download menu doesn't show
-  // blank sizes while the user is still deciding whether to click it.
-  block.addEventListener('mouseover', (e) => {
-    if (e.target.closest('.details-actions__download')) prefetchRenditionSizes(asset);
+    if (e.target.closest('.details-actions__copy-link')) {
+      const url = new URL(window.location.href);
+      url.searchParams.set('asset', asset.uuid);
+      copyText(e.target.closest('.details-actions__copy-link'), url.toString());
+    }
   });
 
   document.body.addEventListener('asc:rendition:activate', (e) => {
     activeRendition = e.detail.rendition;
     updateRenditionActions(block, activeRendition);
   });
+}
+
+function copyText(btn, text) {
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => flashIcon(btn, ICONS.check));
 }
 
 function downloadRendition(asset, rendition) {
@@ -87,13 +87,20 @@ function downloadRendition(asset, rendition) {
   link.remove();
 }
 
+function flashIcon(btn, iconSvg) {
+  const icon = btn.querySelector('.asc-ui-action__icon');
+  if (!icon) return;
+  const original = icon.innerHTML;
+  icon.innerHTML = iconSvg;
+  setTimeout(() => { icon.innerHTML = original; }, 2000);
+}
+
 function updateRenditionActions(block, rendition) {
   if (!rendition) return;
 
-  const copyBtn = block.querySelector('[data-copy-url]');
-  if (copyBtn) {
-    copyBtn.dataset.copyUrl = rendition.url;
-  }
+  const copyUrlBtn = block.querySelector('[data-copy-url]');
+  if (copyUrlBtn) copyUrlBtn.dataset.copyUrl = rendition.url;
+
 }
 
 function html(asset, actionPairs, rendition) {
@@ -110,8 +117,7 @@ function htmlButton(asset, action, rendition, label) {
 
     case 'download':
       return `
-        <button type="button" class="asc-ui-action details-actions__download"
-                aria-haspopup="true" aria-expanded="false">
+        <button type="button" class="asc-ui-action details-actions__download">
           <span class="asc-ui-action__icon" aria-hidden="true">${ICONS.download}</span>
           <span>${esc(label)}</span>
         </button>`;
@@ -125,13 +131,13 @@ function htmlButton(asset, action, rendition, label) {
           <span>${esc(label)}</span>
         </button>`;
 
+    // `share` is a deprecated alias — same button/behavior as copy-link.
+    case 'copy-link':
     case 'share':
       return `
-        <button class="asc-ui-action" type="button"
-                data-asc-action="asset:share@click"
-                data-asc-asset="${esc(asset.uuid)}"
+        <button class="asc-ui-action details-actions__copy-link" type="button"
                 title="${esc(label)}" aria-label="${esc(label)}">
-          <span class="asc-ui-action__icon" aria-hidden="true">${ICONS.share}</span>
+          <span class="asc-ui-action__icon" aria-hidden="true">${ICONS.link}</span>
           <span>${esc(label)}</span>
         </button>`;
 
@@ -163,17 +169,9 @@ function mimeToExt(mimeType) {
   return map[mimeType] || mimeType?.split('/')[1] || '';
 }
 
-function esc(str) {
-  return String(str ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
 const ICONS = {
   download: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
-  copyUrl: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
-  share: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>',
+  copyUrl: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>',
+  link: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>',
   check: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>',
 };

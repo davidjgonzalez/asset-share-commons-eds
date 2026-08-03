@@ -138,7 +138,7 @@ export function renderPropertyValue(value, { limit } = {}) {
 }
 
 /**
- * Format an ISO timestamp as "Updated Jan 15, 2025".
+ * Format an ISO timestamp as "Jan 15, 2025".
  * @returns {{ iso: string, label: string } | null}
  */
 export function formatUpdated(iso) {
@@ -147,6 +147,6 @@ export function formatUpdated(iso) {
     if (Number.isNaN(d.getTime())) return null;
     return {
         iso,
-        label: `Updated ${d.toLocaleDateString(undefined, { dateStyle: 'medium' })}`,
+        label: d.toLocaleDateString(undefined, { dateStyle: 'medium' }),
     };
 }

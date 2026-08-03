@@ -152,12 +152,33 @@ Menu of selectable rows / actions. Drop inside an `.asc-panel --no-pad` or
 <hr class="asc-ui-menu__separator">
 ```
 
+**Header row** — `.asc-ui-menu__header`, a light-grey uppercase label above the items (a sibling
+before the `<ul class="asc-ui-menu">`, inside the same panel). Used by the rendition picker
+(`scripts/asc/rendition-download-menu.js`) to label what the menu's choices apply to, e.g.
+"Downloads" or "Copy URL".
+```html
+<div class="asc-ui-menu__header">Downloads</div>
+<ul class="asc-ui-menu">…</ul>
+```
+
 ### Badge — `@kit badge` · `styles/ui-kit.css`
 Status label. Default is muted. Modifiers: `--primary` `--success` `--warning` `--danger`.
 ```html
 <span class="asc-ui-badge">Default</span>
 <span class="asc-ui-badge asc-ui-badge--primary">Active</span>
 <span class="asc-ui-badge asc-ui-badge--danger">Failed</span>
+```
+
+### Corner ribbon — `@kit corner-ribbon` · `styles/ui-kit.css`
+Diagonal one-word banner across a container's top-left corner (e.g. flagging a card with a
+status). Host element needs `position: relative` (or `absolute`) and `overflow: hidden` to
+clip the ribbon's overhang — most cards already have both. Purely decorative: mark it
+`aria-hidden="true"`.
+```html
+<article class="asc-ui-card" style="position: relative; overflow: hidden;">
+  <span class="asc-ui-corner-ribbon" aria-hidden="true">Notes</span>
+  ...
+</article>
 ```
 
 ### Chip — `@kit chip` · `styles/ui-kit.css`
@@ -199,31 +220,47 @@ Slots: `__header` `__title` `__body` `__footer`.
 ```
 
 ### Collection card — `@kit collection-card` · `styles/ui-kit.css`
-Adaptive mosaic for collection preview. `__thumbs` drives a responsive grid via `data-count`:
-- `1` → single full image
-- `2` → 2×1
-- `3` → 3×1
-- `4` → 2×2
-- `10` → 5×2 (up to 10 thumbnails)
-- `15` → 5×3 (up to 15 thumbnails)
-- `20` / default → 5×4 (up to 20 thumbnails)
+Adaptive mosaic for collection preview, bounded to 5 columns × 3 rows (15 visible thumbnails
+max). Row/column counts are computed per-instance from the actual asset count (never a fixed
+bucket) and passed in as inline custom properties: `--collection-card-mosaic-height` on
+`__thumbs`, `--collection-card-row-cols` on each `__thumb-row`. Each row is its own mini-grid
+sized to exactly the thumbnails it holds, so a trailing partial row never leaves empty cells —
+those thumbnails just render wider instead. Fewer assets overall → taller mosaic → bigger
+thumbnails (1–5 assets render as a single row). Collections with more than 15 assets show a
+`__thumb-more` "+N" overlay on the last visible thumbnail.
 
 Cells are `asc-ui-skeleton` while loading; remove the class and append an `<img>` once the thumbnail URL is available.
-Children: `__thumbs[data-count]` `__thumb`.
+Children: `__thumbs` → one or more `__thumb-row` → `__thumb` (last one optionally holding `__thumb-more`).
 ```html
-<!-- 4-asset mosaic (loading state) -->
-<div class="asc-ui-collection-card__thumbs" data-count="4">
-  <div class="asc-ui-collection-card__thumb asc-ui-skeleton"></div>
-  <div class="asc-ui-collection-card__thumb asc-ui-skeleton"></div>
-  <div class="asc-ui-collection-card__thumb asc-ui-skeleton"></div>
-  <div class="asc-ui-collection-card__thumb asc-ui-skeleton"></div>
+<!-- 4 assets: single row, big thumbnails -->
+<div class="asc-ui-collection-card__thumbs" style="--collection-card-mosaic-height: 260px">
+  <div class="asc-ui-collection-card__thumb-row" style="--collection-card-row-cols: 4">
+    <div class="asc-ui-collection-card__thumb asc-ui-skeleton"></div>
+    <div class="asc-ui-collection-card__thumb asc-ui-skeleton"></div>
+    <div class="asc-ui-collection-card__thumb asc-ui-skeleton"></div>
+    <div class="asc-ui-collection-card__thumb asc-ui-skeleton"></div>
+  </div>
 </div>
 
-<!-- 3-asset mosaic (loaded) -->
-<div class="asc-ui-collection-card__thumbs" data-count="3">
-  <div class="asc-ui-collection-card__thumb"><img src="…" alt=""></div>
-  <div class="asc-ui-collection-card__thumb"><img src="…" alt=""></div>
-  <div class="asc-ui-collection-card__thumb"><img src="…" alt=""></div>
+<!-- 7 assets: 4 + 3, no empty cells — the 3-item row's thumbnails render wider -->
+<div class="asc-ui-collection-card__thumbs" style="--collection-card-mosaic-height: 220px">
+  <div class="asc-ui-collection-card__thumb-row" style="--collection-card-row-cols: 4">
+    <div class="asc-ui-collection-card__thumb"><img src="…" alt=""></div>
+    <div class="asc-ui-collection-card__thumb"><img src="…" alt=""></div>
+    <div class="asc-ui-collection-card__thumb"><img src="…" alt=""></div>
+    <div class="asc-ui-collection-card__thumb"><img src="…" alt=""></div>
+  </div>
+  <div class="asc-ui-collection-card__thumb-row" style="--collection-card-row-cols: 3">
+    <div class="asc-ui-collection-card__thumb"><img src="…" alt=""></div>
+    <div class="asc-ui-collection-card__thumb"><img src="…" alt=""></div>
+    <div class="asc-ui-collection-card__thumb"><img src="…" alt=""></div>
+  </div>
+</div>
+
+<!-- 20 assets: capped at 15 visible, "+5" badge on the last thumbnail -->
+<div class="asc-ui-collection-card__thumb">
+  <img src="…" alt="">
+  <span class="asc-ui-collection-card__thumb-more">+5</span>
 </div>
 ```
 

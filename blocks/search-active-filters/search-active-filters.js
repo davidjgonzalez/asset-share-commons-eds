@@ -2,7 +2,15 @@
 /**
  * search-active-filters — displays active search filter values as dismissible pills.
  *
- * Listens to `asc:search:complete` and re-renders after every search.
+ * Renders once on `asc:blocks:loaded` (all filter blocks have restored their
+ * initial checked/value state from the URL by then) and again after every
+ * search via `asc:search:complete`. Rendering on blocks:loaded — rather than
+ * waiting for the first search round-trip — matters because this block gets
+ * teleported into the sticky header, whose height reacts to whether it's
+ * empty (see search-active-filters.css); populating pills only after the
+ * network search resolves means the header visibly grows/shifts the page
+ * after first paint. Doing it as soon as blocks are loaded (synchronous,
+ * local DOM read) sets the header's real height before that first paint.
  * Reads active state directly from the DOM ([data-asc-fieldset] inputs) so
  * it picks up initial URL-restored values without any extra wiring.
  *
@@ -28,6 +36,7 @@ function mountToHeader(block) {
 }
 
 export default function decorate(block) {
+  document.addEventListener('asc:blocks:loaded', () => update(block), { once: true });
   document.addEventListener('asc:search:complete', () => update(block));
 
   block.addEventListener('click', (e) => {

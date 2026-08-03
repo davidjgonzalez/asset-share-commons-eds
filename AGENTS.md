@@ -1650,6 +1650,14 @@ const assetIds = await url.fromCollectionUrl(window.location.search, 'assets');
 
 ---
 
+## Global Keyboard Activation
+
+`scripts/asc/core/utils/keyboard.js` exports `setupRoleButtonKeyboardSupport()`, called once from `scripts/asc.js` at module-load time (alongside `setupImageFallback()`). It installs one `keydown` listener on `document` that synthesizes a `click` on Enter/Space for any focused `[role="button"][tabindex]`, `[role="row"][tabindex]`, or `[role="gridcell"][tabindex]` element.
+
+Any non-native interactive element (a `<div>`/`<article>` standing in for a button — asset teaser cards, board items, list-view rows) only needs `role="button"` (or `role="row"`/`role="gridcell"` inside an ARIA grid/table) + `tabindex="0"` + its existing `click`-bound handler (`data-asc-action="...@click"` or a plain delegated `click` listener). This bridge makes it keyboard-activatable for free — no per-block keydown wiring needed, and no change to the click handler itself.
+
+---
+
 ## CSS Conventions (see `docs/CSS_CONVENTION.md` for full guide)
 
 - Root selector: `.block.<block-name> { ... }` — never a bare class

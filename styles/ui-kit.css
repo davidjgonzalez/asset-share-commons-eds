@@ -216,6 +216,18 @@
     padding: var(--spacing-xs) 0;
 }
 
+.asc-ui-menu__header {
+    padding: var(--spacing-xs) var(--spacing-md);
+    color: var(--color-muted-fg);
+    font-size: var(--body-font-size-xs);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .asc-ui-menu__item {
     display: flex;
     align-items: center;
@@ -384,6 +396,33 @@
 .asc-ui-badge--danger {
     background: color-mix(in srgb, var(--color-destructive) 14%, var(--color-card));
     color: color-mix(in srgb, var(--color-destructive) 75%, var(--color-fg));
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit corner-ribbon — diagonal banner across a container's top-left corner
+   (e.g. "flag" a card with a one-word status). Host element needs
+   `position: relative` (or `absolute`, already true of most cards) and
+   `overflow: hidden` to clip the ribbon's overhang. Keep the label to one
+   short word — it's rotated into a fixed-width strip.
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-corner-ribbon {
+    position: absolute;
+    top: 14px;
+    left: -32px;
+    width: 120px;
+    padding: var(--spacing-2xs) 0;
+    background: var(--color-primary);
+    color: var(--color-primary-fg);
+    font-size: var(--body-font-size-2xs);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-align: center;
+    text-transform: uppercase;
+    transform: rotate(-45deg);
+    transform-origin: center;
+    pointer-events: none;
+    z-index: 5;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -727,6 +766,14 @@
     border-radius: var(--border-radius-full);
 }
 
+/* asc-ui-asset-card__thumb's own decorative gradient background (defined later
+   in this file) would otherwise win the tie against .asc-ui-skeleton's flat
+   background at equal specificity — pin it back to the plain skeleton look
+   when the two are combined on the same element (loading-state asset cards). */
+.asc-ui-asset-card__thumb.asc-ui-skeleton {
+    background: var(--color-muted);
+}
+
 @keyframes asc-ui-shimmer {
     100% { transform: translateX(100%); }
 }
@@ -758,20 +805,33 @@
 }
 
 /*
- * Adaptive mosaic — data-count drives the grid layout.
- * Layout groups: 1 | 2 | 3 | 4 (2×2) | 10 (5×2) | 15 (5×3) | 20 (5×4, default)
+ * Adaptive mosaic — rows/cols are computed per-instance (asset count varies per
+ * collection) and passed in as inline custom properties, same idiom as
+ * asc-list-view's --asc-list-cols. Each row is its own mini-grid sized to
+ * exactly the number of thumbnails it holds (never more), so a trailing
+ * partial row never leaves empty cells — its thumbnails just render wider
+ * instead. Bounded to 5 columns × 3 rows (max 15 visible thumbnails); a
+ * collection with more assets shows a "+N" badge on the last thumbnail.
  */
 .asc-ui-collection-card__thumbs {
-    display: grid;
-    height: 200px;
+    display: flex;
+    flex-direction: column;
+    height: var(--collection-card-mosaic-height, 200px);
     gap: 2px;
     background: var(--color-muted);
     overflow: hidden;
-    grid-template-columns: repeat(5, 1fr);
-    grid-template-rows: repeat(4, 1fr);
+}
+
+.asc-ui-collection-card__thumb-row {
+    display: grid;
+    grid-template-columns: repeat(var(--collection-card-row-cols, 1), 1fr);
+    gap: 2px;
+    flex: 1;
+    min-height: 0;
 }
 
 .asc-ui-collection-card__thumb {
+    position: relative;
     overflow: hidden;
     background: var(--color-muted);
 }
@@ -783,40 +843,15 @@
     display: block;
 }
 
-.asc-ui-collection-card__thumbs[data-count="1"] {
-    grid-template-columns: 1fr;
-    grid-template-rows: 1fr;
-    height: 280px;
-}
-
-.asc-ui-collection-card__thumbs[data-count="2"] {
-    grid-template-columns: repeat(2, 1fr);
-    grid-template-rows: 1fr;
-    height: 220px;
-}
-
-.asc-ui-collection-card__thumbs[data-count="3"] {
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: 1fr;
-    height: 180px;
-}
-
-.asc-ui-collection-card__thumbs[data-count="4"] {
-    grid-template-columns: repeat(2, 1fr);
-    grid-template-rows: repeat(2, 1fr);
-    height: 240px;
-}
-
-.asc-ui-collection-card__thumbs[data-count="10"] {
-    grid-template-columns: repeat(5, 1fr);
-    grid-template-rows: repeat(2, 1fr);
-    height: 200px;
-}
-
-.asc-ui-collection-card__thumbs[data-count="15"] {
-    grid-template-columns: repeat(5, 1fr);
-    grid-template-rows: repeat(3, 1fr);
-    height: 200px;
+.asc-ui-collection-card__thumb-more {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-primary-fg);
+    background: color-mix(in srgb, var(--color-fg) 55%, transparent);
+    font-weight: 600;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -1145,6 +1180,14 @@
 .asc-ui-action:focus-visible {
     outline: 2px solid var(--color-accent);
     outline-offset: 2px;
+}
+
+/* Author-stylesheet `display: flex` above would otherwise beat the UA stylesheet's
+   [hidden] rule at equal specificity (origin order, not just specificity) — callers
+   toggling `hidden` on an .asc-ui-action (e.g. gating an action by rendition type)
+   need this to actually take effect. */
+.asc-ui-action[hidden] {
+    display: none;
 }
 
 .asc-ui-action__icon {

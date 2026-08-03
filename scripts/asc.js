@@ -12,10 +12,13 @@ import { loadCSS } from './aem.js';
 import './asc/core/services/services.js';
 import configurations from './asc/configurations.js';
 import { setupImageFallback } from './asc/core/utils/images.js';
+import { setupRoleButtonKeyboardSupport } from './asc/core/utils/keyboard.js';
 import { decorateASCSections } from './asc/section-grid.js';
 import { registerTokens } from './asc/tokens.js';
+import { initAnalytics } from './asc/analytics.js';
 
 setupImageFallback();
+setupRoleButtonKeyboardSupport();
 
 // Re-export action-page utilities so blocks can import from a single stable path.
 export { triggerAction, parseActionFragment, wireDialogClose } from './asc/core/services/action-pages/action-pages.js';
@@ -43,5 +46,7 @@ export function ascDecorateMain(main) {
 /** Called once in loadLazy — placeholder for future lazy-phase ASC work. */
 export function ascLazy() {}
 
-/** Called once in loadDelayed — placeholder for future delayed-phase ASC work. */
-export function ascDelayed() {}
+/** Called once in loadDelayed — non-critical ASC work. */
+export function ascDelayed() {
+  initAnalytics();
+}

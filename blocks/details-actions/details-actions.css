@@ -1,9 +1,9 @@
 /*
  * details-actions — action bar for the asset details view.
- * Download / share use the UI Kit .asc-ui-action (circle icon + label below);
- * Download is the primary (filled) circle. The collection-toggle part (ASC Core,
- * markup fixed) is themed via its CSS variables + a few icon/label overrides so
- * it matches the same action look: a secondary circle with a label beneath.
+ * Download / copy-url / copy-link all use the UI Kit .asc-ui-action
+ * (circle icon + label below). The collection-toggle part (ASC Core, markup fixed) is
+ * themed via its CSS variables + a few icon/label overrides so it matches the same
+ * action look: a secondary circle with a label beneath.
  * Flush in the aside (no background bar), matching the kit .asc-ui-actions.
  */
 

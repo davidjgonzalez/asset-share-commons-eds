@@ -132,6 +132,23 @@ Authors in AEM can:
 - Create a page using a Sheet template  
 - Add content using components  
 
+### Static Sheet URL Board
+
+To publish a fixed, authored page from an existing ASC sheet without re-entering its assets,
+place `sheet-controls` and `board` on the page. Create the source collection in ASC, use Share
+to copy its generated sheet URL, then author the board with:
+
+```
+| source    | sheet      |
+| mode      | sheet-url  |
+| sheet-url | https://example.com/sheets/?sheet=... |
+```
+
+The board extracts the encoded `sheet` parameter from `sheet-url` and renders it in read-only
+mode. The sibling `sheet-controls` block detects the same value and provides working Download
+and Copy Link controls. The pasted URL remains the source of truth, so it carries the collection
+membership, board layout, notes, text elements, title, and expiration created at share time.
+
 ---
 
 ### Required Components

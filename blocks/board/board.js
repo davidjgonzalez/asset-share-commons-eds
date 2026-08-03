@@ -3,6 +3,7 @@ import services from '../../scripts/asc/core/services/services.js';
 import { Events as CollectionEvents } from '../../scripts/asc/core/services/collections/collections.js';
 import { escHtml, escAttr } from '../../scripts/asc/html.js';
 import defaultBoardItemHtml from '../../scripts/asc/board-item.js';
+import { toggleRenditionMenu, prefetchRenditionSizes } from '../../scripts/asc/rendition-download-menu.js';
 
 const configurations = (await import('../../scripts/asc/configurations.js')).default;
 
@@ -32,6 +33,7 @@ function parseConfig(block) {
     notes: true,
     searchProperties: [],
     details: null,
+    sheetUrl: null,
   };
   [...block.children].forEach((row) => {
     const [keyCell, valCell] = [...row.children];
@@ -44,6 +46,7 @@ function parseConfig(block) {
     else if (key === 'search-properties') {
       config.searchProperties = val ? val.split(',').map((p) => p.trim()).filter(Boolean) : [];
     } else if (key === 'details') config.details = val || null;
+    else if (key === 'sheet-url') config.sheetUrl = val || null;
   });
   return config;
 }
@@ -250,10 +253,19 @@ async function loadFromSheet(sheetParam) {
       textItems: [],
     };
   }
-  const parts = await services.url.decompressToArray(sheetParam);
+  let payload;
+  try {
+    const parts = await services.url.decompressToArray(sheetParam);
+    if (!parts) throw new Error('decompression failed');
+    payload = JSON.parse(parts.join(','));
+  } catch (err) {
+    console.warn('[ASC] Failed to decode sheet URL — treating as invalid:', err);
+    return { meta: { invalid: true, title: '', description: '', expiresAt: null }, assetItems: [], textItems: [] };
+  }
+
   const {
     title = '', description = '', expiresAt = null, items = [], textElements = [],
-  } = JSON.parse(parts.join(','));
+  } = payload;
 
   const mixedItems = items.map(parseEntry);
   const assetIds = mixedItems.filter((i) => i.type === 'asset').map((i) => i.id);
@@ -269,6 +281,15 @@ async function loadFromSheet(sheetParam) {
     assetItems,
     textItems: textElements,
   };
+}
+
+function sheetParamFromUrl(sheetUrl) {
+  if (!sheetUrl) return null;
+  try {
+    return new URL(sheetUrl, window.location.origin).searchParams.get('sheet');
+  } catch {
+    return null;
+  }
 }
 
 // ─── Selection helpers ────────────────────────────────────────────────────────
@@ -622,14 +643,16 @@ function initSearch(block, panZoom) {
     const q = input.value.toLowerCase().trim();
     if (!q) {
       viewport.removeAttribute('data-board-searching');
-      block.querySelectorAll('.board__item').forEach((card) => card.classList.remove('board__item--match'));
+      block.querySelectorAll('.board__item, .board__text-element').forEach((card) => card.classList.remove('board__item--match'));
       panZoom.fitView(false);
       return;
     }
     viewport.setAttribute('data-board-searching', '');
     const matches = [];
-    block.querySelectorAll('.board__item').forEach((card) => {
-      const haystack = [card.dataset.filter, card.dataset.ascNotes].filter(Boolean).join(' ').toLowerCase();
+    block.querySelectorAll('.board__item, .board__text-element').forEach((card) => {
+      const haystack = card.classList.contains('board__text-element')
+        ? (card.querySelector('.board__text-content')?.textContent || '').toLowerCase()
+        : [card.dataset.filter, card.dataset.ascNotes].filter(Boolean).join(' ').toLowerCase();
       const hit = haystack.includes(q);
       card.classList.toggle('board__item--match', hit);
       if (hit) matches.push(card);
@@ -715,7 +738,7 @@ function initItemDrag(block, collectionId, panZoom) {
   viewport.addEventListener('pointerdown', (e) => {
     const card = e.target.closest('.board__item');
     if (!card) return;
-    if (e.target.closest('.board__item-remove, .board__notes-btn')) return;
+    if (e.target.closest('.board__item-remove, .board__notes-btn, .board__rendition-action')) return;
 
     e.stopPropagation();
 
@@ -774,6 +797,41 @@ function initItemDrag(block, collectionId, panZoom) {
   });
 }
 
+// ─── Notes hover preview (shared by interactive and view-only boards) ─────────
+
+// Hovering anywhere on an item with a note shows the preview — the notes button itself
+// is only for opening the add/edit panel (click), not for triggering the hover preview.
+function initNotesHover(block) {
+  const viewport = block.querySelector('.board__viewport');
+  if (!viewport) return;
+
+  viewport.addEventListener('mouseover', (e) => {
+    const card = e.target.closest('.board__item');
+    if (!card) return;
+    clearTimeout(_noteHoverTimer);
+    if (!card.classList.contains('board__item--has-note')) return;
+    if (_openPanelState?.mode === 'edit') return;
+    if (_openPanelState?.card === card) return;
+    openNotePreview(block, card);
+  });
+
+  viewport.addEventListener('mouseout', (e) => {
+    const card = e.target.closest('.board__item');
+    if (!card) return;
+    if (e.relatedTarget?.closest('.board__item') === card) return;
+    if (e.relatedTarget?.closest('.board__notes-panel')) return;
+    const state = _openPanelState;
+    if (state?.mode === 'preview') {
+      _noteHoverTimer = setTimeout(() => {
+        if (_openPanelState === state) {
+          state.panel.remove();
+          _openPanelState = null;
+        }
+      }, 150);
+    }
+  });
+}
+
 // ─── Board click routing (interactive mode) ───────────────────────────────────
 
 function initBoardClicks(block, collectionId, config) {
@@ -781,6 +839,7 @@ function initBoardClicks(block, collectionId, config) {
   if (!viewport) return;
 
   viewport.addEventListener('click', (e) => {
+    if (e.target.closest('.board__rendition-action')) return;
     if (!e.target.closest('.board__item, .board__notes-panel, .board__toolbar, .board__controls, .board__text-element')) {
       if (_rubberBandJustSelected) { _rubberBandJustSelected = false; return; }
       deselectAll();
@@ -822,33 +881,7 @@ function initBoardClicks(block, collectionId, config) {
     }
   });
 
-  // Hovering anywhere on an item with a note shows the preview — the notes button itself
-  // is only for opening the add/edit panel (click), not for triggering the hover preview.
-  viewport.addEventListener('mouseover', (e) => {
-    const card = e.target.closest('.board__item');
-    if (!card) return;
-    clearTimeout(_noteHoverTimer);
-    if (!card.classList.contains('board__item--has-note')) return;
-    if (_openPanelState?.mode === 'edit') return;
-    if (_openPanelState?.card === card) return;
-    openNotePreview(block, card);
-  });
-
-  viewport.addEventListener('mouseout', (e) => {
-    const card = e.target.closest('.board__item');
-    if (!card) return;
-    if (e.relatedTarget?.closest('.board__item') === card) return;
-    if (e.relatedTarget?.closest('.board__notes-panel')) return;
-    const state = _openPanelState;
-    if (state?.mode === 'preview') {
-      _noteHoverTimer = setTimeout(() => {
-        if (_openPanelState === state) {
-          state.panel.remove();
-          _openPanelState = null;
-        }
-      }, 150);
-    }
-  });
+  initNotesHover(block);
 }
 
 // ─── Align to grid ────────────────────────────────────────────────────────────
@@ -1072,9 +1105,66 @@ function initViewClicks(block, config) {
   if (!viewport) return;
 
   viewport.addEventListener('click', (e) => {
+    if (e.target.closest('.board__rendition-action')) return;
     const card = e.target.closest('.board__item');
     if (!card?.dataset.ascAsset) return;
     openDetails(card.dataset.ascAsset, null, config);
+  });
+
+  initNotesHover(block);
+}
+
+function flashActionIcon(button, success) {
+  const original = button.innerHTML;
+  button.innerHTML = success
+    ? '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>'
+    : '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+  setTimeout(() => { button.innerHTML = original; }, success ? 1500 : 3000);
+}
+
+function downloadRendition(asset, rendition) {
+  if (!rendition?.url) return;
+  const link = document.createElement('a');
+  link.href = rendition.url;
+  link.download = rendition.filename || asset.filename || asset.title || 'asset';
+  link.rel = 'noopener';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
+function initRenditionActions(block) {
+  const viewport = block.querySelector('.board__viewport');
+  if (!viewport) return;
+
+  const getAsset = (button) => window.asc?.cache?.assets?.get(button.dataset.ascAsset);
+  viewport.addEventListener('click', (event) => {
+    const button = event.target.closest('.board__rendition-action');
+    if (!button) return;
+    event.preventDefault();
+    event.stopPropagation();
+
+    const asset = getAsset(button);
+    if (!asset) return;
+    const action = button.dataset.boardAction;
+    toggleRenditionMenu(button, asset, async (rendition) => {
+      if (action === 'download') {
+        downloadRendition(asset, rendition);
+      } else if (action === 'copy-url') {
+        try {
+          await navigator.clipboard.writeText(rendition.url);
+          flashActionIcon(button, true);
+        } catch {
+          flashActionIcon(button, false);
+        }
+      }
+    }, { title: action === 'download' ? 'Download' : 'Copy URL' });
+  });
+
+  viewport.addEventListener('mouseover', (event) => {
+    const button = event.target.closest('.board__rendition-action');
+    const asset = button && getAsset(button);
+    if (asset) prefetchRenditionSizes(asset);
   });
 }
 
@@ -1219,8 +1309,23 @@ function initMinimap(block, panZoom) {
 
 // ─── Board orchestrator ───────────────────────────────────────────────────────
 
+const BOARD_BOTTOM_MARGIN = 64;
+const BOARD_MIN_HEIGHT = 420;
+
+// Fill down to the bottom of the browser viewport instead of guessing a fixed vh —
+// how much page content sits above the board (title, toolbar, etc.) varies per page,
+// so a fixed vh percentage either overshoots (cut off below the fold) or undershoots
+// (a gap before the viewport's bottom edge) depending on the page.
+function sizeViewport(block) {
+  const viewport = block.querySelector('.board__viewport');
+  if (!viewport) return;
+  const available = window.innerHeight - viewport.getBoundingClientRect().top - BOARD_BOTTOM_MARGIN;
+  viewport.style.height = `${Math.max(available, BOARD_MIN_HEIGHT)}px`;
+}
+
 function initBoard(block, config, collectionId) {
   _selectedItems.clear();
+  sizeViewport(block);
 
   const panZoom = initPanZoom(block, collectionId, () => minimap?.updateIndicator());
   const minimap = initMinimap(block, panZoom);
@@ -1228,6 +1333,7 @@ function initBoard(block, config, collectionId) {
   block.querySelector('.board__fit')?.addEventListener('click', () => panZoom.fitView());
 
   initSearch(block, panZoom);
+  initRenditionActions(block);
 
   if (config.mode === 'interactive' && collectionId) {
     initRubberBand(block, panZoom);
@@ -1253,7 +1359,16 @@ export default async function decorate(block) {
 
   block.innerHTML = '';
 
-  if (config.source === 'collection') {
+  // Window resizes AND layout shifts from async content above the board (e.g. the
+  // collection-controls toolbar expanding once its data loads) can change how much
+  // space is left — re-measure whenever the page's layout changes, not just on resize.
+  let resizeRaf;
+  new ResizeObserver(() => {
+    cancelAnimationFrame(resizeRaf);
+    resizeRaf = requestAnimationFrame(() => sizeViewport(block));
+  }).observe(document.body);
+
+  if (config.source === 'collection' && config.mode !== 'sheet-url') {
     const id = params.get('id');
     if (!id) {
       block.innerHTML = '<p class="board__error">No collection id in URL.</p>';
@@ -1278,16 +1393,29 @@ export default async function decorate(block) {
       await renderCollection();
     });
   } else {
-    const sheetParam = params.get('sheet');
+    const sheetParam = config.mode === 'sheet-url'
+      ? sheetParamFromUrl(config.sheetUrl)
+      : params.get('sheet');
+    if (config.mode === 'sheet-url' && !sheetParam) {
+      block.innerHTML = '<p class="board__error">A static sheet requires a valid Sheet URL.</p>';
+      return;
+    }
+    if (config.mode === 'sheet-url') block.dataset.ascSheetParam = sheetParam;
     const { meta, assetItems, textItems } = await loadFromSheet(sheetParam);
+
+    if (meta.invalid) {
+      block.innerHTML = '<p class="board__error">This sheet link is invalid or corrupted.</p>';
+      return;
+    }
 
     if (meta.expiresAt && Date.now() > new Date(meta.expiresAt).getTime()) {
       block.innerHTML = expiredHtml(meta.expiresAt);
       return;
     }
 
-    block.innerHTML = viewportHtml(assetItems, textItems, config);
+    const boardConfig = config.mode === 'sheet-url' ? { ...config, mode: 'view' } : config;
+    block.innerHTML = viewportHtml(assetItems, textItems, boardConfig);
 
-    initBoard(block, config, null);
+    initBoard(block, boardConfig, null);
   }
 }

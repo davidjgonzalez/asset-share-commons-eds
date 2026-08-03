@@ -17,6 +17,12 @@
  *   - Notes button: `<button class="board__notes-btn" data-asc-asset="<uuid>">` — only
  *     when `config.mode === 'interactive' && config.notes`; add `.board__item--has-note`
  *     to the root when `item.notes` is set, so the button's "has a note" style applies.
+ *   - `data-asc-notes="<text>"` on the root whenever `config.notes` — required (in both
+ *     interactive and view-only/read-only modes) for the hover-preview popover to read
+ *     the note text from.
+ *   - Optional `.asc-ui-corner-ribbon` element (e.g. `<span class="asc-ui-corner-ribbon">
+ *     Notes</span>`) when the item has a note — the default renders one to flag it
+ *     visually; purely decorative, so mark it `aria-hidden="true"`.
  *   - Optional `data-filter="<lowercase search text>"` on the root — required only if
  *     you want the board's search box (`search-properties` config) to match this item.
  *
@@ -29,6 +35,13 @@
  */
 import services from './core/services/services.js';
 import { escHtml, escAttr } from './html.js';
+
+const ICONS = {
+  close: '&times;',
+  download: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
+  copyUrl: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>',
+  notes: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3v-3a4 4 0 0 1-2-3.46V7a4 4 0 0 1 4-4h12a4 4 0 0 1 4 4z"/></svg>',
+};
 
 function buildSearchStr(asset, config) {
   if (!config.searchProperties.length) return '';
@@ -62,29 +75,43 @@ export default function boardItemHtml(item, index, config) {
   const showNotes = config.notes;
 
   // A board item is just a preview: no title/meta body, no footer — the thumb shows the
-  // image at its own native aspect ratio (asc-ui-asset-card--natural), never cropped, and
-  // remove/notes are both overlay buttons on top of the image.
+  // image at its own native aspect ratio (asc-ui-asset-card--natural), never cropped.
   return `
     <article class="asc-ui-asset-card asc-ui-asset-card--natural board__item${showNotes && itemNotes ? ' board__item--has-note' : ''}"
              style="left: ${x}px; top: ${y}px"
+             role="button"
+             tabindex="0"
+             aria-label="${escAttr(asset.title)}"
              data-asc-asset="${escAttr(asset.uuid)}"
              ${searchStr ? `data-filter="${escAttr(searchStr)}"` : ''}
-             ${interactive && showNotes ? `data-asc-notes="${escAttr(itemNotes || '')}"` : ''}>
+             ${showNotes ? `data-asc-notes="${escAttr(itemNotes || '')}"` : ''}>
       <div class="asc-ui-asset-card__thumb">
         ${interactive ? `
         <div class="asc-ui-asset-card__overlay">
           <button type="button"
                   class="asc-ui-icon-btn board__item-remove"
                   data-asc-asset="${escAttr(asset.uuid)}"
-                  aria-label="Remove ${escHtml(asset.title)} from collection">&#x2715;</button>
+            aria-label="Remove ${escHtml(asset.title)} from collection">${ICONS.close}</button>
         </div>` : ''}
+        <div class="asc-ui-asset-card__overlay asc-ui-asset-card__overlay--bottom board__rendition-actions">
+          <button type="button" class="asc-ui-icon-btn board__rendition-action"
+            data-board-action="download" data-asc-asset="${escAttr(asset.uuid)}"
+            aria-haspopup="true" aria-expanded="false" aria-label="Download rendition" title="Download">${ICONS.download}</button>
+          <button type="button" class="asc-ui-icon-btn board__rendition-action"
+            data-board-action="copy-url" data-asc-asset="${escAttr(asset.uuid)}"
+            aria-haspopup="true" aria-expanded="false" aria-label="Copy rendition URL" title="Copy URL">${ICONS.copyUrl}</button>
+        </div>
         ${interactive && showNotes ? `
-        <div class="asc-ui-asset-card__overlay asc-ui-asset-card__overlay--bottom">
+        <div class="asc-ui-asset-card__overlay asc-ui-asset-card__overlay--bottom board__notes-overlay">
           <button type="button"
                   class="asc-ui-icon-btn board__notes-btn"
                   data-asc-asset="${escAttr(asset.uuid)}"
                   aria-label="Add or edit note"
-                  title="Add or edit note">&#9998;</button>
+            title="Add or edit note">${ICONS.notes}</button>
+        </div>` : ''}
+        ${!interactive && showNotes && itemNotes ? `
+        <div class="asc-ui-asset-card__overlay asc-ui-asset-card__overlay--bottom board__notes-overlay" aria-hidden="true">
+          <span class="asc-ui-icon-btn board__notes-btn">${ICONS.notes}</span>
         </div>` : ''}
         <img src="${escAttr(preview.url)}"${preview.width && preview.height ? ` width="${preview.width}" height="${preview.height}"` : ''} alt="${escHtml(asset.description || asset.title || asset.name || '')}" loading="lazy" draggable="false">
       </div>

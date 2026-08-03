@@ -10,6 +10,7 @@ export default {
       console.warn('[ASC] Rendition type "dm-openapi" requires aem.host or aem.deliveryHost in configurations.js');
       return null;
     }
+    if (!asset.uuid) return null;
 
     const ext = def.format || asset.fileExtension || 'jpg';
     const fullname = asset.path?.split('/').pop() ?? 'asset';

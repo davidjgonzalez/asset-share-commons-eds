@@ -18,9 +18,9 @@ theme: {
 
 | Name | Description |
 |------|-------------|
-| `default` | Violet Studio — clean light theme, violet primary |
+| `default` | Cosmos — warm monochrome, near-black on white, no accent color |
 | `dark` | Deep Ocean — dark navy surfaces, azure blue accents |
-| `studio` | Unsplash — near-black, image-first, pill buttons |
+| `studio` | Unsplash — near-black canvas, image-first, pill buttons |
 
 ## Creating a Custom Theme
 
@@ -118,4 +118,22 @@ For visual changes beyond variables, scope overrides to your theme class:
 }
 ```
 
-See `styles/themes/studio.css` for an example with image hover zoom.
+See `styles/themes/studio.css` and `styles/themes/default.css` for examples with
+image hover zoom.
+
+**Always scope with `.theme-my-theme`, never a bare part selector.** Theme
+stylesheets are loaded (via `loadCSS()` in `ascEager()`) before Core parts
+decorate and load their own CSS, so a theme's `<link>` ends up earlier in the
+document than the part's. At equal specificity the *later* rule wins the
+cascade — so `.asc-asset-teaser { border-color: transparent; }` in a theme
+file silently loses to the part's own `border: 1px solid var(--color-border)`,
+no matter how it looks in a quick visual check with devtools open (which
+reflects whichever rule you last edited, not the real load order). Prefixing
+with `.theme-my-theme` adds a class of specificity the part's bare selector
+can't match, so your override always wins regardless of load order. For
+`:hover` states specifically, prefer setting the part's exposed
+`--asset-teaser-hover-*` custom properties (see `scripts/asc/core/parts/
+asset-teaser/asset-teaser.css`) over a literal `:hover` rule — a custom
+property's cascaded value applies wherever it's consumed via `var()`
+regardless of which stylesheet declared it, so it's immune to this ordering
+issue even unscoped, though scoping is still good practice.

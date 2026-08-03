@@ -495,6 +495,15 @@
           <p class="kit-demo__usage">Active filter pill — use a &lt;button&gt; so the entire chip is the click target. Set <code>aria-label</code> to "Remove [value]".</p>
         </div>
         <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Corner ribbon</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-snippet>
+            <div style="position: relative; overflow: hidden; width: 140px; height: 90px; border: 1px solid var(--color-border); border-radius: var(--border-radius-md); background: var(--color-muted);">
+              <span class="asc-ui-corner-ribbon" aria-hidden="true">Notes</span>
+            </div>
+          </div>
+          <p class="kit-demo__usage">Diagonal one-word flag for a card's top-left corner (e.g. "has notes"). Host needs <code>position: relative</code> (or <code>absolute</code>) + <code>overflow: hidden</code> to clip the overhang. Decorative only — mark <code>aria-hidden="true"</code>.</p>
+        </div>
+        <div class="kit-demo">
           <div class="kit-demo__bar"><span class="kit-demo__name">Count pill</span><button class="kit-demo__toggle" type="button">Code</button></div>
           <div class="kit-demo__preview" data-snippet>
             <span class="asc-ui-count">3</span>
@@ -540,11 +549,18 @@
                 <button class="btn btn--secondary btn--sm" type="button">Open</button>
               </div>
               <p class="asc-ui-collection-card__meta">7 assets • Updated yesterday</p>
-              <div class="asc-ui-collection-card__thumbs">
-                <div class="asc-ui-collection-card__thumb"></div>
-                <div class="asc-ui-collection-card__thumb"></div>
-                <div class="asc-ui-collection-card__thumb"></div>
-                <div class="asc-ui-collection-card__thumb"></div>
+              <div class="asc-ui-collection-card__thumbs" style="--collection-card-mosaic-height: 220px">
+                <div class="asc-ui-collection-card__thumb-row" style="--collection-card-row-cols: 4">
+                  <div class="asc-ui-collection-card__thumb"></div>
+                  <div class="asc-ui-collection-card__thumb"></div>
+                  <div class="asc-ui-collection-card__thumb"></div>
+                  <div class="asc-ui-collection-card__thumb"></div>
+                </div>
+                <div class="asc-ui-collection-card__thumb-row" style="--collection-card-row-cols: 3">
+                  <div class="asc-ui-collection-card__thumb"></div>
+                  <div class="asc-ui-collection-card__thumb"></div>
+                  <div class="asc-ui-collection-card__thumb"></div>
+                </div>
               </div>
             </article>
           </div>
@@ -860,6 +876,19 @@
             </div>
           </div>
           <p class="kit-demo__usage">A menu of rows inside a panel — the collection-switcher dropdown. Anchor it with <code>.asc-ui-dropdown</code> for a real popover.</p>
+        </div>
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Popover menu header</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-layout="block" data-snippet>
+            <div class="asc-panel asc-panel--no-pad" style="max-width: 18rem;">
+              <div class="asc-ui-menu__header">Copy URL</div>
+              <ul class="asc-ui-menu">
+                <li><button class="asc-ui-menu__item" type="button"><span class="asc-ui-menu__item-label">Original</span><span class="asc-ui-menu__item-meta">4.2 MB · JPG</span></button></li>
+                <li><button class="asc-ui-menu__item" type="button"><span class="asc-ui-menu__item-label">Web</span><span class="asc-ui-menu__item-meta">380 KB · JPG</span></button></li>
+              </ul>
+            </div>
+          </div>
+          <p class="kit-demo__usage">A light-grey uppercase label above a menu's items — used by the rendition picker to say what the choices apply to (e.g. "Downloads", "Copy URL").</p>
         </div>
         <div class="kit-demo">
           <div class="kit-demo__bar"><span class="kit-demo__name">Large asset modal (live)</span><button class="kit-demo__toggle" type="button">Code</button></div>

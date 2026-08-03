@@ -144,7 +144,7 @@ export default async function decorate(block) {
     block.innerHTML = `${headerHtml}<div class="details-renditions__cards">${cards}</div>`;
 
     wireRenditionInteractions(block, asset, renditions);
-    wireCopyUrl(block);
+    wireClipboardActions(block);
     lazyLoadFileSizes(block, asset, renditions);
     return;
   }
@@ -181,7 +181,7 @@ export default async function decorate(block) {
       </table>
     </div>`;
   wireRenditionInteractions(block, asset, renditions);
-  wireCopyUrl(block);
+  wireClipboardActions(block);
   lazyLoadFileSizes(block, asset, renditions);
 }
 
@@ -203,14 +203,16 @@ function renditionPreviewSrc(asset, rendition) {
 function previewCell(asset, rendition) {
   const src = renditionPreviewSrc(asset, rendition);
   if (!src) return '<td class="details-renditions__preview"></td>';
-  return `<td class="details-renditions__preview"><img class="details-renditions__thumb" src="${esc(src)}" alt="" width="48" height="48" loading="lazy"></td>`;
+  const alt = `${rendition.label} preview of ${asset.title || asset.filename || ''}`;
+  return `<td class="details-renditions__preview"><img class="details-renditions__thumb" src="${esc(src)}" alt="${esc(alt)}" width="48" height="48" loading="lazy"></td>`;
 }
 
 function renditionCard(asset, rendition) {
   const ctx = renditionContext(asset, rendition);
   const thumbSrc = renditionPreviewSrc(asset, rendition);
+  const thumbAlt = `${rendition.label} preview of ${asset.title || asset.filename || ''}`;
   const thumbHtml = thumbSrc
-    ? `<img class="details-renditions__card-thumb" src="${esc(thumbSrc)}" alt="" width="320" height="192">`
+    ? `<img class="details-renditions__card-thumb" src="${esc(thumbSrc)}" alt="${esc(thumbAlt)}" width="320" height="192">`
     : '';
   const metaItems = [ctx['file-type'], ctx['file-size'], ctx.dimensions].filter(Boolean);
   const meta = metaItems.map((item, i) => `<span>${esc(item)}${i < metaItems.length - 1 ? ' ·&nbsp;' : ''}</span>`).join('');
@@ -311,7 +313,7 @@ function wireRenditionInteractions(block, asset, renditions) {
       const isAemUrl = rendition.url.startsWith(services.aem.getHost());
       const headers = isAemUrl ? await services.aem.getHeaders() : {};
       const res = await fetch(rendition.url, {
-        credentials: 'omit',
+        credentials: isAemUrl ? 'include' : 'omit',
         headers,
       });
       if (!res.ok) throw new Error(res.status);
@@ -327,15 +329,20 @@ function wireRenditionInteractions(block, asset, renditions) {
   }, { stopPropagation: false });
 }
 
-function wireCopyUrl(block) {
-  delegateEvent(block, '[data-asc-action*="rendition:copy-url"]', 'click', (e) => {
+function wireClipboardActions(block) {
+  delegateEvent(block, '[data-asc-action*="rendition:copy-url"]', 'click', async (e) => {
     const btn = e.target.closest('[data-asc-action*="rendition:copy-url"]');
-    const url = btn?.dataset?.url;
-    if (!url) return;
-    navigator.clipboard.writeText(url).then(() => {
+    if (!btn) return;
+    const original = btn.innerHTML;
+    try {
+      await navigator.clipboard.writeText(btn.dataset.url);
       btn.innerHTML = ICONS.check;
-      setTimeout(() => { btn.innerHTML = ICONS.copyUrl; }, 2000);
-    });
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('[ASC] rendition URL clipboard copy failed:', err);
+      btn.innerHTML = ICONS.alert;
+    }
+    setTimeout(() => { btn.innerHTML = original; }, 2000);
   });
 }
 
@@ -547,7 +554,7 @@ async function fetchFileSize(url) {
   try {
     const isAemUrl = url.startsWith(services.aem.getHost());
     const headers = isAemUrl ? await services.aem.getHeaders() : {};
-    const res = await fetch(url, { method: 'HEAD', credentials: 'omit', headers });
+    const res = await fetch(url, { method: 'HEAD', credentials: isAemUrl ? 'include' : 'omit', headers });
     if (!res.ok) return null;
     const cl = res.headers.get('content-length');
     return cl ? parseInt(cl, 10) : null;
@@ -589,6 +596,7 @@ function lazyLoadFileSizes(block, asset, renditions) {
 const ICONS = {
   download: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
   share: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>',
-  copyUrl: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
+  copyUrl: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>',
   check: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>',
+  alert: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
 };

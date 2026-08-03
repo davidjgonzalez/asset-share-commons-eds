@@ -1,7 +1,9 @@
 /**
- * rendition-download-menu — a floating "pick a rendition to download" menu,
- * shared by search-results (quick-download button) and details-actions
- * (asset-details download button).
+ * rendition-download-menu — a floating "pick a rendition" menu, shared by
+ * search-results's quick-download and quick-copy-url card buttons. Each
+ * trigger supplies its own `onSelect` handler and an optional `title` (shown
+ * as a light-grey header row above the rendition list, e.g. "Downloads" or
+ * "Copy URL for {asset}") so the same picker UI serves both actions.
  *
  * Built entirely from UI Kit primitives (.asc-ui-dropdown__panel + .asc-ui-menu),
  * but positioned via JS and portaled to <body> (or the enclosing <dialog>, so it
@@ -140,7 +142,7 @@ async function fetchAndApplySize(rendition) {
   try {
     const isAemUrl = rendition.url.startsWith(services.aem.getHost());
     const headers = isAemUrl ? await services.aem.getHeaders() : {};
-    const res = await fetch(rendition.url, { method: 'HEAD', credentials: 'omit', headers });
+    const res = await fetch(rendition.url, { method: 'HEAD', credentials: isAemUrl ? 'include' : 'omit', headers });
     if (!res.ok) return;
     const contentLength = res.headers.get('content-length');
     if (!contentLength) return;
@@ -160,8 +162,9 @@ async function fetchAndApplySize(rendition) {
  * @param {HTMLElement} trigger
  * @param {Asset} asset
  * @param {(rendition: object) => void} onSelect
+ * @param {{ title?: string }} [options] - optional light-grey header row above the list
  */
-export function toggleRenditionMenu(trigger, asset, onSelect) {
+export function toggleRenditionMenu(trigger, asset, onSelect, { title } = {}) {
   const el = ensurePanel();
 
   if (!el.hidden && openTrigger === trigger) {
@@ -177,7 +180,8 @@ export function toggleRenditionMenu(trigger, asset, onSelect) {
   const host = trigger.closest('dialog') || document.body;
   if (el.parentElement !== host) host.append(el);
 
-  el.innerHTML = `<ul class="asc-ui-menu">${renditions.map((r) => `
+  el.innerHTML = `${title ? `<div class="asc-ui-menu__header">${escHtml(title)}</div>` : ''}
+    <ul class="asc-ui-menu">${renditions.map((r) => `
     <li><button type="button" class="asc-ui-menu__item" data-rendition-id="${escAttr(r.id)}">
       <span class="asc-ui-menu__item-label">${escHtml(r.label || r.id)}</span>
       <span class="asc-ui-menu__item-meta">${escHtml(formatMeta(r))}</span>
