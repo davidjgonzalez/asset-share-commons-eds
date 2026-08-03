@@ -1,0 +1,21 @@
+.block.sheet-controls {
+    container-type: inline-size;
+
+    .sheet-controls__toolbar {
+        display: flex;
+        justify-content: flex-end;
+        margin-block-end: var(--spacing-xl);
+    }
+
+    .sheet-controls__toolbar-end {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: var(--spacing-sm);
+    }
+
+    .sheet-controls__toolbar .btn {
+        min-height: var(--input-height-sm);
+        box-sizing: border-box;
+    }
+}

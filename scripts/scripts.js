@@ -13,6 +13,13 @@ import {
   loadCSS,
 } from './aem.js';
 
+import {
+  ascEager,
+  ascDecorateMain,
+  ascLazy,
+  ascDelayed,
+} from './asc.js';
+
 /**
  * Builds hero block and prepends to main in a new section.
  * @param {Element} main The container element
@@ -20,7 +27,6 @@ import {
 function buildHeroBlock(main) {
   const h1 = main.querySelector('h1');
   const picture = main.querySelector('picture');
-  // eslint-disable-next-line no-bitwise
   if (h1 && picture && (h1.compareDocumentPosition(picture) & Node.DOCUMENT_POSITION_PRECEDING)) {
     const section = document.createElement('div');
     section.append(buildBlock('hero', { elems: [picture, h1] }));
@@ -35,7 +41,7 @@ async function loadFonts() {
   await loadCSS(`${window.hlx.codeBasePath}/styles/fonts.css`);
   try {
     if (!window.location.hostname.includes('localhost')) sessionStorage.setItem('fonts-loaded', 'true');
-  } catch (e) {
+  } catch {
     // do nothing
   }
 }
@@ -48,23 +54,35 @@ function buildAutoBlocks(main) {
   try {
     buildHeroBlock(main);
   } catch (error) {
-    // eslint-disable-next-line no-console
     console.error('Auto Blocking failed', error);
   }
+}
+
+/**
+ * Adds page-type body classes based on which blocks are present.
+ * Called after decorateMain so block class names are available.
+ * @param {Element} main The main element
+ */
+function addPageTypeClasses(main) {
+  if (main.querySelector('.search-results')) document.body.classList.add('page-search');
+  if (main.querySelector('.collections, .collection-switcher')) document.body.classList.add('page-collections');
+  if (main.querySelector('.sheet') || new URLSearchParams(window.location.search).has('sheet')) {
+    document.body.classList.add('page-sheet');
+  }
+  if (main.querySelector('.board')) document.body.classList.add('page-board');
 }
 
 /**
  * Decorates the main element.
  * @param {Element} main The main element
  */
-// eslint-disable-next-line import/prefer-default-export
 export function decorateMain(main) {
-  // hopefully forward compatible button decoration
   decorateButtons(main);
   decorateIcons(main);
   buildAutoBlocks(main);
   decorateSections(main);
   decorateBlocks(main);
+  ascDecorateMain(main);
 }
 
 /**
@@ -74,9 +92,12 @@ export function decorateMain(main) {
 async function loadEager(doc) {
   document.documentElement.lang = 'en';
   decorateTemplateAndTheme();
+  ascEager(doc);
+
   const main = doc.querySelector('main');
   if (main) {
     decorateMain(main);
+    addPageTypeClasses(main);
     document.body.classList.add('appear');
     await loadSection(main.querySelector('.section'), waitForFirstImage);
   }
@@ -86,7 +107,7 @@ async function loadEager(doc) {
     if (window.innerWidth >= 900 || sessionStorage.getItem('fonts-loaded')) {
       loadFonts();
     }
-  } catch (e) {
+  } catch {
     // do nothing
   }
 }
@@ -96,6 +117,8 @@ async function loadEager(doc) {
  * @param {Element} doc The container element
  */
 async function loadLazy(doc) {
+  ascLazy();
+
   const main = doc.querySelector('main');
   await loadSections(main);
 
@@ -103,8 +126,10 @@ async function loadLazy(doc) {
   const element = hash ? doc.getElementById(hash.substring(1)) : false;
   if (hash && element) element.scrollIntoView();
 
-  loadHeader(doc.querySelector('header'));
-  loadFooter(doc.querySelector('footer'));
+  if (!document.body.classList.contains('page-sheet')) {
+    loadHeader(doc.querySelector('header'));
+    loadFooter(doc.querySelector('footer'));
+  }
 
   loadCSS(`${window.hlx.codeBasePath}/styles/lazy-styles.css`);
   loadFonts();
@@ -115,9 +140,8 @@ async function loadLazy(doc) {
  * without impacting the user experience.
  */
 function loadDelayed() {
-  // eslint-disable-next-line import/no-cycle
+  ascDelayed();
   window.setTimeout(() => import('./delayed.js'), 3000);
-  // load anything that can be postponed to the latest here
 }
 
 async function loadPage() {

@@ -1,0 +1,171 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "\"/Users/davidg/.local/bin/scout\" hook subagent",
+            "type": "command"
+          }
+        ],
+        "matcher": "Task|Agent"
+      },
+      {
+        "hooks": [
+          {
+            "command": "\"/Users/davidg/.local/bin/scout\" hook bash-compress || echo {}",
+            "type": "command"
+          }
+        ],
+        "matcher": "Bash"
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "command": "\"/Users/davidg/.local/bin/scout\" hook session --host claude",
+            "type": "command"
+          }
+        ],
+        "matcher": "startup|resume|clear|compact"
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "command": "\"/Users/davidg/.local/bin/scout\" hook reflect",
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": []
+  },
+  "permissions": {
+    "allow": [
+      "Bash(find /Users/davidg/Code/asset-share-commons-eds -maxdepth 1 -type f -name *.md -o -name *.json -o -name .*rc*)",
+      "Bash(eslint --version)",
+      "Bash(npm run:*)",
+      "Bash(sed -n '157,161p' /Users/davidg/Code/asset-share-commons-eds/scripts/asc/models/asset.js)",
+      "Bash(sed -n '188,192p' /Users/davidg/Code/asset-share-commons-eds/scripts/asc/models/asset.js)",
+      "Bash(sed -n '66,70p' /Users/davidg/Code/asset-share-commons-eds/scripts/asc/services/renditions/renditions.js)",
+      "WebFetch(domain:webflow.com)",
+      "WebFetch(domain:www.behance.net)",
+      "WebFetch(domain:opensource.adobe.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:experienceleague.adobe.com)",
+      "WebFetch(domain:www.aem.live)",
+      "Bash(ls:*)",
+      "Bash(grep -r \"sheet copy\\\\|sheet-copy\" /Users/davidg/Code/asset-share-commons-eds --include=*.js --include=*.json --include=*.html -l)",
+      "Bash(grep -r cards /Users/davidg/Code/asset-share-commons-eds --include=*.js --include=*.json --include=*.html -l)",
+      "Bash(git -C /Users/davidg/Code/asset-share-commons-eds status --short)",
+      "Bash(grep \"\\\\.js$\")",
+      "Bash(git worktree:*)",
+      "Bash(git checkout:*)",
+      "Bash(git rm:*)",
+      "Bash(git commit:*)",
+      "Bash(git branch:*)",
+      "Bash(git ls-tree:*)",
+      "Bash(gh api:*)",
+      "Bash(git mv:*)",
+      "Bash(git add:*)",
+      "Bash(git:*)",
+      "Read(//private/tmp/asc-rebrand/**)",
+      "Read(//private/tmp/asc-rebrand/_includes/**)",
+      "Bash(sed -i '' 's/new Init\\(serviceConfigurations\\\\.init\\)/new Init\\(serviceConfigurations.init || {}\\)/' /Users/davidg/Code/asset-share-commons-eds/scripts/asc/services/init/init.js)",
+      "Bash(__NEW_LINE_03e0c128eabba464__ sed:*)",
+      "Bash(grep -rn styles.css /Users/davidg/Code/asset-share-commons-eds/ --include=*.html --include=*.js)",
+      "Bash(for f:*)",
+      "Bash(do)",
+      "Bash(echo \"=== $f ===\")",
+      "Read(//Users/davidg/Code/asset-share-commons-eds/**)",
+      "Bash(done)",
+      "Bash(sed -i '' 's/^\\\\.theme-dark {$/:root {/' /Users/davidg/Code/asset-share-commons-eds/styles/themes/dark.css)",
+      "Bash(sed -i '' 's/^\\\\.theme-default {$/:root {/' /Users/davidg/Code/asset-share-commons-eds/styles/themes/default.css)",
+      "Bash(sed -i '' 's/^\\\\.theme-warm {$/:root {/' /Users/davidg/Code/asset-share-commons-eds/styles/themes/warm.css)",
+      "Bash(sed -i '' 's/^\\\\.theme-studio {$/:root {/' /Users/davidg/Code/asset-share-commons-eds/styles/themes/studio.css)",
+      "Bash(sed -i '' 's/^\\\\.theme-vault {$/:root {/' /Users/davidg/Code/asset-share-commons-eds/styles/themes/vault.css)",
+      "Bash(grep -rn \"details/default\\\\|sheets/default\\\\|sheet/default\\\\|/details''''\\\\|/sheet''''\" /Users/davidg/Code/asset-share-commons-eds/ --include=*.js --include=*.md --include=*.html)",
+      "Bash(do echo:*)",
+      "Read(//Users/davidg/Code/asset-share-commons-eds/blocks/$f/**)",
+      "Bash(grep:*)",
+      "Bash(npm install:*)",
+      "Bash(npx stylelint:*)",
+      "WebFetch(domain:dribbble.com)",
+      "Bash(unzip -l \"/Users/davidg/Downloads/slothUI \\(v2.2\\).zip\")",
+      "Read(//private/tmp/**)",
+      "Bash(cp \"/Users/davidg/Downloads/slothUI \\(v2.2\\).zip\" .)",
+      "Bash(unzip -o \"slothUI \\(v2.2\\).zip\" -d slothui)",
+      "Bash(file slothui/*.fig)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('stylelint', {}\\), indent=2\\)\\)\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('rules',{}\\).get\\('selector-class-pattern'\\), indent=2\\)\\)\")",
+      "Read(//Users/davidg/Downloads/**)",
+      "Bash(mkdir -p figma_extract)",
+      "Bash(unzip -o \"/Users/davidg/Downloads/slothUI Pro \\(v2.2\\).fig\" -d figma_extract/)",
+      "Bash(cp /tmp/figma_extract/images/79a8112145bbff74eb6859f9132787898b090ffc /tmp/slothui_overview.png)",
+      "Bash(cp /tmp/figma_extract/images/95111141a50eb640510052a44d7d22df4bb72dfe /tmp/slothui_1.jpg)",
+      "Bash(cp /tmp/figma_extract/images/bd5d7d535c90eba57e65f01becfdf396b469a9d7 /tmp/slothui_2.jpg)",
+      "Bash(cp /tmp/figma_extract/images/e6f0664f1e478faa34b4befb694a8f2c286c3751 /tmp/slothui_3.jpg)",
+      "Bash(cp /tmp/figma_extract/images/db92abeb3fa17a374da2375be8bf7d51173a261e /tmp/slothui_4.jpg)",
+      "Bash(sips -z 400 200 /tmp/slothui_overview.png --out /tmp/slothui_overview_sm.png)",
+      "Bash(sips -z 300 533 /tmp/slothui_1.jpg --out /tmp/slothui_1_sm.jpg)",
+      "Bash(sips -z 300 533 /tmp/slothui_2.jpg --out /tmp/slothui_2_sm.jpg)",
+      "mcp__scout__search",
+      "mcp__scout__semantic_doc_search",
+      "mcp__scout__keyword_search",
+      "mcp__scout__regex_search",
+      "mcp__scout__go_to_definition",
+      "mcp__scout__find_references",
+      "mcp__scout__call_graph",
+      "mcp__scout__impact",
+      "mcp__scout__deep_search",
+      "mcp__scout__file_outline",
+      "mcp__scout__explain_symbol",
+      "mcp__scout__top_symbols",
+      "mcp__scout__list_repositories",
+      "mcp__scout__investigate",
+      "mcp__scout__investigate_expand",
+      "mcp__scout__investigate_hydrate",
+      "mcp__scout__changes_detect",
+      "mcp__scout__changes_affected_tests",
+      "mcp__scout__list_flows",
+      "mcp__scout__affected_flows",
+      "mcp__scout__architecture_overview",
+      "mcp__scout__dead_code",
+      "mcp__scout__file_read",
+      "Bash(scout search:*)",
+      "Bash(scout keyword-search:*)",
+      "Bash(scout regex-search:*)",
+      "Bash(scout deep-search:*)",
+      "Bash(scout go-to-definition:*)",
+      "Bash(scout find-references:*)",
+      "Bash(scout call-graph:*)",
+      "Bash(scout explain-symbol:*)",
+      "Bash(scout file-outline:*)",
+      "Bash(scout top-symbols:*)",
+      "Bash(scout list:*)",
+      "Bash(scout status:*)",
+      "Bash(scout doctor:*)",
+      "Bash(scout coderank:*)",
+      "Bash(scout usage:*)",
+      "Bash(scout token show:*)",
+      "Bash(scout broken-links:*)",
+      "Bash(scout orphan-documents:*)",
+      "Bash(scout topic-clusters:*)",
+      "Bash(scout tag-graph:*)",
+      "Bash(scout doc-stats:*)",
+      "Bash(scout evaluate:*)",
+      "mcp__scout__memory_search",
+      "mcp__scout__memory_read",
+      "mcp__scout__memory_list",
+      "mcp__scout__memory_related",
+      "mcp__scout__memory_write",
+      "mcp__scout__memory_vote",
+      "mcp__scout__memory_lint",
+      "mcp__scout__memory_consolidate",
+      "mcp__scout__memory_infer"
+    ]
+  }
+}

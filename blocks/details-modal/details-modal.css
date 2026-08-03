@@ -1,0 +1,25 @@
+/*
+ * details-modal — dialog chrome (border, radius, shadow, backdrop, sizing,
+ * centered top-layer positioning) comes from the UI Kit .asc-dialog primitive
+ * in its large .asc-dialog--wide variant (styles.css). The service opens it
+ * with dialog.showModal() and injects the details fragment into .content.
+ *
+ * The fragment supplies its own header bar (details-header block), so the modal
+ * only floats a close button over the top-right corner.
+ */
+
+.block.details-modal {
+    .close {
+        position: absolute;
+        top: var(--spacing-sm);
+        inset-inline-end: var(--spacing-sm);
+        z-index: 1;
+    }
+
+    .content {
+        overflow-y: auto;
+        width: 100%;
+        max-height: 92vh;
+        min-height: 0;
+    }
+}

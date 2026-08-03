@@ -1,0 +1,32 @@
+/*
+ * details-asset-metadata — static asset property list.
+ * Composed entirely from .asc-ui-metadata (styles/ui-kit.css) and
+ * .asc-ui-chip (styles/ui-kit.css).
+ */
+
+.block.details-asset-metadata {
+    .asc-ui-chip-extras {
+        display: contents;
+
+        &.is-hidden {
+            display: none;
+        }
+    }
+
+    .asc-view-more-btn {
+        display: block;
+        margin-top: var(--spacing-2xs);
+        padding: 0;
+        background: none;
+        border: none;
+        color: var(--link-color, var(--color-primary));
+        font-size: var(--body-font-size-xs);
+        font-weight: 500;
+        cursor: pointer;
+        text-decoration: underline;
+
+        &:hover {
+            opacity: 0.75;
+        }
+    }
+}

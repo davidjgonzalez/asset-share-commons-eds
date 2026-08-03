@@ -1,0 +1,191 @@
+/*
+ * Collections index — composed from UI Kit primitives (see docs/UI_KIT.md):
+ *   card          → .asc-ui-card / --interactive / --active
+ *   card mosaic   → .asc-ui-collection-card__thumbs / __thumb (adaptive grid)
+ *   badge         → .asc-ui-badge / --primary
+ *   empty state   → .asc-ui-empty-state
+ *   name field    → .asc-ui-field + global input baseline
+ *   buttons       → .btn
+ * This file only holds collections-specific layout and the mosaic wrapper.
+ */
+
+.block.collections {
+    --collections-gap: var(--spacing-lg);
+    --collections-card-radius: var(--border-radius-md);
+
+    container-type: inline-size;
+
+    .collections__shell {
+        width: 100%;
+    }
+
+    /* ── Toolbar (title / intro come from page content above this block) ─ */
+
+    .collections__toolbar {
+        display: flex;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: var(--spacing-md);
+        margin-block-end: var(--spacing-lg);
+    }
+
+    .collections__new-btn {
+        flex-shrink: 0;
+    }
+
+    /* ── New collection (inline panel) ───────────────────────────────── */
+
+    .collections__new-form {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        gap: var(--spacing-md);
+        margin-block-end: var(--spacing-xl);
+        padding: var(--spacing-md);
+        background: var(--color-muted);
+        border: 1px solid var(--color-border);
+        border-radius: var(--collections-card-radius);
+
+        &[hidden] {
+            display: none;
+        }
+    }
+
+    /* asc-ui-field handles label/control styling; this only sizes it in the row */
+    .collections__new-label {
+        flex: 1;
+        min-width: min(100%, 220px);
+    }
+
+    .collections__new-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--spacing-sm);
+        align-items: center;
+    }
+
+    /* ── Grid (list semantics) ───────────────────────────────────────── */
+
+    .collections__grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+        gap: var(--collections-gap);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    /* asc-ui-empty-state provides the look; this spans the full grid row */
+    .collections__empty {
+        grid-column: 1 / -1;
+        list-style: none;
+    }
+
+    /* ── Card composition ────────────────────────────────────────────── */
+
+    /*
+     * Flush mosaic: override asc-ui-card padding so the thumbnail mosaic
+     * sits edge-to-edge at the top of the card. Content uses its own padding.
+     */
+    .collections__card {
+        padding: 0;
+        overflow: hidden;
+    }
+
+    /* ── Card link (wraps mosaic + content, makes the card clickable) ── */
+
+    .collections__card-link {
+        display: block;
+        text-decoration: none;
+        color: inherit;
+    }
+
+    /* ── Mosaic (thumbnail preview at the top of the card) ───────────── */
+
+    .collections__card-mosaic {
+        /* asc-ui-collection-card__thumbs handles sizing; no extra CSS needed */
+    }
+
+    /* Empty-state mosaic for 0-asset collections */
+    .collections__card-mosaic--empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: var(--spacing-2xs);
+        height: 280px;
+        background: var(--color-muted);
+    }
+
+    .collections__card-mosaic-icon {
+        font-size: 2rem;
+        opacity: 0.5;
+    }
+
+    .collections__card-mosaic-text {
+        font-size: var(--body-font-size-xs);
+        color: var(--color-muted-fg);
+        font-style: italic;
+    }
+
+    /* ── Card content (padded area below the mosaic) ─────────────────── */
+
+    .collections__card-content {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-sm);
+        padding: var(--spacing-md);
+        flex: 1;
+    }
+
+    /* Asset type breakdown: "5 images · 2 videos · 3 docs" */
+    .collections__card-types {
+        margin: 0;
+        font-size: var(--body-font-size-xs);
+        color: var(--color-muted-fg);
+    }
+
+    .collections__card-count {
+        margin: 0;
+        font-size: var(--body-font-size-s);
+        color: var(--color-muted-fg);
+    }
+
+    .collections__card-count-num {
+        font-variant-numeric: tabular-nums;
+        font-weight: 600;
+        color: var(--color-fg);
+    }
+
+    .collections__card-updated {
+        margin: 0;
+        font-size: var(--body-font-size-xs);
+        color: var(--color-muted-fg);
+        line-height: 1.35;
+    }
+
+    .collections__card-updated time {
+        font-variant-numeric: tabular-nums;
+    }
+
+    /*
+     * The footer is a sibling of .collections__card-content, not nested inside it (so
+     * the flush mosaic above can span edge-to-edge) — .asc-ui-card__footer only supplies
+     * top padding/border, so it needs the side + bottom padding the content div gets.
+     */
+    .collections__card-actions {
+        padding-inline: var(--spacing-md);
+        padding-block-end: var(--spacing-md);
+    }
+
+    /* Destructive action pushed to the end of the card footer */
+    .collections__card-delete {
+        color: var(--color-destructive);
+        margin-inline-start: auto;
+    }
+
+    .collections__card-delete:hover {
+        background: color-mix(in srgb, var(--color-destructive) 10%, transparent);
+        color: var(--color-destructive);
+    }
+}

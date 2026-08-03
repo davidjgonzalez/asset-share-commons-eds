@@ -1,0 +1,118 @@
+/*
+ * Default Theme — "Cosmos"
+ *
+ * Inspired by cosmos.so — warm monochromatic, content-first.
+ * Pure white canvas, near-black type, warm gray surfaces. No accent color.
+ * Designed to let assets breathe with minimal UI chrome.
+ *
+ * Palette (sourced from cosmos.so CSS):
+ *   Page background  #ffffff   gray-0     — pure white canvas
+ *   Primary text     #0d0d0d   gray-1000  — near black, slightly warm
+ *   Elevation        #f2f1f0   gray-100   — warm off-white surface
+ *   Secondary text   #6e6a69   warm-gray-light-600
+ *   Border           #e2e1e0   ~12% gray-1000 on white
+ *   Primary action   #0d0d0d   gray-1000  — black pill CTA, white label
+ *
+ * Activate: set `theme: { default: 'default' }` in scripts/configurations.js
+ */
+
+:root {
+  /* ── Semantic color tokens ─────────────────────────────────────── */
+  --color-bg:         #ffffff;
+  --color-fg:         #0d0d0d;
+  --color-card:       #ffffff;
+  --color-card-fg:    #0d0d0d;
+  --color-popover:    #ffffff;
+  --color-popover-fg: #0d0d0d;
+
+  /* Brand / interactive — monochromatic black */
+  --color-primary:    #0d0d0d;
+  --color-primary-fg: #ffffff;
+
+  /* Secondary actions — warm light gray */
+  --color-secondary:    #f2f1f0;
+  --color-secondary-fg: #0d0d0d;
+
+  /* Muted / quiet surfaces — warm off-white */
+  --color-muted:    #f2f1f0;
+  --color-muted-fg: #6e6a69;
+
+  /* Accent / hover highlights — same warm gray, no color cast */
+  --color-accent:    #f2f1f0;
+  --color-accent-fg: #0d0d0d;
+
+  /* Feedback */
+  --color-destructive:    #c2410c;
+  --color-destructive-fg: #ffffff;
+
+  /* Form chrome — very subtle warm-gray borders */
+  --color-border: #e2e1e0;
+  --color-input:  #ffffff;
+  --color-ring:   #0d0d0d;
+
+  /* ── Typography ─────────────────────────────────────────────────── */
+  --body-font-family:    system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --heading-font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* Cosmos uses -0.02em tight tracking throughout */
+  --body-letter-spacing:    -0.02em;
+  --heading-letter-spacing: -0.025em;
+
+  /* ── Buttons — pill shape, flat, no decoration ─────────────────────── */
+  --button-border-radius:     var(--border-radius-full);
+  --btn-shadow:               none;
+  --btn-shadow-hover:         none;
+  --btn-lift:                 none;
+  /* brightness(1.1) is imperceptible on near-black; 4× gives visible charcoal hover */
+  --btn-primary-hover-filter: brightness(4);
+
+  /* ── Inputs — small radius (cosmos uses ~3px for form controls) ──── */
+  --input-border-radius: var(--border-radius-sm);
+
+  /* ── Panels — subtle neutral shadow, no color cast ──────────────── */
+  --panel-shadow: 0 4px 16px 0 rgb(0 0 0 / 8%), 0 1px 4px 0 rgb(0 0 0 / 3%);
+
+  /* ── Modal — understated rounding ──────────────────────────────── */
+  --modal-border-radius: var(--border-radius-lg);
+
+  /* ── Search bar — pill shape matching cosmos nav search ─────────── */
+  --search-bar-shell-radius:   var(--border-radius-full);
+  --search-bar-shell-overflow: hidden;
+
+  /* ── Collection toggle — styled contextually per block (see details-actions.css, search-results.css) */
+}
+
+/* ── Asset teasers: trade the hairline border for a soft ambient shadow —
+   cosmos.so cards float on elevation rather than being boxed in. Scoped
+   under .theme-default (not a bare .asc-asset-teaser) because this
+   stylesheet loads before the core part's asset-teaser.css — at equal
+   specificity the later rule wins, so an unscoped override here would
+   silently lose the cascade. Hover elevation goes through the part's
+   --asset-teaser-hover-* hooks for the same reason; see
+   docs/THEMING_README.md → "Theme-Scoped Block Overrides". */
+.theme-default .asc-asset-teaser {
+  border-color: transparent;
+  box-shadow: 0 1px 2px rgb(13 13 13 / 4%);
+
+  --asset-teaser-hover-border-color: transparent;
+  --asset-teaser-hover-shadow:
+    0 16px 32px -12px rgb(13 13 13 / 16%),
+    0 2px 8px -2px rgb(13 13 13 / 6%);
+}
+
+/* ── Image hover zoom — a touch of Unsplash-style motion ─────────── */
+.theme-default .asc-asset-teaser__preview { overflow: hidden; }
+
+.theme-default .asc-asset-teaser__preview img {
+  transition: transform var(--transition-slow);
+}
+
+.theme-default .asc-asset-teaser:hover .asc-asset-teaser__preview img {
+  transform: var(--scale-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-default .asc-asset-teaser:hover .asc-asset-teaser__preview img {
+    transform: none;
+  }
+}

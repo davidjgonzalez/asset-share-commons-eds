@@ -1,0 +1,78 @@
+/*
+ * details-video — native HTML video viewer.
+ * Container height is derived from the widest rendition's aspect ratio so
+ * the layout never reflows when switching between renditions.
+ */
+
+.block.details-video {
+    .details-video__viewer {
+        position: relative;
+        border-radius: var(--border-radius-md);
+        overflow: hidden;
+        border: 1px solid var(--color-border);
+        background: #000;
+        aspect-ratio: var(--video-ar, 16 / 9);
+    }
+
+    .details-video__viewer--loading {
+        display: flex;
+        align-items: stretch;
+        background: var(--color-muted);
+    }
+
+    .details-video__player {
+        display: block;
+        width: 100%;
+        height: 100%;
+        border: none;
+        background: #000;
+        object-fit: contain;
+    }
+
+    .details-video__player--hidden {
+        display: none;
+    }
+
+    .details-video__loading {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+    }
+
+    .details-video__loading--hidden {
+        display: none;
+    }
+
+    .details-video__rendition-label {
+        position: absolute;
+        top: var(--spacing-md);
+        right: var(--spacing-md);
+        font-size: var(--body-font-size-s);
+        padding: var(--spacing-xs) var(--spacing-sm);
+        pointer-events: none;
+    }
+
+    .details-video__rendition-label:empty {
+        display: none;
+    }
+
+    .details-video__unsupported {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: var(--color-muted);
+        border: none;
+        border-radius: 0;
+    }
+
+    .details-video__unsupported--hidden {
+        display: none;
+    }
+
+    .details-video__unsupported-download {
+        margin-top: 1rem;
+    }
+}

@@ -1,0 +1,170 @@
+/* ASC Core — do not edit. Customize via scripts/configurations.js */
+
+
+/* ── Base card ───────────────────────────────────────────────────────────── */
+.asc-asset-teaser {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--asset-teaser-border-radius, var(--border-radius-md));
+    overflow: hidden;
+    transition:
+        transform var(--transition-normal),
+        box-shadow var(--transition-normal),
+        border-color var(--transition-fast),
+        background var(--transition-fast);
+    cursor: pointer;
+
+    &:hover {
+        transform: var(--asset-teaser-hover-transform, var(--lift-sm));
+        box-shadow: var(--asset-teaser-hover-shadow, var(--shadow-md));
+        border-color: var(--asset-teaser-hover-border-color, var(--color-border));
+        background: var(--asset-teaser-hover-bg, var(--color-card));
+    }
+
+    &::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        pointer-events: none;
+        opacity: var(--asset-teaser-vignette-opacity, 0);
+        transition: opacity var(--transition-fast);
+        background: var(--asset-teaser-vignette-gradient, none);
+    }
+
+    &:hover::after,
+    &:focus-within::after {
+        opacity: var(--asset-teaser-vignette-hover-opacity, var(--asset-teaser-vignette-opacity, 0));
+    }
+
+    /* ── Preview area ──────────────────────────────────────────────────── */
+    .asc-asset-teaser__preview {
+        width: 100%;
+        overflow: hidden;
+
+        /* Skeleton: visible placeholder while image loads */
+        background: var(--color-muted);
+
+        picture {
+            display: block;
+            width: 100%;
+        }
+
+        img {
+            display: block;
+            width: 100%;
+        }
+    }
+
+    /* ── Meta ──────────────────────────────────────────────────────────── */
+    .asc-asset-teaser__meta {
+        position: relative;
+        z-index: 2;
+        padding: var(--spacing-sm) var(--spacing-md) var(--spacing-2xs);
+        font-size: var(--body-font-size-s, 0.875rem);
+        color: var(--color-muted-fg);
+    }
+
+    .asc-asset-teaser__title {
+        font-size: var(--heading-font-size-s, 1rem);
+        font-weight: var(--asset-teaser-title-weight, 600);
+        color: var(--color-fg);
+        line-height: 1.3;
+        margin: 0 0 var(--spacing-2xs);
+
+        /* Clamp to 2 lines */
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .asc-asset-teaser__prop {
+        font-size: var(--body-font-size-xs, 0.75rem);
+        color: var(--color-muted-fg);
+        margin: var(--spacing-2xs) 0;
+    }
+
+    /* ── Collection toggle — overlaid top-right of the card ───────────── */
+    .asc-collection-toggle {
+        display: block; /* override `contents` */
+        position: absolute;
+        top: var(--spacing-xs);
+        right: var(--spacing-xs);
+        z-index: 3;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity var(--transition-fast);
+    }
+
+    &:hover .asc-collection-toggle,
+    &:focus-within .asc-collection-toggle {
+        opacity: 1;
+        pointer-events: auto;
+    }
+}
+
+/* ── Card mode (grid) ────────────────────────────────────────────────────── */
+.asc-asset-teaser--card {
+    .asc-asset-teaser__preview {
+        /* Pre-allocate space so the grid doesn't reflow when images load */
+        aspect-ratio: 3 / 2;
+
+        img,
+        picture {
+            height: 100%;
+        }
+
+        img {
+            object-fit: cover;
+            object-position: center;
+        }
+    }
+}
+
+/* ── List mode (horizontal row) ──────────────────────────────────────────── */
+.asc-asset-teaser--list {
+    flex-direction: row;
+    align-items: stretch;
+
+    .asc-asset-teaser__preview {
+        flex-shrink: 0;
+        width: 160px;
+        aspect-ratio: 4 / 3;
+
+        img,
+        picture {
+            height: 100%;
+        }
+
+        img {
+            object-fit: cover;
+            object-position: center;
+        }
+    }
+
+    .asc-asset-teaser__meta {
+        flex: 1;
+        padding: var(--spacing-sm) var(--spacing-md);
+    }
+
+    .asc-collection-toggle {
+        /* In list mode: undo the card's absolute positioning; sit inline on the right */
+        position: static;
+        display: flex;
+        align-self: center;
+        margin: auto var(--spacing-sm) auto 0;
+    }
+
+    @media (width < 480px) {
+        flex-direction: column;
+
+        .asc-asset-teaser__preview {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+        }
+    }
+}

@@ -1,0 +1,183 @@
+/* ── Section layout variants ──────────────────────────────────────────────
+ * This is the single source of truth for all section layout variants
+ * (inline, grid, aside, grid-layout, full-width, fixed-width) — edit here
+ * directly. There is no separate styles/sections/ directory; a prior version
+ * kept per-layout files there as "reference" copies alongside this
+ * consolidated file, but that let them drift out of sync with what's
+ * actually loaded (styles.css only @imports this file) — do not recreate
+ * that split.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+/* ── inline — side-by-side blocks in one row ────────────────────────────── */
+
+main .section.inline {
+    display: flex;
+}
+
+/* ── grid — each block wrapper becomes a grid cell ───────────────────────
+ * style: grid        activates grid layout
+ * columns: N         1–6 equal-width columns (default: 2)
+ * direction: row     fills left-to-right then wraps (default)
+ * direction: column  fills top-to-bottom then right
+ */
+
+main .section.grid {
+    display: grid;
+    gap: var(--grid-gap, var(--spacing-md, 1rem));
+    align-items: start;
+    grid-template-columns: repeat(2, 1fr); /* default */
+
+    > * {
+        margin: 0;
+        padding: 0;
+        max-width: 100%;
+    }
+}
+
+main .section.grid[data-columns="1"] { grid-template-columns: repeat(1, 1fr); }
+main .section.grid[data-columns="2"] { grid-template-columns: repeat(2, 1fr); }
+main .section.grid[data-columns="3"] { grid-template-columns: repeat(3, 1fr); }
+main .section.grid[data-columns="4"] { grid-template-columns: repeat(4, 1fr); }
+main .section.grid[data-columns="5"] { grid-template-columns: repeat(5, 1fr); }
+main .section.grid[data-columns="6"] { grid-template-columns: repeat(6, 1fr); }
+
+main .section.grid[data-direction="column"] { grid-auto-flow: column; }
+
+/* colspan / rowspan helpers — add 'colspan-N' or 'rowspan-N' to a block's style */
+main .section.grid > .colspan-2 { grid-column: span 2; }
+main .section.grid > .colspan-3 { grid-column: span 3; }
+main .section.grid > .colspan-4 { grid-column: span 4; }
+main .section.grid > .rowspan-2 { grid-row: span 2; }
+main .section.grid > .rowspan-3 { grid-row: span 3; }
+
+/* ── aside — wide main content + narrow sidebar ──────────────────────────
+ * style: aside, right   →  content left  | sidebar right  (default)
+ * style: aside, left    →  sidebar left  | content right
+ * Override sidebar width: --aside-sidebar-width: 320px
+ */
+
+main .section.aside {
+    display: grid;
+    gap: var(--aside-gap, var(--spacing-md, 1rem));
+    align-items: start;
+}
+
+main .section.aside:not(.left) {
+    grid-template-columns: 1fr var(--aside-sidebar-width, 300px);
+}
+
+main .section.aside.left {
+    grid-template-columns: var(--aside-sidebar-width, 300px) 1fr;
+}
+
+main .section.aside > div {
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+@media (width < 768px) {
+    main .section.aside {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ── grid-layout — named-area section grid ───────────────────────────────
+ * Driven by section metadata; see scripts/section-grid.js.
+ *   layout: grid
+ *   areas:  preview actions / preview metadata
+ *   columns: 1.5fr 1fr   (optional)
+ * Blocks claim a cell with `area`, and may add `align` (e.g. `top left`, `bottom right`,
+ * `center`) to position themselves within that cell instead of stretching to fill it.
+ */
+
+main .section[data-layout="grid"] {
+    display: grid;
+    gap: var(--grid-gap, var(--spacing-xl, 2rem));
+    align-items: start;
+    align-content: start;
+    max-width: var(--section-max-width, 1200px);
+    margin-inline: auto;
+    padding-inline: var(--section-padding, 24px);
+
+    /* stylelint-disable declaration-block-no-redundant-longhand-properties */
+    grid-template-areas: var(--grid-areas, none);
+    grid-template-columns: var(--grid-columns, repeat(var(--grid-cols, 1), minmax(0, 1fr)));
+    grid-template-rows: var(--grid-rows, auto);
+    /* stylelint-enable declaration-block-no-redundant-longhand-properties */
+}
+
+main .section[data-layout="grid"] > .grid-area-stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+    min-width: 0;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+main .section[data-layout="grid"] > div {
+    min-width: 0;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+    grid-area: var(--grid-area, auto);
+    place-self: var(--grid-align-self, auto) var(--grid-justify-self, auto);
+}
+
+@media (width >= 900px) {
+    main .section[data-layout="grid"] {
+        padding-inline: var(--section-padding-wide, 32px);
+    }
+}
+
+@media (width < 768px) {
+    main .section[data-layout="grid"] {
+        grid-template-columns: 1fr;
+        grid-template-areas: none;
+    }
+
+    main .section[data-layout="grid"] > div {
+        grid-area: auto;
+    }
+}
+
+/* ── full-width — breaks out of the max-width constraint ─────────────────
+ * style: full-width
+ * Spans the full viewport instead of the standard max-width, but keeps the
+ * same edge gutter as a regular section (--section-padding) so content
+ * doesn't touch the viewport edge. For true edge-to-edge bleed, zero out
+ * padding on the specific block/element that needs it instead.
+ */
+
+main .section.full-width {
+    max-width: 100%;
+}
+
+main .section.full-width > div {
+    max-width: 100%;
+    padding-inline: var(--section-padding, 24px);
+}
+
+@media (width >= 900px) {
+    main .section.full-width > div {
+        padding-inline: var(--section-padding-wide, 32px);
+    }
+}
+
+/* ── fixed-width — explicit max-width constraint ─────────────────────────────
+ * style: fixed-width
+ * Constrains a section to the standard max-width. Useful inside pages that
+ * are otherwise full-width (e.g., an editorial strip on a search results page).
+ */
+
+main .section.fixed-width {
+    max-width: var(--section-max-width, 1200px);
+    padding-inline: var(--section-padding, 24px);
+    margin-inline: auto;
+}
+
+main .section.fixed-width > div {
+    max-width: 100%;
+}

@@ -1,0 +1,76 @@
+[
+  {
+    "id": "main",
+    "components": [
+      "section"
+    ]
+  },
+  {
+    "id": "section",
+    "components": [
+      "text",
+      "image",
+      "button",
+      "columns",
+      "hero",
+      "fragment",
+      "search-bar",
+      "search-property",
+      "search-path",
+      "search-date-range",
+      "search-tags",
+      "search-hidden",
+      "search-statistics",
+      "search-results",
+      "search-active-filters",
+      "details-modal",
+      "details-preview",
+      "details-video",
+      "details-property",
+      "details-renditions",
+      "details-actions",
+      "details-header",
+      "details-map",
+      "details-similar",
+      "details-asset-metadata",
+      "details-metadata",
+      "details-rendition-metadata",
+      "stub",
+      "collections",
+      "collection-controls",
+      "sheet-controls",
+      "board",
+      "collection-switcher"
+    ]
+  },
+  {
+    "id": "asc-search-page",
+    "components": [
+      "search-bar",
+      "search-property",
+      "search-path",
+      "search-date-range",
+      "search-tags",
+      "search-hidden",
+      "search-statistics",
+      "search-results",
+      "stub"
+    ]
+  },
+  {
+    "id": "asc-details-page",
+    "components": [
+      "details-preview",
+      "details-video",
+      "details-property",
+      "details-renditions",
+      "details-actions",
+      "details-header",
+      "details-map",
+      "details-similar",
+      "details-asset-metadata",
+      "details-metadata",
+      "details-rendition-metadata"
+    ]
+  }
+]
