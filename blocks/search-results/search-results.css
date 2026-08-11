@@ -200,6 +200,14 @@
         --collection-toggle-remove-hover-border: var(--search-results-action-border);
     }
 
+    /* Favorite toggle sits just to the left of the generic one — this selector's
+       specificity has to match/exceed the base rule above (right: 0.5rem) since it
+       also sets `right`, or the base rule's later declaration would win regardless
+       of source order. */
+    [data-asc-results]:not([data-display="list"]) .asc-asset-teaser .asc-collection-toggle--favorite {
+        right: calc(0.5rem + var(--collection-toggle-btn-width, 2rem) + var(--spacing-sm));
+    }
+
     /* Dark overlay style — matches the collection toggle circles */
     [data-asc-results]:not([data-display="list"]) .search-results__quick-action {
         opacity: 0;

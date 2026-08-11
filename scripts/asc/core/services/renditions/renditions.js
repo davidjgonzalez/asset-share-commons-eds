@@ -15,7 +15,7 @@
 
 import serviceConfigurations from '../configurations.js';
 import staticResolver from './resolvers/static.js';
-import dmSmartcropResolver from './resolvers/dm-smartcrop.js';
+import dmScene7Resolver from './resolvers/dm-scene7.js';
 import urlResolver from './resolvers/url.js';
 import urlTemplateResolver from './resolvers/url-template.js';
 import dmOpenApiResolver from './resolvers/dm-openapi.js';
@@ -23,7 +23,7 @@ import webOptimizedDeliveryResolver from './resolvers/web-optimized-delivery.js'
 
 const BUILT_IN_RESOLVERS = [
   staticResolver,
-  dmSmartcropResolver,
+  dmScene7Resolver,
   urlResolver,
   urlTemplateResolver,
   dmOpenApiResolver,
@@ -72,7 +72,7 @@ const DEFAULT_DEFINITIONS = [
  *   fromNode(name, node, asset, aemConfig) → Rendition | null
  *     Used when scanning jcr:content/renditions/* nodes (autoDetect and 'all' mode).
  *
- * Built-in resolvers: static, dm-smartcrop, url, url-template, dm-openapi,
+ * Built-in resolvers: static, dm-scene7, url, url-template, dm-openapi,
  * web-optimized-delivery.
  *
  * Add custom resolvers via configurations.renditions.resolvers (object keyed by type).
@@ -105,7 +105,7 @@ const DEFAULT_DEFINITIONS = [
  *   ${dm.domain}        dam:scene7Domain  ← IS/IR delivery CDN host
  *   ${dm.api-server}    dam:scene7APIServer  ← Scene7 management API (not delivery)
  *
- * ### `type: 'dm-smartcrop'`
+ * ### `type: 'dm-scene7'`
  * Classic Dynamic Media (Scene7) IS-protocol smart crop.
  * URL: {dam:scene7Domain}/is/image/{dam:scene7File}:{cropName}
  * Auto-detected from jcr:content/renditions nodes with

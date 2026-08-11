@@ -1,6 +1,7 @@
 /** @owner user */
 import services from '../../scripts/asc/core/services/services.js';
 import { Events as CollectionEvents } from '../../scripts/asc/core/services/collections/collections.js';
+import AssetAccessError from '../../scripts/asc/core/models/asset-access-error.js';
 import { escHtml, escAttr } from '../../scripts/asc/html.js';
 import defaultBoardItemHtml from '../../scripts/asc/board-item.js';
 import { toggleRenditionMenu, prefetchRenditionSizes } from '../../scripts/asc/rendition-download-menu.js';
@@ -239,8 +240,11 @@ function parseEntry(entry) {
 async function loadFromCollection(id) {
   const collection = await services.collections.get(id, true);
   if (!collection) return null;
+  // Keep forbidden items too — the recipient of a shared collection may lack access to
+  // some of the assets in it; those render as a locked placeholder (see board-item.js)
+  // instead of silently disappearing.
   const assetItems = (collection.hydratedItems || [])
-    .filter((i) => i.type === 'asset' && i.asset);
+    .filter((i) => i.type === 'asset' && (i.asset || i.forbidden));
   const textItems = getBoardTextItems(id);
   return { collection, assetItems, textItems };
 }
@@ -270,11 +274,18 @@ async function loadFromSheet(sheetParam) {
   const mixedItems = items.map(parseEntry);
   const assetIds = mixedItems.filter((i) => i.type === 'asset').map((i) => i.id);
   const fetchedAssets = await Promise.all(assetIds.map((id) => services.search.getAssetById(id)));
-  const assetMap = new Map(fetchedAssets.filter(Boolean).map((a) => [a.uuid, a]));
+  // Keyed by the requested id, not the resolved asset's uuid — same reasoning as
+  // collections.js _hydrateAssets: a forbidden/missing lookup has no uuid of its own.
+  const resultMap = new Map(assetIds.map((id, i) => [id, fetchedAssets[i]]));
 
   const assetItems = mixedItems
-    .filter((i) => i.type === 'asset' && assetMap.has(i.id))
-    .map((i) => ({ ...i, asset: assetMap.get(i.id) }));
+    .filter((i) => i.type === 'asset')
+    .map((i) => {
+      const result = resultMap.get(i.id);
+      const forbidden = result instanceof AssetAccessError;
+      return { ...i, asset: forbidden ? null : result, forbidden };
+    })
+    .filter((i) => i.asset || i.forbidden);
 
   return {
     meta: { title, description, expiresAt },
@@ -870,6 +881,11 @@ function initBoardClicks(block, collectionId, config) {
       if (!_itemDragMoved) {
         if (e.shiftKey) {
           toggleItem(card);
+        } else if (card.classList.contains('board__item--locked')) {
+          // No asset data to show a details modal for — just select it, same as
+          // any item with no data-asc-asset at all.
+          deselectAll();
+          selectItem(card);
         } else if (card.dataset.ascAsset) {
           openDetails(card.dataset.ascAsset, null, config);
         } else {
@@ -1107,7 +1123,7 @@ function initViewClicks(block, config) {
   viewport.addEventListener('click', (e) => {
     if (e.target.closest('.board__rendition-action')) return;
     const card = e.target.closest('.board__item');
-    if (!card?.dataset.ascAsset) return;
+    if (!card?.dataset.ascAsset || card.classList.contains('board__item--locked')) return;
     openDetails(card.dataset.ascAsset, null, config);
   });
 

@@ -100,6 +100,13 @@
         transition: opacity var(--transition-fast);
     }
 
+    /* Favorite toggle sits just to the left of the generic one, since both can be
+       visible at once (the generic one only self-hides once the active collection
+       IS the favorite collection — see collection-toggle.js). */
+    .asc-collection-toggle--favorite {
+        right: calc(var(--spacing-xs) * 2 + var(--collection-toggle-btn-width, 32px));
+    }
+
     &:hover .asc-collection-toggle,
     &:focus-within .asc-collection-toggle {
         opacity: 1;

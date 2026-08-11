@@ -3,6 +3,15 @@
 .asc-collection-toggle {
     display: contents; /* transparent wrapper — doesn't affect layout */
 
+    /* The generic "add to active collection" toggle hides itself (via the `hidden`
+       attribute, set in collection-toggle.js) once the active collection IS the
+       favorite/default one — `display: contents` above would otherwise win the
+       cascade tie against the `[hidden]` UA rule at equal specificity and silently
+       keep it visible, so pin it back to `none` explicitly. */
+    &[hidden] {
+        display: none;
+    }
+
     /* ── Visibility by state ─────────────────────────────────────────────── */
 
     /* Unknown state (hydrating): both buttons invisible but still take up space */
@@ -67,6 +76,22 @@
             background: var(--collection-toggle-remove-hover-bg, rgb(180 30 30 / 85%));
             border-color: var(--collection-toggle-remove-hover-border, transparent);
             color: var(--collection-toggle-remove-hover-fg, var(--collection-toggle-remove-fg, var(--color-primary-fg)));
+        }
+    }
+
+    /* ── Favorite variant — gold star, not the generic red "remove" treatment ── */
+
+    &.asc-collection-toggle--favorite {
+        .asc-collection-toggle__remove {
+            background: var(--collection-toggle-favorite-bg, rgb(234 179 8 / 90%));
+            border-color: var(--collection-toggle-favorite-border, transparent);
+            color: var(--collection-toggle-favorite-fg, #fff);
+
+            &:hover {
+                background: var(--collection-toggle-favorite-hover-bg, rgb(202 138 4 / 90%));
+                border-color: var(--collection-toggle-favorite-hover-border, transparent);
+                color: var(--collection-toggle-favorite-hover-fg, #fff);
+            }
         }
     }
 

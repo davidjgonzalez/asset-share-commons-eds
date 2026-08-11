@@ -212,6 +212,13 @@ export default class QueryBuilderProvider extends SearchProvider {
   /**
    * Fetch a single asset by UUID using QueryBuilder.
    * Used by asset details and collection hydration.
+   *
+   * Note: QueryBuilder enforces JCR read ACLs by silently filtering forbidden nodes out
+   * of the result set — a viewer without read access gets `hits: []` with HTTP 200, the
+   * same response as a UUID that doesn't exist at all. There is no reliable way to
+   * distinguish "forbidden" from "not found" through this endpoint, so (unlike the
+   * OpenAPI provider's direct resource GET, which surfaces a real 401/403) this always
+   * returns a bare `null` for both cases.
    */
   async getAssetById(id) {
     if (window.asc.cache.assets.has(id)) {

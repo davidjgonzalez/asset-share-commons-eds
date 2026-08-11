@@ -82,6 +82,7 @@ export default function assetTeaser(asset, { mode = 'card', view = 'cards' } = {
              data-asc-file-type="${asset.getProperty('file-type').data || ''}">
       ${previewHtml}
       ${metaHtml}
+      ${collectionToggle(asset, { favorite: true })}
       ${collectionToggle(asset)}
     </article>`;
 }

@@ -25,8 +25,12 @@
  *     visually; purely decorative, so mark it `aria-hidden="true"`.
  *   - Optional `data-filter="<lowercase search text>"` on the root — required only if
  *     you want the board's search box (`search-properties` config) to match this item.
+ *   - `item.forbidden` — true when the asset lookup came back as a definite "no
+ *     permission" (see AssetAccessError) rather than a generic not-found; `item.asset`
+ *     is `null` in that case, only `item.id` is available. The default renderer shows a
+ *     locked placeholder (see `lockedBoardItemHtml`) instead of attempting a real card.
  *
- * @param {{ asset: Asset, notes?: string, x?: number, y?: number }} item
+ * @param {{ id: string, asset: Asset|null, forbidden?: boolean, notes?: string, x?: number, y?: number }} item
  * @param {number} index  Position in the render list — used for the default grid layout
  *   when `item.x`/`item.y` are unset.
  * @param {object} config  The board block's parsed config (see blocks/board/board.js
@@ -41,7 +45,43 @@ const ICONS = {
   download: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
   copyUrl: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>',
   notes: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3v-3a4 4 0 0 1-2-3.46V7a4 4 0 0 1 4-4h12a4 4 0 0 1 4 4z"/></svg>',
+  lock: '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
 };
+
+/**
+ * A board item whose asset lookup came back as a definite "no permission" (see
+ * AssetAccessError in the Core search providers) rather than a generic not-found — e.g.
+ * the recipient of a shared collection/board lacks read access to this specific asset.
+ * There's no Asset data to render a preview/title/actions from, only the id it was
+ * asked to resolve, so this renders a locked placeholder instead of a real card.
+ * Still carries `data-asc-asset` (required for drag/selection/minimap) so the owner can
+ * still select and remove it from the collection; rendition/notes actions are omitted
+ * since there's nothing for them to act on.
+ */
+function lockedBoardItemHtml(item, x, y, config) {
+  const interactive = config.mode === 'interactive';
+  return `
+    <article class="asc-ui-asset-card board__item board__item--locked"
+             style="left: ${x}px; top: ${y}px"
+             role="button"
+             tabindex="0"
+             aria-label="Asset unavailable — you don't have access to this item"
+             data-asc-asset="${escAttr(item.id)}">
+      <div class="asc-ui-asset-card__thumb">
+        ${interactive ? `
+        <div class="asc-ui-asset-card__overlay">
+          <button type="button"
+                  class="asc-ui-icon-btn board__item-remove"
+                  data-asc-asset="${escAttr(item.id)}"
+            aria-label="Remove unavailable item from collection">${ICONS.close}</button>
+        </div>` : ''}
+        <div class="asc-ui-filetype" title="You don't have access to this asset">
+          <span class="asc-ui-filetype__glyph">${ICONS.lock}</span>
+          <span class="asc-ui-filetype__ext">No access</span>
+        </div>
+      </div>
+    </article>`;
+}
 
 function buildSearchStr(asset, config) {
   if (!config.searchProperties.length) return '';
@@ -66,9 +106,14 @@ function resolvePreviewImage(asset) {
 }
 
 export default function boardItemHtml(item, index, config) {
-  const { asset, notes: itemNotes } = item;
   const x = item.x !== undefined ? item.x : 80 + (index % 8) * 260;
   const y = item.y !== undefined ? item.y : 80 + Math.floor(index / 8) * 220;
+
+  if (item.forbidden) {
+    return lockedBoardItemHtml(item, x, y, config);
+  }
+
+  const { asset, notes: itemNotes } = item;
   const preview = resolvePreviewImage(asset);
   const searchStr = buildSearchStr(asset, config);
   const interactive = config.mode === 'interactive';

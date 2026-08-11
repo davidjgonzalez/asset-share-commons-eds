@@ -691,6 +691,21 @@
         </div>
 
         <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Asset card · locked (no access)</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-layout="block" data-snippet>
+            <article class="asc-ui-asset-card" style="max-width:14rem;">
+              <div class="asc-ui-asset-card__thumb">
+                <div class="asc-ui-filetype" title="You don't have access to this asset">
+                  <span class="asc-ui-filetype__glyph"><svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+                  <span class="asc-ui-filetype__ext">No access</span>
+                </div>
+              </div>
+            </article>
+          </div>
+          <p class="kit-demo__usage"><code>asc-ui-filetype__glyph</code> also accepts an SVG icon instead of an emoji — used by the board canvas for assets the viewer's AEM session can't read (see <code>AssetAccessError</code>).</p>
+        </div>
+
+        <div class="kit-demo">
           <div class="kit-demo__bar"><span class="kit-demo__name">Labeled action bar</span><button class="kit-demo__toggle" type="button">Code</button></div>
           <div class="kit-demo__preview" data-layout="block" data-snippet>
             <div class="asc-ui-actions" role="toolbar" aria-label="Asset actions">

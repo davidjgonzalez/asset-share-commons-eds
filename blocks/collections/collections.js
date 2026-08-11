@@ -103,19 +103,22 @@ function collectionCard(collection, activeId, defaultId) {
           </div>
         </div>
       </a>
-      ${!isActive || !isDefault ? `
       <div class="collections__card-actions asc-ui-card__footer">
         ${!isActive
     ? `<button type="button" class="collections__card-activate btn btn--secondary btn--sm"
                data-collection-id="${escAttr(collection.id)}"
                aria-label="Set ${escAttr(collection.name)} as active collection">Set active</button>`
     : ''}
+        <button type="button" class="collections__card-duplicate btn btn--secondary btn--sm"
+                data-collection-id="${escAttr(collection.id)}"
+                data-collection-name="${escAttr(collection.name)}"
+                aria-label="Duplicate ${escAttr(collection.name)} collection">Duplicate</button>
         ${!isDefault
     ? `<button type="button" class="collections__card-delete btn btn--ghost btn--sm"
                data-collection-id="${escAttr(collection.id)}"
                aria-label="Delete ${escAttr(collection.name)} collection">Delete</button>`
     : ''}
-      </div>` : ''}
+      </div>
     </li>`;
 }
 
@@ -273,6 +276,17 @@ function initInteractions(block) {
   block.querySelectorAll('.collections__card-activate').forEach((btn) => {
     btn.addEventListener('click', () => {
       services.collections.setActive(btn.dataset.collectionId);
+    });
+  });
+
+  // Duplicate
+  block.querySelectorAll('.collections__card-duplicate').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const { collectionId, collectionName } = btn.dataset;
+      const suggested = `${collectionName} copy`;
+      const name = window.prompt('Name for the new collection:', suggested)?.trim();
+      if (!name) return;
+      services.collections.duplicate(collectionId, name);
     });
   });
 

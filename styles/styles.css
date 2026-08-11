@@ -156,20 +156,30 @@ body {
   line-height: 1.6;
   letter-spacing: var(--body-letter-spacing, 0);
   min-width: 1024px;
+  min-height: 100vh;
 }
 
-body.appear { display: block; }
+/* Sticky footer: body is a flex column spanning the viewport height; main grows
+   to fill any leftover space so footer sits at the viewport bottom on short
+   pages, and is pushed down naturally once content exceeds the viewport. */
+body.appear {
+  display: flex;
+  flex-direction: column;
+}
 
 header {
   position: sticky;
   top: 0;
   z-index: var(--z-sticky);
   height: var(--nav-height);
+  flex-shrink: 0;
 }
 
 header:has(.block.search-active-filters:not(:empty)) {
   height: auto;
 }
+
+footer { flex-shrink: 0; }
 
 header .header,
 footer .footer { visibility: hidden; }
@@ -210,7 +220,16 @@ pre {
   white-space: pre;
 }
 
-main { margin-top: 2.5rem; }
+main {
+  margin-top: 2.5rem;
+
+  /* Sticky footer: min-height overrides the automatic minimum size flex items
+     get by default, which would otherwise stop main from shrinking below its
+     content's natural height and let footer grow past the viewport bottom. */
+  flex: 1 0 auto;
+  min-height: 0;
+}
+
 main > div { margin: 2.5rem 1rem; }
 
 main img {

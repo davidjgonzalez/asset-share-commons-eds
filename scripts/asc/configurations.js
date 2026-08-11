@@ -18,13 +18,6 @@ import colors from './core/services/properties/colors.js';
 import smartTags from './core/services/properties/smart-tags.js';
 import history from './core/services/properties/history.js';
 
-// Which API builds smart-crop rendition URLs — 'scene7' (classic Dynamic Media IS
-// protocol, works on AEM 6.5 and AEMaaCS) or 'openapi' (Dynamic Media with OpenAPI,
-// AEMaaCS only; requires aem.deliveryHost below). Switching to 'openapi' also lets
-// you append any other DM image-serving query param to the smart crop (e.g.
-// 'smartcrop=Small&fit=constrain&contrast=30') via each definition's `params` below.
-const SMARTCROP_API = 'scene7'; // 'scene7' | 'openapi'
-
 const configurations = {
 
   // ─── AEM Connection ──────────────────────────────────────────────────────────
@@ -34,7 +27,7 @@ const configurations = {
     host: 'https://publish-p207002-e2157253.adobeaemcloud.com',
 
     // AEM Asset Delivery host (AEM as a Cloud Service only).
-    // Required when using renditions of type 'dm-openapi' (including SMARTCROP_API = 'openapi' above).
+    // Required when using renditions of type 'dm-openapi' (including smart crops of that type below).
     // Format: 'https://delivery-pXXXXX-eYYYYY.adobeaemcloud.com'
     // deliveryHost: '',
   },
@@ -402,7 +395,7 @@ const configurations = {
   //   name: /^cq5dam\.web\./         RegExp pattern match
   //   name: (asset) => string        Dynamic exact match
   //
-  // ── type: 'dm-smartcrop' ─────────────────────────────────────────────────────
+  // ── type: 'dm-scene7' ────────────────────────────────────────────────────────
   // Classic Dynamic Media (Scene7) smart crop via the IS protocol.
   // URL: {dam:scene7APIServer}is/image/{dam:scene7File}:{cropName}
   // No definitions needed for the common case — every smart crop present on the
@@ -438,8 +431,9 @@ const configurations = {
   //                       or 'smartcrop=Small&fit=constrain' — any DM image-serving param works)
   //   format   {string}  File extension override (default: asset's extension)
   //
-  // Set SMARTCROP_API above to 'openapi' to switch the smart-crop definitions below from
-  // classic 'dm-smartcrop' to this type — no other code changes needed.
+  // Pick which smart-crop entries to add below based on which DM API your instance
+  // uses: 'dm-scene7' (classic IS protocol, AEM 6.5 and AEMaaCS) or 'dm-openapi'
+  // (AEMaaCS only; requires aem.deliveryHost above).
   //
   renditions: {
     // Exclude AEM rendition node names from all resolved renditions.
@@ -470,23 +464,21 @@ const configurations = {
     definitions: [
       { id: 'original', label: 'Original', type: 'static', name: 'original' },
       { id: 'web', label: 'Web (1280 pixels)', type: 'static', name: 'cq5dam.web.1280.1280', accepts: (asset) => asset.mimeType?.startsWith('image/') },
-      // Smart crop rendition definitions — shape depends on SMARTCROP_API above.
-      // `id` uses the "smart-crop-*" spelling (hyphen after "smart") because that's
-      // the literal id authors reference from da.live action fragments (e.g.
-      // /actions/download); keep the two in sync if either changes.
-      // 'scene7': `smartCropId` picks the real smart-crop node to customize (by its
-      //   DM-registered name, case-sensitive) — no `id` needed; it defaults to it.
-      // 'openapi': `params` is the raw query string appended to the deliveryHost
+      // Smart crop rendition definitions. `id` uses the "smart-crop-*" spelling
+      // (hyphen after "smart") because that's the literal id authors reference
+      // from da.live action fragments (e.g. /actions/download); keep the two in
+      // sync if either changes.
+      // 'dm-scene7': `smartCropId` picks the real smart-crop node to customize (by
+      //   its DM-registered name, case-sensitive) — no `id` needed; it defaults to it.
+      // 'dm-openapi': `params` is the raw query string appended to the deliveryHost
       //   URL — append any other DM image-serving param here too (e.g. '&contrast=30').
-      ...(SMARTCROP_API === 'openapi' ? [
-        { id: 'smart-crop-small', label: 'Smart Crop — Small', type: 'dm-openapi', params: 'smartcrop=Small&fit=constrain', accepts: (asset) => asset.mimeType?.startsWith('image/') },
-        { id: 'smart-crop-medium', label: 'Smart Crop — Medium', type: 'dm-openapi', params: 'smartcrop=Medium&fit=constrain', accepts: (asset) => asset.mimeType?.startsWith('image/') },
-        { id: 'smart-crop-large', label: 'Smart Crop — Large', type: 'dm-openapi', params: 'smartcrop=Large&fit=constrain', accepts: (asset) => asset.mimeType?.startsWith('image/') },
-      ] : [
-        { id: 'smart-crop-small', label: 'Smart Crop — Small', type: 'dm-smartcrop', smartCropId: 'Small', accepts: (asset) => asset.mimeType?.startsWith('image/') },
-        { id: 'smart-crop-medium', label: 'Smart Crop — Medium', type: 'dm-smartcrop', smartCropId: 'Medium', accepts: (asset) => asset.mimeType?.startsWith('image/') },
-        { id: 'smart-crop-large', label: 'Smart Crop — Large', type: 'dm-smartcrop', smartCropId: 'Large', accepts: (asset) => asset.mimeType?.startsWith('image/') },
-      ]),
+      // Use whichever type matches your DM API (see aem.deliveryHost above) — mixing
+      // both in the same list is also fine if some crops need one API and some the other.
+      { id: 'smart-crop-small', label: 'Smart Crop — Small', type: 'dm-scene7', smartCropId: 'Small', accepts: (asset) => asset.mimeType?.startsWith('image/') },
+      { id: 'smart-crop-medium', label: 'Smart Crop — Medium', type: 'dm-scene7', smartCropId: 'Medium', accepts: (asset) => asset.mimeType?.startsWith('image/') },
+      { id: 'smart-crop-large', label: 'Smart Crop — Large', type: 'dm-scene7', smartCropId: 'Large', accepts: (asset) => asset.mimeType?.startsWith('image/') },
+      // dm-openapi equivalent, if your instance uses OpenAPI instead of classic Scene7:
+      //   { id: 'smart-crop-small', label: 'Smart Crop — Small', type: 'dm-openapi', params: 'smartcrop=Small&fit=constrain', accepts: (asset) => asset.mimeType?.startsWith('image/') },
 
   //
   //     // ── Static renditions ─────────────────────────────────────────────────
@@ -536,19 +528,19 @@ const configurations = {
   //     // DM-registered crop (case-sensitive) it applies to; `id` defaults to it.
   //     {
   //       label: 'Smart Crop — Large',
-  //       type: 'dm-smartcrop',
+  //       type: 'dm-scene7',
   //       smartCropId: 'Large',
   //       accepts: (asset) => asset.mimeType?.startsWith('image/'),
   //     },
   //     {
   //       label: 'Smart Crop — Medium',
-  //       type: 'dm-smartcrop',
+  //       type: 'dm-scene7',
   //       smartCropId: 'Medium',
   //       accepts: (asset) => asset.mimeType?.startsWith('image/'),
   //     },
   //     {
   //       label: 'Smart Crop — Small',
-  //       type: 'dm-smartcrop',
+  //       type: 'dm-scene7',
   //       smartCropId: 'Small',
   //       accepts: (asset) => asset.mimeType?.startsWith('image/'),
   //     },

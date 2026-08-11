@@ -40,7 +40,7 @@ function buildTargets(assets, selectedRenditionIds, archiveName) {
             parameters: { path: `${assetPath}/jcr:content/renditions/${def.name}`, archiveName },
           });
         }
-      } else if (type === 'dm-smartcrop') {
+      } else if (type === 'dm-scene7') {
         if (!addedKeys.has('smartcrop')) {
           addedKeys.add('smartcrop');
           targets.push({ parameters: { path: assetPath, archiveName, assetTarget: 'smartcrop' } });

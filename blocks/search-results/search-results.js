@@ -91,6 +91,7 @@ function quickActionButtonsHtml(assetId) {
 function renderListActionsCell(asset) {
   return `
     <div class="asc-list-view__actions">
+      ${collectionToggle(asset, { favorite: true })}
       ${collectionToggle(asset, { addLabel: 'Add to collection', removeLabel: 'Remove from collection' })}
       ${quickActionButtonsHtml(asset.uuid)}
     </div>`;

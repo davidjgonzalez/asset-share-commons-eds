@@ -321,6 +321,15 @@ Stand-in for assets with no image preview (PDF, video, doc). Drop inside a thumb
 <div class="asc-ui-filetype"><span class="asc-ui-filetype__glyph">📄</span><span class="asc-ui-filetype__ext">PDF</span></div>
 ```
 
+`__glyph` also accepts an inline SVG icon instead of an emoji — sized via `.asc-ui-filetype__glyph svg` (2rem square) rather than `font-size`. Use for a state that isn't really "a file type" (e.g. "no access") where an emoji would misread as decorative rather than informational:
+```html
+<div class="asc-ui-filetype" title="You don't have access to this asset">
+  <span class="asc-ui-filetype__glyph"><svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+  <span class="asc-ui-filetype__ext">No access</span>
+</div>
+```
+Used by the board canvas (`scripts/asc/board-item.js`) for items a viewer's AEM session can't read — see the `AssetAccessError` model and `.board__item--locked` in `blocks/board/board.css`.
+
 ### Labeled action bar — `@kit actions` · `styles/ui-kit.css`
 Stacked icon + text so each option is self-explanatory. Action variants: `--primary`, `--danger`.
 A row of standalone action buttons is a **toolbar**, not a list — use `role="toolbar"` +

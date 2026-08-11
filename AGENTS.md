@@ -959,7 +959,7 @@ Six built-in resolver types map to AEM delivery patterns:
 | Type | AEM v1 equivalent | When to use |
 |------|------------------|-------------|
 | `static` | `StaticRenditionDispatcher` | JCR rendition nodes (`jcr:content/renditions/*`, `nt:file`); works on any AEM |
-| `dm-smartcrop` | `DynamicMediaSmartCropRenderer` | **Classic DM (Scene7) smart crops** — IS-protocol URL; **auto-detected** from `sling:resourceType: dam/rendition/smartcrop` JCR nodes; no definitions needed |
+| `dm-scene7` | `DynamicMediaSmartCropRenderer` | **Classic DM (Scene7) smart crops** — IS-protocol URL; **auto-detected** from `sling:resourceType: dam/rendition/smartcrop` JCR nodes; no definitions needed |
 | `url-template` | `ExternalRedirectRenderer` | **Legacy DM / Scene7 IS/IR protocol** — declarative `${variable}` template string; preferred for DM presets |
 | `url` | `ExternalRedirectRenderer` | **Custom URL construction** — arbitrary JS function `(asset) => string`; use when `url-template` tokens are not enough |
 | `web-optimized-delivery` | — | **Web-optimized delivery** — `dm-aid--{uuid}` URL prefix; AEMaaCS publish without full DM OpenAPI |
@@ -970,7 +970,7 @@ Six built-in resolver types map to AEM delivery patterns:
 | | Classic DM (Scene7 / IS-IR) | Web-optimized delivery | DM with OpenAPI |
 |---|---|---|---|
 | **AEM version** | AEM 6.5 or AEMaaCS + classic DM | AEMaaCS publish | AEMaaCS + DM OpenAPI enabled |
-| **Rendition type** | `dm-smartcrop`, `url-template`, or `url` | `web-optimized-delivery` | `dm-openapi` |
+| **Rendition type** | `dm-scene7`, `url-template`, or `url` | `web-optimized-delivery` | `dm-openapi` |
 | **URL prefix** | `{dam:scene7Domain}/is/image/` | `{host}/adobe/dynamicmedia/deliver/dm-aid--{uuid}/` | `{deliveryHost}/adobe/dynamicmedia/deliver/{uuid}/` |
 | **Asset identifier** | `dam:scene7File` metadata | UUID (with `dm-aid--` prefix) | UUID |
 | **Requires DM OpenAPI** | No | No | Yes |
@@ -997,7 +997,7 @@ Six built-in resolver types map to AEM delivery patterns:
 
 `${rendition.name}` equals the definition's `id` field — useful for DM IS/IR presets where the preset name must appear in the URL.
 
-> **Smart crops** — use `type: 'dm-smartcrop'` instead of `url-template`. The resolver auto-detects all `sling:resourceType: dam/rendition/smartcrop` nodes from the asset's JCR renditions tree so no definitions are needed. Use explicit definitions only when you need a custom label or an `accepts` guard on a specific crop. An explicit definition never hardcodes the DM crop name as its own `id` — instead it looks up the real node among the asset's smart-crop renditions via `smartCropId` (the exact, case-sensitive DM-registered crop name, e.g. `smartCropId: 'Small'`; falls back to `id` if omitted); `id` is optional and defaults to the matched node's real name, so you only need it when you want a stable slug for `getRendition()` lookups. If a definition's `smartCropId` finds no corresponding node on a given asset, it resolves to `null` — it never fabricates a URL for a crop that doesn't exist.
+> **Smart crops** — use `type: 'dm-scene7'` instead of `url-template`. The resolver auto-detects all `sling:resourceType: dam/rendition/smartcrop` nodes from the asset's JCR renditions tree so no definitions are needed. Use explicit definitions only when you need a custom label or an `accepts` guard on a specific crop. An explicit definition never hardcodes the DM crop name as its own `id` — instead it looks up the real node among the asset's smart-crop renditions via `smartCropId` (the exact, case-sensitive DM-registered crop name, e.g. `smartCropId: 'Small'`; falls back to `id` if omitted); `id` is optional and defaults to the matched node's real name, so you only need it when you want a stable slug for `getRendition()` lookups. If a definition's `smartCropId` finds no corresponding node on a given asset, it resolves to `null` — it never fabricates a URL for a crop that doesn't exist.
 
 ### `accepts` filter
 
@@ -1013,7 +1013,7 @@ Controls which asset types a rendition applies to:
 ### File size — lazy HEAD fetch
 
 Static renditions have `fileSize` from JCR metadata. Dynamically generated renditions
-(dm-smartcrop, url, url-template) do not — their size is unknown until the URL is
+(dm-scene7, url, url-template) do not — their size is unknown until the URL is
 requested.
 
 After the block renders, `details-renditions` fires a `HEAD` request for every rendition
@@ -1033,7 +1033,7 @@ Each resolver is responsible for the download filename of its rendition type. Re
 
 | Type | Filename pattern | Example |
 |------|-----------------|---------|
-| `dm-smartcrop` | `{asset-stem}-smart-crop-{cropName}.jpg` | `hero-banner-smart-crop-Large.jpg` |
+| `dm-scene7` | `{asset-stem}-smart-crop-{cropName}.jpg` | `hero-banner-smart-crop-Large.jpg` |
 | `static` / `url` / `url-template` / `dm-openapi` | `{asset-stem}-{id}.{ext}` | `hero-banner-web.jpg` |
 | `static` with JCR node name as id | extension stripped: `{asset-stem}-{node-base}.{ext}` | `hero-banner-cq5dam.fpo.png` |
 | `original` | `{asset-stem}.{ext}` (no suffix) | `hero-banner.jpg` |
@@ -1053,7 +1053,7 @@ Each resolver is responsible for the download filename of its rendition type. Re
   } }
 ```
 
-**Resolver-level override** — set `filename` in the `Rendition` constructor inside `fromDefinition` or `fromNode`. This is the right place when the naming logic depends on information only the resolver has (e.g. the crop name in `dm-smartcrop`):
+**Resolver-level override** — set `filename` in the `Rendition` constructor inside `fromDefinition` or `fromNode`. This is the right place when the naming logic depends on information only the resolver has (e.g. the crop name in `dm-scene7`):
 
 ```js
 fromNode(name, node, asset) {
@@ -1112,10 +1112,10 @@ renditions: {
     // ── Classic DM / Scene7 IS-IR protocol (AEM 6.5 or classic DM) ───────
     // Smart crops are auto-detected from the asset's JCR renditions tree
     // (sling:resourceType: dam/rendition/smartcrop nodes). No definitions needed.
-    // Add an explicit dm-smartcrop definition only to override label or add an accepts guard.
+    // Add an explicit dm-scene7 definition only to override label or add an accepts guard.
     // `smartCropId` (not `id`!) picks the real DM-registered crop name (case-sensitive)
     // to customize; `id` is optional and defaults to the matched crop name:
-    // { label: 'Smart Crop — Small', type: 'dm-smartcrop', smartCropId: 'Small' },
+    // { label: 'Smart Crop — Small', type: 'dm-scene7', smartCropId: 'Small' },
 
     // IS/IR image preset — url-template with ${dm.domain} (delivery CDN host).
     {

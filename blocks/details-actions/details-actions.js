@@ -11,22 +11,30 @@
  * details-renditions (`asc:rendition:activate`), defaulting to "original" until
  * the user picks a different one there.
  *
- * Supported actions: download, copy-url, copy-link, collection
+ * Supported actions: download, copy-url, copy-link, collection, favorite
  * `share` is a deprecated alias for `copy-link`, kept so already-authored "Share"
  * rows get real behavior instead of the no-op they used to dispatch.
+ *
+ * `favorite` renders a star toggle that always targets the Favorites (default)
+ * collection, regardless of which collection is currently active — distinct from
+ * `collection`, which targets whichever collection is active. Add both rows to
+ * offer both; the `collection` one auto-hides itself whenever the active
+ * collection already IS Favorites, since the two would otherwise do the same
+ * thing (see collection-toggle.js).
  *
  * Authoring (da.live table):
  *   | Download        | download       |
  *   | Copy URL        | copy-url       |
  *   | Copy asset link | copy-link      |
  *   | Collection      | collection     |
+ *   | Favorite        | favorite       |
  */
 import Asset from '../../scripts/asc/core/models/asset.js';
 import services from '../../scripts/asc/core/services/services.js';
 import collectionToggle from '../../scripts/asc/core/parts/collection-toggle/collection-toggle.js';
 import { escHtml as esc } from '../../scripts/asc/html.js';
 
-const VALID_ACTIONS = new Set(['download', 'copy-url', 'copy-link', 'share', 'collection']);
+const VALID_ACTIONS = new Set(['download', 'copy-url', 'copy-link', 'share', 'collection', 'favorite']);
 
 export default async function decorate(block) {
   const actionPairs = [...block.children]
@@ -114,6 +122,9 @@ function htmlButton(asset, action, rendition, label) {
   switch (action) {
     case 'collection':
       return collectionToggle(asset, { addLabel: label, removeLabel: label });
+
+    case 'favorite':
+      return collectionToggle(asset, { favorite: true });
 
     case 'download':
       return `

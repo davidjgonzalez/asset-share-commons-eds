@@ -367,6 +367,20 @@
         background: var(--color-fg);
     }
 
+    /* ── Locked items (no read access) ──────────────────────────────────
+       Distinct from the kit's default asc-ui-filetype gradient (used for "no preview
+       available" content that still exists) — a locked item isn't content at all, so
+       mute it flat instead, matching the --no-preview convention used elsewhere. */
+    .board__item--locked {
+        .asc-ui-asset-card__thumb {
+            background: var(--color-muted);
+        }
+
+        .asc-ui-filetype {
+            color: var(--color-muted-fg);
+        }
+    }
+
     /* ── Search highlight ───────────────────────────────────────────── */
 
     .board__viewport[data-board-searching] .board__item:not(.board__item--match),

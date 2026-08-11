@@ -1136,6 +1136,13 @@
     line-height: 1;
 }
 
+/* Glyph as an inline SVG icon (e.g. a lock, for a "no access" placeholder) instead of
+   an emoji — size it explicitly since font-size doesn't apply to SVG dimensions. */
+.asc-ui-filetype__glyph svg {
+    width: 2rem;
+    height: 2rem;
+}
+
 .asc-ui-filetype__ext {
     font-size: var(--body-font-size-xs);
     font-weight: 700;

@@ -292,7 +292,7 @@ document.body.addEventListener('click', (e) => {
 
 ---
 
-## D007: Rendition Type Abstraction (static/dm-smartcrop/url-template/url/web-optimized-delivery/dm-openapi)
+## D007: Rendition Type Abstraction (static/dm-scene7/url-template/url/web-optimized-delivery/dm-openapi)
 
 **Status**: Active (v1.0+)  
 **Date**: 2026-01-XX
@@ -300,7 +300,7 @@ document.body.addEventListener('click', (e) => {
 ### Decision
 Six rendition types support different AEM deployment models:
 - **static**: JCR rendition nodes (`nt:file`, any AEM)
-- **dm-smartcrop**: Classic DM (Scene7) IS-protocol smart crops — **auto-detected** from `sling:resourceType: dam/rendition/smartcrop` JCR nodes; no definitions needed. URL: `{dam:scene7Domain}/is/image/{dam:scene7File}:{cropName}`. Explicit definitions never hardcode the DM crop name as `id` — they look the real node up from the asset's renditions tree via `smartCropId` (falls back to `id` if omitted); the resolved rendition's `id` defaults to the matched node's real name.
+- **dm-scene7**: Classic DM (Scene7) IS-protocol smart crops — **auto-detected** from `sling:resourceType: dam/rendition/smartcrop` JCR nodes; no definitions needed. URL: `{dam:scene7Domain}/is/image/{dam:scene7File}:{cropName}`. Explicit definitions never hardcode the DM crop name as `id` — they look the real node up from the asset's renditions tree via `smartCropId` (falls back to `id` if omitted); the resolved rendition's `id` defaults to the matched node's real name.
 - **url-template**: IS/IR protocol URLs using declarative `${variable}` token strings — preferred for DM presets
 - **url**: IS/IR or arbitrary URLs via a JS function `(asset) => string` — for cases where token strings are insufficient
 - **web-optimized-delivery**: AEMaaCS publish delivery via `dm-aid--{uuid}` URL prefix — no DM OpenAPI required
@@ -310,7 +310,7 @@ Additionally, `renditions.thumbnails` is a separate array for srcset-only rendit
 
 ### Rationale
 - **Deployment flexibility**: Single configuration supports multiple AEM versions
-- **`dm-smartcrop` auto-detection**: Smart crop nodes (`sling:OrderedFolder`) are not `nt:file` so `static` can't match them; they have no JCR path so `static` URL construction is wrong. `dm-smartcrop` scans `jcr:content/renditions/*` for smartcrop nodes and builds IS URLs from `dam:scene7Domain` + `dam:scene7File` + crop node name. Explicit definitions are only needed to override labels or add `accepts` guards, and resolve by scanning that same node list via `match` rather than trusting a config string blind — a definition whose crop doesn't exist on a given asset resolves to `null` instead of a dead URL.
+- **`dm-scene7` auto-detection**: Smart crop nodes (`sling:OrderedFolder`) are not `nt:file` so `static` can't match them; they have no JCR path so `static` URL construction is wrong. `dm-scene7` scans `jcr:content/renditions/*` for smartcrop nodes and builds IS URLs from `dam:scene7Domain` + `dam:scene7File` + crop node name. Explicit definitions are only needed to override labels or add `accepts` guards, and resolve by scanning that same node list via `match` rather than trusting a config string blind — a definition whose crop doesn't exist on a given asset resolves to `null` instead of a dead URL.
 - **`dam:scene7Domain` not `dam:scene7APIServer`**: `dam:scene7Domain` is the IS/IR delivery CDN host (e.g. `https://s7d1.scene7.com/`). `dam:scene7APIServer` is the Scene7 management API — not used for delivery.
 - **`url-template` vs `url`**: `url-template` is declarative and degrades safely — returns `null` if any token is absent. `url` is a function for cases requiring JS logic. Prefer `url-template` for IS/IR preset URLs.
 - **`web-optimized-delivery` vs `dm-openapi`**: Web-optimized delivery works on any AEMaaCS publish without DM OpenAPI — the right default for thumbnails. `dm-openapi` is for smart crops, named presets, and format transforms on instances that have DM OpenAPI enabled.
@@ -345,7 +345,7 @@ renditions: {
     // Classic DM smart crops are auto-detected — no definitions needed.
     // Add an explicit definition only to customise label or restrict to a specific asset type.
     // `smartCropId` (not `id`) picks the real DM-registered preset name to customize:
-    // { label: 'Banner Crop', type: 'dm-smartcrop', smartCropId: 'Banner', accepts: (a) => a.mimeType?.startsWith('image/') },
+    // { label: 'Banner Crop', type: 'dm-scene7', smartCropId: 'Banner', accepts: (a) => a.mimeType?.startsWith('image/') },
 
     // IS/IR preset — use ${dm.domain} (delivery CDN), not ${dm.api-server} (management API)
     { id: 'dm-preset', type: 'url-template', template: '${dm.domain}is/image/${dm.file}?$web$' },

@@ -2,6 +2,7 @@
 
 import SearchProvider from '../search-provider.js';
 import Asset from '../../../models/asset.js';
+import AssetAccessError from '../../../models/asset-access-error.js';
 import aem from '../../aem/aem.js';
 
 /**
@@ -228,6 +229,14 @@ export default class OpenApiProvider extends SearchProvider {
     };
   }
 
+  /**
+   * Fetch a single asset by UUID via the direct resource endpoint.
+   * Unlike QueryBuilder's search-based lookup (see querybuilder.js), this is a direct
+   * GET on the asset resource, so AEM returns a real 401/403 when the viewer's session
+   * lacks read access — distinguishable here from a genuine 404. Callers that care about
+   * that distinction (e.g. collection hydration) check for an AssetAccessError before
+   * treating the result as "not found".
+   */
   async getAssetById(id) {
     if (window.asc.cache.assets.has(id)) {
       return window.asc.cache.assets.get(id);
@@ -236,6 +245,9 @@ export default class OpenApiProvider extends SearchProvider {
     const headers = { Accept: 'application/json', ...await aem.getHeaders() };
     const response = await fetch(aem.getUrl(`/adobe/assets/${id}`), { headers });
 
+    if (response.status === 401 || response.status === 403) {
+      return new AssetAccessError(id, response.status);
+    }
     if (!response.ok) return null;
     const hit = await response.json();
     const asset = new Asset(this._normalizeHit(hit));

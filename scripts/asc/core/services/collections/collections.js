@@ -2,6 +2,7 @@
 import serviceConfigurations from "../configurations.js";
 import storage from "../storage/storage.js";
 import Asset from "../../models/asset.js";
+import AssetAccessError from "../../models/asset-access-error.js";
 
 export const Events = {
   ASSET_ADDED: "asc:collection:add",
@@ -68,7 +69,7 @@ class Collections {
         items: {
           [defaultId]: {
             id: defaultId,
-            name: "My Collection",
+            name: "Favorites",
             createdAt: now,
             modifiedAt: now,
             items: seedAssetIds.map((id) => ({ type: "asset", id })),
@@ -171,7 +172,9 @@ class Collections {
   /**
    * Hydrates a collection object with full Asset instances.
    * Populates:
-   *   collection.hydratedItems — mixed array; asset items gain a `.asset` property
+   *   collection.hydratedItems — mixed array; asset items gain `.asset` (null unless
+   *     resolved) and `.forbidden` (true when the provider gave a definite "no
+   *     permission" signal — see AssetAccessError — rather than a generic not-found)
    *   collection.assets        — flat array of Asset objects (backward compat)
    * @param {Object} collection - Decorated collection object
    * @returns {Promise<Object>}
@@ -184,15 +187,19 @@ class Collections {
     const hydratedAssets = await Promise.all(
       assetItemIds.map((id) => Asset.create(id)),
     );
-    const assetMap = new Map(hydratedAssets.map((a) => [a?.uuid, a]));
+    // Keyed by the requested id, not the resolved asset's uuid — a forbidden/missing
+    // lookup has no uuid of its own to key by, only the id it was asked to resolve.
+    const resultMap = new Map(assetItemIds.map((id, i) => [id, hydratedAssets[i]]));
 
     collection.hydratedItems = (collection.items || []).map((item) => {
       if (item.type !== "asset") return item;
-      return { ...item, asset: assetMap.get(item.id) || null };
+      const result = resultMap.get(item.id) ?? null;
+      const forbidden = result instanceof AssetAccessError;
+      return { ...item, asset: forbidden ? null : result, forbidden };
     });
 
     // Backward compat — callers like the download dialog use collection.assets
-    collection.assets = hydratedAssets.filter(Boolean);
+    collection.assets = hydratedAssets.filter((a) => a instanceof Asset);
     return collection;
   }
 
@@ -263,6 +270,45 @@ class Collections {
   }
 
   /**
+   * Creates a copy of a collection under a new name. Copies items (assets and
+   * sections) as new item entries; section IDs are regenerated so editing the
+   * copy's sections never mutates the source's.
+   * @param {string} id - Source collection ID
+   * @param {string} name - Name for the new collection
+   * @returns {Object|null} The new collection, or null if the source wasn't found
+   */
+  duplicate(id, name) {
+    const data = this._getData();
+    const source = data.items[id];
+    if (!source) {
+      console.error(`Collection "${id}" not found`);
+      return null;
+    }
+
+    const newId = crypto.randomUUID();
+    const now = new Date().toISOString();
+    const collection = {
+      id: newId,
+      name,
+      createdAt: now,
+      modifiedAt: now,
+      items: (source.items || []).map((item) => (
+        item.type === "section" ? { ...item, id: crypto.randomUUID() } : { ...item }
+      )),
+    };
+    data.items[newId] = collection;
+    this._setData(data);
+
+    document.dispatchEvent(
+      new CustomEvent(Events.CREATED, { detail: { collection } }),
+    );
+    document.dispatchEvent(
+      new CustomEvent(Events.CHANGED, { detail: { action: "duplicated", id: newId, sourceId: id } }),
+    );
+    return this._decorate({ ...collection });
+  }
+
+  /**
    * Renames a collection.
    * @param {string} id
    * @param {string} name
@@ -318,6 +364,16 @@ class Collections {
   async getDefault(hydrateAssets = false) {
     const { defaultId } = this._getData();
     return this.get(defaultId, hydrateAssets);
+  }
+
+  /**
+   * Returns the default (permanent) collection's ID synchronously — e.g. for the
+   * "favorite" toggle, which always targets this collection regardless of which
+   * one is currently active.
+   * @returns {string}
+   */
+  getDefaultId() {
+    return this._getData().defaultId;
   }
 
   /**
@@ -625,7 +681,7 @@ class Collections {
         items: {
           [defaultId]: {
             id: defaultId,
-            name: "My Collection",
+            name: "Favorites",
             createdAt: now,
             modifiedAt: now,
             items: [],

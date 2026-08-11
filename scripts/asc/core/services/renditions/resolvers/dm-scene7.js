@@ -15,7 +15,7 @@ function smartCropFilename(asset, cropName) {
 }
 
 export default {
-  type: 'dm-smartcrop',
+  type: 'dm-scene7',
   autoDetect: true,
 
   acceptsNode(name, node) {
