@@ -45,6 +45,8 @@ Use this table as the first lookup before reading the full catalog.
 | Switcher / popover menu | `asc-ui-dropdown` + `asc-ui-menu` + `asc-ui-count` |
 | Download sheet rows | `asc-ui-asset-row` + `.btn` |
 | Board canvas | `asc-ui-asset-card` (cards) + `asc-ui-segmented` (toolbar — default size, no modifier); search `<input>` lives inside the segmented as the last child, styled via block-scoped `.board__search` |
+| Color-search control | `asc-ui-dropdown` + `asc-ui-color-picker` (input + presets) |
+| Notification toast | `asc-ui-toast-region` + `asc-ui-toast` — rendered by `scripts/asc/notifications.js`, never hand-built in a block |
 
 ---
 
@@ -97,6 +99,24 @@ Accessible on/off toggle built on a native checkbox. Always include `role="switc
 Pill input that grows on focus. Width via `--asc-ui-search-width`. Wrap in `role="search"` so AT users can navigate to the search landmark.
 ```html
 <div class="asc-ui-search" role="search"><input type="search" placeholder="Search assets…" aria-label="Search assets"></div>
+```
+
+**In-field action button** — `.asc-ui-search__action`, an optional slot for a single button/dropdown
+inside the pill (right-aligned, vertically centered). Its presence auto-reserves input padding via
+a `:has()` rule, so plain search inputs elsewhere are unaffected. Put your own positioned trigger
+(e.g. an `.asc-ui-dropdown`) *inside* the slot rather than on it directly — the slot owns the
+absolute positioning, and layering another `position` on the same element would fight it. Used by
+the search-bar color-search control.
+```html
+<div class="asc-ui-search">
+  <input type="search" placeholder="Search assets…" aria-label="Search assets">
+  <div class="asc-ui-search__action">
+    <div class="asc-ui-dropdown">
+      <button type="button" aria-expanded="false">…</button>
+      <div class="asc-ui-dropdown__panel" hidden>…</div>
+    </div>
+  </div>
+</div>
 ```
 
 ### Filter control + dropdown — `@kit control / dropdown` · `styles/ui-kit.css`
@@ -179,6 +199,25 @@ clip the ribbon's overhang — most cards already have both. Purely decorative: 
   <span class="asc-ui-corner-ribbon" aria-hidden="true">Notes</span>
   ...
 </article>
+```
+
+### Toast — `@kit toast` · `styles/ui-kit.css`
+Notification feedback, rendered by `scripts/asc/notifications.js` — don't hand-build this markup
+in a block; call `notify(message, { type })` or dispatch `asc:notification:show` on `document`
+instead (see AGENTS.md's event table). `.asc-ui-toast-region` is a fixed corner anchor (one of 6
+position modifiers); toasts stack inside it, newest nearest the screen edge for bottom regions.
+Modifiers on `.asc-ui-toast`: `--success` `--warning` `--danger` (omit for the neutral/info style).
+The message is also mirrored onto `data-asc-message` on the toast root (in addition to the
+`.asc-ui-toast__message` text node) — for tests/automation or analytics hooks that want the
+message without walking into child nodes.
+```html
+<div class="asc-ui-toast-region asc-ui-toast-region--bottom-right" role="status" aria-live="polite">
+  <div class="asc-ui-toast asc-ui-toast--success" data-asc-message="Download ready">
+    <span class="asc-ui-toast__icon" aria-hidden="true">…</span>
+    <span class="asc-ui-toast__message">Download ready</span>
+    <button type="button" class="btn btn--ghost btn--icon btn--sm asc-ui-toast__dismiss" aria-label="Dismiss">…</button>
+  </div>
+</div>
 ```
 
 ### Chip — `@kit chip` · `styles/ui-kit.css`
@@ -368,6 +407,27 @@ ready-to-render HTML string.
   <span class="asc-ui-swatch" style="--asc-ui-swatch-color:#a5d9e3"><span class="asc-ui-swatch__dot"></span><span class="asc-ui-swatch__label">Cyan</span></span>
   <span class="asc-ui-swatch" style="--asc-ui-swatch-color:#0b5c5b"><span class="asc-ui-swatch__dot"></span><span class="asc-ui-swatch__label">Dark green</span></span>
 </span>
+```
+
+### Color picker popover — `@kit color-picker` · `styles/ui-kit.css`
+Freehand native color input + a small preset swatch grid, dropped inside an
+`.asc-ui-dropdown__panel` popover (anchor with `.asc-ui-dropdown` on the wrapper, trigger button
++ `data-dropdown-trigger` pattern — see Filter dropdown / Popover menu above). Used by the
+search-bar color-search control (`blocks/search-bar/search-bar.js`). Presets are plain buttons
+with `--asc-ui-swatch-color` set inline; give each a `title`/`aria-label` since there's no visible
+text label at this size.
+```html
+<div class="asc-ui-dropdown" data-dropdown>
+  <button class="asc-ui-control-btn" type="button" aria-expanded="false" data-dropdown-trigger>…</button>
+  <div class="asc-ui-dropdown__panel asc-ui-color-picker" hidden>
+    <input type="color" class="asc-ui-color-picker__input" value="#2980b9" aria-label="Pick a color">
+    <div class="asc-ui-color-picker__presets">
+      <button class="asc-ui-color-picker__preset" type="button" style="--asc-ui-swatch-color:#c0392b" title="Red"></button>
+      <button class="asc-ui-color-picker__preset" type="button" style="--asc-ui-swatch-color:#2980b9" title="Blue"></button>
+    </div>
+    <button class="btn btn--ghost btn--sm asc-ui-color-picker__clear" type="button">Clear color</button>
+  </div>
+</div>
 ```
 
 ### Filmstrip — `@kit filmstrip` · `styles/ui-kit.css`

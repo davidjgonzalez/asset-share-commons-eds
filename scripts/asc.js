@@ -16,6 +16,7 @@ import { setupRoleButtonKeyboardSupport } from './asc/core/utils/keyboard.js';
 import { decorateASCSections } from './asc/section-grid.js';
 import { registerTokens } from './asc/tokens.js';
 import { initAnalytics } from './asc/analytics.js';
+import './asc/notifications.js';
 
 setupImageFallback();
 setupRoleButtonKeyboardSupport();

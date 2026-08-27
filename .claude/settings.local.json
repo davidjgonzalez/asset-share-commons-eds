@@ -1,4 +1,7 @@
 {
+  "enabledMcpjsonServers": [
+    "chrome-devtools"
+  ],
   "hooks": {
     "PreToolUse": [
       {
@@ -165,7 +168,8 @@
       "mcp__scout__memory_vote",
       "mcp__scout__memory_lint",
       "mcp__scout__memory_consolidate",
-      "mcp__scout__memory_infer"
+      "mcp__scout__memory_infer",
+      "mcp__scout__gateway_expand"
     ]
   }
 }

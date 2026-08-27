@@ -220,16 +220,16 @@ function renditionCard(asset, rendition) {
   return `
     <article class="asc-ui-card" data-asc-rendition="${esc(rendition.id)}">
       ${thumbHtml ? `<div class="details-renditions__card-preview">${thumbHtml}</div>` : ''}
-      <div class="asc-ui-card__body">
-        <p class="asc-ui-card__title">${esc(rendition.label)}</p>
-        ${meta ? `<p class="asc-ui-copy details-renditions__card-meta">${meta}</p>` : ''}
-      </div>
-      <div class="asc-ui-card__footer">
+      <div class="details-renditions__card-actions">
         <a class="btn btn--ghost btn--icon btn--sm" ${downloadAttrs(asset, rendition)}
            title="Download" aria-label="Download"
            data-asc-action="rendition:download@click" ${ref}>${ICONS.download}</a>
         <button class="btn btn--ghost btn--icon btn--sm" type="button" title="Copy URL" aria-label="Copy URL"
            data-asc-action="rendition:copy-url@click" data-url="${esc(rendition.url)}" ${ref}>${ICONS.copyUrl}</button>
+      </div>
+      <div class="asc-ui-card__body">
+        <p class="asc-ui-card__title" title="${esc(rendition.label)}">${esc(rendition.label)}</p>
+        ${meta ? `<p class="asc-ui-copy details-renditions__card-meta">${meta}</p>` : ''}
       </div>
     </article>`;
 }

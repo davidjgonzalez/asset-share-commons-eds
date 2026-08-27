@@ -24,6 +24,18 @@ function imgAlt(asset) {
   return asset.description || asset.title || asset.name || '';
 }
 
+// Video preview: poster image at rest (asset.thumbnail — falls back to AEM's
+// standard cq5dam.thumbnail.*.png rendition, generated for video assets too),
+// swapped for real playback only on hover/focus — see the play/pause wiring
+// below. Never autoplays: with many video results on screen at once, loading
+// every one eagerly would be far heavier than the image-grid case.
+function thumbnailVideoHtml(asset) {
+  const alt = imgAlt(asset);
+  return `<video class="asc-asset-teaser__video" muted loop playsinline preload="none"
+            poster="${escAttr(asset.thumbnail)}" data-asc-video-src="${escAttr(asset.url)}"
+            aria-label="${escAttr(alt)}" tabindex="-1"></video>`;
+}
+
 function thumbnailImgHtml(asset) {
   const alt = imgAlt(asset);
   const srcset = services.renditions.getThumbnailSrcset(asset);
@@ -34,6 +46,54 @@ function thumbnailImgHtml(asset) {
   }
   return `<img src="${asset.thumbnail}" alt="${alt}" loading="lazy" />`;
 }
+
+function thumbnailHtml(asset) {
+  return asset.mimeType?.startsWith('video/') ? thumbnailVideoHtml(asset) : thumbnailImgHtml(asset);
+}
+
+// Lazily assign the real src on first hover/focus (preload="none" above skips
+// the network request until then), then play; pause + rewind when the
+// pointer/focus leaves. Registered once here rather than per-render, the same
+// way collection-toggle.js wires its own page-wide listeners.
+function playPreview(video) {
+  if (!video.src) video.src = video.dataset.ascVideoSrc;
+  video.play().catch(() => { /* format unsupported or blocked — poster stays */ });
+}
+
+function pausePreview(video) {
+  video.pause();
+  video.currentTime = 0;
+}
+
+function previewVideoFor(target) {
+  return target.closest?.('.asc-asset-teaser')?.querySelector('.asc-asset-teaser__video') || null;
+}
+
+document.body.addEventListener('mouseover', (e) => {
+  const card = e.target.closest('.asc-asset-teaser');
+  if (!card || card.contains(e.relatedTarget)) return;
+  const video = previewVideoFor(e.target);
+  if (video) playPreview(video);
+});
+
+document.body.addEventListener('mouseout', (e) => {
+  const card = e.target.closest('.asc-asset-teaser');
+  if (!card || card.contains(e.relatedTarget)) return;
+  const video = previewVideoFor(e.target);
+  if (video) pausePreview(video);
+});
+
+document.body.addEventListener('focusin', (e) => {
+  const video = previewVideoFor(e.target);
+  if (video) playPreview(video);
+});
+
+document.body.addEventListener('focusout', (e) => {
+  const card = e.target.closest('.asc-asset-teaser');
+  if (!card || card.contains(e.relatedTarget)) return;
+  const video = previewVideoFor(e.target);
+  if (video) pausePreview(video);
+});
 
 /**
  * assetTeaser(asset, options) — renders an asset card HTML string.
@@ -55,7 +115,7 @@ export default function assetTeaser(asset, { mode = 'card', view = 'cards' } = {
 
   const previewHtml = hasThumbnail ? `
       <div class="asc-asset-teaser__preview">
-        ${thumbnailImgHtml(asset)}
+        ${thumbnailHtml(asset)}
       </div>` : '';
 
   const metaHtml = metaProps.length ? `

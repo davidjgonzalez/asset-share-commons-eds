@@ -9,11 +9,45 @@
  */
 
 .block.details-modal {
+    /* Override the shared --modal-wide-max-width token (tokens.css, 80rem
+       default) just for this block — .asc-dialog--wide is only ever used
+       here, but scope it locally rather than editing the shared token so a
+       future wide dialog elsewhere isn't silently affected too. */
+    --modal-wide-max-width: 1440px;
+
     .close {
         position: absolute;
         top: var(--spacing-sm);
         inset-inline-end: var(--spacing-sm);
         z-index: 1;
+    }
+
+    /* Lightbox-style Prev/Next — floats over the dialog's edges, vertically
+       centered. Hidden entirely (via the `hidden` attribute set in JS) when
+       the current asset isn't part of a browsable list. */
+    .details-modal__nav {
+        position: absolute;
+        top: 50%;
+        translate: 0 -50%;
+        z-index: 1;
+
+        &:disabled {
+            opacity: 0.35;
+            cursor: default;
+        }
+
+        &:disabled:hover {
+            transform: none;
+            background: color-mix(in srgb, var(--color-card) 90%, white);
+        }
+    }
+
+    .details-modal__nav--prev {
+        inset-inline-start: var(--spacing-sm);
+    }
+
+    .details-modal__nav--next {
+        inset-inline-end: var(--spacing-sm);
     }
 
     .content {

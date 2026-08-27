@@ -419,6 +419,20 @@
             <div class="asc-ui-search"><input type="search" placeholder="Search assets…" aria-label="Search assets"></div>
           </div>
         </div>
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Search · in-field action</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-layout="block" data-snippet>
+            <div class="asc-ui-search">
+              <input type="search" placeholder="Search assets…" aria-label="Search assets">
+              <div class="asc-ui-search__action">
+                <div class="asc-ui-dropdown">
+                  <button type="button" aria-expanded="false" aria-label="Search by color"><span class="asc-ui-swatch__dot"></span></button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="kit-demo__usage">The <code>.asc-ui-search__action</code> slot reserves input padding automatically via a <code>:has()</code> rule. Used by the search-bar color-search control.</p>
+        </div>
         <div class="kit-demo" data-overflow>
           <div class="kit-demo__bar"><span class="kit-demo__name">Dropdown control</span><button class="kit-demo__toggle" type="button">Code</button></div>
           <div class="kit-demo__preview" data-layout="block" data-snippet>
@@ -502,6 +516,24 @@
             </div>
           </div>
           <p class="kit-demo__usage">Diagonal one-word flag for a card's top-left corner (e.g. "has notes"). Host needs <code>position: relative</code> (or <code>absolute</code>) + <code>overflow: hidden</code> to clip the overhang. Decorative only — mark <code>aria-hidden="true"</code>.</p>
+        </div>
+        <div class="kit-demo" data-layout="block">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Toast</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-layout="block" data-snippet>
+            <div class="asc-ui-toast-region" role="status" aria-live="polite" style="position: static; translate: none;">
+              <div class="asc-ui-toast asc-ui-toast--success" data-asc-message="Download ready">
+                <span class="asc-ui-toast__icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+                <span class="asc-ui-toast__message">Download ready</span>
+                <button type="button" class="btn btn--ghost btn--icon btn--sm asc-ui-toast__dismiss" aria-label="Dismiss">&#x2715;</button>
+              </div>
+              <div class="asc-ui-toast asc-ui-toast--danger" data-asc-message="Download failed">
+                <span class="asc-ui-toast__icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
+                <span class="asc-ui-toast__message">Download failed</span>
+                <button type="button" class="btn btn--ghost btn--icon btn--sm asc-ui-toast__dismiss" aria-label="Dismiss">&#x2715;</button>
+              </div>
+            </div>
+          </div>
+          <p class="kit-demo__usage">Rendered by <code>scripts/asc/notifications.js</code> — call <code>notify(message, { type })</code> rather than hand-building this markup. Region is one of 6 fixed corner-position modifiers in real use (shown here as static for the demo); toast modifiers: <code>--success</code> <code>--warning</code> <code>--danger</code> (omit for neutral/info).</p>
         </div>
         <div class="kit-demo">
           <div class="kit-demo__bar"><span class="kit-demo__name">Count pill</span><button class="kit-demo__toggle" type="button">Code</button></div>
@@ -766,6 +798,27 @@
             </span>
           </div>
           <p class="kit-demo__usage">Pill with color circle on the left and label on the right. Output by the <code>colors</code> custom property (<code>dam:colorDistribution</code>). Color set via <code>--asc-ui-swatch-color</code> inline style.</p>
+        </div>
+
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Color picker popover</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-snippet>
+            <div class="asc-ui-dropdown">
+              <button class="btn btn--secondary asc-ui-control-btn" type="button" aria-expanded="true">Search by color</button>
+              <div class="asc-ui-dropdown__panel asc-ui-color-picker" style="position: static; display: flex;">
+                <input type="color" class="asc-ui-color-picker__input" value="#2980b9" aria-label="Pick a color">
+                <div class="asc-ui-color-picker__presets">
+                  <button class="asc-ui-color-picker__preset" type="button" style="--asc-ui-swatch-color:#c0392b" title="Red"></button>
+                  <button class="asc-ui-color-picker__preset" type="button" style="--asc-ui-swatch-color:#e67e22" title="Orange"></button>
+                  <button class="asc-ui-color-picker__preset" type="button" style="--asc-ui-swatch-color:#27ae60" title="Green"></button>
+                  <button class="asc-ui-color-picker__preset" type="button" style="--asc-ui-swatch-color:#2980b9" title="Blue"></button>
+                  <button class="asc-ui-color-picker__preset" type="button" style="--asc-ui-swatch-color:#8e44ad" title="Purple"></button>
+                </div>
+                <button class="btn btn--ghost btn--sm asc-ui-color-picker__clear" type="button">Clear color</button>
+              </div>
+            </div>
+          </div>
+          <p class="kit-demo__usage">Native color input + a small preset swatch grid, inside an <code>asc-ui-dropdown__panel</code> popover. Used by the search-bar color-search control.</p>
         </div>
 
         <div class="kit-demo">

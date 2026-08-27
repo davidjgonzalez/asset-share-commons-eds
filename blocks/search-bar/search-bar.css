@@ -42,4 +42,31 @@
             cursor: pointer;
         }
     }
+
+    /* Color-search trigger lives inside the search input itself
+       (.asc-ui-search__action — see styles/ui-kit.css), not the segmented
+       control row, so it gets its own sizing rather than .search-bar__ctrl's
+       circle-in-a-segmented-group treatment. */
+    & .search-bar__ctrl--color .search-bar__color-trigger {
+        all: unset;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 2rem;
+        height: 2rem;
+        cursor: pointer;
+        border-radius: var(--border-radius-full);
+
+        &:hover,
+        &:focus-visible {
+            background: var(--color-muted);
+        }
+    }
+
+    /* Right-align the popover under the trigger — the kit default (left-
+       aligned) would open it hanging off the right edge of the search pill. */
+    & .search-bar__ctrl--color .asc-ui-dropdown__panel {
+        left: auto;
+        inset-inline-end: 0;
+    }
 }

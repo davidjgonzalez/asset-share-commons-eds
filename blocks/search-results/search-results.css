@@ -208,6 +208,14 @@
         right: calc(0.5rem + var(--collection-toggle-btn-width, 2rem) + var(--spacing-sm));
     }
 
+    /* ...but the generic toggle hides itself (collection-toggle.js) whenever the
+       active collection IS favorites — reserving space for it then leaves a dead
+       gap to the favorite toggle's right. Collapse back to the base offset in
+       that case so the favorite/quick-action cluster sits flush against the edge. */
+    [data-asc-results]:not([data-display="list"]) .asc-asset-teaser:has(.asc-collection-toggle[hidden]) .asc-collection-toggle--favorite {
+        right: 0.5rem;
+    }
+
     /* Dark overlay style — matches the collection toggle circles */
     [data-asc-results]:not([data-display="list"]) .search-results__quick-action {
         opacity: 0;

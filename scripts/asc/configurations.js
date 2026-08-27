@@ -17,6 +17,7 @@ import tags from './core/services/properties/tags.js';
 import colors from './core/services/properties/colors.js';
 import smartTags from './core/services/properties/smart-tags.js';
 import history from './core/services/properties/history.js';
+import { DEFAULT_PALETTE, MAX_COLOR_RANK, nearestColors } from './color-search.js';
 
 const configurations = {
 
@@ -54,6 +55,8 @@ const configurations = {
     //   'jcr:content/metadata/dc:title',
     //   'jcr:content/metadata/dc:description',
     //   'jcr:content/metadata/dc:format',
+    //   'jcr:content/metadata/autogen:title',          // fallback when dc:title is empty
+    //   'jcr:content/metadata/autogen:description',    // fallback when dc:description is empty
     //   'jcr:content/metadata/predictedTags',            // required for smart-tags property
     //   'jcr:content/metadata/dam:colorDistribution',  // required for colors property
     // ],
@@ -101,9 +104,50 @@ const configurations = {
     // ── OpenAPI options (used when provider = 'openapi') ──
     // url: '/adobe/assets/search',
 
+    // ── Color search ──────────────────────────────────────────────
+    // Palette shown in the search-bar color picker popover. Also the set of
+    // values `preprocessQuery` below snaps a freehand color pick to before
+    // searching, so results always target real, confirmed `name` tokens —
+    // see scripts/asc/color-search.js (pulled from this instance's real
+    // dam:colorDistribution metadata, not guessed).
+    colorSearch: {
+      palette: DEFAULT_PALETTE,
+      // "Looseness" of a color search — how many nearby palette colors (by
+      // RGB distance) to match in addition to the closest one. 1 = exact
+      // match only; higher values also catch visually similar colors (e.g.
+      // picking a blue-ish teal also matches "Cyan" and "Light blue").
+      matchCount: 3,
+    },
+
     // ── Hooks (called regardless of provider) ──────────────────────
     // Modify the query object before it is sent to the search API.
-    // preprocessQuery: (query) => query,
+    preprocessQuery: (queryParams) => {
+      const color = queryParams.get('filter[color]');
+      if (!color) return queryParams;
+      queryParams.delete('filter[color]');
+      // No generic property filter in the Dynamic Media OpenAPI Search API —
+      // see providers/openapi.js's PROPERTY_MAP comment for the same limitation.
+      if (configurations.search.provider === 'openapi') return queryParams;
+      const { palette, matchCount } = configurations.search.colorSearch;
+      const matches = nearestColors(color, palette, matchCount);
+      // dam:colorDistribution's ranked sub-nodes are literally named color1, color2, …
+      // (not wildcardable via property.depth — verified against real asset metadata),
+      // and the dominant color isn't always color1, so OR an exact-path match across
+      // every observed rank, for every nearby color name. "50_group" is just a fixed,
+      // high group number to avoid colliding with other filter blocks' auto-numbered
+      // groups (see getGroup() in core/utils/search.js, which starts at 1 and
+      // increments per filter block).
+      queryParams.set('50_group.p.or', 'true');
+      let n = 0;
+      matches.forEach((match) => {
+        for (let rank = 1; rank <= MAX_COLOR_RANK; rank += 1) {
+          n += 1;
+          queryParams.set(`50_group.${n}_property`, `jcr:content/metadata/dam:colorDistribution/color${rank}/name`);
+          queryParams.set(`50_group.${n}_property.value`, match.name);
+        }
+      });
+      return queryParams;
+    },
 
     // Modify the raw results array before assets are created from them.
     // postprocessResults: (results) => results,
@@ -299,6 +343,28 @@ const configurations = {
   //   ],
   // },
 
+  // ─── Notifications ───────────────────────────────────────────────────────────
+  //
+  // Toast feedback for actions with a real effect on the system (download
+  // finished, collection created/deleted, share link generated). These are just
+  // the cross-cutting knobs — WHICH events trigger a toast and their wording is
+  // a plain array (LISTENERS) in scripts/asc/notifications.js; edit that file
+  // directly to add/remove/reword them.
+  //
+  // notifications: {
+  //   enabled: true,
+  //
+  //   // top-left | top-right | top-center | bottom-left | bottom-right | bottom-center
+  //   location: 'bottom-right',
+  //
+  //   duration: 4000,   // ms before auto-dismiss; 0 = stays until manually closed
+  //
+  //   // Runs before every toast renders (both LISTENERS-triggered and manual
+  //   // notify() calls). Return null/undefined to suppress it, or a string to
+  //   // override the message.
+  //   enrich: (message, { type }) => message,
+  // },
+
   // ─── Theme ───────────────────────────────────────────────────────────────────
   theme: {
     // CSS class applied to <body> to activate a theme.
@@ -460,6 +526,7 @@ const configurations = {
       { type: 'web-optimized-delivery', size: { width: 320  }, params: 'width=320&preferwebp=true&quality=85',  accepts: (asset) => asset.mimeType?.startsWith('image/') },
       { type: 'web-optimized-delivery', size: { width: 640  }, params: 'width=640&preferwebp=true&quality=80',  accepts: (asset) => asset.mimeType?.startsWith('image/') },
       { type: 'web-optimized-delivery', size: { width: 1280 }, params: 'width=1280&preferwebp=true&quality=70', accepts: (asset) => asset.mimeType?.startsWith('image/') },
+      { type: 'static', name: 'preview',  size: { width: 320 },accepts: (asset) => asset.mimeType?.startsWith('video/') },
     ],
     definitions: [
       { id: 'original', label: 'Original', type: 'static', name: 'original' },

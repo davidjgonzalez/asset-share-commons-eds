@@ -114,6 +114,7 @@
 .asc-ui-search {
     --asc-ui-search-width: 20rem;
 
+    position: relative;
     display: inline-flex;
     width: 100%;
 }
@@ -131,6 +132,26 @@
     color: var(--color-fg);
     font-size: var(--body-font-size-s);
     transition: width var(--transition-normal), border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+/* Reserve room for an in-field action button (e.g. color search) — only
+   applies when .asc-ui-search__action is actually present, so plain search
+   inputs elsewhere are unaffected. Specificity intentionally beats the
+   baseline rule above (:has() adds a class-level selector). */
+.asc-ui-search:has(.asc-ui-search__action) input:not([type="checkbox"], [type="radio"], [type="hidden"], [type="range"]) {
+    padding-inline-end: 2.75rem;
+}
+
+/* In-field action button slot — vertically centered, right-aligned inside
+   the pill. Wrap the actual trigger (e.g. an .asc-ui-dropdown) inside it;
+   position:relative lives on the inner wrapper, not here, so it doesn't
+   fight this element's own absolute positioning. */
+.asc-ui-search__action {
+    position: absolute;
+    inset-inline-end: var(--spacing-xs);
+    top: 50%;
+    translate: 0 -50%;
+    z-index: 1;
 }
 
 .asc-ui-search input:not([type="checkbox"], [type="radio"], [type="hidden"], [type="range"]):focus {
@@ -423,6 +444,109 @@
     transform-origin: center;
     pointer-events: none;
     z-index: 5;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit toast — notification feedback (scripts/asc/notifications.js). The
+   region is a fixed corner anchor; individual toasts stack inside it.
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-toast-region {
+    position: fixed;
+    z-index: var(--z-toast);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md);
+    pointer-events: none;
+    max-width: min(24rem, calc(100vw - 2 * var(--spacing-md)));
+}
+
+.asc-ui-toast-region--top-left {
+    top: 0;
+    left: 0;
+}
+
+.asc-ui-toast-region--top-center {
+    top: 0;
+    left: 50%;
+    translate: -50% 0;
+    align-items: center;
+}
+
+.asc-ui-toast-region--top-right {
+    top: 0;
+    right: 0;
+}
+
+.asc-ui-toast-region--bottom-left {
+    bottom: 0;
+    left: 0;
+    flex-direction: column-reverse;
+}
+
+.asc-ui-toast-region--bottom-center {
+    bottom: 0;
+    left: 50%;
+    translate: -50% 0;
+    align-items: center;
+    flex-direction: column-reverse;
+}
+
+.asc-ui-toast-region--bottom-right {
+    bottom: 0;
+    right: 0;
+    flex-direction: column-reverse;
+}
+
+.asc-ui-toast {
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    min-width: 16rem;
+    max-width: 100%;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-md);
+    background: var(--color-card);
+    color: var(--color-card-fg);
+    box-shadow: var(--shadow-lg);
+    opacity: 1;
+    translate: 0 0;
+    transition: opacity var(--transition-fast), translate var(--transition-fast);
+}
+
+.asc-ui-toast--leaving {
+    opacity: 0;
+    translate: 0 8px;
+}
+
+.asc-ui-toast__icon {
+    display: flex;
+    flex-shrink: 0;
+    color: var(--color-muted-fg);
+}
+
+.asc-ui-toast__message {
+    flex: 1;
+    font-size: var(--body-font-size-s);
+}
+
+.asc-ui-toast__dismiss {
+    flex-shrink: 0;
+}
+
+.asc-ui-toast--success .asc-ui-toast__icon {
+    color: var(--validation-success-color);
+}
+
+.asc-ui-toast--warning .asc-ui-toast__icon {
+    color: var(--validation-warning-color);
+}
+
+.asc-ui-toast--danger .asc-ui-toast__icon {
+    color: var(--color-destructive);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -1383,6 +1507,76 @@
     color: var(--color-fg);
     line-height: 1;
     white-space: nowrap;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit color-picker — freehand color input + preset swatch grid, for use
+   inside an .asc-ui-dropdown__panel popover (search-bar color search).
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-color-picker {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+
+    /* Fixed (not min/auto) width — this popover can be anchored inside an
+       .asc-ui-search__action slot, where a shrink-to-fit width combined with
+       a 100%-width child (the color input below) resolves against the
+       search input's own — growing/shrinking — width instead of staying
+       independent. A definite width sidesteps that entirely. */
+    width: 14rem;
+}
+
+.asc-ui-color-picker__input {
+    width: 100%;
+    height: 2.5rem;
+    padding: var(--spacing-2xs);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-md);
+    background: var(--color-card);
+    cursor: pointer;
+
+    &::-webkit-color-swatch-wrapper {
+        padding: 0;
+    }
+
+    &::-webkit-color-swatch {
+        border: none;
+        border-radius: var(--border-radius-sm);
+    }
+
+    &::-moz-color-swatch {
+        border: none;
+        border-radius: var(--border-radius-sm);
+    }
+}
+
+.asc-ui-color-picker__presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+}
+
+.asc-ui-color-picker__preset {
+    width: 1.5rem;
+    height: 1.5rem;
+    padding: 0;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-full);
+    background: var(--asc-ui-swatch-color, var(--color-muted));
+    box-shadow: inset 0 0 0 1px rgb(0 0 0 / 12%);
+    cursor: pointer;
+
+    &:hover,
+    &:focus-visible {
+        outline: 2px solid var(--color-primary);
+        outline-offset: 2px;
+    }
+}
+
+.asc-ui-color-picker__clear {
+    width: 100%;
+    justify-content: center;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────

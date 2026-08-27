@@ -4,30 +4,35 @@
  *
  * Authoring (da.live table):
  *
- *   | search-bar  |                                            |
- *   | redirect    | /                                          |  ← optional: cross-page redirect
- *   | placeholder | Search assets...                          |  ← optional input placeholder
- *   | view        | Masonry : masonry                         |  ← first option = default
- *   |             | Cards : cards                             |
- *   |             | List : list                               |
- *   | sort        | Relevance : @jcr:score                    |  ← first option = default
- *   |             | Created : @jcr:content/metadata/dc:created |
- *   |             | Title : @jcr:content/metadata/dc:title    |
- *   | order       | Descending : desc                         |  ← first option = default
- *   |             | Ascending : asc                           |
+ *   | search-bar   |                                                     |
+ *   | redirect     | /                                                   |  ← optional: cross-page redirect
+ *   | placeholder  | Search assets...                                   |  ← optional input placeholder
+ *   | view         | Masonry : masonry                                  |  ← first option = default
+ *   |              | Cards : cards                                      |
+ *   |              | List : list                                        |
+ *   | sort         | Relevance : @jcr:score                             |  ← first option = default
+ *   |              | Created : @jcr:created                             |
+ *   |              | Title : @jcr:content/metadata/dc:title             |
+ *   | order        | Descending : desc                                  |  ← first option = default
+ *   |              | Ascending : asc                                    |
+ *   | color-search | false                                               |  ← optional: hide the color-search control (default: shown)
  *
  *   Each option is authored as "Label : value" on its own paragraph within the cell.
  *   The first option listed becomes the default when nothing is stored in localStorage.
  *   Priority: URL param > localStorage > first authored option.
  */
 import { readBlockConfig, SEARCH_FORM } from '../../scripts/asc/core/utils/search.js';
+import { escAttr } from '../../scripts/asc/html.js';
+import { DEFAULT_PALETTE, nearestColor } from '../../scripts/asc/color-search.js';
 
 const configurations = (await import('../../scripts/asc/configurations.js')).default;
 const SEARCH_PAGE = configurations.search?.page || '';
+const COLOR_PALETTE = configurations.search?.colorSearch?.palette || DEFAULT_PALETTE;
 
 const LS_DISPLAY = 'asc.search-results.display';
 const LS_ORDERBY = 'asc.orderby';
 const LS_ORDERBY_SORT = 'asc.orderby.sort';
+const LS_COLOR = 'asc.search.color';
 
 const DEFAULT_VIEW_OPTIONS = [
   { label: 'Masonry', value: 'masonry' },
@@ -36,7 +41,7 @@ const DEFAULT_VIEW_OPTIONS = [
 ];
 const DEFAULT_SORT_OPTIONS = [
   { label: 'Relevance', value: '@jcr:score' },
-  { label: 'Created', value: '@jcr:content/metadata/dc:created' },
+  { label: 'Created', value: '@jcr:created' },
   { label: 'Title', value: '@jcr:content/metadata/dc:title' },
 ];
 const DEFAULT_ORDER_OPTIONS = [
@@ -80,18 +85,26 @@ export default function decorate(block) {
     redirect: SEARCH_PAGE,
   });
 
-  const viewOptions  = parseOptions(config.view,  DEFAULT_VIEW_OPTIONS);
-  const sortOptions  = parseOptions(config.sort,  DEFAULT_SORT_OPTIONS);
-  const orderOptions = parseOptions(config.order, DEFAULT_ORDER_OPTIONS);
+  const viewOptions    = parseOptions(config.view,        DEFAULT_VIEW_OPTIONS);
+  const sortOptions    = parseOptions(config.sort,        DEFAULT_SORT_OPTIONS);
+  const orderOptions   = parseOptions(config.order,       DEFAULT_ORDER_OPTIONS);
 
   // Display mode: localStorage only, never part of the shareable URL.
   // Sort/order: URL param > localStorage > first authored option (unchanged).
   const params = new URLSearchParams(window.location.search);
-  const display    = localStorage.getItem(LS_DISPLAY) || viewOptions[0].value;
+  // Clamp against a stale/removed value (e.g. a leftover "board" from before
+  // that mode existed) rather than trusting localStorage blindly.
+  const storedDisplay = localStorage.getItem(LS_DISPLAY);
+  const display = viewOptions.some((o) => o.value === storedDisplay) ? storedDisplay : viewOptions[0].value;
   const orderby    = params.get('orderby')      || localStorage.getItem(LS_ORDERBY)    || sortOptions[0].value;
   const orderbySort= params.get('orderby.sort') || localStorage.getItem(LS_ORDERBY_SORT) || orderOptions[0].value;
+  const colorSearchEnabled = config['color-search'] !== 'false';
+  const color = colorSearchEnabled ? (localStorage.getItem(LS_COLOR) || '') : '';
 
-  block.innerHTML = html(config, { display, orderby, orderbySort, viewOptions, sortOptions, orderOptions });
+  block.innerHTML = html(config, {
+    display, orderby, orderbySort, viewOptions, sortOptions, orderOptions,
+    colorSearchEnabled, color,
+  });
   addEventListeners(block, config);
 
   if (block.querySelector('input[type="search"]').value.trim()) {
@@ -105,7 +118,10 @@ function optionHtml(opts, selected) {
   ).join('');
 }
 
-function html(config, { display, orderby, orderbySort, viewOptions, sortOptions, orderOptions }) {
+function html(config, {
+  display, orderby, orderbySort, viewOptions, sortOptions, orderOptions,
+  colorSearchEnabled, color,
+}) {
   const initial = config.initial[`${config.group}_group.${config.name}`]
     || new URLSearchParams(window.location.search).get(config.name)
     || '';
@@ -117,6 +133,24 @@ function html(config, { display, orderby, orderbySort, viewOptions, sortOptions,
              name="${config.field}"
              value="${initial}"
              data-asc-filter="${config.id}">
+
+      ${colorSearchEnabled ? `
+      <input type="hidden" name="filter[color]" form="${SEARCH_FORM}" value="${escAttr(color)}">
+      <div class="asc-ui-search__action search-bar__ctrl--color">
+        <div class="asc-ui-dropdown" title="Search by color">
+          <button type="button" class="search-bar__color-trigger" aria-expanded="false" aria-controls="search-bar-color-panel" aria-label="Search by color">
+            <span class="asc-ui-swatch__dot"${color ? ` style="--asc-ui-swatch-color:${escAttr(color)}"` : ''}></span>
+          </button>
+          <div class="asc-ui-dropdown__panel asc-ui-color-picker" id="search-bar-color-panel" hidden>
+            <input type="color" class="asc-ui-color-picker__input" value="${color || '#2980b9'}" aria-label="Pick a color">
+            <div class="asc-ui-color-picker__presets">
+              ${COLOR_PALETTE.map(({ label, hex }) =>
+                `<button type="button" class="asc-ui-color-picker__preset" style="--asc-ui-swatch-color:${escAttr(hex)}" data-color="${escAttr(hex)}" title="${escAttr(label)}"></button>`).join('')}
+            </div>
+            <button type="button" class="btn btn--ghost btn--sm asc-ui-color-picker__clear">Clear color</button>
+          </div>
+        </div>
+      </div>` : ''}
     </div>
 
     <div class="asc-ui-segmented asc-ui-segmented--sm asc-ui-segmented--icon search-bar__controls" role="group" aria-label="Search controls">
@@ -170,6 +204,7 @@ function addEventListeners(block, config) {
     select.addEventListener('change', () => {
       const val = select.value;
       const iconSpan = select.previousElementSibling;
+
       if (select.name === 'asc.search-results.display') {
         localStorage.setItem(LS_DISPLAY, val);
         iconSpan.innerHTML = ICONS[val] || ICONS.masonry;
@@ -181,6 +216,68 @@ function addEventListeners(block, config) {
       }
       document.dispatchEvent(new CustomEvent('asc:search:execute', { detail: { type: 'page-load' } }));
     });
+  });
+
+  addColorEventListeners(block);
+}
+
+function addColorEventListeners(block) {
+  const colorDropdown = block.querySelector('.search-bar__ctrl--color');
+  if (!colorDropdown) return;
+
+  const trigger = colorDropdown.querySelector('.search-bar__color-trigger');
+  const panel = colorDropdown.querySelector('.asc-ui-dropdown__panel');
+  const colorInput = colorDropdown.querySelector('.asc-ui-color-picker__input');
+  const swatch = colorDropdown.querySelector('.asc-ui-swatch__dot');
+  const hiddenField = block.querySelector('input[name="filter[color]"]');
+
+  const closePanel = () => {
+    panel.hidden = true;
+    trigger.setAttribute('aria-expanded', 'false');
+  };
+
+  trigger.addEventListener('click', () => {
+    const expanded = trigger.getAttribute('aria-expanded') === 'true';
+    panel.hidden = expanded;
+    trigger.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+  });
+
+  document.addEventListener('click', (event) => {
+    if (!colorDropdown.contains(event.target)) closePanel();
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') closePanel();
+  });
+
+  const applyColor = (hex) => {
+    const match = nearestColor(hex, COLOR_PALETTE);
+    colorInput.value = match.hex;
+    swatch.style.setProperty('--asc-ui-swatch-color', match.hex);
+    hiddenField.value = match.hex;
+    localStorage.setItem(LS_COLOR, match.hex);
+    document.dispatchEvent(new CustomEvent('asc:search:execute', { detail: { type: 'page-load' } }));
+  };
+
+  let colorDebounce;
+  colorInput.addEventListener('input', () => {
+    clearTimeout(colorDebounce);
+    colorDebounce = setTimeout(() => applyColor(colorInput.value), 300);
+  });
+
+  colorDropdown.querySelectorAll('.asc-ui-color-picker__preset').forEach((preset) => {
+    preset.addEventListener('click', () => {
+      applyColor(preset.dataset.color);
+      closePanel();
+    });
+  });
+
+  colorDropdown.querySelector('.asc-ui-color-picker__clear').addEventListener('click', () => {
+    hiddenField.value = '';
+    swatch.style.removeProperty('--asc-ui-swatch-color');
+    localStorage.removeItem(LS_COLOR);
+    closePanel();
+    document.dispatchEvent(new CustomEvent('asc:search:execute', { detail: { type: 'page-load' } }));
   });
 }
 

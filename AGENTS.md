@@ -592,6 +592,7 @@ All ASC custom events follow `asc:{noun}:{verb}`. Dispatched on `document` unles
 | `asc:rendition:activate` | `details-renditions` | `details-preview`, `details-actions`, `details-rendition-metadata` | `{ rendition, asset }` — sticky selection; dispatched on `document.body` |
 | `asc:rendition:preview` | `details-renditions` | `details-preview` | `{ rendition, asset }` — transient hover preview; `rendition: null` on mouseleave to restore sticky |
 | `asc:share:created` | `action-share` block | `collection` block (past-shares panel) | `{ url, title, collectionId }` — fired after share URL is generated and saved to history |
+| `asc:notification:show` | Any block/service (event-bus escape hatch) | notifications service | `{ message, type?, duration? }` — dispatched on `document`; prefer calling `notify()` from `scripts/asc/notifications.js` directly when possible |
 
 `asc:search:complete` `results` shape:
 ```js

@@ -19,9 +19,12 @@ export default class Asset {
     const firstVal = (v) => (Array.isArray(v) ? v[0] : v);
     this.title =
       firstVal(data["jcr:content"]["metadata"]["dc:title"]) ||
+      firstVal(data["jcr:content"]["metadata"]["autogen:title"]) ||
       data["jcr:content"]["cq:name"] ||
       "Missing title";
-    this.description = firstVal(data["jcr:content"]["metadata"]["dc:description"]);
+    this.description =
+      firstVal(data["jcr:content"]["metadata"]["dc:description"]) ||
+      firstVal(data["jcr:content"]["metadata"]["autogen:description"]);
     this.mimeType = data["jcr:content"]["metadata"]["dc:format"];
     this.sizeInBytes = data["jcr:content"]["metadata"]["dam:size"] || null;
     this.created = new Date(data["jcr:content"]["metadata"]["jcr:created"]);

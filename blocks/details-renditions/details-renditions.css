@@ -69,9 +69,11 @@
         }
 
         .details-renditions__cards > .asc-ui-card {
+            position: relative;
             display: flex;
             flex-direction: column;
             max-width: 280px;
+            padding: var(--spacing-sm);
             cursor: pointer;
         }
 
@@ -85,8 +87,8 @@
             overflow: hidden;
             background: var(--color-muted);
             border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
-            margin-top: calc(-1 * var(--spacing-md));
-            margin-inline: calc(-1 * var(--spacing-md));
+            margin-top: calc(-1 * var(--spacing-sm));
+            margin-inline: calc(-1 * var(--spacing-sm));
         }
 
         .details-renditions__card-thumb {
@@ -96,8 +98,46 @@
             display: block;
         }
 
+        /* Hover actions — same pattern as search-results cards
+           (.search-results__quick-action): overlaid on the preview, hidden
+           until hover/focus, with their own semi-opaque background so a
+           .btn--ghost's transparent default doesn't disappear into the
+           thumbnail image underneath. */
+        .details-renditions__card-actions {
+            position: absolute;
+            top: var(--spacing-xs);
+            right: var(--spacing-xs);
+            display: flex;
+            gap: var(--spacing-xs);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity var(--transition-fast);
+
+            .btn {
+                background: color-mix(in srgb, var(--color-card) 88%, transparent);
+                border-color: var(--color-border);
+
+                &:hover {
+                    background: var(--color-card);
+                }
+            }
+        }
+
+        .details-renditions__cards > .asc-ui-card:hover .details-renditions__card-actions,
+        .details-renditions__cards > .asc-ui-card:focus-within .details-renditions__card-actions {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Truncate to one line — a wrapped title (e.g. "Smart Crop — Medium")
+           would inflate its whole grid row's height (align-items: stretch),
+           pushing every other card's footer down with it. Full label still
+           available via the title attribute set in details-renditions.js. */
         .asc-ui-card__title {
             font-size: var(--body-font-size-s);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .asc-ui-copy {
@@ -111,11 +151,6 @@
             span {
                 white-space: nowrap;
             }
-        }
-
-        .asc-ui-card__footer {
-            margin-top: auto;
-            justify-content: flex-end;
         }
     }
 }

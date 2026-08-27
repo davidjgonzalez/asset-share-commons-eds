@@ -186,8 +186,11 @@ function renderListView(assets) {
     </div>`;
 }
 
+const VALID_DISPLAY_MODES = new Set(['masonry', 'cards', 'list']);
+
 function getDisplayMode() {
-  return document.querySelector('[name="asc.search-results.display"]')?.value || 'masonry';
+  const value = document.querySelector('[name="asc.search-results.display"]')?.value;
+  return VALID_DISPLAY_MODES.has(value) ? value : 'masonry';
 }
 
 // Promote the first N result images to eager + high priority for LCP.
@@ -313,7 +316,10 @@ export default async function decorate(block) {
   block.innerHTML = html(config);
 
   const resultsEl = block.querySelector('[data-asc-results]');
-  resultsEl.dataset.display = localStorage.getItem('asc.search-results.display') || config['asc.search-results.display'] || 'masonry';
+  const storedDisplay = localStorage.getItem('asc.search-results.display');
+  resultsEl.dataset.display = VALID_DISPLAY_MODES.has(storedDisplay)
+    ? storedDisplay
+    : (config['asc.search-results.display'] || 'masonry');
   resultsEl.innerHTML = skeletonHtml(resultsEl.dataset.display, resultsEl);
 
   await addEventListeners(block, config);
@@ -490,7 +496,9 @@ async function addEventListeners(block, _config) {
   // Warm rendition file sizes on hover so the menu doesn't show blank sizes
   // while the user is still deciding whether to click it.
   block.addEventListener('mouseover', (event) => {
-    const trigger = event.target.closest('.search-results__quick-download, .search-results__quick-copy-url');
+    const trigger = event.target.closest(
+      '.search-results__quick-download, .search-results__quick-copy-url',
+    );
     if (!trigger) return;
     const asset = resolveAssetFor(trigger);
     if (asset) prefetchRenditionSizes(asset);

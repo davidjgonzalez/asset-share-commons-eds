@@ -242,7 +242,7 @@
         "label": "Hidden Fields",
         "value": "",
         "valueType": "string",
-        "description": "Each row in this block is a hidden search parameter. Add rows in the document using the format: predicate-name | value  (e.g. type | dam:Asset). These are passed directly to QueryBuilder or the active search provider."
+        "description": "Each row in this block is a hidden search parameter, always merged into every search on this page. Add rows using the format: predicate-name | value (e.g. path | /content/dam/marketing). Passed directly to QueryBuilder or the active search provider. For QueryBuilder OR groups, write ordinary group syntax with small numbers (e.g. 1_group.p.or | true, 1_group.1_type | dam:Asset, 1_group.2_type | dam:AssetContentFragment) — ASC automatically renumbers them so they can't collide with filter blocks' own group numbers."
       }
     ]
   },

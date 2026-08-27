@@ -117,12 +117,16 @@
   --z-raised:          1;   /* minor boost within a component stacking ctx   */
   --z-sticky:        100;   /* sticky header, sticky toolbars                */
   --z-dropdown:      200;   /* page dropdowns, popovers, tooltip panels      */
-  --z-float:         300;   /* toasts, floating action buttons               */
+  --z-float:         300;   /* floating action buttons                       */
 
   /* Modal context — always above every page-context value */
   --z-modal-backdrop: 400;  /* semi-transparent scrim behind the dialog      */
   --z-modal:          500;  /* the dialog / modal container                  */
   --z-modal-dropdown: 600;  /* dropdowns / panels rendered inside a modal    */
+
+  /* Always-on-top context — above modals too, since actions that trigger a
+     toast (download, copy URL, share) can happen from inside an open dialog */
+  --z-toast:          700;  /* notification toasts (scripts/asc/notifications.js) */
 
   /* Select arrow (overridden to light in dark themes) */
   --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23555'/%3E%3C/svg%3E");
@@ -1035,4 +1039,19 @@ main .section.search-filters ol {
   list-style: none;
   padding-left: 0;
   margin: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   COLLECTION TOGGLE — favorite variant override
+───────────────────────────────────────────────────────────────────────── */
+
+/* Favorited state: no yellow pill — just the star glyph itself filled black.
+   Variables consumed by the core component (scripts/asc/core/parts/collection-toggle). */
+.asc-collection-toggle {
+  --collection-toggle-favorite-bg: transparent;
+  --collection-toggle-favorite-border: transparent;
+  --collection-toggle-favorite-fg: var(--color-fg);
+  --collection-toggle-favorite-hover-bg: transparent;
+  --collection-toggle-favorite-hover-border: transparent;
+  --collection-toggle-favorite-hover-fg: var(--color-fg);
 }
