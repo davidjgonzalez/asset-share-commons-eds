@@ -16,6 +16,7 @@ import { setupRoleButtonKeyboardSupport } from './asc/core/utils/keyboard.js';
 import { decorateASCSections } from './asc/section-grid.js';
 import { registerTokens } from './asc/tokens.js';
 import { initAnalytics } from './asc/analytics.js';
+import { registerSpeculationRules } from './asc/speculation-rules.js';
 import './asc/notifications.js';
 
 setupImageFallback();
@@ -44,8 +45,10 @@ export function ascDecorateMain(main) {
   decorateASCSections(main);
 }
 
-/** Called once in loadLazy — placeholder for future lazy-phase ASC work. */
-export function ascLazy() {}
+/** Called once in loadLazy — prefetch same-origin links for faster navigation. */
+export function ascLazy() {
+  registerSpeculationRules();
+}
 
 /** Called once in loadDelayed — non-critical ASC work. */
 export function ascDelayed() {

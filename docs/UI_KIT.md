@@ -135,6 +135,13 @@ the search-bar color-search control.
 </div>
 ```
 
+**Native popover mode** — where supported (`'popover' in HTMLElement.prototype`), the panel can
+use `popover="auto"` + a `popovertarget` trigger instead of a manual `hidden` toggle, getting
+native open/light-dismiss/Escape handling for free; `styles/ui-kit.css` resets just the UA
+popover positioning defaults so the panel keeps its usual `.asc-ui-dropdown__panel` look. Fall
+back to the manual `hidden`-attribute pattern above on unsupported browsers. See the search-bar
+color-search control for the feature-detected implementation.
+
 ### Segmented control — `@kit segmented` · `styles/ui-kit.css`
 Single-choice toggle. Sizes: `--sm` / (default) / `--lg`. Mark the active option with
 `aria-pressed="true"` (or `.is-active`).

@@ -57,6 +57,16 @@
         }
     }
 
+    .action-share__url-row {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+    }
+
+    .action-share__url-input {
+        flex: 1;
+    }
+
     .action-share__expires-wrap {
         display: flex;
         align-items: center;

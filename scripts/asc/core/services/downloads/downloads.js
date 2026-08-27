@@ -227,7 +227,7 @@ class Downloads {
     const statusUrl = `${aem.getUrl(this.initiateUrl)}?jobId=${encodeURIComponent(job.aemJobId)}`;
 
     while (Date.now() < deadline) {
-      await this._sleep(this.pollIntervalMs);
+      await this._sleep(document.hidden ? this.pollIntervalMs * 4 : this.pollIntervalMs);
 
       const current = this.get(job.id);
       if (!current) return; // job was removed

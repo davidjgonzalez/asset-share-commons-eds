@@ -209,6 +209,22 @@
     display: none;
 }
 
+/* Popovers promote to the top layer, breaking the position:relative anchoring from
+   .asc-ui-dropdown above — top/left are set inline by JS from the trigger's rect instead. */
+.asc-ui-dropdown__panel[popover] {
+    position: fixed;
+    inset: auto;
+    margin: 0;
+}
+
+/* Author-set `display` (e.g. .asc-ui-color-picker's flex) beats the UA popover
+   stylesheet's default closed-state display:none regardless of specificity — both are
+   normal-priority author-vs-UA rules, and author always wins on that axis. Restate it
+   explicitly so the panel doesn't render open by default. */
+.asc-ui-dropdown__panel[popover]:not(:popover-open) {
+    display: none;
+}
+
 .asc-ui-dropdown__list {
     margin: 0;
     padding: 0;

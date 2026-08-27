@@ -10,6 +10,7 @@
 
 import services from '../../scripts/asc/core/services/services.js';
 import { getVisibleAssetIds, getNeighborAssetId } from '../../scripts/asc/asset-navigation.js';
+import { withViewTransition } from '../../scripts/asc/core/utils/view-transition.js';
 
 const SIZE_CLASSES = { narrow: 'asc-dialog--narrow', wide: 'asc-dialog--wide' };
 const ASSET_URL_PARAM = 'asset';
@@ -53,12 +54,14 @@ function navigate(direction) {
   const id = currentAssetId();
   if (!id) return;
   const targetId = getNeighborAssetId(id, direction);
-  if (targetId) services.assetDetails.open(targetId);
+  if (!targetId) return;
+  withViewTransition(() => services.assetDetails.open(targetId));
 }
 
 function addEventListeners(block) {
   document.body.addEventListener('asc:asset:details:close', () => {
-    block.querySelector('dialog').close();
+    const dialogEl = block.querySelector('dialog');
+    withViewTransition(() => dialogEl.close());
   });
 
   const dialog = block.querySelector('dialog');

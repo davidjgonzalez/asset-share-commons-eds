@@ -34,6 +34,8 @@ const LS_ORDERBY = 'asc.orderby';
 const LS_ORDERBY_SORT = 'asc.orderby.sort';
 const LS_COLOR = 'asc.search.color';
 
+const SUPPORTS_POPOVER = 'popover' in HTMLElement.prototype;
+
 const DEFAULT_VIEW_OPTIONS = [
   { label: 'Masonry', value: 'masonry' },
   { label: 'Cards', value: 'cards' },
@@ -138,10 +140,10 @@ function html(config, {
       <input type="hidden" name="filter[color]" form="${SEARCH_FORM}" value="${escAttr(color)}">
       <div class="asc-ui-search__action search-bar__ctrl--color">
         <div class="asc-ui-dropdown" title="Search by color">
-          <button type="button" class="search-bar__color-trigger" aria-expanded="false" aria-controls="search-bar-color-panel" aria-label="Search by color">
+          <button type="button" class="search-bar__color-trigger" aria-expanded="false" aria-controls="search-bar-color-panel" aria-label="Search by color"${SUPPORTS_POPOVER ? ' popovertarget="search-bar-color-panel"' : ''}>
             <span class="asc-ui-swatch__dot"${color ? ` style="--asc-ui-swatch-color:${escAttr(color)}"` : ''}></span>
           </button>
-          <div class="asc-ui-dropdown__panel asc-ui-color-picker" id="search-bar-color-panel" hidden>
+          <div class="asc-ui-dropdown__panel asc-ui-color-picker" id="search-bar-color-panel"${SUPPORTS_POPOVER ? ' popover="auto"' : ' hidden'}>
             <input type="color" class="asc-ui-color-picker__input" value="${color || '#2980b9'}" aria-label="Pick a color">
             <div class="asc-ui-color-picker__presets">
               ${COLOR_PALETTE.map(({ label, hex }) =>
@@ -232,23 +234,41 @@ function addColorEventListeners(block) {
   const hiddenField = block.querySelector('input[name="filter[color]"]');
 
   const closePanel = () => {
-    panel.hidden = true;
-    trigger.setAttribute('aria-expanded', 'false');
+    if (SUPPORTS_POPOVER) {
+      panel.hidePopover();
+    } else {
+      panel.hidden = true;
+      trigger.setAttribute('aria-expanded', 'false');
+    }
   };
 
-  trigger.addEventListener('click', () => {
-    const expanded = trigger.getAttribute('aria-expanded') === 'true';
-    panel.hidden = expanded;
-    trigger.setAttribute('aria-expanded', expanded ? 'false' : 'true');
-  });
+  if (SUPPORTS_POPOVER) {
+    // popovertarget handles open/close/light-dismiss/Escape natively. Top-layer promotion
+    // breaks the position:relative anchoring from .asc-ui-dropdown, so position it manually.
+    panel.addEventListener('toggle', () => {
+      const isOpen = panel.matches(':popover-open');
+      trigger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      if (isOpen) {
+        const rect = trigger.getBoundingClientRect();
+        panel.style.top = `${rect.bottom + 6}px`;
+        panel.style.left = `${rect.left}px`;
+      }
+    });
+  } else {
+    trigger.addEventListener('click', () => {
+      const expanded = trigger.getAttribute('aria-expanded') === 'true';
+      panel.hidden = expanded;
+      trigger.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+    });
 
-  document.addEventListener('click', (event) => {
-    if (!colorDropdown.contains(event.target)) closePanel();
-  });
+    document.addEventListener('click', (event) => {
+      if (!colorDropdown.contains(event.target)) closePanel();
+    });
 
-  document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') closePanel();
-  });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') closePanel();
+    });
+  }
 
   const applyColor = (hex) => {
     const match = nearestColor(hex, COLOR_PALETTE);

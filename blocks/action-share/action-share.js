@@ -8,6 +8,9 @@ const SHEET_PATH = configurations.collections?.sheetPath || '/sheets/';
 const SHARE_HISTORY_KEY = 'shareHistory';
 const MAX_SHARE_HISTORY = 20;
 
+const SUPPORTS_SHARE = typeof navigator.share === 'function';
+const SHARE_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>';
+
 const BOARD_TEXT_KEY = (id) => `asc:boardText:${id}`;
 function getBoardTextItems(collectionId) {
   try { return JSON.parse(localStorage.getItem(BOARD_TEXT_KEY(collectionId))) || []; } catch { return []; }
@@ -66,7 +69,10 @@ export default async function decorate(block) {
       <div class="action-share__url-wrap" hidden>
         <label class="action-share__label">
           Share URL
-          <input type="text" data-field-id="share-url" readonly />
+          <div class="action-share__url-row">
+            <input type="text" class="action-share__url-input" data-field-id="share-url" readonly />
+            ${SUPPORTS_SHARE ? `<button type="button" class="btn btn--secondary btn--icon action-share__native-share" aria-label="Share">${SHARE_ICON}</button>` : ''}
+          </div>
         </label>
       </div>
     </div>
@@ -89,6 +95,12 @@ export default async function decorate(block) {
   dialog.addEventListener('close', () => dialog.remove());
 
   const fieldVal = (id) => dialog.querySelector(`[data-field-id="${id}"]`)?.value?.trim() || '';
+
+  let shareTitle = '';
+  let shareUrl = '';
+  dialog.querySelector('.action-share__native-share')?.addEventListener('click', () => {
+    navigator.share({ title: shareTitle, url: shareUrl }).catch(() => {});
+  });
 
   dialog.querySelector('[data-action="action-copy"]')?.addEventListener('click', async (e) => {
     const btn = e.currentTarget;
@@ -129,6 +141,9 @@ export default async function decorate(block) {
     document.dispatchEvent(new CustomEvent('asc:share:created', {
       detail: { url, title: payload.title, collectionId: collection?.id },
     }));
+
+    shareTitle = payload.title;
+    shareUrl = url;
 
     const wrap = dialog.querySelector('.action-share__url-wrap');
     wrap.removeAttribute('hidden');

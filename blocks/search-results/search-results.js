@@ -6,6 +6,7 @@ import collectionToggle from '../../scripts/asc/core/parts/collection-toggle/col
 import services from '../../scripts/asc/core/services/services.js';
 import configurations from '../../scripts/asc/configurations.js';
 import { toggleRenditionMenu, prefetchRenditionSizes } from '../../scripts/asc/rendition-download-menu.js';
+import { withViewTransition } from '../../scripts/asc/core/utils/view-transition.js';
 
 const MASONRY_SIZES = '(min-width: 1400px) 25vw, (min-width: 1000px) 33vw, (min-width: 640px) 50vw, 100vw';
 const MASONRY_COL_WIDTH = 360; // target column width — smaller value = more columns at wider viewports
@@ -410,6 +411,27 @@ async function addEventListeners(block, _config) {
     // Drop the loading placeholder so the grid cell height is no longer constrained.
     delete resultsEl.dataset.loading;
 
+    const applyFreshRender = () => {
+      if (results.size === 0) {
+        resultsEl.innerHTML = `
+          <div class="asc-ui-empty-state asc-ui-empty-state--plain">
+            <span class="asc-ui-empty-state__icon" aria-hidden="true">🔍</span>
+            <p class="asc-ui-empty-state__title">No results found</p>
+            <p class="asc-ui-empty-state__hint">Try adjusting your search terms or filters.</p>
+          </div>`;
+      } else if (display === 'list') {
+        resultsEl.innerHTML = renderListView(results.assets);
+      } else if (display === 'masonry') {
+        resultsEl.innerHTML = '';
+        masonryState.delete(resultsEl);
+        appendMasonryItems(resultsEl, results.assets || []);
+      } else {
+        resultsEl.innerHTML = results.assets
+          .map((asset) => assetTeaser(asset, { mode: 'card', view: display })).join('') || '';
+      }
+      promoteAboveFoldImages(resultsEl);
+    };
+
     if (event.detail.type === 'load-more') {
       if (display === 'list') {
         resultsEl.querySelector('.asc-list-view__rows')
@@ -420,26 +442,8 @@ async function addEventListeners(block, _config) {
         resultsEl.insertAdjacentHTML('beforeend',
           results.assets?.map((asset) => assetTeaser(asset, { mode: 'card', view: display })).join('') || '');
       }
-    } else if (results.size === 0) {
-      resultsEl.innerHTML = `
-        <div class="asc-ui-empty-state asc-ui-empty-state--plain">
-          <span class="asc-ui-empty-state__icon" aria-hidden="true">🔍</span>
-          <p class="asc-ui-empty-state__title">No results found</p>
-          <p class="asc-ui-empty-state__hint">Try adjusting your search terms or filters.</p>
-        </div>`;
-    } else if (display === 'list') {
-      resultsEl.innerHTML = renderListView(results.assets);
-    } else if (display === 'masonry') {
-      resultsEl.innerHTML = '';
-      masonryState.delete(resultsEl);
-      appendMasonryItems(resultsEl, results.assets || []);
     } else {
-      resultsEl.innerHTML = results.assets
-        .map((asset) => assetTeaser(asset, { mode: 'card', view: display })).join('') || '';
-    }
-
-    if (event.detail.type !== 'load-more') {
-      promoteAboveFoldImages(resultsEl);
+      withViewTransition(applyFreshRender);
     }
 
     attachImageHandlers(resultsEl);
