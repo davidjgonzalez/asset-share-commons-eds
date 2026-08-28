@@ -46,7 +46,7 @@ Get Asset Share Commons running locally in about 15 minutes. You need an AEM ins
 - Node.js 18+
 - An AEM instance (AEM 6.5 SP15+, AEM SDK, or AEM as a Cloud Service) with assets in DAM
 - A GitHub account (for the code repository)
-- A [da.live](https://da.live){:target="_blank"} account (for content authoring) — free
+- A [da.live](https://da.live){:target="_blank"} account (for content authoring)
 - The [AEM Code Sync GitHub App](https://github.com/apps/aem-code-sync){:target="_blank"}
 - AEM CLI: `npm install -g @adobe/aem-cli`
 
