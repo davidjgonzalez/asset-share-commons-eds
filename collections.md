@@ -19,6 +19,8 @@ sidebar:
     items:
       - title: Share URL Format
         url: "#share-url"
+      - title: Branded vs. Standalone (Chrome)
+        url: "#chrome"
   - label: Downloads
     items:
       - title: Downloads Service
@@ -45,6 +47,8 @@ sidebar:
     items:
       - title: Sheets vs Collections
         url: "#sheets"
+      - title: Published Collections
+        url: "#published"
 ---
 
 # Collections & State
@@ -229,6 +233,8 @@ Item encoding within `items[]`:
 
 Both the [`board`](/blocks#board) block (`source: sheet`) and the [`sheet-controls`](/blocks#sheet-controls) block independently decode this same payload — one for the canvas, one for the header. Use `services.url.compressArray` / `decompressToArray` (native `CompressionStream('deflate')`, URL-safe base64) if you need to build or read this payload programmatically.
 
+The generated URL also carries an explicit `&chrome=none` or `&chrome=full`, set by the "Share as a standalone page" switch on the [`action-share`](/blocks#action-share) dialog. See [Branded vs. Standalone Shares](#chrome) below.
+
 ```js
 import services from '../../scripts/asc/core/services/services.js';
 
@@ -408,3 +414,32 @@ These are two distinct concepts that are easy to confuse:
 | **AEM Collections** | No relation | No relation |
 
 > **Note:** Neither "Collections" nor "Sheets" in ASC EDS corresponds to [AEM Assets Collections](https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/assets/manage/manage-collections). AEM Collections are server-side; ASC EDS collections are client-side localStorage only.
+
+---
+
+## Published Collections {#published}
+
+A **published** collection is different from either of the above: something curated once, with a permanent, linkable URL, that any visitor can browse without having built it themselves (think "Spring 2026 Campaign" or "Press Kit"). Personal collections and one-off sheet links are both inherently client-side/URL-based; a published collection needs to be discoverable and stay put, which means it should be a page, not a client-side state blob. Two ways to build one, and neither needs anything "created" server-side beyond the page itself:
+
+- **Saved search**: a page built from [`search-hidden`](/blocks#search-hidden) predicates plus [`search-results`](/blocks#search-results), so it stays current on its own as matching assets are added or retagged. Best when "everything tagged X" really is what the collection means.
+- **Authored list**: a page built from [`board`](/blocks#board) with `source: authored`, defined by a fixed set of asset IDs typed directly onto the page. For when you want exactly these items and nothing else. Always read-only; edit the page's authored list to change what's in it. `mode: sheet-url` is a variant of this: instead of a hand-typed ID list, the page authors an already-generated share URL (from the normal Share flow on some collection), so the same board/sheet decoding logic in [Share URL Format](#share-url) applies.
+
+[`share-directory`](/blocks#share-directory) is a curated index of links to pages like these. Add a row per published collection you create. It resolves a preview thumbnail automatically for most link types; see the block reference for exactly which ones.
+
+---
+
+## Branded vs. Standalone Shares {#chrome}
+
+Any share, sheet, or board page can render two ways: **branded**, with the full site header, footer, search, and collections navigation (the visitor is still "inside" the wider asset library), or **standalone**, with none of that (the page reads as its own discrete microsite, with no way to wander back into the rest of the site through the UI). This is a presentational choice, not an access-control one: it hides navigation, not AEM/DAM permissions. Someone can still edit the URL by hand; nothing about this restricts what they can technically reach.
+
+Resolution order (`scripts/asc/chrome.js`):
+
+1. `?chrome=full` on the URL: force branded, overriding everything else
+2. `?chrome=none` on the URL: force standalone, overriding everything else
+3. `<meta name="chrome" content="none">`, authored in a page's `<head>`, for a fixed/published collection page (see [Published Collections](#published) above)
+4. A `.sheet` block, or a `?sheet=` URL param: an ad hoc personal share, which has always defaulted to standalone
+5. Otherwise, branded (today's default for everything else)
+
+The [`action-share`](/blocks#action-share) dialog's "Share as a standalone page" switch makes step 4's default an explicit, per-share choice rather than a fixed rule, by appending `&chrome=none` or `&chrome=full` to the generated URL (see [Share URL Format](#share-url)). For a published collection page, add `<meta name="chrome" content="none">` to its `<head>` to opt that one page into standalone mode. A press kit is a natural fit, since external media shouldn't need to navigate the rest of the internal library.
+
+Every standalone page gets one small floating link (bottom-right) to flip to the other mode, so nothing is a dead end. If you author a custom "back to search" / "back to shares" style link into a share page's own content, add a `data-asc-nav-link` attribute to it: it'll be hidden along with the header/footer in standalone mode, the same as any other way back into the site a standalone page isn't supposed to have.

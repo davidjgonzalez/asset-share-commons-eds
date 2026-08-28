@@ -104,7 +104,7 @@ renditions: {
 | `description` | `string` | Optional sub-label or tooltip |
 | `mimeType` | `string` | Override MIME type hint for the downloaded file |
 | `fileType` | `string` | Human-readable format label shown in the `file-type` column (e.g. `'JPEG'`, `'WebP 1200px'`). Defaults to a label derived from `mimeType`. |
-| `usecase` | `string` | Arbitrary tag (e.g. `'thumbnail'`, `'web'`), exposed as the `usecase` column in `details-renditions` |
+| `usecase` | `string` | Destination-specific label (e.g. `'Instagram Post / Profile Image (1:1)'`, `'Email / Blog Inline (4:3)'`), shown in place of the generic format/size meta line wherever a rendition is picked: the `details-renditions` table/card display and the shared rendition-picker popover ([search-results](#search-results), [board](#board) cards). Falls back to the technical format description when unset. |
 | `filename` | `string \| (rendition, asset) => string` | Override the download filename — see [Filenames](#filenames) |
 
 ## accepts {#accepts}
@@ -179,7 +179,13 @@ Classic Dynamic Media (Scene7) smart crop via the IS protocol: `{dam:scene7APISe
 { id: 'Large', label: 'Smart Crop — Large', type: 'dm-smartcrop', accepts: (asset) => asset.mimeType?.startsWith('image/') },
 ```
 
-Smart crops present on the asset but **not listed here are auto-detected and appended automatically** (`autoDetect: true` behavior, built in). Add an explicit definition only when you need a custom label or an `accepts` guard on a specific crop.
+Smart crops present on the asset but **not listed here are auto-detected and appended automatically** (`autoDetect: true` behavior, built in). Add an explicit definition only when you need a custom label, an `accepts` guard on a specific crop, or a `usecase`. Smart crops are the most common place to reach for `usecase`, since the crop name (`Small`/`Medium`/`Large`) says nothing about where it's actually meant to go:
+
+```js
+{ id: 'Small',  label: 'Square',     usecase: 'Instagram Post / Profile Image (1:1)',   type: 'dm-smartcrop', accepts: (asset) => asset.mimeType?.startsWith('image/') },
+{ id: 'Medium', label: 'Standard',   usecase: 'Email / Blog Inline (4:3)',              type: 'dm-smartcrop', accepts: (asset) => asset.mimeType?.startsWith('image/') },
+{ id: 'Large',  label: 'Widescreen', usecase: 'Web Banner / Twitter Post (16:9)',       type: 'dm-smartcrop', accepts: (asset) => asset.mimeType?.startsWith('image/') },
+```
 
 ### url-template {#url-template}
 

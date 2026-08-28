@@ -21,6 +21,8 @@ sidebar:
         url: "#search-statistics"
       - title: search-results
         url: "#search-results"
+      - title: search-hidden
+        url: "#search-hidden"
   - label: Asset Details
     items:
       - title: details-modal
@@ -59,6 +61,8 @@ sidebar:
         url: "#sheet-controls"
       - title: board
         url: "#board"
+      - title: share-directory
+        url: "#share-directory"
       - title: stub
         url: "#stub"
   - label: Actions
@@ -304,6 +308,25 @@ Card/list/masonry columns are controlled by `configurations.searchResults.views`
 
 **Drag and drop:** Every asset teaser has `draggable="true"`. Users can drag any result card directly into Finder, Photoshop, Slack, or any OS-level file target. Requires Chrome or Edge, gracefully degrades to URI copy in Firefox/Safari.
 
+**Quick actions:** hovering a card reveals Download / Copy URL / Copy Image buttons, sharing the same rendition-picker popover as [board](#board) cards. Copy Image writes the actual image bytes to the clipboard (falls back to copying the URL as text if the browser or the delivery host's CORS policy blocks it). See [Renditions](/renditions#configuration) for the `usecase` field these popovers use to label each option by destination instead of raw format/size.
+
+---
+
+## search-hidden {#search-hidden}
+
+**Search** · Author-set predicates that are always merged into every search on the page, regardless of what the visitor searches or filters for. This is the mechanism behind a [saved-search published collection](/collections#published). Zero-render: it merges its rows into the query and produces no visible output of its own.
+
+```
+| search-hidden |                                     |
+|----------------|-------------------------------------|
+| path           | /content/dam/marketing              |
+| tagid          | properties:orientation/landscape    |
+```
+
+Each row is `predicate-name | value`, passed through to the query verbatim, using the same names the [provider-agnostic search blocks](#search-bar) emit. Not provider-agnostic itself: QueryBuilder-style `N_group.*` grouping syntax (small, ordinary numbers like `1_group.p.or`) is rewritten to a page-unique, high group-number range so it can never collide with the numbers the filter blocks auto-assign themselves, but on the `openapi` provider those keys pass through unchanged and have no special meaning.
+
+Merged directly into the active provider's `basePredicates` rather than emitted as hidden form inputs, so it can never collide with the filter blocks' own form-field namespace, and a visitor's real filters still win.
+
 ---
 
 ## details-modal {#details-modal}
@@ -459,6 +482,7 @@ Array values (e.g. `tags`) render as `asc-ui-chip` pills.
 | `renditions` | every visible rendition | Optional row list by name; omit for every visible rendition (`original` first, then A→Z) |
 | `display` | table | `cards` for a card grid |
 | `instructions` | — | Inline HTML (`<strong>`, `<em>`, `<code>`, `<br>`) shown above the table/cards |
+| `show-all` | `false` | When `true` **and** `renditions` names a curated subset, adds a "Show all formats" disclosure below the curated list, expanding to every remaining rendition (resolved the same way as omitting `renditions` entirely) on click. Lets a details page default to a short, destination-labeled list while still surfacing the full technical set for anyone who needs it. |
 
 **Columns** (table mode) are `Title | value` rows:
 - **Values** resolve through the shared token engine against the current rendition: a bare path (`name`, `file-size`) or {% raw %}`{{ }}` tokens for mixed text (`{{ width }}×{{ height }}`), both with optional `{{ accessor | fallback }}`{% endraw %}.
@@ -499,17 +523,22 @@ Available fields: `label`/`id`/`name`, `file-type`, `format`, `file-size`, `widt
 | details-actions  |              |
 |-------------------|-------------|
 | Download          | download    |
-| Copy link         | copy-url    |
-| Share             | share       |
+| Copy image        | copy-image  |
+| Copy link         | copy-link   |
 | Add to collection | collection  |
+| Favorite          | favorite    |
 ```
 
 | Action | Behavior |
 |--------|----------|
 | `download` | Downloads the active rendition. Filename: `asset-base + rendition.label + ext`. |
 | `copy-url` | Copies the active rendition's URL to the clipboard |
-| `share` | Triggers the `/actions/share` action dialog |
+| `copy-image` | Copies the active rendition's actual image bytes to the clipboard via the Async Clipboard API (`navigator.clipboard.write` with a `ClipboardItem`), converting to PNG first if needed. Falls back to `copy-url`'s behavior (copies the URL as text) if the browser or the delivery host's CORS policy won't allow reading the image bytes. |
+| `copy-link` | Copies a shareable asset link. `share` is kept as a deprecated alias so already-authored "Share" rows keep working. |
 | `collection` | Add/remove-from-collection toggle (same behavior as `collectionToggle`) |
+| `favorite` | Star toggle that always targets the Favorites (default) collection, regardless of which collection is currently active. This is distinct from `collection`, which targets whichever collection is active: `collection` auto-hides itself when the active collection already *is* Favorites, since the two would otherwise do the same thing. Add both rows to offer both. |
+
+All rendition-scoped actions (`download`, `copy-url`, `copy-image`) act on whichever rendition is currently active, the same "active rendition" concept `details-renditions` tracks (`asc:rendition:activate`), defaulting to `original` until the visitor picks something else there.
 
 ---
 
@@ -700,22 +729,62 @@ Pair `sheet-controls` (header) with [`board`](#board) (`source: sheet`, `mode: v
 
 | Property | Values | Default | Notes |
 |----------|--------|---------|-------|
-| `source` | `collection` \| `sheet` | `sheet` | Where to load assets from |
-| `mode` | `view` \| `interactive` | `view` | `view` = pan/zoom + search only; `interactive` = drag, rubber-band select, text elements, notes, "Align to grid", + Text button |
+| `source` | `collection` \| `sheet` \| `authored` | `sheet` | Where to load assets from |
+| `mode` | `view` \| `interactive` \| `sheet-url` | `view` | `view` = pan/zoom + search only; `interactive` = drag, rubber-band select, text elements, notes, "Align to grid", + Text button; `sheet-url` = read a pre-encoded share URL authored on the page itself instead of the visited URL's own `?sheet=` param (see below), always read-only regardless of this setting |
 | `notes` | `true` \| `false` | `true` | When `false`, hides notes UI entirely |
 | `search-properties` | Comma-separated property names | — | Properties to make client-side searchable. Omit to hide the search input. |
 | `display-properties` | `·`-delimited property names | — | Properties shown in the card body. Omitted → shows the asset type label (Image, Video, PDF…). |
-| `details` | Path prefix | — | Override the default ASC details modal — clicking a card navigates to `{details}?asset={uuid}` instead |
+| `details` | Path prefix | — | Override the default ASC details modal: clicking a card navigates to `{details}?asset={uuid}` instead |
+| `items` | Newline- or comma-separated asset IDs | — | Only used with `source: authored`, see below |
+| `sheet-url` | A full share URL | — | Only used with `mode: sheet-url`, see below |
 
 **Source: collection** — reads `?id=`, hydrates via `services.collections.get(id, true)`, persists pan/zoom to `localStorage` per collection ID.
 
 **Source: sheet** — reads `?sheet=`, decompresses the payload, and checks `expiresAt` before rendering (expired sheets show a notice instead of the canvas).
 
+**Source: authored**: a fixed, site-owner-curated list of asset IDs, typed directly into the `items` config (one per line, or comma-separated), for a "Press Kit" or a hand-picked campaign set, as opposed to a personal collection or a one-off `?sheet=` link. Always renders read-only regardless of `mode`. There's no separate collection to keep in sync: the page you author *is* the collection, and editing its `items` list is how you change what's in it. See [Published Collections](/collections#published) for when to reach for this instead of `source: sheet`.
+
+**Mode: sheet-url**: for a `source: authored`-style page that should still be defined by a *query*, not a fixed ID list. Instead of reading `?sheet=` from the URL the visitor actually used to reach the page, `sheet-url` authors a specific share URL (generated the normal way, from the Share dialog on some collection) directly into the page. Decoded identically to a normal `?sheet=` link, same payload format, same expiry handling; the only difference is where the encoded value comes from. Always renders read-only.
+
 **Client-side search:** appears as the last toolbar item when `search-properties` is set. Non-matching cards dim; matches get a highlight ring; the viewport auto-fits to matches on every keystroke.
 
 ### Page patterns
 
-**Collection page** — `collection-controls` (header) + `board` (`source: collection`, `mode: interactive`) in two sections. **Sheet page** — `sheet-controls` (header) + `board` (`source: sheet`, `mode: view`), optionally with a `details` override for a scoped details template.
+**Collection page**: `collection-controls` (header) + `board` (`source: collection`, `mode: interactive`) in two sections. **Sheet page**: `sheet-controls` (header) + `board` (`source: sheet`, `mode: view`), optionally with a `details` override for a scoped details template. **Published collection page**: no header block needed; `board` with `source: authored` (or `mode: sheet-url`) alongside plain authored `h1`/`p` copy. See [Published Collections](/collections#published).
+
+---
+
+## share-directory {#share-directory}
+
+**Collections & Board** · A curated, browsable index of published shares: the "here's what we've put together" front door, distinct from search (assumes you already know what you're looking for) and from a visitor's own personal collections (nobody has built one yet on a first visit). Place on the homepage, or anywhere you want to link out to a set of published collections.
+
+![share-directory: curated grid of published shares](https://placehold.co/860x480/111111/22c55e?text=share-directory+%E2%80%94+Curated+Shares&font=inter)
+
+*share-directory, the first row renders as a full-width featured tile, the rest as a responsive grid*
+
+Authored as one row per share, plus optional 2-cell config rows. No marker column is needed: a row is config only if it has exactly two cells; anything with three or more is a share.
+
+```
+| share-directory       |                                            |                      |
+| view                  | horizontal                                |                      |
+| hero                  | true                                       |                      |
+| Spring 2026 Campaign  | Curated hero shots for the spring launch  | /sheets/spring-2026  |
+| Press Kit             | Logos, product shots, and boilerplate     | /sheets/press-kit    |
+```
+
+Each share row is `Label | Description | URL/path`, with an optional 4th cell for a cover image (drop one in, or paste an image URL). Omit it and the card tries to resolve a thumbnail automatically.
+
+| Config key | Values | Default | Description |
+|------------|--------|---------|-------------|
+| `view` | `horizontal` \| `vertical` | `horizontal` | `horizontal` = mosaic on the left, title/description/count on the right (the default, wide-teaser layout); `vertical` = mosaic on top, the original stacked layout |
+| `hero` | `true` \| `false` | `true` | Whether the first share row renders as a full-width, larger featured tile instead of a regular grid card |
+
+**Automatic thumbnails.** With no cover image authored, the card tries to resolve one from the link itself:
+- A `?sheet=` link: the compressed payload *is* the asset list, so up to 15 thumbnails are decoded straight out of the URL, no fetch needed.
+- A link to the search page with query params: a real (silent) search is run and the results' thumbnails are used.
+- Any other same-site link: fetches the target page's own `.plain.html` and reads its blocks directly. A `board` with `source: authored` (its authored ID list), a `board` with `mode: sheet-url` (its authored share URL, decoded the same way as a `?sheet=` link), or a `search-hidden` block (its predicates, run as a silent search) all work. Falls back to a plain link icon only if none of these apply and no cover image was authored.
+
+**Card size follows asset count**, not just mosaic density. A 2-asset press kit and a 40-asset photo library don't read as the same size, since more assets mean more mosaic rows and a taller card. An **eyebrow label** ("Live Search" / "Curated Set") shows which kind of share it is: a search or saved-search link stays current on its own, a `?sheet=` or `source: authored` link is a fixed, hand-picked set.
 
 ---
 
@@ -746,7 +815,16 @@ See [Action Pages](/developer#actions) for the full DA document structure and co
 
 **Actions** · The share dialog triggered by `<a href="/actions/share">` links. Generates a compressed share URL for the current collection/board state (pointing at `configurations.collections.sheetPath`, default `/sheets/`) and records it to a local share history shown in the collection page's past-shares panel.
 
-Author its dialog content as a DA fragment at `/actions/share`.
+Author its dialog content as a DA fragment at `/actions/share`, as a pipe-delimited field list (`id | type | label | placeholder | suffix`):
+
+```
+| title       | text     | Sheet Title  | Sheet title                                        |
+| description | textarea | Description  | Optional context or usage guidance for recipients… |
+| expires     | number   | Expires in   | No expiry                                          | days |
+| chromeless  | switch   | Share as a standalone page (no site navigation)     |
+```
+
+The `switch` field type controls whether the generated link opens branded (with the full site header/footer/nav) or standalone (none of it, reads as a discrete microsite). It defaults **on**: every generated share link has always opened standalone by default, and the switch just makes that an explicit, overridable per-share choice instead of a fixed rule, by appending `&chrome=none` or `&chrome=full` to the generated URL. See [Branded vs. Standalone Shares](/collections#chrome) for the full mechanism.
 
 ---
 
