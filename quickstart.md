@@ -23,6 +23,8 @@ sidebar:
         url: "#step-7"
   - label: Next Steps
     items:
+      - title: Staying in Sync with ASC Core
+        url: "#staying-in-sync"
       - title: Apply a Theme
         url: "#themes"
       - title: Search Result Columns
@@ -61,6 +63,8 @@ git clone https://github.com/YOUR-USERNAME/asset-share-commons-eds.git
 cd asset-share-commons-eds
 npm install   # installs lint tooling only — nothing to build
 ```
+
+> **Fork, not "Use this template."** GitHub's template option gives you a clean repo with no history and no path back to the original, which is fine for a one-off snapshot but rules out ever pulling a Core update again. A real fork keeps the git relationship intact, the same way you'd stay connected to an upstream AEM EDS boilerplate. See [Staying in Sync with ASC Core](#staying-in-sync) below for what that buys you.
 
 ## Step 2 — Create a da.live Workspace {#step-2}
 
@@ -172,6 +176,32 @@ git push origin main
 AEM Code Sync picks up the push automatically and deploys to your preview (`main--{repo}--{owner}.aem.page`) and live (`main--{repo}--{owner}.aem.live`) environments within seconds. To publish content, use the da.live sidebar — open any page and click **Publish**.
 
 ---
+
+## Staying in Sync with ASC Core {#staying-in-sync}
+
+Everything under `scripts/asc/core/` is marked "do not edit" for a reason: it's the part of the project meant to keep working the same way in your fork as it does upstream, so future fixes and features can land in your project the same way a fork of the AEM EDS boilerplate itself stays current. See the [Ownership Boundary](/developer#ownership) for the full list of what's yours to edit versus what stays untouched.
+
+Add the original project as a second remote once, right after forking:
+
+```bash
+git remote add asc-upstream https://github.com/davidjgonzalez/asset-share-commons-eds.git
+```
+
+Whenever you want to pull in upstream changes:
+
+```bash
+git fetch asc-upstream
+git merge asc-upstream/main
+```
+
+This stays low-conflict as long as your own changes are confined to the customization surface: `scripts/asc/configurations.js`, `scripts/asc.js`, `blocks/`, `styles/`, and the root `component-*.json` files. If you've edited anything under `scripts/asc/core/` directly, expect merge conflicts there; that's the tradeoff for stepping outside the boundary.
+
+Two things worth knowing:
+
+- Occasionally an update touches the boilerplate parts of `scripts/scripts.js` itself, not just `scripts/asc/core/`. The [Page Lifecycle](/developer#lifecycle) section lists exactly which lines those are, so a conflict there is quick to resolve by hand.
+- There are no tagged releases yet, so `asc-upstream/main` is the only thing to merge from today. Review the commits you're pulling in before merging rather than merging blind, the same caution you'd apply to any upstream dependency without pinned versions.
+
+If you're using an AI coding assistant to help maintain your fork, point it at this project's `CLAUDE.md` and `AGENTS.md` (in the repo root): they document the ownership boundary and event conventions in a form written for that purpose.
 
 ## Apply a Theme {#themes}
 
