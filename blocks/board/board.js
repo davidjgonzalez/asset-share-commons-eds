@@ -5,6 +5,7 @@ import AssetAccessError from '../../scripts/asc/core/models/asset-access-error.j
 import { escHtml, escAttr } from '../../scripts/asc/html.js';
 import defaultBoardItemHtml from '../../scripts/asc/board-item.js';
 import { toggleRenditionMenu, prefetchRenditionSizes } from '../../scripts/asc/rendition-download-menu.js';
+import { canCopyImage, copyImageToClipboard } from '../../scripts/asc/core/utils/clipboard-image.js';
 
 const configurations = (await import('../../scripts/asc/configurations.js')).default;
 
@@ -35,6 +36,7 @@ function parseConfig(block) {
     searchProperties: [],
     details: null,
     sheetUrl: null,
+    items: [],
   };
   [...block.children].forEach((row) => {
     const [keyCell, valCell] = [...row.children];
@@ -46,8 +48,14 @@ function parseConfig(block) {
     else if (key === 'notes') config.notes = val.toLowerCase() !== 'false';
     else if (key === 'search-properties') {
       config.searchProperties = val ? val.split(',').map((p) => p.trim()).filter(Boolean) : [];
-    } else if (key === 'details') config.details = val || null;
-    else if (key === 'sheet-url') config.sheetUrl = val || null;
+    } else if (key === 'details') config.details = val ? services.url.toRelativeUrl(val) : null;
+    else if (key === 'sheet-url') config.sheetUrl = val ? services.url.toRelativeUrl(val) : null;
+    else if (key === 'items') {
+      // One asset UUID or DAM path per line — a fixed, site-owner-curated list (a "Press Kit",
+      // a hand-picked set for a campaign) rather than a personal collection or a
+      // compressed ?sheet= URL. See loadFromAuthoredList().
+      config.items = services.authoredAssets.parseAssetReferences(valCell);
+    }
   });
   return config;
 }
@@ -292,6 +300,28 @@ async function loadFromSheet(sheetParam) {
     assetItems,
     textItems: textElements,
   };
+}
+
+/**
+ * A "published collection" — a fixed set of assets a site owner curates once by
+ * authoring their ids/paths directly on the page (config.items), rather than a
+ * personal collection built by a visitor or a compressed one-off ?sheet= link.
+ * Publishable/linkable/discoverable the same way any other page is, because it
+ * IS a page — no server-side storage of its own beyond what AEM already is.
+ * Always read-only (view mode): there's no owning collection to drag positions
+ * back into, only a page an editor updates by changing the authored list itself.
+ */
+async function loadFromAuthoredList(ids) {
+  if (!ids.length) return { assetItems: [], textItems: [] };
+  const fetchedAssets = await services.authoredAssets.resolveAssetReferences(ids);
+  const assetItems = ids
+    .map((id, i) => {
+      const result = fetchedAssets[i];
+      const forbidden = result instanceof AssetAccessError;
+      return { type: 'asset', id, asset: forbidden ? null : result, forbidden };
+    })
+    .filter((i) => i.asset || i.forbidden);
+  return { assetItems, textItems: [] };
 }
 
 function sheetParamFromUrl(sheetUrl) {
@@ -641,6 +671,35 @@ function initPanZoom(block, persistId, onChange) {
     fitView,
     centerOn,
     hasValidSavedViewport,
+  };
+}
+
+// Board items carry an `img srcset` sized against their resting (zoom 1) CSS width — see
+// board-item.js. The pan/zoom canvas above scales items up to 3x via a CSS `transform`,
+// which the browser's native srcset selection never sees (transforms happen at paint time,
+// after the layout width srcset selection is based on), so a zoomed-in card would otherwise
+// just upscale whatever low-res candidate it already picked. Re-pointing `sizes` at the
+// zoomed-out CSS width whenever `zoom` changes is the sanctioned way to tell the browser
+// "this image now occupies more effective pixels" without hand-rolling srcset parsing —
+// it re-runs the normal selection algorithm, so DPR and quality/width tiers keep working.
+// Debounced and skipped when zoom hasn't actually changed, since pan-only onChange calls
+// (and rapid wheel-zoom ticks) would otherwise force a synchronous layout read (offsetWidth)
+// per visible image on every event.
+const ZOOM_RESOLUTION_DEBOUNCE = 150;
+
+function initZoomResolutionUpgrade(canvas, panZoom) {
+  let timer = null;
+  let lastZoom = null;
+  return function scheduleZoomResolutionUpgrade() {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      const { zoom } = panZoom.getState();
+      if (zoom === lastZoom) return;
+      lastZoom = zoom;
+      canvas.querySelectorAll('.board__item img[srcset]').forEach((img) => {
+        img.sizes = `${Math.max(1, Math.round(img.offsetWidth * zoom))}px`;
+      });
+    }, ZOOM_RESOLUTION_DEBOUNCE);
   };
 }
 
@@ -1173,8 +1232,21 @@ function initRenditionActions(block) {
         } catch {
           flashActionIcon(button, false);
         }
+      } else if (action === 'copy-image') {
+        const result = await copyImageToClipboard(rendition);
+        const originalLabel = button.getAttribute('aria-label');
+        if (result !== 'failed') {
+          button.setAttribute('aria-label', result === 'image'
+            ? 'Image copied'
+            : 'Link copied because image copy is unavailable');
+          setTimeout(() => button.setAttribute('aria-label', originalLabel), 1500);
+        }
+        flashActionIcon(button, result !== 'failed');
       }
-    }, { title: action === 'download' ? 'Download' : 'Copy URL' });
+    }, {
+      title: { download: 'Download', 'copy-url': 'Copy URL', 'copy-image': 'Copy Image' }[action],
+      filter: action === 'copy-image' ? canCopyImage : undefined,
+    });
   });
 
   viewport.addEventListener('mouseover', (event) => {
@@ -1343,8 +1415,17 @@ function initBoard(block, config, collectionId) {
   _selectedItems.clear();
   sizeViewport(block);
 
-  const panZoom = initPanZoom(block, collectionId, () => minimap?.updateIndicator());
+  const canvas = block.querySelector('.board__canvas');
+  const panZoom = initPanZoom(block, collectionId, () => {
+    minimap?.updateIndicator();
+    scheduleZoomResolutionUpgrade();
+  });
   const minimap = initMinimap(block, panZoom);
+  const scheduleZoomResolutionUpgrade = initZoomResolutionUpgrade(canvas, panZoom);
+  // Covers the restored-saved-viewport path, which sets an initial zoom directly without
+  // going through onChange (see initPanZoom above) — the fitView(false) path below also
+  // triggers this itself, so this call is a no-op harmless repeat in that case.
+  scheduleZoomResolutionUpgrade();
 
   block.querySelector('.board__fit')?.addEventListener('click', () => panZoom.fitView());
 
@@ -1408,6 +1489,11 @@ export default async function decorate(block) {
       if (e.detail?.id && e.detail.id !== id) return;
       await renderCollection();
     });
+  } else if (config.source === 'authored') {
+    const { assetItems, textItems } = await loadFromAuthoredList(config.items);
+    const boardConfig = { ...config, mode: 'view' };
+    block.innerHTML = viewportHtml(assetItems, textItems, boardConfig);
+    initBoard(block, boardConfig, null);
   } else {
     const sheetParam = config.mode === 'sheet-url'
       ? sheetParamFromUrl(config.sheetUrl)

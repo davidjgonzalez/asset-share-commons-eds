@@ -17,6 +17,7 @@ import { decorateASCSections } from './asc/section-grid.js';
 import { registerTokens } from './asc/tokens.js';
 import { initAnalytics } from './asc/analytics.js';
 import { registerSpeculationRules } from './asc/speculation-rules.js';
+import { isChromeless, renderChromeToggle } from './asc/chrome.js';
 import './asc/notifications.js';
 
 setupImageFallback();
@@ -32,6 +33,11 @@ export function ascEager(doc) {
     doc.body.classList.add(`theme-${theme}`);
     loadCSS(`${window.hlx.codeBasePath}/styles/themes/${theme}.css`);
   }
+  // Set as early as possible (main exists in the raw HTML by now even though
+  // decorateMain() hasn't run yet) so any [data-asc-nav-link] back-links
+  // authored into the page's own content never flash visible before being
+  // hidden — see scripts/asc/chrome.js.
+  doc.body.classList.toggle('is-chromeless', isChromeless(doc.querySelector('main')));
 }
 
 /**
@@ -48,6 +54,7 @@ export function ascDecorateMain(main) {
 /** Called once in loadLazy — prefetch same-origin links for faster navigation. */
 export function ascLazy() {
   registerSpeculationRules();
+  renderChromeToggle();
 }
 
 /** Called once in loadDelayed — non-critical ASC work. */

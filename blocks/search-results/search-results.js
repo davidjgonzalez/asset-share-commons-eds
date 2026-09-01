@@ -6,6 +6,7 @@ import collectionToggle from '../../scripts/asc/core/parts/collection-toggle/col
 import services from '../../scripts/asc/core/services/services.js';
 import configurations from '../../scripts/asc/configurations.js';
 import { toggleRenditionMenu, prefetchRenditionSizes } from '../../scripts/asc/rendition-download-menu.js';
+import { canCopyImage, copyImageToClipboard } from '../../scripts/asc/core/utils/clipboard-image.js';
 import { withViewTransition } from '../../scripts/asc/core/utils/view-transition.js';
 
 const MASONRY_SIZES = '(min-width: 1400px) 25vw, (min-width: 1000px) 33vw, (min-width: 640px) 50vw, 100vw';
@@ -17,6 +18,7 @@ const SKELETON_COUNT = 12;
 const ICONS = {
   download: '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
   copyUrl: '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>',
+  copyImage: '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>',
   check: '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>',
 };
 
@@ -47,13 +49,6 @@ function getListCols() {
   return configured.map((c) => (typeof c === 'string' ? { property: c } : c));
 }
 
-// Convert any property value to a display string
-function valToText(val) {
-  if (val == null) return '—';
-  if (typeof val === 'object' && val.width != null) return `${val.width} \u00d7 ${val.height}`;
-  return String(val);
-}
-
 function esc(str) {
   return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
@@ -78,15 +73,44 @@ function renderListCell(col, asset) {
 function quickActionButtonsHtml(assetId) {
   return `
     <button type="button"
-            class="search-results__quick-action search-results__quick-download btn btn--secondary btn--circle btn--sm"
+            class="search-results__quick-action search-results__quick-download asc-ui-icon-btn"
             data-asc-asset="${esc(assetId)}"
             aria-haspopup="true" aria-expanded="false"
             aria-label="Download asset">${ICONS.download}</button>
     <button type="button"
-            class="search-results__quick-action search-results__quick-copy-url btn btn--secondary btn--circle btn--sm"
+            class="search-results__quick-action search-results__quick-copy-url asc-ui-icon-btn"
             data-asc-asset="${esc(assetId)}"
             aria-haspopup="true" aria-expanded="false"
-            aria-label="Copy rendition URL">${ICONS.copyUrl}</button>`;
+            aria-label="Copy rendition URL">${ICONS.copyUrl}</button>
+    <button type="button"
+            class="search-results__quick-action search-results__quick-copy-image asc-ui-icon-btn"
+            data-asc-asset="${esc(assetId)}"
+            aria-haspopup="true" aria-expanded="false"
+            aria-label="Copy image">${ICONS.copyImage}</button>`;
+}
+
+// Fallback face for assets with no image preview — glyph + short label using the
+// kit's .asc-ui-filetype primitive (styles/ui-kit.css). Keyed off the same
+// data-asc-file-type value set by asset-teaser.js (asset.getProperty('file-type')),
+// see scripts/asc/core/services/properties/file-type.js for the full label set.
+const FILETYPE_FACES = {
+  PDF: { glyph: '📕', ext: 'PDF' },
+  Video: { glyph: '🎬', ext: 'Video' },
+  Audio: { glyph: '🎵', ext: 'Audio' },
+  'Word Doc': { glyph: '📝', ext: 'Doc' },
+  Excel: { glyph: '📊', ext: 'Excel' },
+  PowerPoint: { glyph: '📙', ext: 'Slides' },
+  Zip: { glyph: '📦', ext: 'Zip' },
+};
+const DEFAULT_FILETYPE_FACE = { glyph: '📄', ext: 'File' };
+
+function fileTypeFaceHtml(fileType) {
+  const face = FILETYPE_FACES[fileType] || DEFAULT_FILETYPE_FACE;
+  return `
+    <div class="asc-ui-filetype">
+      <span class="asc-ui-filetype__glyph" aria-hidden="true">${face.glyph}</span>
+      <span class="asc-ui-filetype__ext">${esc(face.ext)}</span>
+    </div>`;
 }
 
 function renderListActionsCell(asset) {
@@ -207,15 +231,23 @@ function promoteAboveFoldImages(container, count = 4) {
   }
 }
 
+function markNoPreview(img) {
+  const teaser = img.closest('.asc-asset-teaser');
+  if (!teaser) return;
+  teaser.classList.add('asc-asset-teaser--no-preview');
+  const preview = teaser.querySelector('.asc-asset-teaser__preview');
+  if (preview && !preview.querySelector('.asc-ui-filetype')) {
+    preview.insertAdjacentHTML('beforeend', fileTypeFaceHtml(teaser.dataset.ascFileType));
+  }
+}
+
 function attachImageHandlers(resultsEl) {
   resultsEl.querySelectorAll('.asc-asset-teaser__preview img').forEach((img) => {
     if (img.complete && img.naturalWidth === 0) {
-      img.closest('.asc-asset-teaser')?.classList.add('asc-asset-teaser--no-preview');
+      markNoPreview(img);
       return;
     }
-    img.addEventListener('error', () => {
-      img.closest('.asc-asset-teaser')?.classList.add('asc-asset-teaser--no-preview');
-    }, { once: true });
+    img.addEventListener('error', () => markNoPreview(img), { once: true });
   });
 }
 
@@ -256,6 +288,21 @@ function flashCopyIcon(btn) {
 function copyRenditionUrl(btn, rendition) {
   if (!rendition?.url) return;
   navigator.clipboard.writeText(rendition.url).then(() => flashCopyIcon(btn));
+}
+
+// Flashes a checkmark either way, but the aria-label distinguishes "copied the
+// image" from "copied the link instead" (e.g. blocked by CORS) — see
+// scripts/asc/core/utils/clipboard-image.js for why the fallback exists. Restores the
+// original label alongside the icon so a screen reader hears "Copy image"
+// again next time, not a stale "Image copied".
+async function copyRenditionImage(btn, rendition) {
+  if (!rendition?.url) return;
+  const result = await copyImageToClipboard(rendition);
+  if (result === 'failed') return;
+  const originalLabel = btn.getAttribute('aria-label');
+  btn.setAttribute('aria-label', result === 'image' ? 'Image copied' : 'Link copied (image copy unavailable)');
+  flashCopyIcon(btn);
+  setTimeout(() => btn.setAttribute('aria-label', originalLabel), 1500);
 }
 
 // Card/masonry-shaped skeleton tile, composed from the same asc-ui-asset-card
@@ -477,7 +524,8 @@ async function addEventListeners(block, _config) {
 
     const downloadBtn = event.target.closest('.search-results__quick-download');
     const copyUrlBtn = !downloadBtn && event.target.closest('.search-results__quick-copy-url');
-    const trigger = downloadBtn || copyUrlBtn;
+    const copyImageBtn = !downloadBtn && !copyUrlBtn && event.target.closest('.search-results__quick-copy-image');
+    const trigger = downloadBtn || copyUrlBtn || copyImageBtn;
     if (!trigger) return;
 
     event.preventDefault();
@@ -490,9 +538,14 @@ async function addEventListeners(block, _config) {
       toggleRenditionMenu(downloadBtn, asset, (rendition) => triggerAssetDownload(rendition, asset), {
         title: 'Downloads',
       });
-    } else {
+    } else if (copyUrlBtn) {
       toggleRenditionMenu(copyUrlBtn, asset, (rendition) => copyRenditionUrl(copyUrlBtn, rendition), {
         title: 'Copy URL',
+      });
+    } else {
+      toggleRenditionMenu(copyImageBtn, asset, (rendition) => copyRenditionImage(copyImageBtn, rendition), {
+        title: 'Copy Image',
+        filter: canCopyImage,
       });
     }
   });
@@ -501,7 +554,7 @@ async function addEventListeners(block, _config) {
   // while the user is still deciding whether to click it.
   block.addEventListener('mouseover', (event) => {
     const trigger = event.target.closest(
-      '.search-results__quick-download, .search-results__quick-copy-url',
+      '.search-results__quick-download, .search-results__quick-copy-url, .search-results__quick-copy-image',
     );
     if (!trigger) return;
     const asset = resolveAssetFor(trigger);

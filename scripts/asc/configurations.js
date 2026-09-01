@@ -42,7 +42,7 @@ const configurations = {
     // no search results block (e.g. the site header). The query is appended as
     // ?fulltext=<value>. Leave blank to disable cross-page redirect entirely.
     // Individual search-bar blocks can override this with a `redirect` row.
-    page: '/',
+    page: '/search',
 
     // ── QueryBuilder options (used when provider = 'querybuilder') ──
     // url: '/bin/querybuilder.json',
@@ -408,6 +408,27 @@ const configurations = {
     },
   },
 
+  // ─── Copy Image ─────────────────────────────────────────────────────────────
+  // Prevent full-resolution originals from causing excessive network, decode,
+  // and canvas memory usage when copied to the operating-system clipboard.
+  copyImage: {
+    maxBytes: 20 * 1024 * 1024,
+    maxPixels: 40_000_000,
+  },
+
+  // Authored boards and share-directory mosaics resolve UUID/path references
+  // through a small request pool. Supply resolveReference to integrate a custom
+  // provider; it receives one reference and returns an Asset, AssetAccessError,
+  // or null.
+  authoredAssets: {
+    concurrency: 4,
+    // resolveReference: async (reference) => myProvider.getAsset(reference),
+  },
+
+  shareDirectory: {
+    previewConcurrency: 2,
+  },
+
   // ─── Asset Properties (reference) ──────────────────────────────────────────────
   // properties: {
   //   // Add custom property handlers or override built-in ones.
@@ -528,9 +549,23 @@ const configurations = {
       { type: 'web-optimized-delivery', size: { width: 1280 }, params: 'width=1280&preferwebp=true&quality=70', accepts: (asset) => asset.mimeType?.startsWith('image/') },
       { type: 'static', name: 'preview',  size: { width: 320 },accepts: (asset) => asset.mimeType?.startsWith('video/') },
     ],
+    // Natural-aspect preview renditions — used for board cards (asc-ui-asset-card--natural),
+    // which show the image unmasked at its own aspect ratio instead of a cropped square.
+    // web-optimized-delivery with only `width` set resizes proportionally (no crop), so
+    // this ladder is safe for that use unlike a square-cropped thumbnail rendition would be.
+    // Wider top end than `thumbnails` because the board's pan/zoom canvas can scale a card
+    // up to 3x its base ~240px width — board.js re-requests a candidate from this ladder as
+    // the user zooms in, so the ceiling here should cover the zoomed-in size, not just the
+    // resting card size.
+    previews: [
+      { type: 'web-optimized-delivery', size: { width: 240  }, params: 'width=240&preferwebp=true&quality=85',  accepts: (asset) => asset.mimeType?.startsWith('image/') },
+      { type: 'web-optimized-delivery', size: { width: 480  }, params: 'width=480&preferwebp=true&quality=85',  accepts: (asset) => asset.mimeType?.startsWith('image/') },
+      { type: 'web-optimized-delivery', size: { width: 960  }, params: 'width=960&preferwebp=true&quality=80',  accepts: (asset) => asset.mimeType?.startsWith('image/') },
+      { type: 'web-optimized-delivery', size: { width: 1920 }, params: 'width=1920&preferwebp=true&quality=75', accepts: (asset) => asset.mimeType?.startsWith('image/') },
+    ],
     definitions: [
-      { id: 'original', label: 'Original', type: 'static', name: 'original' },
-      { id: 'web', label: 'Web (1280 pixels)', type: 'static', name: 'cq5dam.web.1280.1280', accepts: (asset) => asset.mimeType?.startsWith('image/') },
+      { id: 'original', label: 'Original', usecase: 'Full Resolution / Print', type: 'static', name: 'original' },
+      { id: 'web', label: 'Web', usecase: 'Website (1280px)', type: 'static', name: 'cq5dam.web.1280.1280', accepts: (asset) => asset.mimeType?.startsWith('image/') },
       // Smart crop rendition definitions. `id` uses the "smart-crop-*" spelling
       // (hyphen after "smart") because that's the literal id authors reference
       // from da.live action fragments (e.g. /actions/download); keep the two in
@@ -541,9 +576,15 @@ const configurations = {
       //   URL — append any other DM image-serving param here too (e.g. '&contrast=30').
       // Use whichever type matches your DM API (see aem.deliveryHost above) — mixing
       // both in the same list is also fine if some crops need one API and some the other.
-      { id: 'smart-crop-small', label: 'Smart Crop — Small', type: 'dm-scene7', smartCropId: 'Small', accepts: (asset) => asset.mimeType?.startsWith('image/') },
-      { id: 'smart-crop-medium', label: 'Smart Crop — Medium', type: 'dm-scene7', smartCropId: 'Medium', accepts: (asset) => asset.mimeType?.startsWith('image/') },
-      { id: 'smart-crop-large', label: 'Smart Crop — Large', type: 'dm-scene7', smartCropId: 'Large', accepts: (asset) => asset.mimeType?.startsWith('image/') },
+      //
+      // `usecase` names a real destination, not a generic bucket ("Social" covers Instagram,
+      // Twitter/X, Threads, etc. with completely different crops/dimensions) — label each
+      // smart-crop preset by what it actually is (aspect ratio + the destination it fits),
+      // so a visitor picks by "what am I making" instead of decoding a preset name. Rename
+      // these to match whatever your DM smart-crop presets actually produce.
+      { id: 'smart-crop-small', label: 'Square', usecase: 'Instagram Post / Profile Image (1:1)', type: 'dm-scene7', smartCropId: 'Small', accepts: (asset) => asset.mimeType?.startsWith('image/') },
+      { id: 'smart-crop-medium', label: 'Standard', usecase: 'Email / Blog Inline (4:3)', type: 'dm-scene7', smartCropId: 'Medium', accepts: (asset) => asset.mimeType?.startsWith('image/') },
+      { id: 'smart-crop-large', label: 'Widescreen', usecase: 'Web Banner / Twitter Post (16:9)', type: 'dm-scene7', smartCropId: 'Large', accepts: (asset) => asset.mimeType?.startsWith('image/') },
       // dm-openapi equivalent, if your instance uses OpenAPI instead of classic Scene7:
       //   { id: 'smart-crop-small', label: 'Smart Crop — Small', type: 'dm-openapi', params: 'smartcrop=Small&fit=constrain', accepts: (asset) => asset.mimeType?.startsWith('image/') },
 

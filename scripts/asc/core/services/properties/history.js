@@ -1,4 +1,4 @@
-/** @owner user */
+// ASC Core — do not edit. Customize via scripts/asc/configurations.js
 import { propValue } from '../../../html.js';
 import { escHtml } from '../../../html.js';
 

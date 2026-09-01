@@ -3,33 +3,46 @@ import Asset from '../../scripts/asc/core/models/asset.js';
 import services from '../../scripts/asc/core/services/services.js';
 import { Events as CollectionEvents } from '../../scripts/asc/core/services/collections/collections.js';
 import { escHtml, escAttr, formatUpdated } from '../../scripts/asc/html.js';
+import { readBlockConfig } from '../../scripts/asc/core/utils/blocks.js';
+import { MAX_MOSAIC_THUMBS, mosaicRowCounts, mosaicHeight } from '../../scripts/asc/core/utils/mosaic.js';
 
 const configurations = (await import('../../scripts/asc/configurations.js')).default;
 
 const COLLECTION_PATH = configurations.collections?.collectionPath || '/collections/collection';
 
 /**
- * Collections block — index/management page for all user collections.
+ * Collections block — index/management page for all user collections, or a
+ * compact horizontal rail (e.g. for placing on the homepage).
  * Page title and intro copy are authored in Universal Editor above this block.
  *
+ * Content config (key | value rows):
+ *   display  'grid' (default, full management page) | 'rail' (compact strip —
+ *            no create/duplicate/delete actions, horizontal scroll)
+ *   limit    max collections to show; 0 or omitted = no limit
+ *
  * Features:
- *   - Grid of collection cards: mosaic of up to 4 asset thumbnails (lazy-loaded),
- *     name, asset type counts, total count, last updated, Open / Delete buttons
- *   - Inline "New collection" form
+ *   - Grid or rail of collection cards: mosaic of up to 4 asset thumbnails
+ *     (lazy-loaded), name, asset type counts, total count, last updated
+ *   - Grid mode adds: inline "New collection" form, Set active / Duplicate /
+ *     Delete actions per card
  *   - Re-renders on any collection change event
  *   - Navigate to collection detail page at COLLECTION_PATH?id=<uuid>
  */
 export default async function decorate(block) {
-  await render(block);
+  const config = readBlockConfig(block, {}, { display: 'grid', limit: 0 });
+  const isRail = config.display === 'rail';
+  const limit = Number(config.limit) || 0;
+
+  await render(block, isRail, limit);
 
   document.addEventListener(CollectionEvents.CHANGED, async () => {
-    await render(block);
+    await render(block, isRail, limit);
   });
 }
 
 // ─── Rendering ────────────────────────────────────────────────────────────────
 
-async function render(block) {
+async function render(block, isRail, limit) {
   const collections = await services.collections.getAll(false);
   const activeId = services.collections.getActiveId();
   const data = services.collections._getData();
@@ -39,15 +52,17 @@ async function render(block) {
     const ta = new Date(a.modifiedAt || 0).getTime();
     return tb - ta;
   });
+  const shown = limit > 0 ? sorted.slice(0, limit) : sorted;
 
-  block.innerHTML = html(sorted, activeId, defaultId);
-  initInteractions(block);
+  block.innerHTML = html(shown, activeId, defaultId, isRail);
+  initInteractions(block, isRail);
   loadMosaics(block);
 }
 
-function html(collections, activeId, defaultId) {
+function html(collections, activeId, defaultId, isRail) {
   return `
     <section class="collections__shell" aria-label="Collections">
+      ${isRail ? '' : `
       <div class="collections__toolbar">
         <button type="button" class="collections__new-btn btn btn--primary">New Collection</button>
       </div>
@@ -61,11 +76,11 @@ function html(collections, activeId, defaultId) {
           <button type="submit" class="btn btn--primary">Create</button>
           <button type="button" class="collections__new-cancel btn btn--secondary">Cancel</button>
         </div>
-      </form>
+      </form>`}
 
-      <ul class="collections__grid" role="list">
+      <ul class="collections__grid${isRail ? ' collections__grid--rail' : ''}" role="list">
         ${collections.length
-    ? collections.map((c) => collectionCard(c, activeId, defaultId)).join('')
+    ? collections.map((c) => collectionCard(c, activeId, defaultId, isRail)).join('')
     : `<li class="collections__empty asc-ui-empty-state">
           <span class="asc-ui-empty-state__icon" aria-hidden="true">📁</span>
           <p class="asc-ui-empty-state__title">No collections yet</p>
@@ -75,7 +90,7 @@ function html(collections, activeId, defaultId) {
     </section>`;
 }
 
-function collectionCard(collection, activeId, defaultId) {
+function collectionCard(collection, activeId, defaultId, isRail) {
   const count = collection.assetIds?.length ?? 0;
   const isActive = collection.id === activeId;
   const isDefault = collection.id === defaultId;
@@ -103,6 +118,7 @@ function collectionCard(collection, activeId, defaultId) {
           </div>
         </div>
       </a>
+      ${isRail ? '' : `
       <div class="collections__card-actions asc-ui-card__footer">
         ${!isActive
     ? `<button type="button" class="collections__card-activate btn btn--secondary btn--sm"
@@ -118,31 +134,8 @@ function collectionCard(collection, activeId, defaultId) {
                data-collection-id="${escAttr(collection.id)}"
                aria-label="Delete ${escAttr(collection.name)} collection">Delete</button>`
     : ''}
-      </div>
+      </div>`}
     </li>`;
-}
-
-// Bounded to 5 columns × 3 rows (15 visible thumbnails max).
-const MAX_MOSAIC_THUMBS = 15;
-const MOSAIC_HEIGHT_BY_ROWS = { 1: 260, 2: 220, 3: 200 };
-
-// Splits n thumbnails into up to 3 rows of up to 5 columns each, choosing the
-// row count that keeps every row's mini-grid sized to exactly the thumbnails
-// it's given — never more — so a trailing partial row never leaves empty
-// cells; those thumbnails just render wider instead. n<=5 stays a single row
-// (biggest thumbnails); more assets add rows, not blank cells.
-function mosaicRowCounts(n) {
-  if (n <= 5) return [n];
-  const rows = n <= 10 ? 2 : 3;
-  const cols = Math.min(5, Math.ceil(n / rows));
-  const counts = [];
-  let remaining = n;
-  for (let r = 0; r < rows; r += 1) {
-    const rowCount = r === rows - 1 ? remaining : cols;
-    counts.push(rowCount);
-    remaining -= rowCount;
-  }
-  return counts;
 }
 
 function mosaicHtml(count, thumbIds, overflow) {
@@ -154,7 +147,7 @@ function mosaicHtml(count, thumbIds, overflow) {
   }
 
   const rowCounts = mosaicRowCounts(thumbIds.length);
-  const height = MOSAIC_HEIGHT_BY_ROWS[rowCounts.length] || 200;
+  const height = mosaicHeight(rowCounts.length);
 
   const rowsHtml = rowCounts.map((rowCount, rowIndex) => {
     const isLastRow = rowIndex === rowCounts.length - 1;
@@ -248,7 +241,11 @@ async function loadCardMosaic(card) {
 
 // ─── Interactions ─────────────────────────────────────────────────────────────
 
-function initInteractions(block) {
+function initInteractions(block, isRail) {
+  // Rail mode omits the toolbar/create-form and per-card management actions —
+  // nothing below is rendered into the DOM, so nothing to wire up.
+  if (isRail) return;
+
   // Show/hide create form
   block.querySelector('.collections__new-btn').addEventListener('click', () => {
     const form = block.querySelector('.collections__new-form');

@@ -149,8 +149,14 @@ async function fetchAndApplySize(rendition) {
 
     rendition.fileSize = parseInt(contentLength, 10);
     if (!panelEl || panelEl.hidden || renditionsById?.get(rendition.id) !== rendition) return;
-    panelEl.querySelector(`[data-rendition-id="${escAttr(rendition.id)}"] .asc-ui-menu__item-meta`)
-      ?.replaceChildren(document.createTextNode(formatMeta(rendition)));
+    const item = panelEl.querySelector(`[data-rendition-id="${escAttr(rendition.id)}"]`);
+    item?.setAttribute('title', formatMeta(rendition));
+    // Usecase (if set) stays the visible line — file size is supplementary info,
+    // available on hover via the title attribute above, not a reason to bump it.
+    if (!rendition.usecase) {
+      item?.querySelector('.asc-ui-menu__item-meta')
+        ?.replaceChildren(document.createTextNode(formatMeta(rendition)));
+    }
   } catch {
     // Network error — leave the size blank rather than blocking the menu.
   }
@@ -162,9 +168,9 @@ async function fetchAndApplySize(rendition) {
  * @param {HTMLElement} trigger
  * @param {Asset} asset
  * @param {(rendition: object) => void} onSelect
- * @param {{ title?: string }} [options] - optional light-grey header row above the list
+ * @param {{ title?: string, filter?: (rendition: object) => boolean }} [options]
  */
-export function toggleRenditionMenu(trigger, asset, onSelect, { title } = {}) {
+export function toggleRenditionMenu(trigger, asset, onSelect, { title, filter } = {}) {
   const el = ensurePanel();
 
   if (!el.hidden && openTrigger === trigger) {
@@ -172,7 +178,7 @@ export function toggleRenditionMenu(trigger, asset, onSelect, { title } = {}) {
     return;
   }
 
-  const renditions = downloadableRenditions(asset);
+  const renditions = downloadableRenditions(asset).filter(filter || (() => true));
   if (!renditions.length) return;
 
   // Re-parent into the enclosing <dialog> when present — native <dialog> promotes
@@ -182,9 +188,9 @@ export function toggleRenditionMenu(trigger, asset, onSelect, { title } = {}) {
 
   el.innerHTML = `${title ? `<div class="asc-ui-menu__header">${escHtml(title)}</div>` : ''}
     <ul class="asc-ui-menu">${renditions.map((r) => `
-    <li><button type="button" class="asc-ui-menu__item" data-rendition-id="${escAttr(r.id)}">
+    <li><button type="button" class="asc-ui-menu__item" data-rendition-id="${escAttr(r.id)}" title="${escAttr(formatMeta(r))}">
       <span class="asc-ui-menu__item-label">${escHtml(r.label || r.id)}</span>
-      <span class="asc-ui-menu__item-meta">${escHtml(formatMeta(r))}</span>
+      <span class="asc-ui-menu__item-meta">${escHtml(r.usecase || formatMeta(r))}</span>
     </button></li>`).join('')}</ul>`;
 
   openTrigger = trigger;

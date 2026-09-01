@@ -6,5 +6,7 @@ const config = {
 }
 
 export default function get(asset, options = {}) {
-    return asset.getProperty('tiff:ImageLength').data || asset.getProperty('exif:PixelYDimension').data;
+    return asset.getProperty('tiff:ImageLength').data
+    || asset.getProperty('exif:PixelYDimension').data
+    || asset.getProperty('dam:extractedHeight').data;
 }

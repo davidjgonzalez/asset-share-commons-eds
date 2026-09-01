@@ -22,9 +22,22 @@ function saveShareHistory(entry) {
   storage.set(SHARE_HISTORY_KEY, history.slice(0, MAX_SHARE_HISTORY));
 }
 
-function renderFormField({ id, type, label, placeholder, suffix }, defaultValue = '') {
+function renderFormField({
+  id, type, label, placeholder, suffix, defaultChecked,
+}, defaultValue = '') {
   const ph = placeholder ? ` placeholder="${escAttr(placeholder)}"` : '';
   const val = defaultValue ? ` value="${escAttr(defaultValue)}"` : '';
+  if (type === 'switch') {
+    // Authored fields (parseActionFragment) have no way to express a default
+    // other than true — checked unless a field object explicitly says false.
+    const checked = defaultChecked !== false;
+    return `<label class="asc-ui-switch action-share__switch">
+        <input type="checkbox" role="switch" aria-checked="${checked}"
+               data-field-id="${escAttr(id)}"${checked ? ' checked' : ''} />
+        <span class="asc-ui-switch__track"><span class="asc-ui-switch__thumb"></span></span>
+        <span>${escHtml(label)}</span>
+      </label>`;
+  }
   let input;
   if (type === 'textarea') {
     input = `<textarea data-field-id="${escAttr(id)}" rows="3"${ph}></textarea>`;
@@ -52,6 +65,13 @@ export default async function decorate(block) {
     { id: 'title', type: 'text', label: 'Sheet Title', placeholder: 'Sheet title' },
     { id: 'description', type: 'textarea', label: 'Description', placeholder: 'Optional context or usage guidance for recipients…' },
     { id: 'expires', type: 'number', label: 'Expires in', placeholder: 'No expiry', suffix: 'days' },
+    // Standalone (no site nav) is the existing default for every ?sheet= link
+    // today — this switch makes that a per-share choice instead of a fixed
+    // rule, defaulting checked so today's behavior doesn't change unless the
+    // sharer opts out. See scripts/asc/chrome.js for the read side.
+    {
+      id: 'chromeless', type: 'switch', label: 'Share as a standalone page (no site navigation)', defaultChecked: true,
+    },
   ];
 
   const dialog = document.createElement('dialog');
@@ -95,6 +115,11 @@ export default async function decorate(block) {
   dialog.addEventListener('close', () => dialog.remove());
 
   const fieldVal = (id) => dialog.querySelector(`[data-field-id="${id}"]`)?.value?.trim() || '';
+  const fieldChecked = (id) => dialog.querySelector(`[data-field-id="${id}"]`)?.checked ?? false;
+
+  dialog.querySelectorAll('input[type="checkbox"][role="switch"]').forEach((input) => {
+    input.addEventListener('change', () => input.setAttribute('aria-checked', String(input.checked)));
+  });
 
   let shareTitle = '';
   let shareUrl = '';
@@ -133,7 +158,11 @@ export default async function decorate(block) {
     };
 
     const compressed = await services.url.compressArray([JSON.stringify(payload)]);
-    const url = `${window.location.origin}${SHEET_PATH}?sheet=${compressed}`;
+    // Explicit chrome= param rather than relying only on the implicit "any
+    // ?sheet= link is standalone" default (scripts/asc/chrome.js) — makes the
+    // sharer's choice durable even if that default ever changes.
+    const chrome = fieldChecked('chromeless') ? 'none' : 'full';
+    const url = `${window.location.origin}${SHEET_PATH}?sheet=${compressed}&chrome=${chrome}`;
 
     saveShareHistory({ title: payload.title, url, collectionId: collection?.id });
 

@@ -52,6 +52,7 @@
         top: calc(100% + var(--spacing-xs));
         right: 0;
         min-width: var(--collection-switcher-dropdown-min-width);
+        max-width: calc(100vw - 2rem);
         background: var(--color-bg);
         border: 1px solid var(--color-border);
         border-radius: var(--border-radius-md);

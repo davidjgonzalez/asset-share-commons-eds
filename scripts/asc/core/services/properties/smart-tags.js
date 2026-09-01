@@ -1,4 +1,4 @@
-/** @owner user */
+// ASC Core — do not edit. Customize via scripts/asc/configurations.js
 export default function get(asset) {
   const predictedTags = asset.getProperty('jcr:content/metadata/predictedTags').data;
   if (!predictedTags || typeof predictedTags !== 'object') return null;

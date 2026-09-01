@@ -11,7 +11,7 @@
  * details-renditions (`asc:rendition:activate`), defaulting to "original" until
  * the user picks a different one there.
  *
- * Supported actions: download, copy-url, copy-link, collection, favorite
+ * Supported actions: download, copy-url, copy-image, copy-link, collection, favorite
  * `share` is a deprecated alias for `copy-link`, kept so already-authored "Share"
  * rows get real behavior instead of the no-op they used to dispatch.
  *
@@ -22,9 +22,14 @@
  * collection already IS Favorites, since the two would otherwise do the same
  * thing (see collection-toggle.js).
  *
+ * `copy-image` copies the active rendition's actual image bytes to the clipboard
+ * (not just its URL) via scripts/asc/core/utils/clipboard-image.js — falls back to copying
+ * the URL if the browser or the delivery host's CORS policy won't allow it.
+ *
  * Authoring (da.live table):
  *   | Download        | download       |
  *   | Copy URL        | copy-url       |
+ *   | Copy Image      | copy-image     |
  *   | Copy asset link | copy-link      |
  *   | Collection      | collection     |
  *   | Favorite        | favorite       |
@@ -32,9 +37,10 @@
 import Asset from '../../scripts/asc/core/models/asset.js';
 import services from '../../scripts/asc/core/services/services.js';
 import collectionToggle from '../../scripts/asc/core/parts/collection-toggle/collection-toggle.js';
+import { canCopyImage, copyImageToClipboard } from '../../scripts/asc/core/utils/clipboard-image.js';
 import { escHtml as esc } from '../../scripts/asc/html.js';
 
-const VALID_ACTIONS = new Set(['download', 'copy-url', 'copy-link', 'share', 'collection', 'favorite']);
+const VALID_ACTIONS = new Set(['download', 'copy-url', 'copy-image', 'copy-link', 'share', 'collection', 'favorite']);
 
 export default async function decorate(block) {
   const actionPairs = [...block.children]
@@ -63,6 +69,20 @@ export default async function decorate(block) {
     const copyUrlBtn = e.target.closest('[data-copy-url]');
     if (copyUrlBtn) {
       copyText(copyUrlBtn, copyUrlBtn.dataset.copyUrl);
+      return;
+    }
+
+    const copyImageBtn = e.target.closest('.details-actions__copy-image');
+    if (copyImageBtn) {
+      copyImageToClipboard(activeRendition).then((result) => {
+        if (result === 'failed') return;
+        const originalLabel = copyImageBtn.getAttribute('aria-label');
+        copyImageBtn.setAttribute('aria-label', result === 'image'
+          ? 'Image copied'
+          : 'Link copied because image copy is unavailable');
+        flashIcon(copyImageBtn, ICONS.check);
+        setTimeout(() => copyImageBtn.setAttribute('aria-label', originalLabel), 2000);
+      });
       return;
     }
 
@@ -108,7 +128,8 @@ function updateRenditionActions(block, rendition) {
 
   const copyUrlBtn = block.querySelector('[data-copy-url]');
   if (copyUrlBtn) copyUrlBtn.dataset.copyUrl = rendition.url;
-
+  const copyImageBtn = block.querySelector('.details-actions__copy-image');
+  if (copyImageBtn) copyImageBtn.hidden = !canCopyImage(rendition);
 }
 
 function html(asset, actionPairs, rendition) {
@@ -139,6 +160,14 @@ function htmlButton(asset, action, rendition, label) {
                 data-copy-url="${esc(url)}"
                 title="${esc(label)}" aria-label="${esc(label)}">
           <span class="asc-ui-action__icon" aria-hidden="true">${ICONS.copyUrl}</span>
+          <span>${esc(label)}</span>
+        </button>`;
+
+    case 'copy-image':
+      return `
+        <button class="asc-ui-action details-actions__copy-image" type="button"${canCopyImage(rendition) ? '' : ' hidden'}
+                title="${esc(label)}" aria-label="${esc(label)}">
+          <span class="asc-ui-action__icon" aria-hidden="true">${ICONS.copyImage}</span>
           <span>${esc(label)}</span>
         </button>`;
 
@@ -183,6 +212,7 @@ function mimeToExt(mimeType) {
 const ICONS = {
   download: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
   copyUrl: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>',
+  copyImage: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>',
   link: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>',
   check: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>',
 };

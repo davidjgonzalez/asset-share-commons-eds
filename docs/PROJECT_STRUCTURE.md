@@ -103,6 +103,14 @@ styles/
 | `scripts/asc/section-grid.js` | Named-area CSS grid for section metadata — called internally by `ascDecorateMain` |
 | `scripts/asc/tokens.js` | `{{ accessor \| fallback }}` content variable resolver — called internally by `ascDecorateMain` |
 | `scripts/asc/html.js` | Shared HTML helpers: `escHtml`, `escAttr`, `formatUpdated` — import into any block that builds HTML strings |
+| `scripts/asc/board-item.js` | Default board/collection card renderer — swap via `configurations.board.itemRenderer` |
+| `scripts/asc/notifications.js` | Toast feedback; edit the `LISTENERS` array directly to add/remove/reword triggers |
+| `scripts/asc/color-search.js` | Color-picker palette + nearest-match algorithm for `search-bar`'s color search |
+| `scripts/asc/analytics.js` | Analytics bridge — normalizes the `asc:{noun}:{verb}` event bus into `trackEvent()` calls |
+| `scripts/asc/asset-navigation.js` | Derives the Prev/Next asset list for the details modal from the current page DOM |
+| `scripts/asc/speculation-rules.js` | Registers a Speculation Rules script for same-origin link prefetching |
+| `scripts/asc/rendition-download-menu.js` | Shared floating rendition-picker menu (download / copy-url / copy-image triggers) |
+| `scripts/asc/chrome.js` | Branded-vs-standalone page chrome resolution — see "Chrome Duality" in `CLAUDE.md` |
 | `scripts/extract-design-tokens.js` | Dev utility — extracts token values for tooling/docs |
 
 #### Content pages and demos
@@ -128,6 +136,7 @@ styles/
 │       ├── section-grid.js     USER — section grid utility (called by asc.js)
 │       ├── tokens.js           USER — content variable resolver (called by asc.js)
 │       ├── html.js             USER — escHtml / escAttr / formatUpdated
+│       ├── … more flat USER files — see the "Scripts" table above
 │       └── core/               ASC CORE — do not edit
 │           ├── services/
 │           │   └── action-pages/   — /actions/* link interceptor + loadBlock runner

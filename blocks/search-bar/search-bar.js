@@ -5,7 +5,7 @@
  * Authoring (da.live table):
  *
  *   | search-bar   |                                                     |
- *   | redirect     | /                                                   |  ← optional: cross-page redirect
+ *   | redirect     | /search                                             |  ← optional: cross-page redirect
  *   | placeholder  | Search assets...                                   |  ← optional input placeholder
  *   | view         | Masonry : masonry                                  |  ← first option = default
  *   |              | Cards : cards                                      |
@@ -24,6 +24,7 @@
 import { readBlockConfig, SEARCH_FORM } from '../../scripts/asc/core/utils/search.js';
 import { escAttr } from '../../scripts/asc/html.js';
 import { DEFAULT_PALETTE, nearestColor } from '../../scripts/asc/color-search.js';
+import services from '../../scripts/asc/core/services/services.js';
 
 const configurations = (await import('../../scripts/asc/configurations.js')).default;
 const SEARCH_PAGE = configurations.search?.page || '';
@@ -86,6 +87,9 @@ export default function decorate(block) {
     name: 'fulltext',
     redirect: SEARCH_PAGE,
   });
+  // A `redirect` row may have been pasted as a full URL copied from a different
+  // environment (aem.live/aem.page/localhost) — only its path/query is ever valid.
+  config.redirect = services.url.toRelativeUrl(config.redirect);
 
   const viewOptions    = parseOptions(config.view,        DEFAULT_VIEW_OPTIONS);
   const sortOptions    = parseOptions(config.sort,        DEFAULT_SORT_OPTIONS);

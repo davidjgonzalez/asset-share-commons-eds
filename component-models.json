@@ -383,12 +383,12 @@
     "id": "details-renditions",
     "fields": [
       {
-        "component": "text",
-        "name": "label",
-        "label": "Section Label",
-        "value": "Download",
+        "component": "richtext",
+        "name": "note",
+        "label": "Rendition Config",
+        "value": "",
         "valueType": "string",
-        "description": "Heading shown above the rendition list."
+        "description": "Each row is key | value. Recognized keys: renditions (comma-separated rendition ids, or \"all\"; omit for every visible rendition), display (\"cards\", or omit for table), show-all (\"true\" adds a Show all formats toggle revealing every other rendition below a curated renditions list), description, instructions. Any other row becomes a table column: Column Title | property-or-token — see the block's own header comment for the full field/token reference."
       }
     ]
   },
@@ -402,7 +402,7 @@
         "label": "Action Rows",
         "value": "",
         "valueType": "string",
-        "description": "Each row is a Label | action pair (e.g. Download | download). Supported action values: download, copy-url, copy-link, collection. Order controls button order. Add/edit rows directly in the document table."
+        "description": "Each row is a Label | action pair (e.g. Download | download). Supported action values: download, copy-url, copy-image, copy-link, collection, favorite. Order controls button order. Add/edit rows directly in the document table."
       }
     ]
   },
@@ -419,7 +419,27 @@
 
   {
     "id": "collections",
-    "fields": []
+    "fields": [
+      {
+        "component": "select",
+        "name": "display",
+        "label": "Display",
+        "value": "grid",
+        "valueType": "string",
+        "options": [
+          { "name": "Management grid", "value": "grid" },
+          { "name": "Compact rail", "value": "rail" }
+        ]
+      },
+      {
+        "component": "number",
+        "name": "limit",
+        "label": "Collection Limit",
+        "value": 0,
+        "valueType": "number",
+        "description": "Maximum collections to show. Use 0 for all collections."
+      }
+    ]
   },
 
   {
@@ -448,7 +468,8 @@
         "valueType": "string",
         "options": [
           { "name": "Current collection", "value": "collection" },
-          { "name": "Sheet from URL", "value": "sheet" }
+          { "name": "Sheet from URL", "value": "sheet" },
+          { "name": "Authored list (published collection)", "value": "authored" }
         ]
       },
       {
@@ -494,6 +515,14 @@
         "value": "",
         "valueType": "string",
         "description": "Optional path prefix to navigate to a details page instead of opening the ASC modal."
+      },
+      {
+        "component": "richtext",
+        "name": "items",
+        "label": "Authored Asset List",
+        "value": "",
+        "valueType": "string",
+        "description": "Used only when Source is \"Authored list\". One asset UUID or exact DAM path per line — a fixed, curated set (e.g. a press kit or campaign collection) always read-only, regardless of Mode."
       }
     ]
   },
@@ -501,6 +530,20 @@
   {
     "id": "collection-switcher",
     "fields": []
+  },
+
+  {
+    "id": "share-directory",
+    "fields": [
+      {
+        "component": "richtext",
+        "name": "note",
+        "label": "Directory Rows",
+        "value": "",
+        "valueType": "string",
+        "description": "Add one row per share as Title | Description | URL | optional cover image. Optional two-cell configuration rows: view | horizontal or vertical; hero | true or false; hero-index | 1-based row number to feature (default 1)."
+      }
+    ]
   },
 
   {

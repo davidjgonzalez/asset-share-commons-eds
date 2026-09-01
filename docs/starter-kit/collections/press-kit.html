@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Press Kit — Asset Share</title>
+  <meta name="template" content="collections-press-kit">
+  <!-- Standalone microsite mode: no site header/footer (scripts/asc/chrome.js).
+       Good fit for a press kit — external media shouldn't need to navigate
+       the rest of the internal asset library. Remove this row for the
+       normal branded experience; either way, ?chrome=full / ?chrome=none on
+       the URL always overrides it for a one-off preview. -->
+  <meta name="chrome" content="none">
+</head>
+<body>
+  <header></header>
+  <main>
+
+    <!--
+      An "authored-list" predefined collection: a published share defined by a
+      fixed, hand-picked set of asset ids — for when you want exactly these
+      items, rather than a live link to the search page. The list is authored
+      directly below, so this page is the
+      single source of truth; there's no separate collection to keep in sync.
+
+      board block, source: authored — always read-only, regardless of Mode.
+      Replace the items below with real asset UUIDs or DAM paths from your
+      instance, one per line.
+    -->
+    <div>
+
+      <p><a href="/" data-asc-nav-link>&#8592; Back to Shares</a></p>
+      <h1>Press Kit</h1>
+      <p>Logos, product shots, and boilerplate for media. Curated once — add or remove items by editing this page.</p>
+
+      <div class="board">
+        <div><div>source</div><div>authored</div></div>
+        <div><div>items</div><div>
+          00000000-0000-0000-0000-000000000001<br>
+          00000000-0000-0000-0000-000000000002<br>
+          00000000-0000-0000-0000-000000000003
+        </div></div>
+        <div><div>search-properties</div><div>title, file-type</div></div>
+      </div>
+
+    </div>
+  </main>
+  <footer></footer>
+</body>
+</html>

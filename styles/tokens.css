@@ -14,6 +14,11 @@
   --border-radius-xl:   1rem;
   --border-radius-full: 9999px;
 
+  /* ── Section / page layout ──────────────────────────────────────── */
+  --section-max-width:    1200px;
+  --section-padding:      24px;
+  --section-padding-wide: 32px;
+
   /* ── Micro-spacing ──────────────────────────────────────────────── */
   --spacing-2xs: 0.125rem;
 

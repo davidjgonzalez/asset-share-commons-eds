@@ -17,6 +17,7 @@ import aem from './aem/aem.js';
 import actionPages from './action-pages/action-pages.js';
 import actions from './actions/actions.js';
 import assetDetails from './asset-details/asset-details.js';
+import authoredAssets from './authored-assets/authored-assets.js';
 import debug from './debug/debug.js';
 import collections from './collections/collections.js';
 import downloads from './downloads/downloads.js';
@@ -36,6 +37,7 @@ const services = {
   actions,
   aem,
   assetDetails,
+  authoredAssets,
   collections,
   debug,
   downloads,

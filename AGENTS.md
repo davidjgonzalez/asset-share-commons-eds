@@ -10,7 +10,8 @@ This file documents conventions, extension points, and architecture decisions fo
 |------|-------|------|
 | `scripts/asc/configurations.js` | **You** | Edit freely — all site configuration |
 | `scripts/asc.js` | **You** | Edit freely — ASC lifecycle entry point; add eager/lazy/delayed hooks here |
-| `scripts/asc/` | **ASC core** | Do not edit — replace the whole folder on upgrades |
+| `scripts/asc/` (flat files, e.g. `board-item.js`, `tokens.js`, `html.js`, `chrome.js`) | **You** | Edit/fork freely — default implementations you're expected to read and customize |
+| `scripts/asc/core/` | **ASC core** | Do not edit — replace the whole folder on upgrades |
 | `blocks/` | **You** | Copy and modify blocks as needed |
 | `blocks/action-*/` | **You** | Action dialog blocks — one per `/actions/*` path |
 | `styles/` | **You** | Add themes, override CSS variables |
@@ -18,7 +19,9 @@ This file documents conventions, extension points, and architecture decisions fo
 | `component-models.json` | **You** | Universal Editor field definitions |
 | `component-filters.json` | **You** | Universal Editor containment rules |
 
-Every file inside `scripts/asc/` starts with `// ASC Core — do not edit.` as a guard.
+Every file inside `scripts/asc/core/` starts with `// ASC Core — do not edit.` as a guard —
+that's the only part of `scripts/asc/` this applies to. See `docs/PROJECT_STRUCTURE.md` for
+the full ownership-zone breakdown.
 
 ---
 
@@ -45,18 +48,19 @@ Every file inside `scripts/asc/` starts with `// ASC Core — do not edit.` as a
 | `details-property` | Displays a single metadata property (label + value; `pill` variant → badge) |
 | `details-metadata` | A panel of property rows (`asc-ui-metadata`). Rows are `Label \| property-key`; `display: list\|grid`; array values (e.g. `tags`) render as `asc-ui-chip` pills |
 | `details-renditions` | Renditions as an `asc-ui-table` (default) or card grid (`\| display \| cards \|`). Author-configurable columns; highlights original rendition as active on load and dispatches `asc:rendition:activate`. Optional `instructions` row accepts inline HTML (strong/em/code/br). Cards mode: initial card AR from `asset.renditionsBoundingAspectRatio`, snapped per-card to natural image dimensions after load; `max-height: 12rem` clamps portrait cards with side bars. See "Renditions Table Templates" below |
-| `details-actions` | Action buttons (`asc-ui-action` circle-icon + label). One row per action: `\| Label \| action-name \|`. Actions: `download`, `copy-url`, `share`, `collection`. Labels are used exactly as authored. Updates `href`/`data-copy-url` on `asc:rendition:activate`. Download filename uses `asset-base + rendition.label + ext` (e.g. `photo-preview.mp4`); `rendition.label` is already cleaned by `Rendition.deriveLabel` (strips `cq5dam.` prefix). |
+| `details-actions` | Action buttons (`asc-ui-action` circle-icon + label). One row per action: `\| Label \| action-name \|`. Actions: `download`, `copy-url`, `copy-image`, `share`, `collection`. Labels are used exactly as authored. Updates `href`/`data-copy-url` on `asc:rendition:activate`. Download filename uses `asset-base + rendition.label + ext` (e.g. `photo-preview.mp4`); `rendition.label` is already cleaned by `Rendition.deriveLabel` (strips `cq5dam.` prefix). `copy-image` copies the active rendition's image bytes to the clipboard via `scripts/asc/core/utils/clipboard-image.js`, falling back to copying the URL when the browser or delivery-host CORS policy won't allow it; hidden automatically for non-image renditions. |
 | `details-map` | Interactive Leaflet map centered on the asset's GPS capture location. Hides itself completely when coordinates are absent or invalid. Loads Leaflet 1.9.4 and OpenStreetMap tiles from CDN (no API key). EXIF DMS strings (`"42,59.35N"`) are converted to signed decimal degrees internally; full precision is passed to Leaflet and map links — never rounded before use. Authored rows: `latitude` (JCR path, default `jcr:content/metadata/exif:GPSLatitude`), `longitude` (default `jcr:content/metadata/exif:GPSLongitude`), `label` (default `"Location"`), `zoom` (default `10`). Falls back to coordinates text + Google Maps link if Leaflet fails to load. Uses `ResizeObserver` to call `map.invalidateSize()` so the map sizes correctly when the details `<dialog>` opens. |
 
 ### Collections / cart blocks
 | Block | Purpose |
 |-------|---------|
 | `stub` | Cart bar — shows active collection count and link to download sheet |
-| `collections` | Collections index/management page — list, create, delete, activate |
+| `collections` | Collections index/management page — list, create, delete, activate. Content config: `display` (`grid`, default, or `rail` — a compact horizontal strip with no create/manage actions, e.g. for a homepage placement) and `limit` (max collections shown, 0/omitted = no limit) |
 | `collection-controls` | Collection header — editable name, asset count, Share / Download / past-shares buttons, jobs indicator. Header text (h1/p) is a **token template** — `{{collection.title}}` / `{{collection.description}}` / `{{collection.count}}` / `{{collection.lastUpdated}}` resolved against the hydrated collection. Pair with `board` (source: collection, mode: interactive) on the same page |
 | `sheet-controls` | Shared-sheet header — Download / Copy Link buttons. Header text (h1/p) is a **token template** — `{{sheet.title}}` / `{{sheet.description}}` / `{{sheet.count}}` / `{{sheet.expiresAt}}` resolved against the decoded `?sheet=` payload. Pair with `board` (source: sheet, mode: view) on the same page |
 | `board` | Reusable, header-less board canvas — pan/zoom, client-side search, details navigation override; `source: collection\|sheet`, `mode: view\|interactive`, `search-properties`, `details` |
 | `collection-switcher` | Persistent header widget — active collection dropdown, inline create, navigate to /collections |
+| `share-directory` | Curated directory of links to published shares (search links, sheets, or authored boards) — the "here's what we've put together" front door, distinct from search and from a visitor's own personal collections. Each row is `Label \| Description \| URL/path \| optional cover image`; omitted cover images resolve to an auto-generated thumbnail mosaic (up to 15 assets, resolved from a `?sheet=` payload, a live silent search, or by fetching the target page's own `board` block). Optional 2-cell config rows: `view` (`horizontal`, default, or `vertical`) and `hero` (`true`, default — first row renders full-width and featured, or `false`). See the block's own header comment for the full row/resolution contract. |
 
 ### Board block — authoring reference
 
@@ -67,12 +71,13 @@ property table (one row per property, key | value).
 
 | Property | Values | Default | Notes |
 |----------|--------|---------|-------|
-| `source` | `collection` \| `sheet` | `sheet` | Where to load assets from |
+| `source` | `collection` \| `sheet` \| `authored` | `sheet` | Where to load assets from |
 | `mode` | `view` \| `interactive` | `view` | `view` = pan/zoom + search only; `interactive` = drag, rubber-band, text elements, notes, Align to grid, + Text button |
 | `notes` | `true` \| `false` | `true` | When `false`, hides notes button and footer from every card and omits `data-asc-notes` from the DOM entirely |
 | `search-properties` | Comma-separated property names | _(none)_ | Which asset properties to stash in `data-filter` for client-side filtering. E.g. `title, file-type`. Omit to hide the search input entirely. |
 | `display-properties` | `·`-delimited property names | _(none)_ | Properties to render in the card body section. Accepts any registered property name (`title`, `file-type`, `dimensions`, `file-size`, custom properties, etc.). When omitted, the card shows the asset type label (Image, Video, PDF…). |
 | `details` | Path prefix | _(none)_ | Override the default ASC modal. When set, clicking a card navigates to `{details}?asset={uuid}`. MIME-type routing uses the same template patterns from `configurations.assetDetails.templates`, stripping the first path segment (e.g. `image/*` maps `/details/image` → `/sheet/my-details/image`). Falls back to `details` itself if no template matches. |
+| `items` | One asset UUID or exact DAM path per line | _(none)_ | Only used when `source: authored`. A fixed, site-owner-curated asset list (e.g. a press kit or campaign set) — always read-only, regardless of `mode`. |
 
 #### Source: collection
 
@@ -80,6 +85,19 @@ Reads the `?id=` URL parameter and calls `services.collections.get(id, true)` to
 hydrated collection. Re-renders on `CollectionEvents.CHANGED` (filtered to the same collection
 ID). Persists viewport pan/zoom and expand state to localStorage under `asc:boardViewport:{id}`
 and `asc:boardExpanded:{id}`.
+
+#### Source: authored
+
+A "published collection" — a fixed set of assets a site owner curates once by authoring their
+UUIDs/paths directly into the `items` row, rather than a personal collection built by a visitor
+or a compressed one-off `?sheet=` link. References are resolved through
+`services.authoredAssets.resolveAssetReferences()` (`scripts/asc/core/services/authored-assets/authored-assets.js`),
+a bounded-concurrency pool over the active search provider — override resolution entirely via
+`configurations.authoredAssets.resolveReference`. Always forced to `mode: view` — there's no
+owning collection to drag positions back into, only a page an editor updates by changing the
+authored list itself. An id that resolves to an `AssetAccessError` (no permission) renders as a
+locked placeholder rather than being silently dropped — see `lockedBoardItemHtml` in
+`scripts/asc/board-item.js`.
 
 #### Source: sheet
 
@@ -1071,7 +1089,7 @@ Definition-level `filename` always wins over a resolver-set one (applied last by
 
 ### `thumbnails` array — responsive srcset for search result cards
 
-Put thumbnail renditions in a **separate `thumbnails` array** (not `definitions`). Entries in `thumbnails` are never shown in the download list — they exist solely to generate the `<img srcset>` on asset teasers (cards, masonry, list thumbnail, board cards, collection mosaics). Each entry requires `size.width` so the browser gets a correct `Nw` descriptor.
+Put thumbnail renditions in a **separate `thumbnails` array** (not `definitions`). Entries in `thumbnails` are never shown in the download list — they exist solely to generate the `<img srcset>` on asset teasers (cards, masonry, list thumbnail, collection mosaics). Each entry requires `size.width` so the browser gets a correct `Nw` descriptor. Board cards use a separate, wider `previews` ladder instead — see below — since board items show the image uncropped at its native aspect ratio rather than in a fixed-size card slot.
 
 Use `web-optimized-delivery` for thumbnails — it works on any AEMaaCS publish instance without requiring DM OpenAPI to be enabled. Use `dm-openapi` only in `definitions` (downloadable renditions).
 
@@ -1091,12 +1109,29 @@ URL shape: `{host}/adobe/dynamicmedia/deliver/dm-aid--{uuid}/{filename}?{params}
 
 `services.renditions.getThumbnailSrcset(asset)` reads `thumbnails`, resolves URLs for the asset, and returns them sorted smallest to largest. `getThumbnailUrl(asset)` picks the mid-size entry as the `src` fallback. Non-image assets return `[]` if all entries have `accepts: (asset) => asset.mimeType?.startsWith('image/')`, falling back to the static `cq5dam.thumbnail` node URL.
 
+### `previews` array — responsive srcset for natural-aspect board cards
+
+Same shape and rules as `thumbnails` (separate array, `size.width` required, never shown in the download list), read by `services.renditions.getPreviewSrcset(asset)` and consumed by `scripts/asc/board-item.js`. Kept separate from `thumbnails` because board cards (`asc-ui-asset-card--natural`) show the image at its own aspect ratio in a canvas the user can zoom up to 3x (see `blocks/board/board.js`'s pan/zoom engine) — `web-optimized-delivery` with only `width` set resizes proportionally (no crop), so it's safe for that uncropped display, and the ladder's top end needs to cover the zoomed-in size, not just the resting ~240px card width.
+
+```js
+renditions: {
+  previews: [
+    { type: 'web-optimized-delivery', size: { width: 240  }, params: 'width=240&preferwebp=true&quality=85',  accepts: (asset) => asset.mimeType?.startsWith('image/') },
+    { type: 'web-optimized-delivery', size: { width: 480  }, params: 'width=480&preferwebp=true&quality=85',  accepts: (asset) => asset.mimeType?.startsWith('image/') },
+    { type: 'web-optimized-delivery', size: { width: 960  }, params: 'width=960&preferwebp=true&quality=80',  accepts: (asset) => asset.mimeType?.startsWith('image/') },
+    { type: 'web-optimized-delivery', size: { width: 1920 }, params: 'width=1920&preferwebp=true&quality=75', accepts: (asset) => asset.mimeType?.startsWith('image/') },
+  ],
+}
+```
+
+Board's CSS-transform-based zoom (`canvas.style.transform = ...scale(zoom)`) changes what's painted on screen without changing the `<img>`'s layout width — the dimension the browser's native srcset selection is based on — so a zoomed-in card would otherwise just upscale whatever low-res candidate it picked at rest. `board.js` compensates by re-pointing each visible image's `sizes` attribute at `offsetWidth * zoom` (debounced, on every pan/zoom change), which forces the browser to re-run its normal srcset selection against the zoomed-in effective size, picking a larger tier once it's actually needed on screen.
+
 ### How To: Add a Custom Rendition
 
 ```js
 // scripts/asc/configurations.js
 renditions: {
-  // Thumbnail srcset — never in download list, used by cards/masonry/list/board/collection mosaics.
+  // Thumbnail srcset — never in download list, used by cards/masonry/list/collection mosaics.
   thumbnails: [
     { type: 'web-optimized-delivery', size: { width: 250  }, params: 'width=250&preferwebp=true&quality=85',  accepts: (asset) => asset.mimeType?.startsWith('image/') },
     { type: 'web-optimized-delivery', size: { width: 500  }, params: 'width=500&preferwebp=true&quality=85',  accepts: (asset) => asset.mimeType?.startsWith('image/') },
@@ -1169,6 +1204,7 @@ services.renditions.getRendition(asset, 'web');        // single rendition by id
 services.renditions.resolveAllNodes(asset);            // every JCR node through all resolvers — used by 'all' mode
 services.renditions.getThumbnailUrl(asset);            // best thumbnail URL (with fallback)
 services.renditions.getThumbnailSrcset(asset);         // Rendition[] sorted by size.width, for <img srcset>
+services.renditions.getPreviewSrcset(asset);           // Rendition[] sorted by size.width, natural-aspect (board cards)
 services.renditions.getRenditionDefinition('web');     // raw definition object (no asset needed)
 ```
 
@@ -1629,7 +1665,42 @@ const values  = await url.decompressToArray(encoded);
 // Legacy helpers — still available but not used by the board/sheet share flow
 const shareUrl = await url.toCollectionUrl(assetIds, { param: 'assets', base?: string });
 const assetIds = await url.fromCollectionUrl(window.location.search, 'assets');
+
+// Strip the origin off an authored URL and re-anchor it to the current domain —
+// authors paste share/sheet links copied from whichever environment they were on
+// (aem.live, aem.page, localhost, a custom domain); only the path/query/hash is
+// ever meaningful. Used by board.js (details/sheet-url rows), search-bar.js
+// (redirect row), and share-directory.js (share link cells).
+const relative = url.toRelativeUrl('https://main--site--org.aem.page/sheet?sheet=abc');
+// → '/sheet?sheet=abc'
 ```
+
+---
+
+## Authored Assets Service
+
+`scripts/asc/core/services/authored-assets/authored-assets.js` — singleton. Resolves
+site-owner-authored asset references (a UUID or an exact DAM path, one per line) through the
+active search provider, with a bounded concurrency pool so a long list doesn't fire an unbounded
+request burst. Backs `board`'s `source: authored` and `share-directory`'s thumbnail-mosaic
+resolution for authored-list/board links.
+
+```js
+import services from '../../scripts/asc/core/services/services.js';
+
+// Parse a rich-text cell (DA/UE may use <p>/<li>/<br> for line breaks) into raw reference strings
+const ids = services.authoredAssets.parseAssetReferences(cellElement);
+
+// Resolve them, honoring configurations.authoredAssets.concurrency (default 4)
+const assets = await services.authoredAssets.resolveAssetReferences(ids);
+```
+
+Configuration (`configurations.authoredAssets`):
+
+| Key | Default | Description |
+|-----|---------|--------------|
+| `concurrency` | `4` | Max in-flight resolution requests |
+| `resolveReference` | _(none)_ | `async (reference) => Asset \| AssetAccessError \| null` — override resolution entirely (e.g. to hit a custom API instead of the search provider) |
 
 ---
 

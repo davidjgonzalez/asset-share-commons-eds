@@ -22,6 +22,13 @@
         margin: 0;
     }
 
+    /* "Show all formats" toggle (table display) */
+    .details-renditions__toggle-row td {
+        padding-block: var(--spacing-sm);
+        text-align: center;
+        border-top: 1px solid var(--color-border);
+    }
+
     /* Active rendition indicator */
     tr[data-asc-rendition].is-active td:first-child {
         border-inline-start: 3px solid var(--color-primary);
@@ -68,12 +75,11 @@
             align-items: stretch;
         }
 
+        /* Tighter padding comes from the asc-ui-card--compact kit variant
+           (styles/ui-kit.css) — see renditionCard() in details-renditions.js. */
         .details-renditions__cards > .asc-ui-card {
             position: relative;
-            display: flex;
-            flex-direction: column;
             max-width: 280px;
-            padding: var(--spacing-sm);
             cursor: pointer;
         }
 
@@ -151,6 +157,10 @@
             span {
                 white-space: nowrap;
             }
+        }
+
+        .details-renditions__show-all {
+            margin-top: var(--spacing-md);
         }
     }
 }

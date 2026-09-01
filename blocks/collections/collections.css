@@ -188,4 +188,20 @@
         background: color-mix(in srgb, var(--color-destructive) 10%, transparent);
         color: var(--color-destructive);
     }
+
+    /* ── Rail (compact horizontal strip — e.g. homepage placement) ───────
+       No create-form/management actions in this mode (see collections.js),
+       so cards are just a clickable preview: mosaic + name + count. */
+    .collections__grid--rail {
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
+        padding-block-end: var(--spacing-xs);
+
+        > .collections__card {
+            flex: 0 0 220px;
+            width: 220px;
+        }
+    }
 }

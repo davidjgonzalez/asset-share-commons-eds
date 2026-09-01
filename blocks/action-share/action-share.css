@@ -42,6 +42,10 @@
         }
     }
 
+    .action-share__switch {
+        margin-block-end: var(--spacing-md);
+    }
+
     .action-share__url-wrap {
         display: flex;
         align-items: flex-end;

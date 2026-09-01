@@ -13,6 +13,13 @@
  *   |             |                      |    first then A→Z.
  *   | display     | cards                |  ← optional: "cards" for card grid,
  *   |             |                      |    default is table.
+ *   | show-all    | true                 |  ← optional: when `renditions` above names a
+ *   |             |                      |    curated subset, adds a "Show all formats"
+ *   |             |                      |    toggle that reveals every other visible
+ *   |             |                      |    rendition (the same set "all" would resolve
+ *   |             |                      |    to) below the fold. No effect if `renditions`
+ *   |             |                      |    is omitted or set to "all" — there'd be
+ *   |             |                      |    nothing left to reveal.
  *   | Name        | name                 |  ← column: Title | value (table mode)
  *   | File size   | file-size            |
  *   | W x H       | dimensions           |
@@ -92,6 +99,7 @@ export default async function decorate(block) {
   let description = '';
   let instructions = '';
   let display = 'table';
+  let showAllToggle = false;
   const columns = [];
   [...block.children].forEach((row) => {
     const cells = [...row.children];
@@ -102,6 +110,8 @@ export default async function decorate(block) {
       renditionIds = parseList(cells[1]);
     } else if (lower === 'display') {
       display = val.toLowerCase() || 'table';
+    } else if (lower === 'show-all') {
+      showAllToggle = val.toLowerCase() === 'true';
     } else if (lower === 'description') {
       description = val;
     } else if (lower === 'instructions') {
@@ -138,14 +148,29 @@ export default async function decorate(block) {
       ${description ? `<p class="details-renditions__description">${esc(description)}</p>` : ''}
     </div>` : '';
 
+  // "Show all formats" only makes sense when `renditions` named a curated subset —
+  // an empty list or "all" already shows everything, so there's nothing left to reveal.
+  const isCuratedSubset = renditionIds.length > 0 && renditionIds[0].toLowerCase() !== 'all';
+  const extraRenditions = (showAllToggle && isCuratedSubset)
+    ? resolveRenditions(asset, ['all']).filter((r) => !renditions.some((cr) => cr.id === r.id || cr.url === r.url))
+    : [];
+  const allRenditions = [...renditions, ...extraRenditions];
+  const showAllToggleHtml = extraRenditions.length
+    ? `<button type="button" class="details-renditions__show-all btn btn--ghost btn--sm">Show all formats (${extraRenditions.length})</button>`
+    : '';
+
   if (display === 'cards') {
     block.classList.add('details-renditions--cards');
     const cards = renditions.map((rendition) => renditionCard(asset, rendition)).join('');
-    block.innerHTML = `${headerHtml}<div class="details-renditions__cards">${cards}</div>`;
+    const extraCards = extraRenditions.map((rendition) => renditionCard(asset, rendition)).join('');
+    block.innerHTML = `${headerHtml}<div class="details-renditions__cards">${cards}</div>
+      ${showAllToggleHtml}
+      ${extraCards ? `<div class="details-renditions__cards details-renditions__extra" hidden>${extraCards}</div>` : ''}`;
 
-    wireRenditionInteractions(block, asset, renditions);
+    wireShowAllToggle(block);
+    wireRenditionInteractions(block, asset, allRenditions, renditions);
     wireClipboardActions(block);
-    lazyLoadFileSizes(block, asset, renditions);
+    lazyLoadFileSizes(block, asset, allRenditions);
     return;
   }
 
@@ -155,7 +180,7 @@ export default async function decorate(block) {
   const colActions = cols.map((col) => parseActions(col.value));
   const colPreviews = cols.map((col) => col.value.trim().toLowerCase() === PREVIEW_KEYWORD);
 
-  const rows = renditions.map((rendition) => {
+  const renderRow = (rendition) => {
     const ctx = renditionContext(asset, rendition);
     const cells = cols.map((col, i) => {
       if (colActions[i]) return actionCell(asset, rendition, colActions[i]);
@@ -163,7 +188,10 @@ export default async function decorate(block) {
       return valueCell(col, ctx);
     });
     return `<tr data-asc-rendition="${esc(rendition.id)}">${cells.join('')}</tr>`;
-  }).join('');
+  };
+
+  const rows = renditions.map(renderRow).join('');
+  const extraRows = extraRenditions.map(renderRow).join('');
 
   block.innerHTML = `
     ${headerHtml}
@@ -178,11 +206,27 @@ export default async function decorate(block) {
   }).join('')}</tr>
         </thead>
         <tbody>${rows}</tbody>
+        ${showAllToggleHtml ? `
+        <tbody class="details-renditions__toggle-row">
+          <tr><td colspan="${cols.length}">${showAllToggleHtml}</td></tr>
+        </tbody>
+        <tbody class="details-renditions__extra" hidden>${extraRows}</tbody>` : ''}
       </table>
     </div>`;
-  wireRenditionInteractions(block, asset, renditions);
+  wireShowAllToggle(block);
+  wireRenditionInteractions(block, asset, allRenditions, renditions);
   wireClipboardActions(block);
-  lazyLoadFileSizes(block, asset, renditions);
+  lazyLoadFileSizes(block, asset, allRenditions);
+}
+
+/** Reveal the hidden "extra" renditions and remove the toggle button — one-way, no re-hide. */
+function wireShowAllToggle(block) {
+  block.querySelector('.details-renditions__show-all')?.addEventListener('click', (e) => {
+    block.querySelectorAll('.details-renditions__extra').forEach((el) => { el.hidden = false; });
+    // Table mode wraps the button in a .details-renditions__toggle-row <tbody>; cards
+    // mode has no such wrapper, so remove the button itself instead.
+    (e.target.closest('.details-renditions__toggle-row') || e.target).remove();
+  });
 }
 
 function valueCell(col, ctx) {
@@ -218,7 +262,7 @@ function renditionCard(asset, rendition) {
   const meta = metaItems.map((item, i) => `<span>${esc(item)}${i < metaItems.length - 1 ? ' ·&nbsp;' : ''}</span>`).join('');
   const ref = `data-asc-asset="${asset.uuid}" data-asc-rendition="${rendition.id}"`;
   return `
-    <article class="asc-ui-card" data-asc-rendition="${esc(rendition.id)}">
+    <article class="asc-ui-card asc-ui-card--compact" data-asc-rendition="${esc(rendition.id)}">
       ${thumbHtml ? `<div class="details-renditions__card-preview">${thumbHtml}</div>` : ''}
       <div class="details-renditions__card-actions">
         <a class="btn btn--ghost btn--icon btn--sm" ${downloadAttrs(asset, rendition)}
@@ -252,7 +296,7 @@ function renderAction(asset, rendition, action) {
   }
 }
 
-function wireRenditionInteractions(block, asset, renditions) {
+function wireRenditionInteractions(block, asset, renditions, initiallyVisible = renditions) {
   const byId = new Map(renditions.map((r) => [r.id, r]));
 
   const dispatch = (eventName, rendition) => {
@@ -272,7 +316,7 @@ function wireRenditionInteractions(block, asset, renditions) {
   block.addEventListener('mouseleave', () => dispatch('asc:rendition:preview', null), { passive: true });
 
   // Initial active state — original rendition, or first in list
-  const initial = renditions.find((r) => r.id === 'original') || renditions[0];
+  const initial = initiallyVisible.find((r) => r.id === 'original') || initiallyVisible[0];
   if (initial) {
     block.querySelector(`[data-asc-rendition="${initial.id}"]`)?.classList.add('is-active');
     dispatch('asc:rendition:activate', initial);
@@ -355,6 +399,16 @@ function wireClipboardActions(block) {
  *   prefers a matching definition's authored `label` (by URL) over the generic
  *   derived-from-node-name label when one exists.
  */
+// resolveAllNodes() resolves every node generically (Rendition.deriveLabel on the raw
+// JCR name) — it has no definition of its own to carry a `label`/`usecase` from.
+// Enrich it here by matching back to a definition by resolved URL wherever one exists.
+function backfillFromDefinition(r, def) {
+  if (!r) return r;
+  if (def?.label) r.label = def.label;
+  if (!r.usecase && def?.usecase) r.usecase = def.usecase;
+  return r;
+}
+
 function resolveRenditions(asset, ids) {
   const sortFn = (a, b) => {
     const an = String(a.label || a.name || a.id || '').toLowerCase();
@@ -371,28 +425,22 @@ function resolveRenditions(asset, ids) {
     );
     // resolveAllNodes() resolves every node generically (Rendition.deriveLabel on the raw
     // JCR name) — it doesn't know a definition also targets that same node. Prefer the
-    // definition's authored label, matched by URL, wherever one exists.
-    const definedLabelsByUrl = new Map(
+    // definition's authored label/usecase, matched by URL, wherever one exists.
+    const definedByUrl = new Map(
       services.renditions.definitions
-        .filter((def) => def.label)
-        .map((def) => services.renditions.getRendition(asset, def.id))
-        .filter((r) => r?.url)
-        .map((r) => [r.url, r.label]),
+        .map((def) => [def, services.renditions.getRendition(asset, def.id)])
+        .filter(([, r]) => r?.url)
+        .map(([def, r]) => [r.url, def]),
     );
     return services.renditions.resolveAllNodes(asset)
       .filter((r) => !invisibleUrls.has(r.url))
-      .map((r) => {
-        const definedLabel = definedLabelsByUrl.get(r.url);
-        if (definedLabel) r.label = definedLabel;
-        return r;
-      })
+      .map((r) => backfillFromDefinition(r, definedByUrl.get(r.url)))
       .sort(sortFn);
   }
 
   if (ids.length) {
-    return ids
-      .map((id) => services.renditions.getRendition(asset, id)
-        || asset.renditions.find((r) => r.id === id || r.name === id))
+    return ids.map((id) => services.renditions.getRendition(asset, id)
+      || asset.renditions.find((rd) => rd.id === id || rd.name === id))
       .filter(Boolean);
   }
 

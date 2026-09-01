@@ -14,7 +14,7 @@ Upload each `.html` file directly to your da.live project via the da.live admin 
 
 1. Open your da.live project.
 2. For each file in this kit, use **File > Upload** or drag-and-drop the `.html` file to the correct path in your content tree.
-3. The file paths should match the URLs you want on your site (e.g., `index.html` → `/`, `sheet.html` → `/sheet`).
+3. The file paths should match the URLs you want on your site (e.g., `search.html` → `/search`, `sheet.html` → `/sheet`).
 4. For the `details/` subfolder, upload files under a `details/` path. Name the default template `index` so it is served at the clean URL `/details`. Custom templates use their own name, e.g. `/details/image`.
 
 ### Option 2 — Recreate manually in da.live
@@ -33,15 +33,73 @@ Use the HTML comments in each file as a guide to the table structure.
 |------|----------|-------------|
 | `nav.html` | `/nav` | Semantic `<nav>` (no blocks) |
 | `footer.html` | `/footer` | Semantic `<footer>` (no blocks) |
-| `index.html` | `/` | `stub`, `search-statistics`, `search-bar`, `search-property` (x2), `search-path`, `search-date-range`, `search-tags`, `search-results` |
+| `search.html` | `/search` | `stub`, `search-statistics`, `search-bar`, `search-property` (x2), `search-path`, `search-date-range`, `search-tags`, `search-results` |
 | `details/index.html` | `/details` | `details-preview`, `details-property` (x6), `details-renditions`, `details-actions` |
 | `details/image.html` | `/details/image` | Same as default — `details-actions` adds the `share` action |
 | `sheet.html` | `/sheet` | `sheet` |
 | `collections.html` | `/collections` | `collections` |
+| `index.html` | `/` | `share-directory` (x2), `hero` |
+| `collections/press-kit.html` | `/collections/press-kit` | `board` (`source: authored`) (an "authored-list" published collection) |
+
+## Published Collections vs. Personal Collections
+
+`collections.html` (`/collections`) is a visitor's own private, ad hoc collections —
+built in their browser, never discoverable by anyone else. A **published**
+collection is different: something you curate once, that has a permanent,
+linkable URL, and that any visitor can browse without having built it themselves
+(e.g. "Spring 2026 Campaign", "Press Kit"). `index.html` (`/`) is a curated
+directory of these — add a row per published collection you create
+(see `blocks/share-directory/share-directory.js` for the row format).
+
+There are two ways to feature a reusable asset set, and neither needs a new
+collection to be created in browser storage. `index.html` (`/`) shows two
+`share-directory` blocks with ordinary content (a heading, copy, a `hero`
+banner, a button) authored in between — a homepage isn't limited to a single
+directory block, and the featured row in each one doesn't have to be
+authored first (see `hero-index` in the block's own header comment):
+
+- **Live search link** — link the directory row directly to `/search` with query
+  parameters, as the Spring 2026 starter row does. It stays current as matching
+  assets are added without introducing page-local hidden predicates.
+- **Authored list** (`collections/press-kit.html`) — defined by a fixed set of
+  asset ids authored directly on the page (`board` block, `source: authored`),
+  for when you want exactly these items and nothing else. Always read-only —
+  edit the page's authored list to change what's in it.
+
+## Branded vs. Standalone Shares (Chrome)
+
+Any share/sheet/board page can render two ways: **branded** (with the site's
+own header, footer, search, and collections navigation — the visitor is
+still "inside" the wider asset library) or **standalone** (none of that — the
+page reads as its own discrete microsite, with no way to wander back into the
+rest of the site via the UI). See `scripts/asc/chrome.js` for the resolution
+logic. This is a presentational choice, not an access-control one — it hides
+navigation, not AEM/DAM permissions.
+
+- **Ad hoc personal shares** (the `?sheet=` links generated from the "Share"
+  dialog, `blocks/action-share`) default to standalone — that's always been
+  the behavior for these links. The dialog's "Share as a standalone page"
+  switch makes this an explicit per-share choice (`&chrome=none` / `&chrome=full`
+  on the generated URL) rather than an implicit rule.
+- **Fixed/authored shares** (a page like `collections/press-kit.html`) default
+  to branded. Add `<meta name="chrome" content="none">` to the page's `<head>`
+  to opt that one page into standalone mode (see `collections/press-kit.html`
+  for an example — a press kit is a natural fit, since external media
+  shouldn't need to navigate the rest of the internal library).
+- **`?chrome=full` / `?chrome=none`** on any URL overrides both of the above,
+  for one-off preview regardless of the page's default.
+- Every standalone page gets one small floating link (bottom-right) to flip
+  to the other mode — nothing is a dead end.
+
+If you add your own "back to search" / "back to shares" style link to a share
+page's authored content, tag it `data-asc-nav-link` (see the examples in
+`sheet.html` and `collections/press-kit.html`) so it's hidden along with
+the header/footer in standalone mode — otherwise it'd be the one way back
+into the site a standalone page isn't supposed to have.
 
 ## Customising Filter Options
 
-The filter blocks in `index.html` are pre-populated with example values. Before going live, replace these with the correct values for your AEM instance:
+The filter blocks in `search.html` are pre-populated with example values. Before going live, replace these with the correct values for your AEM instance:
 
 - **search-property (File Type)** — replace the `options` values with the MIME types present in your DAM (e.g., `image/tiff`, `application/vnd.openxmlformats-officedocument.wordprocessingml.document`).
 - **search-property (Status)** — replace option values with the asset workflow statuses used in your instance (these must match the values stored in `jcr:content/metadata/dam:status`).

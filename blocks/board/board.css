@@ -332,13 +332,8 @@
             z-index: 100;
         }
 
-        .asc-ui-asset-card__overlay {
-            gap: var(--spacing-sm);
-            opacity: 0;
-            transition: opacity var(--transition-fast);
-        }
-
-        &:hover .asc-ui-asset-card__overlay,
+        /* Hover/focus reveal comes from the asc-ui-asset-card--overlay-on-hover kit
+           variant (styles/ui-kit.css) — this just adds board's own extra reveal state. */
         &.board__item--selected .asc-ui-asset-card__overlay {
             opacity: 1;
         }

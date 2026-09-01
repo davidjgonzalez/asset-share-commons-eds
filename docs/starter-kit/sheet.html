@@ -25,10 +25,18 @@
       sheet-controls block: rows declare which controls to show (in order).
       Left col = control ID, right col = button label.
       Valid IDs: download, copy-link
+
+      This page is standalone (no site header/footer) by default whenever a
+      ?sheet= param is present — see scripts/asc/chrome.js. The sharer's
+      "Share as a standalone page" switch (blocks/action-share) makes this an
+      explicit per-share choice via &chrome=none|full on the generated URL,
+      rather than an implicit rule. Any other "back to X" link an author adds
+      to a share/sheet page should carry data-asc-nav-link (like the one
+      below) so it's hidden the same way header/footer are when standalone.
     -->
     <div>
 
-      <p><a href="/">&#8592; Back to search</a></p>
+      <p><a href="/search" data-asc-nav-link>&#8592; Back to search</a></p>
       <h1>{{sheet.title}}</h1>
       <p>{{sheet.description}}</p>
       <p>{{sheet.count}} assets &#8212; Expires {{sheet.expiresAt|Never}}</p>

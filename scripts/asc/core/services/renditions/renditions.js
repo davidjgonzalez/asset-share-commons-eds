@@ -126,6 +126,7 @@ class RenditionsService {
   constructor(config, aemConfig) {
     this.definitions = config.definitions || DEFAULT_DEFINITIONS;
     this._thumbnailDefs = config.thumbnails || [];
+    this._previewDefs = config.previews || [];
     this._excludePatterns = config.exclude || [];
     this._aemConfig = aemConfig || {};
 
@@ -204,7 +205,22 @@ class RenditionsService {
    * @returns {Rendition[]}
    */
   getThumbnailSrcset(asset) {
-    return this._thumbnailDefs
+    return this._srcsetFromDefs(this._thumbnailDefs, asset);
+  }
+
+  /**
+   * Get natural-aspect preview renditions sorted smallest to largest — for
+   * uncropped, native-aspect-ratio display (e.g. board cards) rather than the
+   * square-cropped thumbnail ladder. See configurations.renditions.previews.
+   * @param {Asset} asset
+   * @returns {Rendition[]}
+   */
+  getPreviewSrcset(asset) {
+    return this._srcsetFromDefs(this._previewDefs, asset);
+  }
+
+  _srcsetFromDefs(defs, asset) {
+    return defs
       .filter((def) => def.size?.width)
       .map((def) => this._resolveFromDef(def, asset))
       .filter(Boolean)
@@ -239,6 +255,12 @@ class RenditionsService {
       rendition.filename = typeof def.filename === 'function'
         ? def.filename(rendition, asset)
         : def.filename;
+    }
+    // Not every resolver type forwards `usecase` from the definition onto the
+    // resolved Rendition itself — forward it here once, for all types, rather
+    // than leaving callers to patch it in per-type.
+    if (rendition && !rendition.usecase && def.usecase) {
+      rendition.usecase = def.usecase;
     }
     return rendition;
   }

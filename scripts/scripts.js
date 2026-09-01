@@ -19,6 +19,7 @@ import {
   ascLazy,
   ascDelayed,
 } from './asc.js';
+import { isChromeless } from './asc/chrome.js';
 
 /**
  * Builds hero block and prepends to main in a new section.
@@ -126,7 +127,7 @@ async function loadLazy(doc) {
   const element = hash ? doc.getElementById(hash.substring(1)) : false;
   if (hash && element) element.scrollIntoView();
 
-  if (!document.body.classList.contains('page-sheet')) {
+  if (!isChromeless(main)) {
     loadHeader(doc.querySelector('header'));
     loadFooter(doc.querySelector('footer'));
   }

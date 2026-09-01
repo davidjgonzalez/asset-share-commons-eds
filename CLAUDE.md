@@ -53,10 +53,29 @@ ASC services auto-initialize when `scripts/asc.js` is imported; no explicit init
 > boilerplate upgrade:
 >
 > - `import { ascEager, ascDecorateMain, ascLazy, ascDelayed } from './asc.js';`
-> - `loadEager()` calls `ascEager(doc)` — applies theme class and loads theme CSS
+> - `loadEager()` calls `ascEager(doc)` — applies theme class and loads theme CSS, and sets the
+>   `is-chromeless` body class (see below) as early as possible
 > - `decorateMain()` calls `ascDecorateMain(main)` **after `decorateBlocks`** — runs token
 >   substitution and wires the named-area `_layout: grid` section grid
 > - `loadLazy()` calls `ascLazy()` and `loadDelayed()` calls `ascDelayed()` (hooks for future use)
+> - `addPageTypeClasses(main)` (called from `loadEager()`) adds `page-search` / `page-collections`
+>   / `page-sheet` / `page-board` body classes based on which blocks are present
+> - `loadLazy()` gates `loadHeader()`/`loadFooter()` on `import { isChromeless } from
+>   './asc/chrome.js'` rather than loading them unconditionally — see "Chrome Duality" below
+
+### Chrome Duality (Branded vs. Standalone Shares)
+
+Any share/sheet/board page can render **branded** (full site header/footer/nav) or
+**standalone** (none of it — reads as a discrete microsite, no way back into the site via the
+UI). Presentational only — it hides navigation, not AEM/DAM permissions. Resolution logic lives
+in `scripts/asc/chrome.js` (`isChromeless()`): `?chrome=full`/`?chrome=none` override anything;
+otherwise `<meta name="chrome" content="none">` (authored, for fixed/authored shares) or a
+`.sheet` block / `?sheet=` param (ad hoc personal shares — this has always been their default)
+decide it. The "Share as a standalone page" switch in `blocks/action-share` makes that default an
+explicit per-share choice by appending `&chrome=none`/`&chrome=full` to the generated URL. Any
+custom "back to X" link authored into share-page content should carry `data-asc-nav-link` (see
+`docs/starter-kit/sheet.html`) so it's hidden the same way header/footer are. Full authoring
+details in `docs/starter-kit/README.md`.
 
 ### Core Layers
 

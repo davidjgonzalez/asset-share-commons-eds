@@ -103,6 +103,25 @@ class Url {
     }
     return this.decompressToArray(value);
   }
+
+  /**
+   * Strip the origin off an authored URL and re-anchor it to the current domain.
+   *
+   * Authors paste share/sheet links copied from whichever environment they were
+   * on at the time (aem.live, aem.page, localhost:3000, a custom domain, …) — the
+   * domain embedded in a pasted URL is never meaningful, only the path/query/hash
+   * is. Using it verbatim would silently send visitors on one environment off to
+   * whichever environment the link happened to be copied from.
+   */
+  toRelativeUrl(input) {
+    if (!input) return input;
+    try {
+      const url = new URL(input, window.location.origin);
+      return `${url.pathname}${url.search}${url.hash}`;
+    } catch {
+      return input;
+    }
+  }
 }
 
 export default new Url(serviceConfigurations.url || {});

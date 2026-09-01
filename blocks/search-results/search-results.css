@@ -180,12 +180,17 @@
         top: 0.5rem;
         right: 0.5rem;
 
-        /* Small circle buttons for card/masonry overlay */
+        /* Small circle buttons for card/masonry overlay. Backdrop blur off: the
+           favorite toggle's background is deliberately transparent (styles.css —
+           "no yellow pill, just the glyph filled black"), and a blur with nothing
+           behind it just reads as a hazy smudge over the photo, inconsistent with
+           the crisp download/copy-url circles next to it. */
         --collection-toggle-btn-width:     2rem;
         --collection-toggle-btn-min-width: 2rem;
         --collection-toggle-btn-height:    2rem;
         --collection-toggle-btn-padding:   0;
         --collection-toggle-btn-radius:    50%;
+        --collection-toggle-btn-backdrop:  none;
         --collection-toggle-add-bg: var(--search-results-action-bg);
         --collection-toggle-add-fg: var(--search-results-action-fg);
         --collection-toggle-add-border: var(--search-results-action-border);
@@ -347,25 +352,12 @@
             gap: var(--spacing-xxl);
         }
 
-        /* Pure image tile — strip all card chrome */
-        .asc-asset-teaser {
-            display: block;
-            width: 100%;
-            background: none;
-            border: none;
-            border-radius: 0;
-            box-shadow: none;
-
-            &:hover {
-                transform: none;
-                box-shadow: none;
-            }
-        }
-
-        /* Natural image sizing — no skeleton, no forced aspect ratio */
+        /* Natural image sizing — no skeleton, no forced aspect ratio.
+           overflow: hidden clips the hover zoom below without affecting layout. */
         .asc-asset-teaser__preview {
             aspect-ratio: unset;
             background: none;
+            overflow: hidden;
         }
 
         .asc-asset-teaser__preview picture {
@@ -378,6 +370,28 @@
             width: 100%;
             height: auto;
             object-fit: initial;
+            transition: transform var(--transition-slow);
+        }
+
+        /* Pure image tile — strip all card chrome */
+        .asc-asset-teaser {
+            display: block;
+            width: 100%;
+            background: none;
+            border: none;
+            border-radius: 0;
+            box-shadow: none;
+            animation: asc-search-results-teaser-in var(--transition-slow) ease both;
+
+            &:hover {
+                transform: none;
+                box-shadow: none;
+
+                .asc-asset-teaser__preview img,
+                .asc-asset-teaser__preview video {
+                    transform: scale(1.04);
+                }
+            }
         }
 
         /* Meta: overlay at bottom edge, hidden at rest */
@@ -417,9 +431,19 @@
             pointer-events: auto;
         }
 
+        /* Masonry's preview reset above (aspect-ratio: unset) strips the fixed tile
+           shape a no-preview face needs to hold its place in the column flow —
+           restore it here so file-type tiles read as normal tiles, not slivers. */
+        .asc-asset-teaser--no-preview .asc-asset-teaser__preview {
+            aspect-ratio: 4 / 3;
+            background: var(--color-muted);
+        }
     }
 
-    /* ── Fallback icons for non-image / broken thumbnails ──────────────── */
+    /* ── Fallback tile for non-image / broken thumbnails ─────────────────
+       .asc-ui-filetype markup (glyph + ext label) is injected into
+       .asc-asset-teaser__preview by search-results.js when an <img> fails to
+       load or resolves with no natural size — see attachImageHandlers(). */
 
     .asc-asset-teaser--no-preview .asc-asset-teaser__preview img {
         display: none;
@@ -429,41 +453,20 @@
         display: flex;
         align-items: center;
         justify-content: center;
+        aspect-ratio: 4 / 3;
         background: var(--color-muted);
-        min-height: 120px;
         border-radius: var(--border-radius-md);
     }
+}
 
-    .asc-asset-teaser--no-preview .asc-asset-teaser__preview::after {
-        content: '📄';
-        font-size: 3rem;
-        opacity: 0.5;
+@keyframes asc-search-results-teaser-in {
+    from {
+        opacity: 0;
+        transform: scale(0.98);
     }
 
-    .asc-asset-teaser--no-preview[data-asc-file-type="PDF"] .asc-asset-teaser__preview::after {
-        content: '📕';
-    }
-
-    .asc-asset-teaser--no-preview[data-asc-file-type="Video"] .asc-asset-teaser__preview::after {
-        content: '🎬';
-    }
-
-    .asc-asset-teaser--no-preview[data-asc-file-type="Audio"] .asc-asset-teaser__preview::after {
-        content: '🎵';
-    }
-
-    .asc-asset-teaser--no-preview[data-asc-file-type="Word Doc"] .asc-asset-teaser__preview::after,
-    .asc-asset-teaser--no-preview[data-asc-file-type="Word"] .asc-asset-teaser__preview::after {
-        content: '📝';
-    }
-
-    .asc-asset-teaser--no-preview[data-asc-file-type="Excel"] .asc-asset-teaser__preview::after,
-    .asc-asset-teaser--no-preview[data-asc-file-type="Spreadsheet"] .asc-asset-teaser__preview::after {
-        content: '📊';
-    }
-
-    .asc-asset-teaser--no-preview[data-asc-file-type="ZIP"] .asc-asset-teaser__preview::after,
-    .asc-asset-teaser--no-preview[data-asc-file-type="Archive"] .asc-asset-teaser__preview::after {
-        content: '📦';
+    to {
+        opacity: 1;
+        transform: scale(1);
     }
 }
