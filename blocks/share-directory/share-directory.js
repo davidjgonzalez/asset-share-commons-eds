@@ -15,13 +15,8 @@
  *   | view                  | horizontal                               |                      |  ← optional: horizontal (default) | vertical
  *   | hero                  | true                                      |                      |  ← optional: true (default) | false
  *   | hero-index            | 2                                         |                      |  ← optional: 1 (default) — which row (1-based) is the hero
-<<<<<<< HEAD
  *   | Spring 2026 Campaign | Curated hero shots for the spring launch |                       | /search?tagid=campaigns:spring-2026 |
  *   | Press Kit             | Logos, product shots, and boilerplate    |                       | /sheets/press-kit    |
-=======
- *   | Spring 2026 Campaign | Curated hero shots for the spring launch | /search?tagid=campaigns:spring-2026 |
- *   | Press Kit             | Logos, product shots, and boilerplate    | /sheets/press-kit    |
->>>>>>> e491bd9eaed27b48674fbaf6e6ccd5a64870df9e
  *
  * `view: vertical` renders every card mosaic-on-top instead of the default
  * thumb-left/body-right split (see the "Collection cards" section of
@@ -32,7 +27,6 @@
  * share-directory blocks (mixed with other authored content in between) and
  * only some of them should lead with a hero.
  *
-<<<<<<< HEAD
  * Each share row is: Label | Description | Cover image | URL/path. The 3rd
  * cell is optional — a pasted cover image, an external image URL, or a DAM
  * asset path (e.g. `/content/dam/foo/bar.png`). A DAM path is resolved
@@ -42,13 +36,6 @@
  * shows an automatically-resolved thumbnail mosaic (see the "Collection
  * cards" section of docs/UI_KIT.md / docs/ui-kit.html) when the link makes
  * one available:
-=======
- * Each share row is: Label | Description | URL/path. A 4th cell is optional —
- * either a cover image (drop one in) or an image URL; omit it, and the card
- * shows an automatically-resolved thumbnail mosaic (see the "Collection cards"
- * section of docs/UI_KIT.md / docs/ui-kit.html) when the link makes one
- * available:
->>>>>>> e491bd9eaed27b48674fbaf6e6ccd5a64870df9e
  *   - A `?sheet=` link — the compressed payload identifies the asset list, so
  *     up to 15 thumbnails can be resolved without fetching the target page.
  *   - A link to the search page with query params — a real (silent,
@@ -234,7 +221,6 @@ function resolveThumbnails(link) {
   return previewCache.get(link);
 }
 
-<<<<<<< HEAD
 const imageCache = new Map();
 
 // A DAM path has no delivery URL of its own — resolve it to a real asset
@@ -276,20 +262,6 @@ function parseItemRow(cells) {
     description,
     image: isDamPath ? '' : rawImage,
     imagePath: isDamPath ? rawImage : '',
-=======
-function parseItemRow(cells) {
-  const title = cells[0]?.textContent.trim() || '';
-  const description = cells[1]?.textContent.trim() || '';
-  const link = cells[2]?.textContent.trim() || '';
-  const imageCell = cells[3];
-  // The link is always a page on this same site (a sheet/collection path) —
-  // normalize it to the current domain. The cover image is left alone: it
-  // legitimately lives on a different host (the DAM/dynamic media delivery host).
-  const image = imageCell?.querySelector('img')?.getAttribute('src') || imageCell?.textContent.trim() || '';
-  if (!title || !link) return null;
-  return {
-    title, link: services.url.toRelativeUrl(link), description, image,
->>>>>>> e491bd9eaed27b48674fbaf6e6ccd5a64870df9e
   };
 }
 
@@ -410,7 +382,6 @@ export default async function decorate(block) {
       const index = Number(entry.target.dataset.shareIndex);
       const item = items[index];
       if (!item || item.image) return;
-<<<<<<< HEAD
       let result;
       if (item.imagePath) {
         const resolvedImage = await resolveDamImage(item.imagePath);
@@ -418,9 +389,6 @@ export default async function decorate(block) {
       } else {
         result = await resolveThumbnails(item.link);
       }
-=======
-      const result = await resolveThumbnails(item.link);
->>>>>>> e491bd9eaed27b48674fbaf6e6ccd5a64870df9e
       Object.assign(item, result);
       const isHero = index === heroIndex;
       const template = document.createElement('template');

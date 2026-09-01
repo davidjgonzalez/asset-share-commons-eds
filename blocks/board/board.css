@@ -235,7 +235,6 @@
         flex-direction: column;
         gap: var(--spacing-sm);
         overflow: visible; /* let the tail protrude past the panel's own edge */
-<<<<<<< HEAD
 
         /* Scale with the canvas zoom (--panel-zoom, set by positionPanel()) so the
            panel keeps the same size relative to the card at any zoom level, instead
@@ -252,10 +251,6 @@
     .board__notes-panel[data-side="right"] { transform-origin: left center; }
     .board__notes-panel[data-side="left"] { transform-origin: right center; }
 
-=======
-    }
-
->>>>>>> e491bd9eaed27b48674fbaf6e6ccd5a64870df9e
     /* Tail: rotated square — two visible border sides form the triangle tip, pointing
        back at the item's card. Side is picked by positionPanel() (data-side); --tail-pos
        is the offset along that edge, also set by positionPanel(). */

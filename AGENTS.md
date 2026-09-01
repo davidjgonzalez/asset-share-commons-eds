@@ -15,12 +15,6 @@ This file documents conventions, extension points, and architecture decisions fo
 | `blocks/` | **You** | Copy and modify blocks as needed |
 | `blocks/action-*/` | **You** | Action dialog blocks — one per `/actions/*` path |
 | `styles/` | **You** | Add themes, override CSS variables |
-<<<<<<< HEAD
-=======
-| `component-definition.json` | **You** | Universal Editor component library |
-| `component-models.json` | **You** | Universal Editor field definitions |
-| `component-filters.json` | **You** | Universal Editor containment rules |
->>>>>>> e491bd9eaed27b48674fbaf6e6ccd5a64870df9e
 
 Every file inside `scripts/asc/core/` starts with `// ASC Core — do not edit.` as a guard —
 that's the only part of `scripts/asc/` this applies to. See `docs/PROJECT_STRUCTURE.md` for
@@ -1394,7 +1388,6 @@ The `ascEager(doc)` hook in `scripts/asc.js` reads this value, adds `theme-{name
 
 ---
 
-<<<<<<< HEAD
 ## DA.live Block Library
 
 Authoring in this project is DA.live / Experience Workspace only — there is no Universal Editor
@@ -1408,37 +1401,6 @@ not this repo — one `{ name, path }` row per block, pointing at an example doc
 this for blocks that are never section-placed (`action-*`, invoked via the actions service) and
 for stock EDS blocks (`columns`, `content`, `header`, `footer`, `fragment`). New DA documents/
 sheets need to be previewed and published before the library reflects them.
-=======
-## Universal Editor
-
-The project ships three JSON files at the project root for Universal Editor support:
-
-| File | Purpose |
-|------|---------|
-| `component-definition.json` | Component library (palette) — grouped: Search, Asset Details, Collections, Standard |
-| `component-models.json` | Sidebar field definitions for each block |
-| `component-filters.json` | Containment rules — what blocks can go in which sections |
-
-To activate page-level filters (e.g. `asc-details-page`), add `data-aue-filter="asc-details-page"` to the `<main>` element of the page template.
-
-If a block's JS reads config via `readBlockConfig()` (fixed `key | value` rows), its
-`component-definition.json` template **must** set `"key-value": true` — otherwise Universal
-Editor renders fields positionally (bare values, no key cell), which `readBlockConfig()` can't
-parse. Blocks that take unbounded/free-form rows (`Label | property` lists like
-`details-metadata`) aren't a good fit for fixed model fields — register a single descriptive
-`richtext` field instead (see `search-hidden`'s model) and keep the row format documented in the
-block's own header comment.
-
-### Block Authoring Registration — required for every new author-placed block
-
-New blocks must be registered in **both** Universal Editor (above) **and** the DA.live block
-library (`library/blocks` sheet in DA content, not this repo — one `{ name, path }` row per
-block, pointing at an example doc under `/blocks/<block-name>`). See
-`https://docs.da.live/administrators/guides/setup-library`. Skip both for blocks that are never
-section-placed (`action-*`, invoked via the actions service) and for stock EDS blocks (`columns`,
-`content`, `header`, `footer`, `fragment`). New DA documents/sheets need to be previewed and
-published before the library reflects them.
->>>>>>> e491bd9eaed27b48674fbaf6e6ccd5a64870df9e
 
 ---
 

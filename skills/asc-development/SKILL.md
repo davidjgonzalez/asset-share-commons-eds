@@ -59,10 +59,6 @@ scripts/asc/configurations.js  ← YOUR FILE — edit freely, the single customi
 scripts/asc/              ← ASC CORE — never edit; all files start with "// ASC Core — do not edit."
 blocks/                   ← YOUR BLOCKS — copy and modify freely (each has /** @owner user */)
 styles/                   ← YOUR STYLES — add themes, override tokens
-<<<<<<< HEAD
-=======
-component-*.json          ← YOUR UE CONFIG — Universal Editor component library
->>>>>>> e491bd9eaed27b48674fbaf6e6ccd5a64870df9e
 ```
 
 If you find yourself wanting to edit a file in `scripts/asc/`, stop. There is almost always a configuration hook or block-level approach that achieves the same goal without touching core.
