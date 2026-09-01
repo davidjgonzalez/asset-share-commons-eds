@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ASC Solution-Fit Scorecard — BR / Content Hub Requirements</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #0d0d0d;
+    --muted-fg: #6e6a69;
+    --card: #ffffff;
+    --border: #e2e1e0;
+    --muted: #f6f5f3;
+
+    --strong-bg: #e8f5ec; --strong-fg: #146c2e; --strong-dot: #1f9d4d;
+    --partial-bg: #fdf3e0; --partial-fg: #8a5b00; --partial-dot: #e0a400;
+    --gap-bg: #fbe9e9;    --gap-fg: #a5271f;     --gap-dot: #d64541;
+    --inherited-bg: #eef1f5; --inherited-fg: #445; --inherited-dot: #7f8fa4;
+
+    --radius: 14px;
+    --shadow: 0 1px 2px rgb(13 13 13 / 4%);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    line-height: 1.5;
+    letter-spacing: -0.01em;
+  }
+
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 2.5rem 1.5rem 5rem; }
+
+  header.page-head { margin-bottom: 2rem; }
+
+  .eyebrow {
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--muted-fg);
+    margin: 0 0 0.5rem;
+  }
+
+  h1 { font-size: 2rem; margin: 0 0 0.5rem; letter-spacing: -0.02em; }
+  h2 { font-size: 1.3rem; margin: 3rem 0 0.25rem; letter-spacing: -0.015em; }
+
+  .subhead { color: var(--muted-fg); font-size: 0.98rem; max-width: 760px; }
+  .meta-row { display: flex; gap: 1.5rem; flex-wrap: wrap; margin-top: 1rem; font-size: 0.85rem; color: var(--muted-fg); }
+  .meta-row strong { color: var(--fg); }
+
+  .callout {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--muted);
+    padding: 1rem 1.25rem;
+    font-size: 0.9rem;
+    color: var(--fg);
+    margin: 1.25rem 0;
+  }
+  .callout p { margin: 0.4rem 0; }
+  .callout strong { font-weight: 700; }
+
+  /* ── Summary stat cards ─────────────────────────────────────── */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 0.9rem;
+    margin: 1.5rem 0 0;
+  }
+  .stat-card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 1.1rem;
+    box-shadow: var(--shadow);
+  }
+  .stat-card .stat-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted-fg); font-weight: 700; }
+  .stat-card .stat-value { font-size: 1.7rem; font-weight: 700; margin-top: 0.15rem; }
+  .stat-bar { display: flex; height: 8px; border-radius: 999px; overflow: hidden; margin-top: 0.6rem; background: var(--muted); }
+  .stat-bar span { display: block; height: 100%; }
+
+  /* ── Legend ─────────────────────────────────────────────────── */
+  .legend { display: flex; flex-wrap: wrap; gap: 0.6rem; margin: 1rem 0 0; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    padding: 0.3rem 0.65rem; border-radius: 999px;
+    font-size: 0.78rem; font-weight: 600; white-space: nowrap;
+  }
+  .badge .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  .badge.strong    { background: var(--strong-bg); color: var(--strong-fg); }
+  .badge.strong .dot { background: var(--strong-dot); }
+  .badge.partial   { background: var(--partial-bg); color: var(--partial-fg); }
+  .badge.partial .dot { background: var(--partial-dot); }
+  .badge.gap       { background: var(--gap-bg); color: var(--gap-fg); }
+  .badge.gap .dot  { background: var(--gap-dot); }
+  .badge.inherited { background: var(--inherited-bg); color: var(--inherited-fg); }
+  .badge.inherited .dot { background: var(--inherited-dot); }
+
+  /* ── Filter controls ────────────────────────────────────────── */
+  .filters { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 1.25rem 0 0.5rem; }
+  .filters button {
+    font: inherit; font-size: 0.82rem; font-weight: 600; cursor: pointer;
+    border: 1px solid var(--border); background: var(--card); color: var(--fg);
+    padding: 0.4rem 0.85rem; border-radius: 999px; transition: background 120ms ease, border-color 120ms ease;
+  }
+  .filters button:hover { background: var(--muted); }
+  .filters button.active { background: var(--fg); color: #fff; border-color: var(--fg); }
+
+  /* ── Scorecard table ────────────────────────────────────────── */
+  table.scorecard { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.92rem; }
+  table.scorecard th {
+    text-align: left; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--muted-fg); font-weight: 700; padding: 0 0.75rem 0.5rem; border-bottom: 2px solid var(--border);
+  }
+  table.scorecard td { padding: 0.9rem 0.75rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  table.scorecard tr.theme-row:hover { background: var(--muted); }
+  table.scorecard td.theme-name { font-weight: 700; width: 18%; }
+  table.scorecard td.layer-cell { width: 20%; font-size: 0.8rem; color: var(--muted-fg); }
+  table.scorecard td.fit-cell { width: 62%; }
+  table.scorecard td.fit-cell .notes { display: block; margin-top: 0.45rem; color: var(--muted-fg); font-size: 0.87rem; line-height: 1.45; }
+  table.scorecard tr[hidden] { display: none; }
+
+  /* ── Q&A / limitations lists ───────────────────────────────── */
+  .qa-list, .lim-list { display: flex; flex-direction: column; gap: 0.9rem; margin-top: 1rem; }
+  .qa-item, .lim-item {
+    border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.15rem;
+  }
+  .qa-item .q { font-weight: 600; margin: 0 0 0.4rem; }
+  .qa-item .a { color: var(--muted-fg); font-size: 0.92rem; margin: 0; }
+  .qa-item .a strong { color: var(--fg); }
+
+  .lim-item .lim-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+  .lim-item .lim-head .title { font-weight: 600; }
+  .lim-item .compare { color: var(--muted-fg); font-size: 0.92rem; margin: 0.5rem 0 0; }
+  .lim-item .compare strong { color: var(--fg); }
+
+  /* ── Close-the-gap chips ──────────────────────────────────────── */
+  .close-block { margin-top: 0.7rem; padding-top: 0.6rem; border-top: 1px dashed var(--border); }
+  .close-block .close-label {
+    display: block; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em;
+    font-weight: 700; color: var(--muted-fg); margin-bottom: 0.4rem;
+  }
+  .close-item { display: flex; gap: 0.5rem; align-items: flex-start; margin-bottom: 0.4rem; font-size: 0.87rem; }
+  .close-item:last-child { margin-bottom: 0; }
+  .close-item .close-text { color: var(--muted-fg); line-height: 1.45; }
+  .path-chip {
+    flex: none; display: inline-flex; align-items: center; padding: 0.15rem 0.55rem;
+    border-radius: 999px; font-size: 0.7rem; font-weight: 700; white-space: nowrap; margin-top: 0.1rem;
+  }
+  .path-chip.config    { background: #e6f0fd; color: #1955a8; }
+  .path-chip.extension { background: #f1e9fb; color: #5b2a94; }
+  .path-chip.eds       { background: #e3f7f1; color: #0d7a5f; }
+  .path-chip.reframe   { background: #fbeee3; color: #a1500f; }
+
+  /* ── Expandable example snippets ──────────────────────────────── */
+  .example-toggle { margin-top: 0.5rem; }
+  .example-toggle summary {
+    cursor: pointer; font-size: 0.8rem; font-weight: 600; color: var(--fg);
+    list-style: none; display: inline-flex; align-items: center; gap: 0.35rem;
+  }
+  .example-toggle summary::-webkit-details-marker { display: none; }
+  .example-toggle summary::before {
+    content: "▸"; font-size: 0.68rem; color: var(--muted-fg); transition: transform 120ms ease; display: inline-block;
+  }
+  .example-toggle[open] summary::before { transform: rotate(90deg); }
+  .example-toggle pre {
+    margin: 0.55rem 0 0; padding: 0.8rem 0.95rem; background: #0d0d0d; color: #f0f0f0;
+    border-radius: 10px; overflow-x: auto; font-size: 0.78rem; line-height: 1.5;
+  }
+  .example-toggle code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+  footer.page-foot { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--border); color: var(--muted-fg); font-size: 0.82rem; }
+
+  @media print {
+    .filters { display: none; }
+    tr[hidden] { display: table-row !important; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="page-head">
+    <p class="eyebrow">Solution-Fit Scorecard · BR / Content Hub Track</p>
+    <h1>Asset Share Commons vs. Content Hub BR Requirements</h1>
+    <p class="subhead">
+      A theme-by-theme assessment of how the Asset Share Commons (ASC) Edge Delivery Services
+      front end — running against an AEM Cloud Service / AEM backend — covers the 105 front-end
+      DAM requirements raised in the Content Hub BR workbook, as consolidated in
+      <code>consolidated_requirements_for_claude.md</code>.
+    </p>
+    <div class="meta-row">
+      <span><strong>Source:</strong> BRs_ContentHub_Answered by Adobe &amp; Platform (105 requirements)</span>
+      <span><strong>Assessed against:</strong> ASC codebase (blocks/, scripts/asc/core/services/, docs/)</span>
+    </div>
+
+    <div class="callout">
+      <p><strong>Methodology.</strong> This scorecard was built by reading the consolidated theme
+      summary (not the underlying row-level CSV, which wasn't provided) and cross-checking each
+      claim against the actual ASC source — service implementations, block markup, and docs — so
+      every score below is grounded in code, not the requirement wording alone. It is a
+      <em>thematic</em> fit assessment, not a 105-row line-item audit; treat it as the fast,
+      directional pass, and re-run the row-level CSV through the same method for a contractual-grade
+      answer.</p>
+      <p><strong>Layer matters.</strong> ASC is a front end that sits on an AEM backend (Cloud Service
+      or on-prem, depending on the search provider chosen). Several requirements are satisfied
+      elsewhere in that stack, not by ASC's own code — <strong>AEM Author's Assets view</strong>
+      (ingestion, metadata editing, versioning, approval), its <strong>Admin view</strong>
+      (permissions, workflow, group config), and <strong>Dynamic Media</strong> (Scene7 or the
+      newer OpenAPI — rendition generation, smart/AI search, watermarking, video streaming). Scoring
+      these as ASC "gaps" would be misleading, so each theme is tagged with the layer that actually
+      owns it.</p>
+      <p><strong>The platform counts too.</strong> Fit isn't just "does ASC's JS already do this" —
+      Edge Delivery Services (aem.live) itself has native capabilities that close some of these gaps
+      without ASC-specific code: language-prefixed content trees for locale-aware experiences, Live
+      Search for indexing EDS-authored pages (campaigns/programs, as opposed to DAM assets), and
+      CDN/edge configuration for things like IP allow-listing. Where that changes the practical
+      answer, it's called out explicitly in "How to close it" below.</p>
+    </div>
+
+    <div class="stat-grid" id="stat-grid"></div>
+    <div class="legend">
+      <span class="badge strong"><span class="dot"></span>Strong fit</span>
+      <span class="badge partial"><span class="dot"></span>Partial fit</span>
+      <span class="badge gap"><span class="dot"></span>Gap</span>
+      <span class="badge inherited"><span class="dot"></span>Inherited / out of ASC's scope</span>
+    </div>
+    <div class="legend" style="margin-top: 0.5rem;">
+      <span class="path-chip config">Configuration</span>
+      <span class="path-chip extension">Customization / extension</span>
+      <span class="path-chip eds">EDS platform (aem.live)</span>
+      <span class="path-chip reframe">Reframe requirement</span>
+    </div>
+  </header>
+
+  <h2>Theme-by-theme scorecard</h2>
+  <p class="subhead">Twelve consolidated themes covering identity, search, browsing, preview,
+    metadata, ingestion/workflow, download, sharing, integrations, analytics, personalization, UI,
+    and security/compliance.</p>
+
+  <div class="filters" id="filters">
+    <button data-filter="all" class="active">All themes</button>
+    <button data-filter="strong">Strong fit</button>
+    <button data-filter="partial">Partial fit</button>
+    <button data-filter="gap">Has a gap</button>
+    <button data-filter="inherited">Inherited/N-A</button>
+  </div>
+
+  <table class="scorecard">
+    <thead>
+      <tr>
+        <th>Theme</th>
+        <th>Owning layer</th>
+        <th>Fit</th>
+      </tr>
+    </thead>
+    <tbody id="scorecard-body"></tbody>
+  </table>
+
+  <h2>Open questions from the BR workbook</h2>
+  <p class="subhead">Answered from ASC's side where the question is actually about front-end/platform
+    capability; flagged as out-of-scope where it's a Content Hub–specific bug or a business/strategy
+    call this scorecard can't settle.</p>
+  <div class="qa-list" id="qa-list"></div>
+
+  <h2>Content Hub known limitations — how ASC compares</h2>
+  <p class="subhead">The BR workbook's caveats are all about Content Hub specifically. Restated here
+    as a direct comparison so it's clear which ones ASC simply doesn't have, and which ones ASC
+    shares (no free lunch).</p>
+  <div class="lim-list" id="lim-list"></div>
+
+  <footer class="page-foot">
+    Generated for internal solution-fit review. Code references live in <code>scripts/asc/core/services/</code>,
+    <code>blocks/*/</code>, and <code>docs/</code> at the time of writing. See the companion
+    <code>asc-solution-fit-3m-cmas.html</code> for the 3M CMAS track, generated with the same method.
+    Re-run against the row-level CSV for a line-item-accurate version — see the <code>scorecard</code> skill.
+  </footer>
+
+</div>
+
+<script>
+/* ── Data ──────────────────────────────────────────────────────────────
+   level: 'strong' | 'partial' | 'gap' | 'inherited' */
+const THEMES = [
+  {
+    name: "Identity, access &amp; administration",
+    layer: "AEM / IMS (inherited) + ASC integration point",
+    level: "partial",
+    notes: "ASC's <code>users</code> service auto-detects <code>window.adobeIMS</code> for SSO and falls back to a real anonymous/guest mode — no separate login UI needed. But MFA, session management, bulk provisioning, directory integration, and delegated admin are IMS/AEM admin-console features ASC never touches; group hierarchy → permission mapping is inherited from AEM's own ACLs, not modeled in ASC.",
+    close: [
+      { path: "reframe", text: "MFA, session management, bulk provisioning, and delegated admin already exist in IMS/AEM's admin console — reframe the requirement as \"confirm IMS meets this\" rather than asking a DAM front end to reimplement identity infrastructure." },
+      { path: "extension", text: "Role-based experiences (branching UI by IMS group membership) are buildable on top of the existing <code>users</code> service — a moderate, contained ASC extension, not a platform gap." },
+    ],
+  },
+  {
+    name: "Search, discovery &amp; relevance",
+    layer: "ASC front end (querying AEM QueryBuilder or Dynamic Media OpenAPI Search)",
+    level: "strong",
+    notes: "Full-text (<code>fulltext</code>/<code>fulltext.relPath</code>), faceted filtering (file type, path, date range, tags, custom properties — all config-driven blocks), Boolean groups (<code>p.or</code>/<code>p.not</code>), configurable relevance/multi-field sort. The optional OpenAPI provider is Adobe's Dynamic Media <em>smart/AI</em> search backend, opt-in per <code>configurations.js</code>. OCR-in-fulltext depends on whatever AEM has indexed — inherited, not ASC's job. Gaps: no saved queries, no type-ahead suggestions, no locale-aware search.",
+    close: [
+      { path: "extension", text: "Saved queries: persist the current <code>formData</code> to the existing per-user <code>storage</code> service and add a \"Saved searches\" menu — the same pattern already used for share/recently-viewed history.",
+        example: "// A small user-owned module, mirroring the exact pattern\n// blocks/action-share/action-share.js already uses for share history —\n// built entirely on storage's public get/set, no core file edits.\nimport storage from '../../scripts/asc/core/services/storage/storage.js';\n\nconst SAVED_SEARCHES_KEY = 'savedSearches';\n\nexport function saveSearch(formData) {\n  const saved = storage.get(SAVED_SEARCHES_KEY) || [];\n  saved.unshift({\n    id: crypto.randomUUID(),\n    query: Object.fromEntries(formData),\n    savedAt: new Date().toISOString(),\n  });\n  storage.set(SAVED_SEARCHES_KEY, saved.slice(0, 20));\n}\n\nexport function getSavedSearches() {\n  return storage.get(SAVED_SEARCHES_KEY) || [];\n}" },
+      { path: "extension", text: "Type-ahead: add a debounced suggestions dropdown to <code>search-bar</code> against the existing QueryBuilder/OpenAPI providers — contained, no new backend needed." },
+      { path: "eds", text: "Locale-aware discovery: adopt Edge Delivery Services' standard language-folder pattern (e.g. <code>/us/en/</code>, <code>/mx/es/</code>) so each locale gets its own content tree and search stays per-locale natively — a platform pattern, not new ASC code." },
+    ],
+  },
+  {
+    name: "Browsing, navigation &amp; collections/packages",
+    layer: "ASC front end",
+    level: "strong",
+    notes: "Grid/list/masonry views, infinite-scroll pagination, path-facet folder browsing, and a full collections system (create/switch/add/remove, drag-position + notes on a board canvas) covering lightboxes and curated collections. Favorites/bookmarks are explicitly deferred (a prior scoping decision, not an oversight). History exists (recently-viewed + share history) but is <strong>local-device storage only</strong>, not server-side/cross-device.",
+    close: [
+      { path: "extension", text: "Favorites/bookmarks: a previously deferred product decision, not a technical blocker — mirrors the existing Collections pattern closely enough to be a contained extension once prioritized." },
+      { path: "extension", text: "Server-side/cross-device history: today's history lives in <code>localStorage</code>; making it durable means persisting it to an AEM-side user-preferences node (or a small custom endpoint) instead — a bigger, backend-touching extension than most items on this list." },
+    ],
+  },
+  {
+    name: "Preview, viewing &amp; media handling",
+    layer: "ASC front end + Dynamic Media (Scene7 / OpenAPI) rendition &amp; delivery (inherited)",
+    level: "strong",
+    notes: "In-browser preview for images/video/PDF/Office via the asset-details modal, without requiring a download first. The actual optimized/responsive imagery ASC displays is served straight off Dynamic Media's delivery endpoint (<code>.../adobe/dynamicmedia/deliver/dm-aid--…?width=…&amp;preferwebp=true</code> — visible directly in ASC's rendered markup), and PDF/Office previews are AEM-generated renditions. Adaptive video streaming, if used, is also Dynamic Media Video's job. All of that conversion/delivery work is inherited; ASC only owns the viewer chrome.",
+    close: [
+      { path: "extension", text: "Multilingual campaign bundling: extend the existing downloads service to assemble a per-locale rendition set as one package — a contained addition once campaign assets are organized per language." },
+      { path: "config", text: "Different crop/format/quality presets per context are usually a Dynamic Media processing-profile change (AEM Author Assets view), not an ASC code change." },
+    ],
+  },
+  {
+    name: "Metadata, taxonomy &amp; relationships",
+    layer: "ASC displays; AEM Author Assets view owns editing/governance; Smart Tags come from Dynamic Media/Sensei",
+    level: "partial",
+    notes: "Rich read-only metadata display including Adobe Smart Tags (Sensei-generated, surfaced via Dynamic Media metadata, confirmed live in the asset-details modal), manual tags, and parent/child relationships. Metadata <em>editing</em> is intentionally absent — ASC is a sharing front end, not an authoring tool, so that stays in AEM Author's Assets view by design. Channel-specific flags are buildable via the pluggable property-handler system but nothing ships out of the box.",
+    close: [
+      { path: "config", text: "Channel-specific gating: for a single-channel-per-deployment setup, merge a fixed predicate into every query via <code>configurations.js</code>'s existing <code>basePredicates</code> option. Per-request/dynamic channel switching would need real extension work beyond this — this covers the common \"this deployment only shows Channel X\" case cleanly.",
+        example: "// scripts/asc/configurations.js\nsearch: {\n  provider: 'querybuilder',\n  basePredicates: {\n    // Merged into every query, before form data — only ever show\n    // assets tagged for the Dealer channel in this deployment\n    'property': 'jcr:content/metadata/channel',\n    'property.value': 'dealer',\n  },\n}," },
+      { path: "eds", text: "Standardized renditions/formats: usually an AEM Author Assets-view processing-profile setting (Dynamic Media auto-generates consistent JPG/PNG/MP4 renditions per profile) rather than something ASC needs to enforce." },
+      { path: "extension", text: "Metadata feed to bCom/GPIM: a genuine custom integration — a small export job (EDS-adjacent service) triggered from an ASC action-page, calling AEM's Assets API." },
+    ],
+  },
+  {
+    name: "Upload, ingestion, versioning &amp; workflow",
+    layer: "AEM Author — Assets view (ingestion, versioning, metadata) + Admin view (workflow/permissions config) — fully inherited by design",
+    level: "inherited",
+    notes: "ASC has zero ingestion/workflow/versioning code, deliberately. It reads AEM's XMP edit history for display, but creating/approving/versioning assets happens in AEM Author's Assets view (with workflow and permission structure configured in the Admin view) for both ASC and Content Hub alike — this isn't a gap, it's the correct division of labor.",
+    close: [
+      { path: "reframe", text: "Validate these requirements directly against AEM Author's Assets/Admin views, not against whichever sharing front end sits on top — the answer is identical for ASC and Content Hub." },
+    ],
+  },
+  {
+    name: "Download, export &amp; distribution",
+    layer: "ASC front end + AEM download-job backend + Dynamic Media (Scene7 / OpenAPI) rendition delivery",
+    level: "partial",
+    notes: "Async bulk-download jobs with polling-based progress, plus per-rendition selection, are real and working today. <strong>Watermarking is not actually an ASC gap</strong> — Dynamic Media (Scene7 imaging presets, or the OpenAPI equivalent) supports dynamic watermark overlays at the rendition level; ASC would just need to point downloads at the watermarked rendition rather than build watermarking itself. What's genuinely missing on ASC's side is a usage-rights acknowledgment gate, download-size/rate limits, and an email-share composer — links can be pasted into an email manually, but there's no send-from-app flow.",
+    close: [
+      { path: "config", text: "Watermarking: configure a Dynamic Media watermark preset in AEM Author's Assets view and reference that rendition — no ASC code change needed." },
+      { path: "extension", text: "Usage-rights acknowledgment: add a required checkbox to <code>blocks/action-download/action-download.js</code>'s dialog markup and gate the existing submit handler on it — a small, contained change to a block ASC already owns.",
+        example: "// blocks/action-download/action-download.js\n// Inside the existing dialog.innerHTML template, in .asc-dialog__body:\n<label class=\"action-download__rights-ack\">\n  <input type=\"checkbox\" id=\"rights-ack\" required />\n  I have the rights to use these assets per our usage terms.\n</label>\n\n// Then gate the existing submit handler, right where it already\n// reads selectedRenditionIds:\ndialog.querySelectorAll('.action-download__submit').forEach((btn) => {\n  btn.addEventListener('click', async () => {\n    const ack = dialog.querySelector('#rights-ack');\n    if (ack && !ack.checked) {\n      ack.reportValidity();\n      return;\n    }\n    // ...existing buildTargets()/downloadAsZip() logic, unchanged\n  });\n});" },
+      { path: "reframe", text: "Email-share composer: a <code>mailto:</code>-prefilled link is a zero-backend fix today; reframe \"send from app\" as \"copy link, paste into your own email client\" unless a true in-app send is a hard requirement." },
+      { path: "eds", text: "If in-app email send is required, it needs a small serverless send endpoint alongside the EDS site (there's no backend compute in ASC's own JS) — an EDS-development task, not a block-level change." },
+    ],
+  },
+  {
+    name: "Sharing, collaboration &amp; workflow",
+    layer: "ASC front end",
+    level: "partial",
+    notes: "Asset/collection sharing ships today — a share dialog that generates a compressed, optionally time-limited link, plus a local share-history panel. Collaboration is lightweight (per-item notes on the board canvas), not threaded comments. Formal review/approval workflow is correctly AEM Author's job, not a front-end gap.",
+    close: [
+      { path: "reframe", text: "Threaded comments/formal review: keep this in AEM Author's Assets view where it already lives — board notes intentionally cover lightweight external-facing annotation, not internal review." },
+      { path: "eds", text: "Co-branded per-partner share pages: a good idiomatic fit for the EDS platform — a per-partner theme/config keyed by URL path or query param, since ASC's theming system is already config-driven and EDS supports multi-theme rendering natively." },
+    ],
+  },
+  {
+    name: "Integrations &amp; downstream platforms",
+    layer: "Mixed — IMS inherited, analytics shipped, rest extensible-not-built",
+    level: "partial",
+    notes: "Identity comes from IMS (inherited). Analytics is a real, shipped capability — a configurable event bridge with per-vendor trackers, consent levels, and UTM capture (see <code>docs/ANALYTICS.md</code>), designed to feed real BI tools rather than reinvent one. Dynamic Media's OpenAPI is itself already one live integration (the smart-search provider). No turnkey email-system or generic external-API connector ships, though the search-provider and action-pages patterns are exactly the seams you'd extend.",
+    close: [
+      { path: "eds", text: "Generic email-system integration: needs a small serverless endpoint alongside the EDS site — EDS-development territory, not an ASC block change." },
+      { path: "extension", text: "New external-API connectors follow the same shape as the existing search-provider abstraction — a new provider module, not a framework change." },
+    ],
+  },
+  {
+    name: "Analytics, reporting &amp; history",
+    layer: "ASC captures events; external BI tool does dashboards (by design)",
+    level: "strong",
+    notes: "Every meaningful action — search, no-results, pagination, asset views, collection add/remove, downloads (always-identified for audit trails regardless of general consent level), share creation — normalizes into one <code>trackEvent()</code> call with configurable consent (<code>level</code>/<code>identifyEvents</code>) and vendor trackers. In-app dashboards are deliberately NOT built — the architecture explicitly pushes reporting to a real analytics platform instead of reinventing one in ASC.",
+    close: [
+      { path: "reframe", text: "Point any \"we need a dashboard\" ask at whichever BI/analytics tool receives the event stream — that's the tool's job by design, not a gap in ASC to close." },
+    ],
+  },
+  {
+    name: "Personalization, notifications &amp; saved state",
+    layer: "ASC front end",
+    level: "partial",
+    notes: "Recently-viewed assets are tracked per user (capped at 50, merged across an anonymous→signed-in transition). Recently <em>searched</em> queries aren't tracked. Favorites are explicitly deferred. No email alerts. Role-based experiences are config-possible but not built OOTB.",
+    close: [
+      { path: "extension", text: "Recently-searched: mirrors <code>storage.js</code>'s existing recently-viewed pattern almost exactly, built as a user-owned helper on top of its public <code>get</code>/<code>set</code> — no core file edits needed." ,
+        example: "// A user-owned helper (e.g. scripts/asc/recent-searches.js), mirroring\n// the core storage service's own RECENTLY_VIEWED pattern via its public API:\nimport storage from './core/services/storage/storage.js';\n\nconst KEY = 'recentlySearched';\nconst MAX = 20;\n\nexport function addRecentlySearched(query) {\n  const existing = getRecentlySearched();\n  storage.set(KEY, [query, ...existing].slice(0, MAX));\n}\n\nexport function getRecentlySearched() {\n  return storage.get(KEY) || [];\n}" },
+      { path: "eds", text: "Email alerts need a scheduled/triggered backend job — EDS-development territory (a small serverless function), or reframe toward routing the existing analytics event feed into a marketing-automation tool that already does alerting." },
+      { path: "config", text: "Role-based/persona experiences: config-driven theme or landing-page selection keyed off IMS group membership, on top of what <code>users</code> already exposes." },
+    ],
+  },
+  {
+    name: "UI, branding &amp; experience constraints",
+    layer: "ASC front end — this is where ASC most directly answers Content Hub's stated limitation",
+    level: "strong",
+    notes: "This is the theme where ASC is the mirror image of Content Hub's biggest named weakness (\"fixed UI... cannot modify UI/UX or add custom CSS\"). ASC ships 3 built-in themes plus a documented, token-driven theming system and a 60+-primitive UI kit — full control of layout, CSS, and branding, not just logo/color/banner tweaks. Custom filters (type, path, date, tags, arbitrary properties) are all config-driven blocks. No built-in language/locale switcher today.",
+    close: [
+      { path: "eds", text: "Language/locale switching: adopt EDS's native language-folder content-tree pattern rather than building a switcher inside ASC — the idiomatic platform answer, and the one most EDS sites already use." },
+    ],
+  },
+  {
+    name: "Security, performance &amp; compliance",
+    layer: "Mixed — CDN/perf inherited from EDS, audit partly shipped, rest AEM Cloud Service Admin console's job",
+    level: "partial",
+    notes: "CDN delivery is inherent to the EDS/Helix architecture (every page is edge-served by construction, not a bolt-on) and Core-Web-Vitals performance is a stated platform property. Audit-style logging is partially real via the analytics <code>identifyEvents</code> mechanism (built specifically so download events always carry identity for audit trails) — but that's an event stream, not a formal audit-log store. IP restriction isn't an app-layer feature in ASC, but it's a solved problem at the CDN/edge-config layer EDS already runs on. Compliance/concurrency posture is inherited from whichever AEM Cloud Service tier (managed via its Admin console) is behind it.",
+    close: [
+      { path: "eds", text: "IP restriction: configure at the CDN/edge-config layer (Fastly rules under the EDS site) rather than in ASC's application code — this is close to a solved problem already, not a real gap." },
+      { path: "extension", text: "Formal audit-log store: add a <code>trackers</code> entry (in <code>configurations.js</code>) that forwards only identified events to a durable log sink — everything it needs is already in the payload once <code>identifyEvents</code> is set.",
+        example: "// scripts/asc/configurations.js\nanalytics: {\n  identifyEvents: ['download_start', 'download_complete'],\n  trackers: [\n    // Only identified (audit-relevant) events reach the log sink\n    (name, payload) => {\n      if (!payload.userId || payload.userId === 'anonymous') return;\n      navigator.sendBeacon?.('/audit-log', JSON.stringify({ name, payload, ts: Date.now() }));\n    },\n  ],\n}," },
+    ],
+  },
+];
+
+/* ── Open questions (from the BR workbook) ─────────────────────────── */
+const OPEN_QUESTIONS = [
+  { q: "Duplicate detection — is there a new efficient way that doesn't cause performance issues?", a: "Not present in ASC. This would be an AEM-side asset-processing capability regardless of front end; ASC has no duplicate-detection code today." },
+  { q: "Unable to create collections even though the success message pops up.", a: "This is a Content Hub bug report — not applicable to ASC. For reference, ASC's own collection-create flow (collection-switcher → \"+ New collection\") was verified working end-to-end during this review." },
+  { q: "What is the maximum allowed asset download size?", a: "ASC enforces no hard-coded size cap. The async download job has configurable <code>jobExpiry</code>/<code>quickPollTimeout</code> windows, but any real ceiling comes from whatever the AEM backend's download-job framework enforces." },
+  { q: "Sorting order of search results by default is relevance — can it be customized?", a: "Yes. <code>orderby</code>/<code>orderby.sort</code> (QueryBuilder provider) or <code>sort</code> (OpenAPI provider) are fully configurable per search, not hard-coded to relevance." },
+  { q: "Integration of external email IDs with Azure.", a: "Not applicable to ASC — identity-provider federation is an IMS/AEM admin-console configuration question, not app code ASC owns." },
+  { q: "Stats for downloads, asset engagement, user activity etc. through Adobe I/O or Analytics?", a: "Yes — this is exactly what the new analytics bridge is for. The <code>trackers</code> array can call Adobe Analytics/Launch, Adobe Client Data Layer, or a custom Adobe I/O endpoint with no changes to ASC's own code." },
+  { q: "Download page for tracking large downloads with UI progress indicators.", a: "Exists today: the downloads service runs an async job with poll-based status, exposed as progress states in the UI." },
+  { q: "Do collaborators get access to AEM Assets and can they manage metadata and approval workflows?", a: "Not applicable to ASC — this is an AEM Author permissions question, independent of which front end is deployed." },
+  { q: "Does Content Hub provide search behavior/ranking/relevancy tuning ASC doesn't have out of the box?", a: "Roughly at parity: ASC's optional Dynamic Media OpenAPI provider is the same underlying Adobe smart/AI search capability, just opt-in per <code>configurations.js</code> rather than the default." },
+  { q: "If scoped access can be implemented in ASC using AEM permissions, why is Content Hub still a better investment?", a: "This is a business/strategy question a code scorecard can't settle — it trades ASC's build-and-own effort against Content Hub's faster time-to-value at the cost of the fixed-UI/attribute-access limitations listed below. Worth a decision memo, not a checkbox." },
+  { q: "If a search/discovery issue occurs in Content Hub, what parts are Adobe-supported vs. customer-owned?", a: "Not applicable to ASC directly, but the contrast is informative: ASC is 100% customer-owned code (open block architecture) — full control, but also full maintenance burden, unlike an Adobe-managed Content Hub feature." },
+  { q: "Technical comparison of search model and access model between Content Hub and ASC.", a: "In short: ASC's search runs against your own AEM QueryBuilder or Dynamic Media index and is ACL-scoped per user by construction (it calls AEM as the authenticated user). Content Hub's search is limited to Approved-status assets under an attribute-based access model, not real ACLs. See the theme rows above for the full breakdown." },
+];
+
+/* ── Known Content Hub limitations vs. ASC ─────────────────────────── */
+const LIMITATIONS = [
+  { title: "Fixed UI, no custom CSS beyond logo/colors/banner", compare: "<strong>ASC advantage.</strong> Full theming system — CSS variables, a documented UI kit, unlimited custom themes. This is the single biggest gap ASC closes." },
+  { title: "Flat hierarchy only — no folder navigation", compare: "<strong>ASC advantage.</strong> The path facet supports folder/hierarchy browsing with breadcrumb-style filtering." },
+  { title: "Cloud Service only — min AEM CS 2024.6.16799", compare: "<strong>ASC advantage (partial).</strong> The QueryBuilder provider works against classic AEM 6.5/on-prem too. The Dynamic Media OpenAPI provider is Cloud-Service-only, same as Content Hub." },
+  { title: "Cannot disable once enabled on production", compare: "<strong>ASC advantage.</strong> It's a front end you deploy or remove at will — no platform-level activation lock-in." },
+  { title: "Approved assets only — no draft/in-review access", compare: "<strong>Roughly parity.</strong> ASC's visibility is governed by whatever approval workflow runs in AEM Author's Assets view plus Publish-tier ACLs, which is typically the same effective rule — but it's your rule, not a fixed platform policy." },
+  { title: "Limited user licensing (250/50 seats)", compare: "<strong>ASC advantage.</strong> No ASC-specific per-seat licensing; constrained only by whatever AEM/IMS licensing already exists." },
+  { title: "No ACL-based permissions — attribute-based access only", compare: "<strong>ASC advantage.</strong> ASC calls AEM as the authenticated user, so it inherits real ACLs directly, not a separate attribute model." },
+  { title: "Adobe Express dependency for edit/remix", compare: "<strong>Honest loss.</strong> ASC has no in-browser remix/edit capability at all today — this is a real feature Content Hub has that ASC doesn't." },
+  { title: "No custom extensions / limited extension points", compare: "<strong>ASC advantage.</strong> The entire block/part/service/action-page architecture exists specifically to be extended." },
+  { title: "Auto-approval complexity (hydrated-assets folder)", compare: "<strong>Not applicable.</strong> ASC doesn't do ingestion at all, so it has neither this problem nor a fix for it." },
+  { title: "Search limitations — no history persistence, metadata-quality dependent", compare: "<strong>Honest parity.</strong> ASC is equally metadata-quality dependent (inherent to any DAM search) and also has no saved-search-history today. This is a shared gap, not an ASC win." },
+  { title: "No offline access", compare: "<strong>Parity.</strong> ASC is also fully online/cloud-dependent." },
+  { title: "Limited built-in analytics — needs Adobe Analytics for real tracking", compare: "<strong>ASC advantage (lower lift).</strong> Same underlying expectation (plug in a real analytics tool), but ASC ships a vendor-agnostic bridge with consent/audit handling already wired, versus building against Content Hub's basic built-in dashboard first." },
+  { title: "Repository selection confusion across environments", compare: "<strong>Not really applicable.</strong> ASC targets a single configured AEM host per deployment." },
+  { title: "No custom workflows — consumption layer only", compare: "<strong>Parity by design.</strong> ASC is also a consumption layer; workflow logic lives in AEM Author for both." },
+];
+
+/* ── Render ────────────────────────────────────────────────────────── */
+function badge(level) {
+  const label = { strong: "Strong fit", partial: "Partial fit", gap: "Gap", inherited: "Inherited / N-A" }[level];
+  return `<span class="badge ${level}"><span class="dot"></span>${label}</span>`;
+}
+
+function pathLabel(path) {
+  return { config: "Configuration", extension: "Customization / extension", eds: "EDS platform (aem.live)", reframe: "Reframe requirement" }[path] || path;
+}
+
+function escapeHtml(str) {
+  return str.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+}
+
+function exampleBlock(example) {
+  if (!example) return "";
+  return `<details class="example-toggle"><summary>Show example</summary><pre><code>${escapeHtml(example)}</code></pre></details>`;
+}
+
+function closeBlock(close) {
+  if (!close || !close.length) return "";
+  return `<div class="close-block"><span class="close-label">How to close it</span>${close.map((c) => `
+    <div class="close-item"><span class="path-chip ${c.path}">${pathLabel(c.path)}</span><span class="close-text">${c.text}${exampleBlock(c.example)}</span></div>
+  `).join("")}</div>`;
+}
+
+function renderThemes() {
+  const body = document.getElementById("scorecard-body");
+  body.innerHTML = THEMES.map((t) => `
+    <tr class="theme-row" data-levels="${t.level}">
+      <td class="theme-name">${t.name}</td>
+      <td class="layer-cell">${t.layer}</td>
+      <td class="fit-cell">${badge(t.level)}<span class="notes">${t.notes}</span>${closeBlock(t.close)}</td>
+    </tr>
+  `).join("");
+}
+
+function renderStats() {
+  const counts = { strong: 0, partial: 0, gap: 0, inherited: 0 };
+  THEMES.forEach((t) => { counts[t.level]++; });
+  const total = THEMES.length;
+  const colors = { strong: "var(--strong-dot)", partial: "var(--partial-dot)", gap: "var(--gap-dot)", inherited: "var(--inherited-dot)" };
+  const labels = { strong: "Strong fit", partial: "Partial fit", gap: "Gaps", inherited: "Inherited / N-A" };
+
+  const grid = document.getElementById("stat-grid");
+  grid.innerHTML = Object.keys(counts).map((level) => `
+    <div class="stat-card">
+      <div class="stat-label">${labels[level]}</div>
+      <div class="stat-value">${counts[level]} <span style="font-size:0.9rem;color:var(--muted-fg);font-weight:500;">/ ${total} themes</span></div>
+      <div class="stat-bar"><span style="width:${(counts[level] / total * 100).toFixed(0)}%; background:${colors[level]};"></span></div>
+    </div>
+  `).join("");
+}
+
+function renderQA() {
+  document.getElementById("qa-list").innerHTML = OPEN_QUESTIONS.map((item) => `
+    <div class="qa-item">
+      <p class="q">${item.q}</p>
+      <p class="a">${item.a}</p>
+    </div>
+  `).join("");
+}
+
+function renderLimitations() {
+  document.getElementById("lim-list").innerHTML = LIMITATIONS.map((item) => `
+    <div class="lim-item">
+      <div class="lim-head"><span class="title">${item.title}</span></div>
+      <p class="compare">${item.compare}</p>
+    </div>
+  `).join("");
+}
+
+function wireFilters() {
+  const buttons = document.querySelectorAll("#filters button");
+  const rows = () => document.querySelectorAll("#scorecard-body tr");
+  buttons.forEach((btn) => btn.addEventListener("click", () => {
+    buttons.forEach((b) => b.classList.remove("active"));
+    btn.classList.add("active");
+    const filter = btn.dataset.filter;
+    rows().forEach((row) => {
+      const levels = row.dataset.levels.split(" ");
+      row.hidden = filter !== "all" && !levels.includes(filter);
+    });
+  }));
+}
+
+renderStats();
+renderThemes();
+renderQA();
+renderLimitations();
+wireFilters();
+</script>
+</body>
+</html>

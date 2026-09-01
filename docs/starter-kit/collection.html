@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Collection — Asset Share</title>
+  <meta name="template" content="collection">
+</head>
+<body>
+  <header></header>
+  <main>
+
+    <!--
+      Section 1: Collection header + toolbar.
+
+      Authored content (h1, p) uses {{collection.*}} tokens resolved by the
+      collection-controls block after it loads collection data.
+
+      Tokens available:
+        {{collection.title}}       — collection name (editable via Edit › Rename)
+        {{collection.description}} — optional description (empty if unset)
+        {{collection.count}}       — number of assets in the collection
+        {{collection.lastUpdated}} — human-readable last-modified date
+
+      collection-controls block: rows declare which controls to show (in order).
+      Left col = control ID, right col = button label.
+      Valid IDs: past-shares, edit, share, download
+    -->
+    <div>
+
+      <p><a href="/collections/">&#8592; Collections</a></p>
+      <h1>{{collection.title}}</h1>
+      <p>{{collection.description}}</p>
+      <p>{{collection.count}} assets &#8212; Last updated {{collection.lastUpdated}}</p>
+
+      <div class="collection-controls">
+        <div><div>past-shares</div><div>Past Shares</div><div>ghost</div></div>
+        <div><div>edit</div><div>Edit</div><div>ghost</div></div>
+        <div><div>share</div><div>Share</div><div>secondary</div></div>
+        <div><div>download</div><div>Download</div><div>primary</div></div>
+      </div>
+
+    </div>
+
+    <!--
+      Section 2: Interactive board canvas.
+      source: collection  — reads the same ?id= param, loads hydratedItems.
+      mode: interactive   — enables drag, rubber-band select, text elements,
+                            notes, Align to grid, and the + Text button.
+
+      search-properties: comma-separated asset property names to stash into
+      each card's data-search attribute for client-side filtering.
+    -->
+    <div>
+
+      <div class="board">
+        <div><div>source</div><div>collection</div></div>
+        <div><div>mode</div><div>interactive</div></div>
+        <div><div>search-properties</div><div>title, file-type</div></div>
+      </div>
+
+    </div>
+  </main>
+  <footer></footer>
+</body>
+</html>

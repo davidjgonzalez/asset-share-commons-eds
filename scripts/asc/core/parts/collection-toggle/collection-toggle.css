@@ -1,0 +1,122 @@
+/* ASC Core — do not edit. Customize via scripts/configurations.js */
+
+.asc-collection-toggle {
+    display: contents; /* transparent wrapper — doesn't affect layout */
+
+    /* The generic "add to active collection" toggle hides itself (via the `hidden`
+       attribute, set in collection-toggle.js) once the active collection IS the
+       favorite/default one — `display: contents` above would otherwise win the
+       cascade tie against the `[hidden]` UA rule at equal specificity and silently
+       keep it visible, so pin it back to `none` explicitly. */
+    &[hidden] {
+        display: none;
+    }
+
+    /* ── Visibility by state ─────────────────────────────────────────────── */
+
+    /* Unknown state (hydrating): both buttons invisible but still take up space */
+    &[data-in-collection=""] .asc-collection-toggle__btn {
+        visibility: hidden;
+    }
+
+    /* In collection → show Remove, hide Add */
+    &[data-in-collection="true"] .asc-collection-toggle__add {
+        display: none;
+    }
+
+    /* Not in collection → show Add, hide Remove */
+    &[data-in-collection="false"] .asc-collection-toggle__remove {
+        display: none;
+    }
+
+    /* ── Button base — compact icon button ──────────────────────────────── */
+
+    .asc-collection-toggle__btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: var(--collection-toggle-btn-width, 32px);
+        min-width: var(--collection-toggle-btn-min-width, 32px);
+        height: var(--collection-toggle-btn-height, 32px);
+        padding: var(--collection-toggle-btn-padding, 0);
+        border-radius: var(--collection-toggle-btn-radius, 50%);
+        font-family: inherit;
+        cursor: pointer;
+        transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+        line-height: 1;
+        flex-shrink: 0;
+        box-shadow: var(--collection-toggle-btn-shadow, none);
+        backdrop-filter: var(--collection-toggle-btn-backdrop, blur(4px));
+
+        &:hover { transform: var(--collection-toggle-btn-hover-transform, var(--scale-md)); }
+    }
+
+    /* ── Add state ───────────────────────────────────────────────────────── */
+
+    .asc-collection-toggle__add {
+        background: var(--collection-toggle-add-bg, var(--overlay-md));
+        color: var(--collection-toggle-add-fg, var(--color-primary-fg));
+        border: 1px solid var(--collection-toggle-add-border, rgb(255 255 255 / 20%));
+
+        &:hover {
+            background: var(--collection-toggle-add-hover-bg, var(--overlay-lg));
+            color: var(--collection-toggle-add-hover-fg, var(--collection-toggle-add-fg, var(--color-primary-fg)));
+            border-color: var(--collection-toggle-add-hover-border, var(--collection-toggle-add-border, rgb(255 255 255 / 20%)));
+        }
+    }
+
+    /* ── Remove state — shows as active/filled when asset is in collection ── */
+
+    .asc-collection-toggle__remove {
+        background: var(--collection-toggle-remove-bg, var(--overlay-lg));
+        border: 1px solid var(--collection-toggle-remove-border, rgb(255 255 255 / 20%));
+        color: var(--collection-toggle-remove-fg, var(--color-primary-fg));
+
+        &:hover {
+            background: var(--collection-toggle-remove-hover-bg, rgb(180 30 30 / 85%));
+            border-color: var(--collection-toggle-remove-hover-border, transparent);
+            color: var(--collection-toggle-remove-hover-fg, var(--collection-toggle-remove-fg, var(--color-primary-fg)));
+        }
+    }
+
+    /* ── Favorite variant — gold star, not the generic red "remove" treatment ── */
+
+    &.asc-collection-toggle--favorite {
+        .asc-collection-toggle__remove {
+            background: var(--collection-toggle-favorite-bg, rgb(234 179 8 / 90%));
+            border-color: var(--collection-toggle-favorite-border, transparent);
+            color: var(--collection-toggle-favorite-fg, #fff);
+
+            &:hover {
+                background: var(--collection-toggle-favorite-hover-bg, rgb(202 138 4 / 90%));
+                border-color: var(--collection-toggle-favorite-hover-border, transparent);
+                color: var(--collection-toggle-favorite-hover-fg, #fff);
+            }
+        }
+    }
+
+    /* ── Icon ────────────────────────────────────────────────────────────── */
+
+    .asc-collection-toggle__icon {
+        font-size: 1em;
+        line-height: 1;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* ── Label — visually hidden, kept for aria-label hydration ─────────── */
+
+    .asc-collection-toggle__label {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
+}

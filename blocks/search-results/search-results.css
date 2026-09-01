@@ -1,0 +1,472 @@
+.block.search-results {
+    min-height: 50vh;
+    isolation: isolate; /* contain internal z-indices (sticky list header); page dropdowns stack above */
+
+    .search-results__sentinel {
+        height: 1px;
+        visibility: hidden;
+    }
+
+    .search-results__end {
+        display: flex;
+        justify-content: center;
+        margin-block: var(--spacing-xl) 0;
+    }
+
+    .search-results__end[hidden] {
+        display: none;
+    }
+
+    .search-results__toolbar {
+        display: flex;
+        gap: var(--spacing-sm);
+        margin-bottom: var(--spacing-md);
+        border-radius: var(--border-radius-full);
+        background: var(--color-bg);
+        border: 1px solid var(--color-border);
+        padding: var(--spacing-sm) var(--spacing-sm);
+        width: 50%;
+
+        select {
+            flex: 1;
+            min-width: 0;
+            border-radius: var(--border-radius-full);
+        }
+    }
+
+    /* ── Loading skeleton ────────────────────────────────────────────────── */
+    /* [data-loading] holds card/row-shaped .asc-ui-skeleton tiles (see
+       skeletonHtml() in search-results.js) instead of one flat placeholder
+       rectangle — they sit in the same grid as real results, so the filters/
+       controls column doesn't reflow when content arrives, without needing
+       an artificial min-height. */
+
+    [data-asc-results] {
+        /* default — overridden by data-display attribute */
+        display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(var(--card-min-width, 275px), 1fr));
+        gap: var(--spacing-xl);
+
+        /* Show full asset without cropping across all display modes.
+           Specificity bump via [data-asc-results] beats the ASC Core
+           .asc-asset-teaser--card / --list rules (loaded later). */
+        .asc-asset-teaser__preview img,
+        .asc-asset-teaser__preview picture {
+            object-fit: contain;
+        }
+    }
+
+    /* Empty state (asc-ui-empty-state) spans the whole results area and is
+       centered on both axes. Specificity bumped with [data-display] so this
+       reliably wins over the display-mode grid rules below — both would
+       otherwise tie at the same specificity, and source order would decide. */
+    [data-asc-results][data-display]:has(.asc-ui-empty-state) {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 50vh;
+    }
+
+    /* ── Display modes ─────────────────────────────────────────────────── */
+
+    [data-asc-results][data-display="cards"] {
+        display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(var(--card-min-width, 275px), 1fr));
+        gap: var(--spacing-xl);
+
+        .asc-asset-teaser .asc-collection-toggle,
+        .asc-asset-teaser .search-results__quick-action {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .asc-asset-teaser:hover .asc-collection-toggle,
+        .asc-asset-teaser:focus-within .asc-collection-toggle,
+        .asc-asset-teaser:hover .search-results__quick-action,
+        .asc-asset-teaser:focus-within .search-results__quick-action {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .asc-asset-teaser .asc-collection-toggle__icon {
+            width: 1em;
+            height: 1em;
+            line-height: 1;
+            transform: translateY(-0.03em);
+        }
+
+        .asc-asset-teaser .asc-collection-toggle__remove .asc-collection-toggle__icon {
+            font-size: 0;
+        }
+
+        .asc-asset-teaser .asc-collection-toggle__remove .asc-collection-toggle__icon::before {
+            content: '✓';
+            font-size: 0.875rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .asc-asset-teaser .asc-collection-toggle__btn,
+        .asc-asset-teaser .search-results__quick-action {
+            transition: opacity var(--transition-fast), transform var(--transition-fast);
+        }
+
+        .asc-asset-teaser .asc-collection-toggle__btn:hover,
+        .asc-asset-teaser .search-results__quick-action:hover {
+            transform: scale(1.1);
+        }
+
+        .asc-asset-teaser__meta {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0;
+            padding: var(--spacing-md) var(--spacing-lg) var(--spacing-md);
+        }
+
+        .asc-asset-teaser__title {
+            width: 100%;
+            margin-block-end: var(--spacing-sm);
+            transition: opacity var(--transition-fast), visibility var(--transition-fast);
+        }
+
+        .asc-asset-teaser__prop {
+            margin: 0;
+        }
+
+        .asc-asset-teaser__prop + .asc-asset-teaser__prop::before {
+            content: '·';
+            margin: 0 var(--spacing-xs);
+            color: var(--color-muted-fg);
+        }
+    }
+
+    [data-asc-results][data-display="list"] {
+        display: block;
+    }
+
+    .asc-list-view__actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: var(--spacing-xs);
+    }
+
+    .asc-list-view__actions .asc-collection-toggle {
+        --collection-toggle-add-bg: var(--color-card);
+        --collection-toggle-add-fg: var(--color-fg);
+        --collection-toggle-add-border: var(--color-border);
+        --collection-toggle-add-hover-bg: var(--color-accent);
+        --collection-toggle-remove-bg: var(--color-primary);
+        --collection-toggle-remove-fg: var(--color-primary-fg);
+        --collection-toggle-remove-border: var(--color-primary);
+        --collection-toggle-remove-hover-bg: var(--color-destructive);
+        --collection-toggle-remove-hover-fg: var(--color-destructive-fg);
+        --collection-toggle-remove-hover-border: var(--color-destructive);
+        --collection-toggle-btn-backdrop: none;
+    }
+
+    [data-asc-results]:not([data-display="list"]) .asc-asset-teaser .asc-collection-toggle {
+        --search-results-action-bg: color-mix(in srgb, var(--color-card) 88%, transparent);
+        --search-results-action-bg-hover: var(--color-card);
+        --search-results-action-border: var(--color-border);
+        --search-results-action-fg: var(--color-fg);
+        --search-results-action-fg-hover: var(--color-fg);
+
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: var(--spacing-sm);
+        top: 0.5rem;
+        right: 0.5rem;
+
+        /* Small circle buttons for card/masonry overlay. Backdrop blur off: the
+           favorite toggle's background is deliberately transparent (styles.css —
+           "no yellow pill, just the glyph filled black"), and a blur with nothing
+           behind it just reads as a hazy smudge over the photo, inconsistent with
+           the crisp download/copy-url circles next to it. */
+        --collection-toggle-btn-width:     2rem;
+        --collection-toggle-btn-min-width: 2rem;
+        --collection-toggle-btn-height:    2rem;
+        --collection-toggle-btn-padding:   0;
+        --collection-toggle-btn-radius:    50%;
+        --collection-toggle-btn-backdrop:  none;
+        --collection-toggle-add-bg: var(--search-results-action-bg);
+        --collection-toggle-add-fg: var(--search-results-action-fg);
+        --collection-toggle-add-border: var(--search-results-action-border);
+        --collection-toggle-add-hover-bg: var(--search-results-action-bg-hover);
+        --collection-toggle-add-hover-fg: var(--search-results-action-fg-hover);
+        --collection-toggle-add-hover-border: var(--search-results-action-border);
+        --collection-toggle-remove-bg: var(--search-results-action-bg);
+        --collection-toggle-remove-fg: var(--search-results-action-fg);
+        --collection-toggle-remove-border: var(--search-results-action-border);
+        --collection-toggle-remove-hover-bg: var(--search-results-action-bg-hover);
+        --collection-toggle-remove-hover-fg: var(--search-results-action-fg-hover);
+        --collection-toggle-remove-hover-border: var(--search-results-action-border);
+    }
+
+    /* Favorite toggle sits just to the left of the generic one — this selector's
+       specificity has to match/exceed the base rule above (right: 0.5rem) since it
+       also sets `right`, or the base rule's later declaration would win regardless
+       of source order. */
+    [data-asc-results]:not([data-display="list"]) .asc-asset-teaser .asc-collection-toggle--favorite {
+        right: calc(0.5rem + var(--collection-toggle-btn-width, 2rem) + var(--spacing-sm));
+    }
+
+    /* ...but the generic toggle hides itself (collection-toggle.js) whenever the
+       active collection IS favorites — reserving space for it then leaves a dead
+       gap to the favorite toggle's right. Collapse back to the base offset in
+       that case so the favorite/quick-action cluster sits flush against the edge. */
+    [data-asc-results]:not([data-display="list"]) .asc-asset-teaser:has(.asc-collection-toggle[hidden]) .asc-collection-toggle--favorite {
+        right: 0.5rem;
+    }
+
+    /* Dark overlay style — matches the collection toggle circles */
+    [data-asc-results]:not([data-display="list"]) .search-results__quick-action {
+        opacity: 0;
+        pointer-events: none;
+        background: var(--search-results-action-bg);
+        color: var(--search-results-action-fg);
+        border-color: var(--search-results-action-border);
+        z-index: var(--z-raised);
+        width: 2rem;
+        min-width: 2rem;
+        height: 2rem;
+        padding: 0;
+        transition: opacity var(--transition-fast);
+
+        svg {
+            width: 0.875rem;
+            height: 0.875rem;
+        }
+
+        &:hover {
+            background: var(--search-results-action-bg-hover);
+            border-color: var(--search-results-action-border);
+            color: var(--search-results-action-fg-hover);
+        }
+    }
+
+    [data-asc-results]:not([data-display="list"]) .asc-asset-teaser:hover .search-results__quick-action {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    /* ── List view data grid ────────────────────────────────────────── */
+
+    .asc-list-view {
+        display: flex;
+        flex-direction: column;
+        border: 1px solid var(--color-border);
+        border-radius: var(--border-radius-md);
+        overflow: hidden;
+    }
+
+    .asc-list-view__header {
+        display: grid;
+        grid-template-columns: var(--asc-list-cols, 1fr);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: var(--color-muted);
+        border-bottom: 2px solid var(--color-border);
+    }
+
+    .asc-list-view__rows {
+        display: contents;
+    }
+
+    .asc-list-view__row {
+        display: grid;
+        grid-template-columns: var(--asc-list-cols, 1fr);
+        cursor: pointer;
+        transition: background var(--transition-fast);
+
+        &:hover { background: var(--color-accent); }
+        &:not(:last-child) { border-bottom: 1px solid var(--color-border); }
+    }
+
+    .asc-list-view__cell {
+        padding: var(--spacing-sm) var(--spacing-md);
+        font-size: var(--body-font-size-s);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        align-content: center;
+
+        img {
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+    }
+
+    .asc-list-view__row .asc-list-view__cell:first-child {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding-block: var(--spacing-xs);
+        padding-inline: var(--spacing-sm);
+    }
+
+    .asc-list-view__cell .asc-list-view__thumb {
+        flex: 0 0 2.875rem;
+        width: 2.875rem;
+        height: 2.875rem;
+        min-width: 2.875rem;
+        min-height: 2.875rem;
+        max-width: 2.875rem;
+        max-height: 2.875rem;
+        display: block;
+        margin-block: 0.3125rem;
+        border-radius: var(--border-radius-full);
+        overflow: hidden;
+        object-fit: contain;
+        background: var(--color-muted);
+    }
+
+    .asc-list-view__cell--header {
+        font-size: var(--body-font-size-xs);
+        font-weight: 600;
+        color: var(--color-muted-fg);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        padding-block: var(--spacing-xs);
+    }
+
+    .asc-list-view__cell--actions,
+    .asc-list-view__cell--actions-header {
+        justify-self: end;
+    }
+
+    [data-asc-results][data-display="masonry"] {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--spacing-xxl);
+
+        .masonry-col {
+            flex: 1 1 clamp(240px, 22vw, 420px);
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-xxl);
+        }
+
+        /* Natural image sizing — no skeleton, no forced aspect ratio.
+           overflow: hidden clips the hover zoom below without affecting layout. */
+        .asc-asset-teaser__preview {
+            aspect-ratio: unset;
+            background: none;
+            overflow: hidden;
+        }
+
+        .asc-asset-teaser__preview picture {
+            display: block;
+            width: 100%;
+        }
+
+        .asc-asset-teaser__preview img {
+            display: block;
+            width: 100%;
+            height: auto;
+            object-fit: initial;
+            transition: transform var(--transition-slow);
+        }
+
+        /* Pure image tile — strip all card chrome */
+        .asc-asset-teaser {
+            display: block;
+            width: 100%;
+            background: none;
+            border: none;
+            border-radius: 0;
+            box-shadow: none;
+            animation: asc-search-results-teaser-in var(--transition-slow) ease both;
+
+            &:hover {
+                transform: none;
+                box-shadow: none;
+
+                .asc-asset-teaser__preview img,
+                .asc-asset-teaser__preview video {
+                    transform: scale(1.04);
+                }
+            }
+        }
+
+        /* Meta: overlay at bottom edge, hidden at rest */
+        .asc-asset-teaser__meta {
+            position: absolute;
+            inset: auto 0 0;
+            padding: 0.5rem 1rem;
+            opacity: 0;
+            transition: opacity var(--transition-fast);
+        }
+
+        .asc-asset-teaser__title {
+            display: none;
+        }
+
+        .asc-asset-teaser__prop {
+            color: color-mix(in srgb, white 85%, transparent);
+            font-size: var(--body-font-size-xs);
+        }
+
+        .asc-asset-teaser:hover .asc-asset-teaser__meta {
+            opacity: 1;
+        }
+
+        /* Actions: hidden until hover/focus */
+        .asc-asset-teaser .asc-collection-toggle,
+        .asc-asset-teaser .search-results__quick-action {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .asc-asset-teaser:hover .asc-collection-toggle,
+        .asc-asset-teaser:focus-within .asc-collection-toggle,
+        .asc-asset-teaser:hover .search-results__quick-action,
+        .asc-asset-teaser:focus-within .search-results__quick-action {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Masonry's preview reset above (aspect-ratio: unset) strips the fixed tile
+           shape a no-preview face needs to hold its place in the column flow —
+           restore it here so file-type tiles read as normal tiles, not slivers. */
+        .asc-asset-teaser--no-preview .asc-asset-teaser__preview {
+            aspect-ratio: 4 / 3;
+            background: var(--color-muted);
+        }
+    }
+
+    /* ── Fallback tile for non-image / broken thumbnails ─────────────────
+       .asc-ui-filetype markup (glyph + ext label) is injected into
+       .asc-asset-teaser__preview by search-results.js when an <img> fails to
+       load or resolves with no natural size — see attachImageHandlers(). */
+
+    .asc-asset-teaser--no-preview .asc-asset-teaser__preview img {
+        display: none;
+    }
+
+    .asc-asset-teaser--no-preview .asc-asset-teaser__preview {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        aspect-ratio: 4 / 3;
+        background: var(--color-muted);
+        border-radius: var(--border-radius-md);
+    }
+}
+
+@keyframes asc-search-results-teaser-in {
+    from {
+        opacity: 0;
+        transform: scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}

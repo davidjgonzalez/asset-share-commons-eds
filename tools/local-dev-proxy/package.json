@@ -1,0 +1,6 @@
+{
+  "name": "local-dev-proxy",
+  "private": true,
+  "type": "module",
+  "description": "Local dev split-proxy for ASC EDS — routes between aem up and AEM with header overrides"
+}

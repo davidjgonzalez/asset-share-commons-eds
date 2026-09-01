@@ -1,0 +1,5 @@
+/*
+ * search-hidden — purely a data source (see search-hidden.js): parses its
+ * authored rows into base search predicates and clears its own markup.
+ * Nothing to style.
+ */

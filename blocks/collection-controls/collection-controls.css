@@ -1,0 +1,148 @@
+:root {
+    --opacity-dragging: 0.85;
+    --line-height-base: 1.5;
+}
+
+/* Inline rename input — replaces the authored {{collection.title}} heading,
+   so it lives outside the block scope to inherit the heading's position. */
+.collection-controls__name-input {
+    width: 100%;
+    margin: 0;
+    font-size: var(--heading-font-size-xxl);
+    font-weight: 600;
+    color: var(--color-fg);
+    border: 1px solid var(--color-ring);
+    border-radius: var(--input-border-radius);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: var(--color-input);
+    box-shadow: var(--focus-ring);
+    font-family: inherit;
+    line-height: 1.25;
+    box-sizing: border-box;
+}
+
+.block.collection-controls {
+    --collection-radius: var(--border-radius-md);
+
+    container-type: inline-size;
+
+    /* ── Actions menu (Edit trigger + dropdown) ───────────────────────── */
+
+    .collection-controls__menu-wrap {
+        position: relative;
+        flex-shrink: 0;
+    }
+
+    .collection-controls__menu {
+        position: absolute;
+        inset-block-start: calc(100% + var(--spacing-xs));
+        inset-inline-end: 0;
+        min-width: 10rem;
+        z-index: var(--z-dropdown);
+    }
+
+    .collection-controls__menu-item--danger {
+        color: var(--color-destructive);
+
+        &:hover {
+            background: color-mix(in srgb, var(--color-destructive) 10%, transparent);
+            color: var(--color-destructive);
+        }
+    }
+
+    /* ── Toolbar ─────────────────────────────────────────────────────── */
+
+    .collection-controls__toolbar {
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .collection-controls__toolbar-end {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        flex-shrink: 0;
+        gap: var(--spacing-sm);
+    }
+
+    .collection-controls__toolbar .btn {
+        min-height: var(--input-height-sm);
+        box-sizing: border-box;
+    }
+
+    /* ── Active download jobs ─────────────────────────────────────────── */
+
+    .collection-controls__jobs {
+        background: var(--color-muted);
+        border: 1px solid var(--color-border);
+        border-radius: var(--collection-radius);
+        padding: var(--spacing-md);
+        margin-block-end: var(--spacing-xl);
+    }
+
+    .collection-controls__jobs-title {
+        margin: 0 0 var(--spacing-sm);
+        font-size: var(--body-font-size-xs);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--color-muted-fg);
+    }
+
+    .collection-controls__jobs-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xs);
+    }
+
+    .collection-controls__job {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: var(--spacing-sm);
+    }
+
+    .collection-controls__job-status {
+        font-size: var(--body-font-size-s);
+        flex: 1;
+        min-width: 12ch;
+
+        &.collection-controls__job-status--complete { color: var(--validation-success-color); }
+        &.collection-controls__job-status--failed { color: var(--color-destructive); }
+
+        &.collection-controls__job-status--running,
+        &.collection-controls__job-status--pending { color: var(--color-muted-fg); }
+    }
+
+    /* ── Past shares dropdown (toolbar) ─────────────────────────────── */
+
+    .collection-controls__past-shares-panel {
+        right: 0;
+        left: auto;
+        min-width: 22rem;
+        max-width: min(90vw, 32rem);
+        padding: 0;
+        font-size: var(--body-font-size-s);
+    }
+
+    .collection-controls__past-share-row {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        padding: var(--spacing-xs) var(--spacing-sm);
+        border-top: 1px solid var(--color-border);
+
+        &:first-child { border-top: none; }
+
+        .asc-ui-menu__item-label {
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    }
+}

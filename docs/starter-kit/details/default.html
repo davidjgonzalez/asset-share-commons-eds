@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Asset Details — Asset Share</title>
+  <meta name="template" content="details-default">
+</head>
+<body>
+  <header></header>
+  <!--
+    data-asc-asset is set at runtime by the details service when the modal opens.
+    Leave the attribute value empty here.
+  -->
+  <main data-asc-asset="">
+
+    <!--
+      Section 1: Asset preview
+    -->
+    <div>
+
+      <!-- details-preview block (auto-detects asset type: image, video, pdf, office) -->
+      <div class="details-preview"></div>
+
+    </div>
+
+    <!--
+      Section 2: Asset metadata and actions
+    -->
+    <div>
+
+      <!-- details-property block: Title -->
+      <div class="details-property">
+        <div>
+          <div>label</div>
+          <div>Title</div>
+        </div>
+        <div>
+          <div>property</div>
+          <div>jcr:content/metadata/dc:title</div>
+        </div>
+      </div>
+
+      <!-- details-property block: Description -->
+      <div class="details-property">
+        <div>
+          <div>label</div>
+          <div>Description</div>
+        </div>
+        <div>
+          <div>property</div>
+          <div>jcr:content/metadata/dc:description</div>
+        </div>
+      </div>
+
+      <!-- details-property block: File Type -->
+      <div class="details-property">
+        <div>
+          <div>label</div>
+          <div>File Type</div>
+        </div>
+        <div>
+          <div>property</div>
+          <div>file-type</div>
+        </div>
+      </div>
+
+      <!-- details-property block: File Size -->
+      <div class="details-property">
+        <div>
+          <div>label</div>
+          <div>File Size</div>
+        </div>
+        <div>
+          <div>property</div>
+          <div>file-size</div>
+        </div>
+      </div>
+
+      <!-- details-property block: Dimensions -->
+      <div class="details-property">
+        <div>
+          <div>label</div>
+          <div>Dimensions</div>
+        </div>
+        <div>
+          <div>property</div>
+          <div>dimensions</div>
+        </div>
+      </div>
+
+      <!-- details-property block: Created -->
+      <div class="details-property">
+        <div>
+          <div>label</div>
+          <div>Created</div>
+        </div>
+        <div>
+          <div>property</div>
+          <div>jcr:content/metadata/jcr:created</div>
+        </div>
+      </div>
+
+      <!-- details-download block -->
+      <div class="details-download">
+        <div>
+          <div>label</div>
+          <div>Available Renditions</div>
+        </div>
+      </div>
+
+      <!-- details-actions block -->
+      <div class="details-actions">
+        <div>
+          <div>actions</div>
+          <div>add-to-cart download</div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+  <footer></footer>
+</body>
+</html>

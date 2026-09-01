@@ -4,4 +4,3 @@ mountpoints:
     type: markup
 folders:
     /details: /details/default
-    

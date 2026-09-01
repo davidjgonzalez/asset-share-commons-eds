@@ -1,0 +1,24 @@
+/*
+ * search-date-range — composed from UI Kit primitives:
+ *   field + label → .asc-ui-field / .asc-ui-field__label (see search-date-range.js)
+ *   date inputs   → global input baseline in styles.css
+ * Only the block's title + inputs layout + spacing remain here.
+ */
+
+.block.search-date-range {
+    margin-bottom: var(--spacing-lg);
+
+    .search-date-range__title {
+        display: block;
+        color: var(--label-color);
+        font-weight: var(--label-font-weight);
+        font-size: var(--body-font-size-s);
+        margin-bottom: var(--spacing-sm);
+    }
+
+    .search-date-range__inputs {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-sm);
+    }
+}

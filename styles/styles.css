@@ -10,37 +10,132 @@
  * governing permissions and limitations under the License.
  */
 
+/* Critical-path CSS — all three loaded together before first render.
+   tokens.css:  design tokens (CSS variables); themes override these.
+   ui-kit.css:  reusable .asc-ui-* component primitives.
+   sections.css: section layout variants (grid, aside, inline, full-width, named-area).
+   Consolidated from 7 @imports to 3 to reduce the render-blocking waterfall. */
+@import url('./tokens.css');
+@import url('./ui-kit.css');
+@import url('./sections.css');
+
+/* ─────────────────────────────────────────────────────────────────────────
+   SEMANTIC COLOR TOKENS
+   Themes override ONLY these --color-* variables. Everything else (blocks,
+   forms, buttons) references these roles — never raw color values.
+   Default palette: "Violet Studio" — warm white, vibrant violet primary.
+───────────────────────────────────────────────────────────────────────── */
+
 :root {
-  /* colors */
-  --background-color: white;
-  --light-color: #f8f8f8;
-  --dark-color: #505050;
-  --text-color: #131313;
-  --link-color: #3b63fb;
-  --link-hover-color: #1d3ecf;
+  /* Page surfaces */
+  --color-bg:          #fff;  /* Page background */
+  --color-fg:          #1e1b4b;  /* Primary text */
+  --color-card:        #fff;  /* Card / panel surfaces */
+  --color-card-fg:     #1e1b4b;  /* Text on cards */
+  --color-popover:     #fff;  /* Dropdowns, tooltips */
+  --color-popover-fg:  #1e1b4b;  /* Text in popovers */
 
-  /* fonts */
-  --body-font-family: roboto, roboto-fallback, sans-serif;
-  --heading-font-family: roboto-condensed, roboto-condensed-fallback, sans-serif;
+  /* Brand / interactive */
+  --color-primary:     #7c3aed;  /* CTAs, links, active states */
+  --color-primary-fg:  #fff;  /* Text/icons on primary */
 
-  /* body sizes */
-  --body-font-size-m: 22px;
-  --body-font-size-s: 19px;
-  --body-font-size-xs: 17px;
+  /* Secondary actions */
+  --color-secondary:    #f5f3ff; /* Secondary button fill */
+  --color-secondary-fg: #1e1b4b; /* Text on secondary */
 
-  /* heading sizes */
-  --heading-font-size-xxl: 55px;
-  --heading-font-size-xl: 44px;
-  --heading-font-size-l: 34px;
-  --heading-font-size-m: 27px;
-  --heading-font-size-s: 24px;
-  --heading-font-size-xs: 22px;
+  /* Muted / quiet */
+  --color-muted:    #faf5ff;  /* Quiet backgrounds, zebra rows */
+  --color-muted-fg: #6b7280;  /* Muted text, labels, hints */
 
-  /* nav height */
-  --nav-height: 64px;
+  /* Accent / hover highlights */
+  --color-accent:    #ede9fe;  /* Hover/selected tint */
+  --color-accent-fg: #7c3aed;  /* Text on accent */
+
+  /* Feedback */
+  --color-destructive:    #dc2626;  /* Error, delete, danger */
+  --color-destructive-fg: #fff;  /* Text on destructive */
+
+  /* Form chrome */
+  --color-border: #e9d5ff;  /* All borders */
+  --color-input:  #fff;  /* Input backgrounds */
+  --color-ring:   #7c3aed;  /* Focus rings */
+
+  /* ── Backward-compat aliases (EDS boilerplate + legacy blocks) ── */
+  --background-color:   var(--color-bg);
+  --text-color:         var(--color-fg);
+  --link-color:         var(--color-primary);
+  --border-color:       var(--color-border);
+  --light-color:        var(--color-muted);
+  --dark-color:         var(--color-muted-fg);
+  --card-background:    var(--color-card);
+  --input-background:   var(--color-input);
+  --input-text-color:   var(--color-fg);
+  --input-border-color: var(--color-border);
+  --input-placeholder-color: var(--color-muted-fg);
+  --button-primary-bg:   var(--color-primary);
+  --button-primary-text: var(--color-primary-fg);
+
+  /* ── Typography ─────────────────────────────────────────────────── */
+  --body-font-family:    system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --heading-font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* Body sizes */
+  --body-font-size-m:  1.125rem;
+  --body-font-size-s:  0.9375rem;
+  --body-font-size-xs: 0.8125rem;
+  --body-font-size-2xs: 0.6875rem;
+
+  /* Heading sizes */
+  --heading-font-size-xxl: 3rem;
+  --heading-font-size-xl:  2.25rem;
+  --heading-font-size-l:   1.75rem;
+  --heading-font-size-m:   1.375rem;
+  --heading-font-size-s:   1.125rem;
+  --heading-font-size-xs:  0.9375rem;
+
+  /* ── Layout ─────────────────────────────────────────────────────── */
+  --nav-height: 4rem;
+
+  /* Spacing scale */
+  --spacing-xs:  0.25rem;
+  --spacing-sm:  0.5rem;
+  --spacing-md:  1rem;
+  --spacing-lg:  1.5rem;
+  --spacing-xl:  2rem;
+  --spacing-xxl: 3rem;
+  --spacing-2xl: 3rem;
+  --spacing-3xl: 4rem;
+
+  /* ── Z-index scale ───────────────────────────────────────────────────────
+     Two-context rule: modal context is always above the page context.
+     Use --z-modal-* for anything rendered inside a modal or dialog.
+     Blocks with an internal canvas (e.g. board) must use isolation: isolate
+     so their children don't compete with page-level stacking values.    */
+
+  /* Page context */
+  --z-behind:         -1;   /* behind siblings — hero bg, absolute overlays  */
+  --z-raised:          1;   /* minor boost within a component stacking ctx   */
+  --z-sticky:        100;   /* sticky header, sticky toolbars                */
+  --z-dropdown:      200;   /* page dropdowns, popovers, tooltip panels      */
+  --z-float:         300;   /* floating action buttons                       */
+
+  /* Modal context — always above every page-context value */
+  --z-modal-backdrop: 400;  /* semi-transparent scrim behind the dialog      */
+  --z-modal:          500;  /* the dialog / modal container                  */
+  --z-modal-dropdown: 600;  /* dropdowns / panels rendered inside a modal    */
+
+  /* Always-on-top context — above modals too, since actions that trigger a
+     toast (download, copy URL, share) can happen from inside an open dialog */
+  --z-toast:          700;  /* notification toasts (scripts/asc/notifications.js) */
+
+  /* Select arrow (overridden to light in dark themes) */
+  --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23555'/%3E%3C/svg%3E");
 }
 
-/* fallback fonts */
+/* ─────────────────────────────────────────────────────────────────────────
+   FONT FALLBACKS
+───────────────────────────────────────────────────────────────────────── */
+
 @font-face {
   font-family: roboto-condensed-fallback;
   size-adjust: 88.82%;
@@ -53,63 +148,86 @@
   src: local('Arial');
 }
 
-@media (width >= 900px) {
-  :root {
-    /* body sizes */
-    --body-font-size-m: 18px;
-    --body-font-size-s: 16px;
-    --body-font-size-xs: 14px;
-
-    /* heading sizes */
-    --heading-font-size-xxl: 45px;
-    --heading-font-size-xl: 36px;
-    --heading-font-size-l: 28px;
-    --heading-font-size-m: 22px;
-    --heading-font-size-s: 20px;
-    --heading-font-size-xs: 18px;
-  }
-}
+/* ─────────────────────────────────────────────────────────────────────────
+   BASE RESET & TYPOGRAPHY
+───────────────────────────────────────────────────────────────────────── */
 
 body {
-  display: none;
-  margin: 0;
-  background-color: var(--background-color);
-  color: var(--text-color);
+  display: none;  background-color: var(--color-bg);
+  color: var(--color-fg);
   font-family: var(--body-font-family);
   font-size: var(--body-font-size-m);
   line-height: 1.6;
+  letter-spacing: var(--body-letter-spacing, 0);
+  min-height: 100vh;
 }
 
+/* Sticky footer: body is a flex column spanning the viewport height; main grows
+   to fill any leftover space so footer sits at the viewport bottom on short
+   pages, and is pushed down naturally once content exceeds the viewport. */
 body.appear {
-  display: block;
+  display: flex;
+  flex-direction: column;
 }
 
 header {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
   height: var(--nav-height);
+  flex-shrink: 0;
 }
+
+header:has(.block.search-active-filters:not(:empty)) {
+  height: auto;
+}
+
+/* Chrome duality (share/sheet/board pages) — see scripts/asc/chrome.js.
+   is-chromeless hides header/footer (skipped before they're even fetched,
+   see scripts/scripts.js) plus any in-page "back to X" links authors have
+   tagged data-asc-nav-link, so a standalone share has no way back into the
+   wider site. asc-chrome-toggle is the one control offered either way — a
+   small link back to whichever mode isn't currently showing. */
+body.is-chromeless [data-asc-nav-link] {
+  display: none;
+}
+
+.asc-chrome-toggle {
+  position: fixed;
+  right: var(--spacing-md);
+  bottom: var(--spacing-md);
+  z-index: var(--z-sticky);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-full);
+  background: var(--color-card);
+  color: var(--color-fg);
+  font-size: var(--body-font-size-xs);
+  text-decoration: none;
+  box-shadow: var(--shadow-md);
+}
+
+.asc-chrome-toggle:hover {
+  background: var(--color-muted);
+}
+
+footer { flex-shrink: 0; }
 
 header .header,
-footer .footer {
-  visibility: hidden;
-}
+footer .footer { visibility: hidden; }
 
 header .header[data-block-status="loaded"],
-footer .footer[data-block-status="loaded"] {
-  visibility: visible;
-}
+footer .footer[data-block-status="loaded"] { visibility: visible; }
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
+h1, h2, h3, h4, h5, h6 {
   margin-top: 0.8em;
   margin-bottom: 0.25em;
   font-family: var(--heading-font-family);
   font-weight: 600;
   line-height: 1.25;
-  scroll-margin: 40px;
+  scroll-margin: 2.5rem;
+  color: var(--color-fg);
+  letter-spacing: var(--heading-letter-spacing, var(--body-letter-spacing, 0));
 }
 
 h1 { font-size: var(--heading-font-size-xxl); }
@@ -119,32 +237,334 @@ h4 { font-size: var(--heading-font-size-m); }
 h5 { font-size: var(--heading-font-size-s); }
 h6 { font-size: var(--heading-font-size-xs); }
 
-p,
-dl,
-ol,
-ul,
-pre,
-blockquote {
+p, dl, ol, ul, pre, blockquote {
   margin-top: 0.8em;
   margin-bottom: 0.25em;
 }
 
-code,
-pre {
-  font-size: var(--body-font-size-s);
-}
+code, pre { font-size: var(--body-font-size-s); }
 
 pre {
-  padding: 16px;
-  border-radius: 8px;
-  background-color: var(--light-color);
+  padding: var(--spacing-md);
+  background-color: var(--color-muted);
+  border: 1px solid var(--color-border);
   overflow-x: auto;
   white-space: pre;
 }
 
-main > div {
-  margin: 40px 16px;
+main {
+  margin-top: 2.5rem;
+
+  /* Sticky footer: min-height overrides the automatic minimum size flex items
+     get by default, which would otherwise stop main from shrinking below its
+     content's natural height and let footer grow past the viewport bottom. */
+  flex: 1 0 auto;
+  min-height: 0;
 }
+
+main > div { margin: 2.5rem 1rem; }
+
+main img {
+  max-width: 100%;
+  width: auto;
+  height: auto;
+}
+
+.icon { display: inline-block; height: 24px; width: 24px; }
+.icon img { height: 100%; width: 100%; }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   LINKS
+───────────────────────────────────────────────────────────────────────── */
+
+a:any-link {
+  color: var(--color-primary);
+  text-decoration: underline;
+  overflow-wrap: break-word;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   EDS EDITORIAL BUTTON (a.button only — not applied to component buttons)
+───────────────────────────────────────────────────────────────────────── */
+
+a.button:any-link {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  margin: var(--spacing-md) 0;
+  padding: var(--button-padding);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--button-border-radius);
+  font-family: var(--body-font-family);
+  font-size: var(--body-font-size-s);
+  font-weight: 500;
+  line-height: 1.5;
+  text-align: center;
+  text-decoration: none;
+  background-color: var(--color-primary);
+  color: var(--color-primary-fg);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: filter var(--transition-fast);
+
+  &:hover { filter: brightness(1.1); }
+}
+
+a.button.secondary:any-link {
+  background-color: transparent;
+  border-color: var(--color-border);
+  color: var(--color-fg);
+  &:hover { background-color: var(--color-muted); border-color: var(--color-muted-fg); }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   .btn UTILITY CLASSES
+   Used by all ASC component buttons. Apply to <button> or <a> elements.
+
+   Shapes:   pill (default)   .btn--circle
+   Colors:   --primary  --secondary  --ghost  --danger
+   Sizes:    --lg (44px)  default medium (36px)  --sm (28px)
+───────────────────────────────────────────────────────────────────────── */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+
+  /* medium pill: 36px tall with 15px font at line-height 1 */
+  padding: 10px 20px;
+  appearance: none;
+  appearance: none;
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  border-radius: var(--button-border-radius);
+  font-family: var(--body-font-family);
+  font-size: var(--body-font-size-s);
+  font-weight: 500;
+  line-height: 1;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  background: transparent;
+  color: var(--color-fg);
+  box-shadow: var(--btn-shadow);
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    transform var(--transition-fast),
+    filter var(--transition-fast);
+
+  &:focus-visible {
+    outline: var(--input-focus-ring-width) solid var(--color-ring);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+}
+
+/* Anchor buttons: global a:any-link sets underline — win specificity for .btn */
+a.btn:any-link,
+a.btn:any-link:hover,
+a.btn:any-link:visited {
+  text-decoration: none;
+}
+
+/* Same for UI Kit action buttons rendered as anchors (e.g. details-actions
+   Download): drop the link underline + colour so they match the button siblings. */
+a.asc-ui-action:any-link,
+a.asc-ui-action:any-link:hover,
+a.asc-ui-action:any-link:visited {
+  color: inherit;
+  text-decoration: none;
+}
+
+.btn--primary {
+  background: var(--color-primary);
+  color: var(--color-primary-fg);
+  border-color: transparent;
+
+  &:hover {
+    filter: var(--btn-primary-hover-filter, brightness(1.1));
+    box-shadow: var(--btn-shadow-hover);
+    transform: var(--btn-lift);
+  }
+}
+
+.btn--secondary {
+  background: transparent;
+  color: var(--color-fg);
+  border-color: var(--color-border);
+
+  &:hover {
+    background: var(--color-muted);
+    border-color: var(--color-muted-fg);
+  }
+}
+
+.btn--ghost {
+  background: transparent;
+  color: var(--color-fg);
+  border-color: transparent;
+
+  &:hover { background: var(--color-muted); }
+}
+
+.btn--danger {
+  background: var(--color-destructive);
+  color: var(--color-destructive-fg);
+  border-color: transparent;
+
+  &:hover { filter: brightness(1.1); }
+}
+
+/*
+ * <a class="btn"> — `a:any-link { color: var(--color-primary) }` is (0,1,1) and beats
+ * variant classes (0,1,0), so anchor buttons can get wrong text color. Pin both variants.
+ */
+a.btn.btn--primary:any-link,
+a.btn.btn--primary:any-link:visited {
+  color: var(--color-primary-fg);
+}
+
+a.btn.btn--secondary:any-link,
+a.btn.btn--secondary:any-link:visited {
+  color: var(--color-fg);
+}
+
+a.btn.btn--primary:any-link:hover {
+  color: var(--color-primary-fg);
+}
+
+a.btn.btn--secondary:any-link,
+a.btn.btn--secondary:any-link:visited,
+a.btn.btn--secondary:any-link:hover {
+  color: var(--color-fg);
+}
+
+a.btn.btn--ghost:any-link,
+a.btn.btn--ghost:any-link:visited,
+a.btn.btn--ghost:any-link:hover {
+  color: var(--color-fg);
+}
+
+a.btn.btn--danger:any-link,
+a.btn.btn--danger:any-link:visited,
+a.btn.btn--danger:any-link:hover {
+  color: var(--color-destructive-fg);
+}
+
+/* ── Size modifiers ─────────────────────────────────────────────────── */
+
+/* Large — 44px tall: for primary CTAs like "Manage Collections" */
+.btn--lg {
+  padding: 13px 28px;
+  font-size: var(--body-font-size-s);
+}
+
+/* Small — 28px tall: for card overlays, compact inline actions */
+.btn--sm {
+  padding: 6px 14px;
+  font-size: var(--body-font-size-xs);
+}
+
+/* ── Circle — icon-only, pairs with a size modifier ────────────────── */
+
+/* medium: 36px  |  .btn--lg: 44px  |  .btn--sm: 28px                  */
+
+.btn--circle,
+.btn--icon {      /* --icon kept as alias */
+  border-radius: 50%;
+  padding: 0;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+}
+
+.btn--circle.btn--lg,
+.btn--icon.btn--lg {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+}
+
+.btn--circle.btn--sm,
+.btn--icon.btn--sm {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   .asc-panel UTILITY
+   Reusable floating panel for dropdowns, sheets, and small modals.
+   Apply to any positioned container. Use modifier classes for variants.
+
+   Modifier classes:
+     .asc-panel--scroll    cap height and scroll body
+     .asc-panel--no-pad    remove default padding (use header/body/footer slots instead)
+
+   Slot classes (optional):
+     .asc-panel__header    bordered top section — title / controls
+     .asc-panel__body      padded main content area
+     .asc-panel__footer    bordered bottom section — actions
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-panel {
+  background: var(--panel-bg);
+  border: var(--panel-border);
+  border-radius: var(--panel-radius);
+  box-shadow: var(--panel-shadow);
+  padding: var(--panel-padding);
+  z-index: var(--panel-z);
+  overflow: hidden;
+
+  &.asc-panel--scroll {
+    max-height: var(--panel-max-height);
+    overflow-y: auto;
+  }
+
+  &.asc-panel--no-pad { padding: 0; }
+}
+
+.asc-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-bottom: var(--panel-border);
+  font-weight: 600;
+  font-size: var(--body-font-size-s);
+  color: var(--color-fg);
+}
+
+.asc-panel__body {
+  padding: var(--panel-padding);
+}
+
+.asc-panel__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-top: var(--panel-border);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   FORM ELEMENTS — global baseline
+   All inputs/selects/textareas share the same base style.
+   Blocks may add contextual overrides (e.g. borderless search input).
+───────────────────────────────────────────────────────────────────────── */
 
 input,
 textarea,
@@ -153,105 +573,513 @@ button {
   font: inherit;
 }
 
-/* links */
-a:any-link {
-  color: var(--link-color);
-  text-decoration: none;
-  overflow-wrap: break-word;
-}
+input:not([type="checkbox"], [type="radio"], [type="hidden"], [type="range"]),
+textarea {
+  background: var(--color-input);
+  color: var(--color-fg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--input-border-radius);
+  padding: var(--input-padding-y) var(--input-padding-x);
+  font-size: var(--body-font-size-s);
+  transition: var(--input-transition);
 
-a:hover {
-  color: var(--link-hover-color);
-  text-decoration: underline;
-}
+  &::placeholder { color: var(--color-muted-fg); opacity: 0.7; }
 
-/* buttons */
-a.button:any-link,
-button {
-  box-sizing: border-box;
-  display: inline-block;
-  max-width: 100%;
-  margin: 12px 0;
-  border: 2px solid transparent;
-  border-radius: 2.4em;
-  padding: 0.5em 1.2em;
-  font-family: var(--body-font-family);
-  font-style: normal;
-  font-weight: 500;
-  line-height: 1.25;
-  text-align: center;
-  text-decoration: none;
-  background-color: var(--link-color);
-  color: var(--background-color);
-  cursor: pointer;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+  &:focus-visible {
+    outline: none;
+    border-color: var(--color-ring);
+    box-shadow: 0 0 0 var(--input-focus-ring-width) color-mix(in srgb, var(--color-ring) 25%, transparent);
+  }
 
-a.button:hover,
-a.button:focus,
-button:hover,
-button:focus {
-  background-color: var(--link-hover-color);
-  cursor: pointer;
-}
-
-button:disabled,
-button:disabled:hover {
-  background-color: var(--light-color);
-  cursor: unset;
-}
-
-a.button.secondary,
-button.secondary {
-  background-color: unset;
-  border: 2px solid currentcolor;
-  color: var(--text-color);
-}
-
-main img {
-  max-width: 100%;
-  width: auto;
-  height: auto;
-}
-
-.icon {
-  display: inline-block;
-  height: 24px;
-  width: 24px;
-}
-
-.icon img {
-  height: 100%;
-  width: 100%;
-}
-
-/* sections */
-main > .section {
-  margin: 40px 0;
-}
-
-main > .section > div {
-  max-width: 1200px;
-  margin: auto;
-  padding: 0 24px;
-}
-
-main > .section:first-of-type {
-  margin-top: 0;
-}
-
-@media (width >= 900px) {
-  main > .section > div {
-    padding: 0 32px;
+  &:disabled {
+    background: var(--color-muted);
+    color: var(--color-muted-fg);
+    cursor: not-allowed;
   }
 }
 
-/* section metadata */
+textarea {
+  min-height: 100px;
+  height: auto;
+  resize: vertical;
+}
+
+select {
+  appearance: none;
+  padding: var(--input-padding-y) 2rem var(--input-padding-y) var(--input-padding-x);
+  background-color: var(--color-input);
+  background-image: var(--select-arrow);
+  background-position: right 0.6rem center;
+  background-repeat: no-repeat;
+  background-size: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--input-border-radius);
+  color: var(--color-fg);
+  font-size: var(--body-font-size-s);
+  cursor: pointer;
+  transition: var(--input-transition);
+
+  &:focus-visible {
+    outline: none;
+    border-color: var(--color-ring);
+    box-shadow: 0 0 0 var(--input-focus-ring-width) color-mix(in srgb, var(--color-ring) 25%, transparent);
+  }
+}
+
+label {
+  color: var(--color-muted-fg);
+  font-size: var(--body-font-size-s);
+  font-weight: 500;
+}
+
+/* Checkboxes and radios use accent-color for zero-effort theming */
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--color-primary);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+/* ── Form groups ────────────────────────────────────────────────── */
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-md);
+
+  label { display: block; }
+
+  input:not([type="checkbox"], [type="radio"]),
+  textarea,
+  select { width: 100%; box-sizing: border-box; }
+}
+
+.form-row {
+  display: grid;
+  gap: var(--spacing-lg);
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+.form-group .checkbox-group,
+.form-group .radio-group {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   ASC UI PRIMITIVES — the reusable .asc-ui-* component classes now live in
+   styles/ui-kit.css (imported at the top of this file). Preview them in
+   /ui-kit.html and copy canonical markup from docs/UI_KIT.md.
+───────────────────────────────────────────────────────────────────────── */
+
+/* ─────────────────────────────────────────────────────────────────────────
+   NATIVE <dialog> — .asc-dialog
+   Centered by the top layer (showModal()). Single card surface — no inner
+   “panel” needed. Layout: header (title + optional description, close) /
+   scrollable body / footer (Cancel left, actions right).
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-dialog {
+  display: none;
+  box-sizing: border-box;
+  border: 1px solid var(--color-border);
+  border-radius: var(--modal-border-radius);
+  box-shadow: var(--modal-shadow);
+  background: var(--color-card);
+  color: var(--color-card-fg);
+  padding: 0;
+  margin: auto;
+  width: min(var(--modal-max-width), 92vw);
+  min-width: min(var(--modal-min-width), 92vw);
+  min-height: var(--modal-min-height);
+  max-height: 90vh;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(8px) scale(0.98);
+  transition:
+    opacity var(--transition-fast),
+    transform var(--transition-fast),
+    overlay var(--transition-fast) allow-discrete,
+    display var(--transition-fast) allow-discrete;
+
+  &[open] {
+    display: flex;
+    flex-direction: column;
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  @starting-style {
+    &[open] {
+      opacity: 0;
+      transform: translateY(8px) scale(0.98);
+    }
+  }
+
+  &::backdrop {
+    background: rgb(0 0 0 / 55%);
+    backdrop-filter: blur(2px);
+    opacity: 0;
+    transition: opacity var(--transition-fast), overlay var(--transition-fast) allow-discrete, display var(--transition-fast) allow-discrete;
+  }
+
+  &[open]::backdrop {
+    opacity: 1;
+  }
+
+  @starting-style {
+    &[open]::backdrop {
+      opacity: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+    transform: none;
+
+    &::backdrop {
+      transition: none;
+    }
+  }
+
+  &.asc-dialog--narrow {
+    width: min(var(--modal-narrow-max-width), 92vw);
+  }
+
+  /* Large asset overlay (e.g. asset-details). Roomy, near-viewport height. */
+  &.asc-dialog--wide {
+    width: min(var(--modal-wide-max-width, 80rem), 95vw);
+    max-height: 92vh;
+  }
+
+  .asc-dialog__header {
+    position: relative;
+    flex-shrink: 0;
+    padding: var(--spacing-xl) var(--modal-padding) var(--spacing-sm);
+    padding-inline-end: calc(var(--modal-padding) + 2.5rem);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .asc-dialog__header-main {
+    min-width: 0;
+  }
+
+  .asc-dialog__title {
+    margin: 0;
+    font-size: var(--heading-font-size-m);
+    font-weight: 600;
+    color: var(--color-fg);
+    line-height: 1.25;
+  }
+
+  .asc-dialog__description {
+    margin: var(--spacing-xs) 0 0;
+    font-size: var(--body-font-size-s);
+    font-weight: 400;
+    color: var(--color-muted-fg);
+    line-height: 1.45;
+  }
+
+  .asc-dialog__body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: var(--modal-padding);
+  }
+
+  .asc-dialog__footer {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+    flex-shrink: 0;
+    padding: var(--spacing-md) var(--modal-padding) var(--spacing-lg);
+    border-top: 1px solid var(--color-border);
+  }
+
+  .asc-dialog__footer-end {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--spacing-sm);
+    margin-inline-start: auto;
+  }
+
+  .asc-dialog__close {
+    position: absolute;
+    inset-block-start: var(--spacing-sm);
+    inset-inline-end: var(--spacing-sm);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   SECTIONS
+───────────────────────────────────────────────────────────────────────── */
+
+main > .section { margin: 40px 0; }
+
+main > .section > div {
+  padding: 0 var(--section-padding, 24px);
+}
+
+main .section.grid,
+main .section.aside {
+  padding-left: var(--section-padding, 24px);
+  padding-right: var(--section-padding, 24px);
+  box-sizing: border-box;
+}
+
+main > .section:first-of-type { margin-top: 0; }
+
+@media (width >= 900px) {
+  main > .section > div,
+  main .section.grid,
+  main .section.aside {
+    padding-left: var(--section-padding-wide, 32px);
+    padding-right: var(--section-padding-wide, 32px);
+  }
+}
+
 main .section.light,
 main .section.highlight {
-  background-color: var(--light-color);
+  background-color: var(--color-muted);
   margin: 0;
   padding: 40px 0;
+}
+
+/* ── Search filter rail / top layouts ──────────────────────────────────── */
+
+/*
+  Apply via section metadata:
+    style: right search-filters   — sticky rail on the right
+    style: left search-filters    — sticky rail on the left
+    style: top search-filters     — horizontal row above results
+
+  Filter blocks get a card appearance automatically.
+  Adjust --search-filters-width and --nav-height as needed.
+*/
+
+main .section.search-filters .block {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
+}
+
+/* ── Rail layouts ────────────────────────────────────────────────────────── */
+
+@media (width >= 900px) {
+  /* Switch main to a 2-column grid when a rail exists.
+     max-width + margin: auto mirrors the nav's 1264px border-box so the
+     left rail edge and nav logo left-align, and the right content edge
+     and nav tools right-align. */
+  main:has(.section.right.search-filters) {
+    display: grid;
+    grid-template-columns: 1fr var(--search-filters-width, 280px);
+    column-gap: var(--search-filters-gap, var(--spacing-xl, 40px));
+    align-items: start;
+    padding-inline: var(--section-padding-wide, 32px);
+    box-sizing: border-box;
+  }
+
+  main:has(.section.left.search-filters) {
+    display: grid;
+    grid-template-columns: var(--search-filters-width, 280px) 1fr;
+    column-gap: var(--search-filters-gap, var(--spacing-xl, 40px));
+    align-items: start;
+    padding-inline: var(--section-padding-wide, 32px);
+    box-sizing: border-box;
+  }
+
+  /* Non-filter sections → content column (order-independent) */
+  main:has(.section.left.search-filters) > .section:not(.left.search-filters) {
+    grid-column: 2;
+  }
+
+  main:has(.section.right.search-filters) > .section:not(.right.search-filters) {
+    grid-column: 1;
+  }
+
+  /* Filter → rail column, anchored at row 1 spanning all rows so every
+     content row sits alongside it regardless of HTML order. */
+  main:has(.section.left.search-filters) > .section.left.search-filters {
+    grid-column: 1;
+    grid-row: 1 / span 100;
+  }
+
+  main:has(.section.right.search-filters) > .section.right.search-filters {
+    grid-column: 2;
+    grid-row: 1 / span 100;
+  }
+
+  /* Override section > div double-padding when main has its own padding */
+  main:has(.section.left.search-filters) > .section > div,
+  main:has(.section.right.search-filters) > .section > div {
+    max-width: none;
+    padding-inline: 0;
+  }
+
+  /* Sticky rail */
+  main .section.right.search-filters,
+  main .section.left.search-filters {
+    position: sticky;
+    top: var(--nav-height, 80px);
+    padding-top: var(--spacing-md);
+    max-height: calc(100vh - var(--nav-height, 80px) - var(--spacing-xl, 40px));
+    overflow-y: auto;
+  }
+}
+
+/* ── Top layout ──────────────────────────────────────────────────────────── */
+
+main .section.top.search-filters {
+  position: sticky;
+  top: var(--nav-height, 64px);
+  z-index: var(--z-sticky);
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: var(--spacing-sm);
+}
+
+main .section.top.search-filters > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+  align-items: flex-end;
+}
+
+main .section.top.search-filters .block {
+  flex: 1 1 160px;
+  margin: 0;
+}
+
+main .section.inline > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+  align-items: flex-start;
+}
+
+main .section.inline > div > .block {
+  border: 0;
+  margin: 1rem;
+  padding: 0;}
+
+main .section.inline.dropdowns.search-filters,
+main .section.top.dropdowns.search-filters {
+  justify-content: center;
+}
+
+main .section.inline.dropdowns.search-filters > div,
+main .section.top.dropdowns.search-filters > div {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow: visible;
+  gap: var(--spacing-sm);
+  align-items: center;
+}
+
+main > .section.inline > div {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+
+main .section.inline.dropdowns.search-filters .search-filter-dropdown,
+main .section.top.dropdowns.search-filters .search-filter-dropdown {
+  position: relative;
+}
+
+main .section.inline.dropdowns.search-filters .search-filter-dropdown__trigger,
+main .section.top.dropdowns.search-filters .search-filter-dropdown__trigger {
+  min-width: 8rem;
+  justify-content: flex-start;
+  gap: var(--spacing-sm);
+}
+
+main .section.inline.dropdowns.search-filters .search-filter-dropdown__trigger[aria-expanded="true"],
+main .section.top.dropdowns.search-filters .search-filter-dropdown__trigger[aria-expanded="true"] {
+  background: var(--color-accent);
+  box-shadow: none;
+}
+
+main .section.inline.dropdowns.search-filters .search-filter-dropdown__arrow,
+main .section.top.dropdowns.search-filters .search-filter-dropdown__arrow {
+  margin-left: auto;
+  font-size: var(--body-font-size-m);
+  line-height: 1;
+  color: var(--color-muted-fg);
+}
+
+main .section.inline.dropdowns.search-filters .search-filter-dropdown__panel,
+main .section.top.dropdowns.search-filters .search-filter-dropdown__panel {
+  position: absolute;
+  top: calc(100% + var(--spacing-xs));
+  left: 0;
+  min-width: 17.5rem;
+  max-width: min(28rem, calc(100vw - 2rem));
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-lg, 0 8px 30px rgb(0 0 0 / 12%));
+  z-index: var(--z-dropdown);
+  overflow: hidden;
+  padding: var(--spacing-md);
+}
+
+main .section.inline.dropdowns.search-filters .search-filter-dropdown__panel[hidden],
+main .section.top.dropdowns.search-filters .search-filter-dropdown__panel[hidden] {
+  display: none;
+}
+
+main .section.inline.dropdowns.search-filters .search-filter-dropdown__panel ul,
+main .section.inline.dropdowns.search-filters .search-filter-dropdown__panel ol,
+main .section.top.dropdowns.search-filters .search-filter-dropdown__panel ul,
+main .section.top.dropdowns.search-filters .search-filter-dropdown__panel ol {
+  margin: 0;
+  padding: 0;
+  max-height: 15rem;
+  overflow-y: auto;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   BLOCK SPACING & SEARCH FILTER RESETS
+───────────────────────────────────────────────────────────────────────── */
+
+/* Blocks carry no implicit padding by default — opt in per block, or set
+   --block-padding at the section level. Horizontal inset comes from the section
+   wrapper (`main > .section > div`), so blocks align with default content. */
+main .block {
+  padding: var(--block-padding, 0);
+  margin-bottom: var(--spacing-md);
+}
+
+/* Remove bullets from lists inside search filter blocks */
+main .section.search-filters ul,
+main .section.search-filters ol {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   COLLECTION TOGGLE — favorite variant override
+───────────────────────────────────────────────────────────────────────── */
+
+/* Favorited state: no yellow pill — just the star glyph itself filled black.
+   Variables consumed by the core component (scripts/asc/core/parts/collection-toggle). */
+.asc-collection-toggle {
+  --collection-toggle-favorite-bg: transparent;
+  --collection-toggle-favorite-border: transparent;
+  --collection-toggle-favorite-fg: var(--color-fg);
+  --collection-toggle-favorite-hover-bg: transparent;
+  --collection-toggle-favorite-hover-border: transparent;
+  --collection-toggle-favorite-hover-fg: var(--color-fg);
 }

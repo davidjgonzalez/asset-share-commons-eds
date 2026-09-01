@@ -1,268 +1,139 @@
-/* header and nav layout */
+/* Header — 3-column layout */
+
 header .nav-wrapper {
-  background-color: var(--background-color);
+  background-color: var(--color-bg);
   width: 100%;
-  z-index: 2;
-  position: fixed;
+  border-bottom: 1px solid var(--color-border);
+  padding: 0.5rem 0;
+  min-height: var(--nav-height);
 }
 
+/* Mobile-first: brand + tools on one row, search wraps to its own row below.
+   Widens to the single-row 3-column layout at the >= 768px breakpoint. */
 header nav {
   box-sizing: border-box;
   display: grid;
-  grid-template:
-    'hamburger brand tools' var(--nav-height)
-    'sections sections sections' 1fr / auto 1fr auto;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    "brand tools"
+    "search search";
   align-items: center;
-  gap: 0 24px;
-  margin: auto;
-  max-width: 1248px;
-  height: var(--nav-height);
-  padding: 0 24px;
+  gap: 0.5rem 0.75rem;
+  margin: 0 auto;
+  max-width: 100%;
+  height: auto;
+  padding: 0.5rem 1rem;
   font-family: var(--body-font-family);
 }
 
-header nav[aria-expanded='true'] {
-  grid-template:
-    'hamburger brand' var(--nav-height)
-    'sections sections' 1fr
-    'tools tools' var(--nav-height) / auto 1fr;
-  overflow-y: auto;
-  min-height: 100dvh;
-}
-
-@media (width >= 900px) {
-  header nav {
-    display: flex;
-    justify-content: space-between;
-    gap: 0 32px;
-    max-width: 1264px;
-    padding: 0 32px;
-  }
-
-  header nav[aria-expanded='true'] {
-    min-height: 0;
-    overflow: visible;
-  }
-}
-
-header nav p {
+/* Logo */
+header h1 {
   margin: 0;
   line-height: 1;
+  font-size: var(--heading-font-size-s);
 }
 
-header nav a:any-link {
-  color: currentcolor;
+@media (width >= 768px) {
+  header nav {
+    grid-template-columns: 1fr auto 1fr;
+    grid-template-areas: "brand search tools";
+    align-items: center;
+    gap: 1.5rem;
+    height: var(--nav-height);
+    padding: 0 1.5rem;
+  }
 }
 
-/* hamburger */
-header nav .nav-hamburger {
-  grid-area: hamburger;
-  height: 22px;
+@media (width >= 1200px) {
+  header nav {
+    max-width: 100%;
+    padding: 0 2rem;
+    gap: 2rem;
+  }
+}
+
+/* Logo / Brand */
+header nav .nav-brand {
+  grid-area: brand;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  font-size: var(--heading-font-size-s);
+  font-weight: 700;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+header nav .nav-brand a:any-link {
+  color: var(--color-fg);
+  text-decoration: none;
   display: flex;
   align-items: center;
 }
 
-header nav .nav-hamburger button {
-  height: 22px;
-  margin: 0;
-  border: 0;
-  border-radius: 0;
-  padding: 0;
-  background-color: var(--background-color);
-  color: inherit;
-  overflow: initial;
-  text-overflow: initial;
-  white-space: initial;
-}
-
-header nav .nav-hamburger-icon,
-header nav .nav-hamburger-icon::before,
-header nav .nav-hamburger-icon::after {
-  box-sizing: border-box;
-  display: block;
-  position: relative;
-  width: 20px;
-}
-
-header nav .nav-hamburger-icon::before,
-header nav .nav-hamburger-icon::after {
-  content: '';
-  position: absolute;
-  background: currentcolor;
-}
-
-header nav[aria-expanded='false'] .nav-hamburger-icon,
-header nav[aria-expanded='false'] .nav-hamburger-icon::before,
-header nav[aria-expanded='false'] .nav-hamburger-icon::after {
-  height: 2px;
-  border-radius: 2px;
-  background: currentcolor;
-}
-
-header nav[aria-expanded='false'] .nav-hamburger-icon::before {
-  top: -6px;
-}
-
-header nav[aria-expanded='false'] .nav-hamburger-icon::after {
-  top: 6px;
-}
-
-header nav[aria-expanded='true'] .nav-hamburger-icon {
-  height: 22px;
-}
-
-header nav[aria-expanded='true'] .nav-hamburger-icon::before,
-header nav[aria-expanded='true'] .nav-hamburger-icon::after {
-  top: 3px;
-  left: 1px;
-  transform: rotate(45deg);
-  transform-origin: 2px 1px;
-  width: 24px;
-  height: 2px;
-  border-radius: 2px;
-}
-
-header nav[aria-expanded='true'] .nav-hamburger-icon::after {
-  top: unset;
-  bottom: 3px;
-  transform: rotate(-45deg);
-}
-
-@media (width >= 900px) {
-  header nav .nav-hamburger {
-    display: none;
-    visibility: hidden;
-  }
-}
-
-/* brand */
-header .nav-brand {
-  grid-area: brand;
-  flex-basis: 128px;
-  font-size: var(--heading-font-size-s);
-  font-weight: 700;
-  line-height: 1;
-}
-
 header nav .nav-brand img {
-  width: 128px;
   height: auto;
+  max-width: 110px;
 }
 
-/* sections */
+/* Search section — full-width row of its own on mobile, centered on page at >= 768px */
 header nav .nav-sections {
-  grid-area: sections;
-  flex: 1 1 auto;
-  display: none;
-  visibility: hidden;
+  grid-area: search;
+  display: flex;
+  align-items: center;
+  justify-content: stretch;
+  min-width: 0;
 }
 
-header nav[aria-expanded='true'] .nav-sections {
-  display: block;
-  visibility: visible;
-  align-self: start;
+/* Mobile-first: fill the row. Kit re-declares --asc-ui-search-width: 20rem on the
+   component element itself, so we must target .asc-ui-search directly to win the
+   specificity race. */
+header .block.search-bar .asc-ui-search {
+  --asc-ui-search-width: 100%;
 }
 
-header nav .nav-sections ul {
-  list-style: none;
-  padding-left: 0;
-  font-size: var(--body-font-size-s);
-}
+@media (width >= 768px) {
+  header nav .nav-brand img {
+    max-width: 150px;
+  }
 
-header nav .nav-sections ul > li {
-  font-weight: 500;
-}
-
-header nav .nav-sections ul > li > ul {
-  margin-top: 0;
-}
-
-header nav .nav-sections ul > li > ul > li {
-  font-weight: 400;
-}
-
-@media (width >= 900px) {
   header nav .nav-sections {
-    display: block;
-    visibility: visible;
-    white-space: nowrap;
+    justify-content: center;
+    justify-self: center;
   }
 
-  header nav[aria-expanded='true'] .nav-sections {
-    align-self: unset;
-  }
-
-  header nav .nav-sections .nav-drop {
-    position: relative;
-    padding-right: 16px;
-    cursor: pointer;
-  }
-
-  header nav .nav-sections .nav-drop::after {
-    content: '';
-    display: inline-block;
-    position: absolute;
-    top: 0.5em;
-    right: 2px;
-    transform: rotate(135deg);
-    width: 6px;
-    height: 6px;
-    border: 2px solid currentcolor;
-    border-radius: 0 1px 0 0;
-    border-width: 2px 2px 0 0;
-  }
-
-  header nav .nav-sections .nav-drop[aria-expanded='true']::after {
-    top: unset;
-    bottom: 0.5em;
-    transform: rotate(315deg);
-  }
-
-  header nav .nav-sections ul {
-    display: flex;
-    gap: 24px;
-    margin: 0;
-  }
-
-  header nav .nav-sections .default-content-wrapper > ul > li {
-    flex: 0 1 auto;
-    position: relative;
-  }
-
-  header nav .nav-sections .default-content-wrapper > ul > li > ul {
-    display: none;
-    position: relative;
-  }
-
-  header nav .nav-sections .default-content-wrapper > ul > li[aria-expanded='true'] > ul {
-    display: block;
-    position: absolute;
-    left: -24px;
-    width: 200px;
-    top: 150%;
-    padding: 16px;
-    background-color: var(--light-color);
-    white-space: initial;
-  }
-
-  header nav .nav-sections .default-content-wrapper > ul > li > ul::before {
-    content: '';
-    position: absolute;
-    top: -8px;
-    left: 16px;
-    width: 0;
-    height: 0;
-    border-left: 8px solid transparent;
-    border-right: 8px solid transparent;
-    border-bottom: 8px solid var(--light-color);
-  }
-
-  header nav .nav-sections .default-content-wrapper > ul > li > ul > li {
-    padding: 8px 0;
+  header .block.search-bar .asc-ui-search {
+    --asc-ui-search-width: 28rem;
   }
 }
 
-/* tools */
+/* Depth effect — shadow + glass blur when page is scrolled */
+header.scrolled .nav-wrapper {
+  box-shadow: 0 4px 24px -4px color-mix(in srgb, var(--color-fg) 14%, transparent),
+              0 2px 8px -2px color-mix(in srgb, var(--color-fg) 8%, transparent);
+  background: color-mix(in srgb, var(--color-bg) 92%, transparent);
+  backdrop-filter: blur(10px);
+  transition: box-shadow var(--transition-normal), background var(--transition-normal);
+}
+
+/* Standalone (chromeless) pages — no nav, no footer. Keyed to is-chromeless
+   (scripts/asc/chrome.js), not the raw page-sheet class — page-sheet just
+   means "this page has a ?sheet= link", which no longer always implies
+   chromeless now that it's an overridable default (?chrome=full, or the
+   "Share as a standalone page" switch in blocks/action-share). In practice
+   this rule is redundant with scripts/scripts.js never loading header/footer
+   content for these pages at all, but it stays as a defensive backstop. */
+body.is-chromeless header,
+body.is-chromeless footer {
+  display: none;
+}
+
+/* Collection switcher — right */
 header nav .nav-tools {
   grid-area: tools;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  justify-self: end;
+  flex-shrink: 0;
 }

@@ -1,0 +1,46 @@
+.action-download.asc-dialog {
+    .asc-dialog__header-main p {
+        margin: var(--spacing-2xs) 0 0;
+        font-size: var(--body-font-size-s);
+        font-weight: 400;
+        color: var(--color-muted-fg);
+        line-height: 1.4;
+    }
+
+    .action-download__renditions {
+        border: 1px solid var(--color-border);
+        border-radius: var(--border-radius-md);
+        padding: var(--spacing-md);
+        margin-block-end: var(--spacing-md);
+        background: var(--color-muted);
+
+        legend {
+            font-size: var(--body-font-size-xs);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--color-muted-fg);
+            padding: 0 var(--spacing-xs);
+        }
+    }
+
+    .action-download__rendition-option {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        padding: var(--spacing-xs) 0;
+        font-size: var(--body-font-size-s);
+        cursor: pointer;
+        color: var(--color-fg);
+
+        input[type="checkbox"] {
+            cursor: pointer;
+        }
+    }
+
+    .action-download__error {
+        color: var(--color-destructive);
+        font-size: var(--body-font-size-s);
+        margin: 0 0 var(--spacing-sm);
+    }
+}

@@ -1,0 +1,130 @@
+/*
+ * details-preview — unified media previewer for image, video, PDF, and Office documents.
+ * The active sub-type is tracked via data-type on .details-preview__viewer, enabling
+ * type-scoped CSS without JS style injection.
+ */
+
+.block.details-preview {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--spacing-sm);
+
+    .details-preview__viewer {
+        width: 100%;
+        position: relative;
+        overflow: hidden;
+        border-radius: var(--border-radius-md);
+        background: var(--color-muted);
+    }
+
+    /* ── Image viewer ──────────────────────────────────────────────────────── */
+
+    .details-preview__viewer[data-type="image"] {
+        aspect-ratio: 1;
+        max-height: calc(90vh - 12rem);
+    }
+
+    .details-preview__viewer[data-type="image"] img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+
+    .details-preview__img--hidden {
+        display: none;
+    }
+
+    /* ── Video viewer ──────────────────────────────────────────────────────── */
+
+    .details-preview__viewer[data-type="video"] {
+        aspect-ratio: var(--video-ar, 16 / 9);
+        border: 1px solid var(--color-border);
+        background: #000;
+    }
+
+    .details-preview__video {
+        display: block;
+        width: 100%;
+        height: 100%;
+        border: none;
+        object-fit: contain;
+    }
+
+    .details-preview__video--hidden {
+        display: none;
+    }
+
+    .details-preview__loading {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+    }
+
+    .details-preview__loading--hidden {
+        display: none;
+    }
+
+    /* ── PDF viewer ────────────────────────────────────────────────────────── */
+
+    .details-preview__viewer[data-type="pdf"] {
+        border: 1px solid var(--color-border);
+        min-height: 20rem;
+    }
+
+    .details-preview__pdf-embed {
+        width: 100%;
+        min-height: 20rem;
+    }
+
+    /* ── Office viewer ─────────────────────────────────────────────────────── */
+
+    .details-preview__viewer[data-type="office"] {
+        border: 1px solid var(--color-border);
+        min-height: 20rem;
+    }
+
+    /* ── Shared iframe (PDF native fallback + Office) ──────────────────────── */
+
+    .details-preview__frame {
+        display: block;
+        width: 100%;
+        min-height: 20rem;
+        border: none;
+    }
+
+    /* ── Shared overlay elements ───────────────────────────────────────────── */
+
+    .details-preview__rendition-label {
+        position: absolute;
+        top: var(--spacing-md);
+        right: var(--spacing-md);
+        font-size: var(--body-font-size-s);
+        padding: var(--spacing-xs) var(--spacing-sm);
+        pointer-events: none;
+    }
+
+    .details-preview__rendition-label:empty {
+        display: none;
+    }
+
+    .details-preview__unsupported {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: var(--color-muted);
+        border: none;
+        border-radius: 0;
+    }
+
+    .details-preview__unsupported--hidden {
+        display: none;
+    }
+
+    .details-preview__unsupported-download {
+        margin-top: var(--spacing-md);
+    }
+}

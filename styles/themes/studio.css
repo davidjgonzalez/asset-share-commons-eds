@@ -1,0 +1,104 @@
+/*
+ * Studio Theme — "Unsplash"
+ *
+ * Inspired by unsplash.com — near-black canvas, minimal chrome.
+ * The photography is the UI. Everything else gets out of the way.
+ *
+ * Design principles:
+ *   — Near-black (not pure black) for warmth
+ *   — White as the ONLY accent — pure, clean, assertive
+ *   — Borders barely visible — just enough to define structure
+ *   — Typography is tight and purposeful
+ *   — Cards have subtle lift, not heavy shadow
+ *
+ * Palette:
+ *   Page background  #111111  (warm near-black)
+ *   Card surface     #1a1a1a  (barely lifted)
+ *   Popover/dropdown #222222  (distinct but dark)
+ *   Primary text     #f0f0f0  (warm off-white)
+ *   Primary action   #ffffff  (pure white — crisp on dark)
+ *   Muted text       #888888  (mid-grey)
+ *   Border           #2c2c2c  (barely there)
+ *
+ * Activate: set `theme: { default: 'studio' }` in scripts/configurations.js
+ */
+
+:root {
+  /* ── Semantic color tokens ─────────────────────────────────────── */
+  --color-bg:          #111111;
+  --color-fg:          #f0f0f0;
+  --color-card:        #1a1a1a;
+  --color-card-fg:     #f0f0f0;
+  --color-popover:     #222222;
+  --color-popover-fg:  #f0f0f0;
+
+  --color-primary:     #ffffff;
+  --color-primary-fg:  #111111;
+
+  --color-secondary:    #222222;
+  --color-secondary-fg: #f0f0f0;
+
+  --color-muted:    #1a1a1a;
+  --color-muted-fg: #888888;
+
+  --color-accent:    #2a2a2a;
+  --color-accent-fg: #ffffff;
+
+  --color-destructive:    #f87171;
+  --color-destructive-fg: #111111;
+
+  --color-border: #2c2c2c;
+  --color-input:  #1e1e1e;
+  --color-ring:   #ffffff;
+
+  /* ── Typography — tight, editorial ─────────────────────────────── */
+  --body-font-family:    'Inter', system-ui, -apple-system, sans-serif;
+  --heading-font-family: 'Inter', system-ui, -apple-system, sans-serif;
+
+  /* ── Tighter heading scale for editorial density ────────────────── */
+  --heading-font-size-xxl: 42px;
+  --heading-font-size-xl:  32px;
+  --heading-font-size-l:   24px;
+
+  /* ── Rounder corners — modern, editorial ────────────────────────── */
+  --button-border-radius: var(--border-radius-full);
+  --input-border-radius:  var(--border-radius-md);
+
+  /* ── Light chevron for dark backgrounds ─────────────────────────── */
+  --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23888888'/%3E%3C/svg%3E");
+}
+
+/* ── Asset teasers: no border on cards — let shadow define the edge ──
+   Scoped under .theme-studio (rather than a bare .asc-asset-teaser) because
+   this stylesheet loads before the core part's asset-teaser.css — at equal
+   specificity the later rule wins, so a bare selector here would silently
+   lose the cascade to the core's own border/box-shadow declarations. The
+   hover shadow goes through the part's --asset-teaser-hover-shadow /
+   --asset-teaser-hover-border-color hooks instead of a literal :hover
+   override for the same reason (see docs/THEMING_README.md → "Theme-Scoped
+   Block Overrides"). */
+.theme-studio .asc-asset-teaser {
+  border-color: transparent;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 40%);
+
+  --asset-teaser-hover-border-color: transparent;
+  --asset-teaser-hover-shadow: 0 6px 20px rgb(0 0 0 / 60%);
+}
+
+/* ── Image hover zoom — makes the grid feel alive ───────────────── */
+.theme-studio .asc-asset-teaser__preview { overflow: hidden; }
+
+.theme-studio .asc-asset-teaser__preview img {
+  transition: transform var(--transition-slow);
+}
+
+.theme-studio .asc-asset-teaser:hover .asc-asset-teaser__preview img {
+  transform: var(--scale-sm);
+}
+
+/* ── Reduced motion ─────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .theme-studio .asc-asset-teaser:hover .asc-asset-teaser__preview img {
+    transform: none;
+  }
+}

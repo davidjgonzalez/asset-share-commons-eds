@@ -1,0 +1,28 @@
+/*
+ * search-property — composed from UI Kit primitives:
+ *   option rows  → .asc-ui-dropdown__list / .asc-ui-dropdown__item (see search-property.js)
+ *   checkboxes   → global input baseline (accent-color, sizing) in styles.css
+ *   select       → global <select> baseline in styles.css
+ * Only the block's group title + spacing remain here.
+ */
+
+.block.search-property {
+    margin-bottom: var(--spacing-lg);
+
+    /* Group title label */
+    .search-property__title {
+        display: block;
+        color: var(--label-color);
+        font-weight: var(--label-font-weight);
+        font-size: var(--body-font-size-s);
+        margin-bottom: var(--spacing-sm);
+    }
+
+    /* Reset fieldset browser defaults */
+    .search-property__group {
+        margin: 0;
+        padding: 0;
+        border: 0;
+        min-width: 0;
+    }
+}

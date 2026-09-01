@@ -1,0 +1,41 @@
+/*
+ * details-similar — the scrollable strip uses the UI Kit .asc-ui-filmstrip
+ * primitive and the loading state uses .asc-ui-skeleton (see details-similar.js).
+ * Only the per-teaser sizing/overrides for this strip remain block-specific.
+ */
+
+.block.details-similar {
+    /* Collection toggle — UI Kit button style (card surface + primary filled) */
+    --collection-toggle-btn-shadow: var(--shadow-sm);
+    --collection-toggle-btn-backdrop: none;
+
+    --collection-toggle-add-bg: var(--color-card);
+    --collection-toggle-add-fg: var(--color-fg);
+    --collection-toggle-add-border: var(--color-border);
+    --collection-toggle-add-hover-bg: color-mix(in srgb, var(--color-fg) 6%, var(--color-card));
+    --collection-toggle-add-hover-fg: var(--color-fg);
+    --collection-toggle-add-hover-border: var(--color-border);
+
+    --collection-toggle-remove-bg: var(--color-primary);
+    --collection-toggle-remove-fg: var(--color-primary-fg);
+    --collection-toggle-remove-border: transparent;
+    --collection-toggle-remove-hover-bg: color-mix(in srgb, var(--color-primary) 82%, black);
+    --collection-toggle-remove-hover-fg: var(--color-primary-fg);
+    --collection-toggle-remove-hover-border: transparent;
+
+    .details-similar__results .asc-asset-teaser {
+        flex: 0 0 160px;
+        scroll-snap-align: start;
+        cursor: pointer;
+
+        .asc-asset-teaser__preview {
+            aspect-ratio: 1;
+        }
+
+        /* Suppress meta in the strip — just show the image */
+        .asc-asset-teaser__meta,
+        .asc-asset-teaser__add-to-cart {
+            display: none;
+        }
+    }
+}

@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Asset Share</title>
+  <meta name="template" content="index">
+</head>
+<body>
+  <header></header>
+  <main>
+
+    <!--
+      Section 1: curated directory of published shares — the "here's what
+      we've put together" front door. One row per share; see
+      blocks/share-directory/share-directory.js for the full row format
+      (Label | Description | URL/path | optional cover image).
+
+      This directory doesn't have to be the whole homepage, and the featured
+      row doesn't have to be authored first — "Spring 2026 Campaign" is
+      listed second below, and hero-index: 2 tells the block to feature that
+      row anyway rather than reordering it.
+    -->
+    <div>
+
+      <div class="share-directory">
+        <div><div>hero</div><div>true</div></div>
+        <div><div>hero-index</div><div>2</div></div>
+        <div><div>Press Kit</div><div>Logos, product shots, and boilerplate for media</div><div>/collections/press-kit</div></div>
+        <div><div>Spring 2026 Campaign</div><div>Live assets tagged for the spring launch</div><div>/search?tagid=campaigns%3Aspring-2026</div></div>
+        <div><div>Product Photography</div><div>Full library of current product shots</div><div>/search?tagid=campaigns%3Aproduct</div></div>
+      </div>
+
+    </div>
+
+    <!--
+      Section 2: freeform content between the two directories — a heading,
+      some copy, a hero banner block, and a button. Anything can go here;
+      this is just demonstrating that a share-directory doesn't have to be
+      the only thing on the page, or stacked back-to-back with another one.
+    -->
+    <div>
+
+      <h2>Featured This Quarter</h2>
+      <p>A closer look at the assets driving this quarter's campaigns, plus a shortcut into the full library if you'd rather browse everything yourself.</p>
+
+      <div class="hero">
+        <div>
+          <div>
+            <!-- replace with your own image -->
+            <picture><img src="/media_hero.jpg" alt=""></picture>
+          </div>
+          <div>
+            <h1>Spring Launch, All in One Place</h1>
+            <p>Logos, product shots, and campaign photography — ready to download.</p>
+          </div>
+        </div>
+      </div>
+
+      <p>Can't find what you're looking for above? Search across every published asset instead.</p>
+      <p><strong><a href="/search">Browse Everything</a></strong></p>
+
+    </div>
+
+    <!--
+      Section 3: a second share-directory — six rows, hero turned off so
+      every card renders at the same size (a plain grid rather than one
+      featured + rest).
+    -->
+    <div>
+
+      <div class="share-directory">
+        <div><div>hero</div><div>false</div></div>
+        <div><div>Brand Guidelines</div><div>Logos, color palettes, and usage rules</div><div>/collections/brand-guidelines</div></div>
+        <div><div>Product Line — Summer</div><div>Current summer catalog shots</div><div>/search?tagid=campaigns%3Asummer</div></div>
+        <div><div>Product Line — Winter</div><div>Current winter catalog shots</div><div>/search?tagid=campaigns%3Awinter</div></div>
+        <div><div>Event Photography</div><div>Coverage from recent company events</div><div>/search?tagid=events</div></div>
+        <div><div>Executive Headshots</div><div>Approved headshots for leadership</div><div>/search?tagid=people%3Aexecutive</div></div>
+        <div><div>Video B-Roll</div><div>Stock footage for internal and external use</div><div>/search?tagid=media%3Avideo</div></div>
+      </div>
+
+    </div>
+  </main>
+  <footer></footer>
+</body>
+</html>

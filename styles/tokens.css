@@ -1,0 +1,111 @@
+/*
+ * ASC Structural Design Tokens
+ *
+ * Structural tokens only — values that never change between themes.
+ * Color/visual tokens live in styles/styles.css as --color-* semantic variables,
+ * overridden per theme in styles/themes/*.css.
+ */
+
+:root {
+  /* ── Border radius ──────────────────────────────────────────────── */
+  --border-radius-sm:   0.25rem;
+  --border-radius-md:   0.5rem;
+  --border-radius-lg:   0.75rem;
+  --border-radius-xl:   1rem;
+  --border-radius-full: 9999px;
+
+  /* ── Section / page layout ──────────────────────────────────────── */
+  --section-max-width:    1200px;
+  --section-padding:      24px;
+  --section-padding-wide: 32px;
+
+  /* ── Micro-spacing ──────────────────────────────────────────────── */
+  --spacing-2xs: 0.125rem;
+
+  /* ── Icon sizes ─────────────────────────────────────────────────── */
+  --icon-size-sm: 16px;
+  --icon-size-md: 24px;
+  --icon-size-lg: 32px;
+
+  /* ── Shadows ────────────────────────────────────────────────────── */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 6%);
+  --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 12%);
+  --shadow-lg: 0 10px 30px -4px rgb(0 0 0 / 15%);
+
+  /* ── Transitions ────────────────────────────────────────────────── */
+  --transition-fast:   150ms ease;
+  --transition-normal: 250ms ease;
+  --transition-slow:   350ms ease;
+
+  /* ── Motion / Elevation ─────────────────────────────────────────── */
+  --lift-sm: translateY(-0.125rem);
+  --lift-md: translateY(-0.25rem);
+  --lift-lg: translateY(-0.5rem);
+  --drop-sm: translateY(0.25rem);
+  --scale-sm: scale(1.04);
+  --scale-md: scale(1.1);
+
+  /* ── Overlay opacity ────────────────────────────────────────────── */
+  --overlay-sm: rgb(0 0 0 / 40%);
+  --overlay-md: rgb(0 0 0 / 55%);
+  --overlay-lg: rgb(0 0 0 / 75%);
+
+  /* ── Composed focus ring ────────────────────────────────────────── */
+  --focus-ring: 0 0 0 var(--input-focus-ring-width) color-mix(in srgb, var(--color-ring) 25%, transparent);
+
+  /* ── Border defaults ───────────────────────────────────────────── */
+  --border-width: 1px;
+  --border-style: solid;
+
+  /* ── Form label defaults ────────────────────────────────────────── */
+  --label-color:       var(--color-muted-fg);
+  --label-font-weight: 600;
+
+  /* ── Button structural ──────────────────────────────────────────── */
+  --button-padding:       var(--spacing-sm) var(--spacing-lg);
+  --button-border-radius: var(--border-radius-full);
+  --btn-shadow:           none;
+  --btn-shadow-hover:     none;
+  --btn-lift:             none;
+
+  /* ── Input structural ───────────────────────────────────────────── */
+  --input-border-radius:    var(--border-radius-sm);
+  --input-padding-x:        var(--spacing-md);
+  --input-padding-y:        var(--spacing-sm);
+  --input-height-sm:        2rem;
+  --input-height-md:        2.5rem;
+  --input-height-lg:        3.25rem;
+  --input-focus-ring-width: 3px;
+  --input-transition:       border-color var(--transition-fast), box-shadow var(--transition-fast);
+
+  /* ── Search results grid ────────────────────────────────────────── */
+  --search-results-gap:          var(--spacing-md);
+  --search-results-cols-mobile:  1;
+  --search-results-cols-tablet:  2;
+  --search-results-cols-desktop: 4;
+
+  /* ── Modal structural ───────────────────────────────────────────── */
+  --modal-border-radius:  var(--border-radius-xl);
+  --modal-shadow:         var(--shadow-lg);
+  --modal-max-width:      68.75rem;
+  --modal-wide-max-width: 80rem;
+  --modal-min-width:      20rem;
+  --modal-min-height:     13.75rem;
+  --modal-padding:        var(--spacing-xl);
+  --modal-narrow-max-width: 32.5rem;
+  --modal-viewport-gap:   var(--spacing-xl);
+
+  /* ── Panel / popover structural ────────────────────────────────── */
+  --panel-bg:         var(--color-bg);
+  --panel-border:     var(--border-width) var(--border-style) var(--color-border);
+  --panel-radius:     var(--border-radius-md);
+  --panel-shadow:     var(--shadow-lg);
+  --panel-padding:    var(--spacing-md);
+  --panel-z:          var(--z-dropdown);
+  --panel-max-height: 25rem;
+
+  /* ── Validation (aliases to semantic color tokens) ──────────────── */
+  --validation-error-color:   var(--color-destructive);
+  --validation-success-color: #10b981;
+  --validation-warning-color: #f59e0b;
+}
