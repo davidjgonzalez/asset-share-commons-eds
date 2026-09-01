@@ -184,46 +184,15 @@ main .search-{filter-name} .search-{filter-name}__option label {
 
 ---
 
-## Step 4: Register with Universal Editor (optional)
+## Step 4: Register in the DA.live block library
 
-Add the block to `component-definition.json` if your site uses Universal Editor:
-
-```json
-{
-  "title": "Search: {Filter Name}",
-  "id": "search-{filter-name}",
-  "plugins": {
-    "xwalk": {
-      "page": {
-        "resourceType": "core/franklin/components/block/v1/block",
-        "template": {
-          "name": "Search {Filter Name}",
-          "model": "search-{filter-name}"
-        }
-      }
-    }
-  }
-}
-```
-
-Add field definitions to `component-models.json`:
-
-```json
-{
-  "id": "search-{filter-name}",
-  "fields": [
-    { "component": "text", "name": "property", "label": "JCR Property" },
-    { "component": "text", "name": "title", "label": "Label" },
-    { "component": "multiselect", "name": "type", "label": "Input Type",
-      "options": [
-        { "name": "Checkbox", "value": "checkbox" },
-        { "name": "Radio", "value": "radio" },
-        { "name": "Dropdown", "value": "dropdown" }
-      ]
-    }
-  ]
-}
-```
+This project authors in DA.live / Experience Workspace only — there's no Universal Editor
+integration to register with. Instead, add an example document at
+`/blocks/search-{filter-name}` in DA content (not this repo) showing the block's real authored
+table — e.g. `property` / `title` / `options` rows matching what `readBlockConfig()` expects —
+then add a `{ name, path }` row for it to the `library/blocks` sheet. Preview and publish both
+before they show up in the Sidekick's Library panel. See `AGENTS.md` → "DA.live Block Library" and
+`https://docs.da.live/administrators/guides/setup-library`.
 
 ---
 

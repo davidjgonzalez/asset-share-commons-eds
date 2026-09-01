@@ -37,7 +37,6 @@ scripts/asc/configurations.js  ← USER-EDITABLE (single entry point)
 scripts/asc/              ← ASC CORE (all start with "// ASC Core — do not edit.")
 blocks/                   ← USER-OWNED (copy and modify freely)
 styles/                   ← USER-OWNED (add themes, override CSS)
-component-*.json          ← USER-EDITABLE (Universal Editor config)
 ```
 
 **Design**: Clear separation enforces a non-breaking upgrade path. Users never modify core; core files can be updated independently via `scripts/asc/` folder replacement.
@@ -413,7 +412,7 @@ All blocks use `.block.{name}` as the root selector, not `main .{name}` (Adobe's
 | Async Downloads | ✓ Code exists | downloads.js with polling logic |
 | Collections (IMS Login) | ✓ Code exists | collections.loginAs() + storage merge |
 | Theming | ✓ Working | 3 built-in themes + custom theme support |
-| Universal Editor | ✓ Working | component-*.json files + integration |
+| DA.live Block Library | ✓ Working | `library/blocks` sheet + example docs under `/blocks/*` |
 
 ---
 

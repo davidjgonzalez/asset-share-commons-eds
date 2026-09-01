@@ -272,6 +272,10 @@ Once registered, the property name can be used anywhere a built-in property name
 
 ---
 
-## Universal Editor
+## Authoring
 
-The project ships with `component-definition.json`, `component-models.json`, and `component-filters.json` so all ASC blocks can be edited visually in the AEM Universal Editor without touching document tables. See the [Universal Editor documentation](https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/implementing/developing/universal-editor/introduction) for setup instructions.
+This project authors content in DA.live / Experience Workspace only — there is no Universal
+Editor integration. Every author-placed ASC block has an example document and a row in the
+`library/blocks` sheet, so authors can insert real, correctly-shaped block markup straight from
+the Sidekick's Library panel instead of hand-typing document tables. See `AGENTS.md` → "DA.live
+Block Library" and [the DA.live library setup guide](https://docs.da.live/administrators/guides/setup-library).

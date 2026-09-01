@@ -13,7 +13,7 @@ const COLLECTION_PATH = configurations.collections?.collectionPath || '/collecti
 /**
  * Collections block — index/management page for all user collections, or a
  * compact horizontal rail (e.g. for placing on the homepage).
- * Page title and intro copy are authored in Universal Editor above this block.
+ * Page title and intro copy are authored in DA.live above this block.
  *
  * Content config (key | value rows):
  *   display  'grid' (default, full management page) | 'rail' (compact strip —

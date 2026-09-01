@@ -235,7 +235,21 @@
         flex-direction: column;
         gap: var(--spacing-sm);
         overflow: visible; /* let the tail protrude past the panel's own edge */
+
+        /* Scale with the canvas zoom (--panel-zoom, set by positionPanel()) so the
+           panel keeps the same size relative to the card at any zoom level, instead
+           of staying screen-constant while the card grows/shrinks around it. left/top
+           above are computed from the panel's unscaled layout size (offsetWidth/Height
+           ignore transforms), so the origin below has to anchor whichever edge sits
+           closest to the card — the one the tail points from — or scaling would visibly
+           drift the panel away from/into the card instead of growing in place. */
+        transform: scale(var(--panel-zoom, 1));
     }
+
+    .board__notes-panel[data-side="bottom"] { transform-origin: top center; }
+    .board__notes-panel[data-side="top"] { transform-origin: bottom center; }
+    .board__notes-panel[data-side="right"] { transform-origin: left center; }
+    .board__notes-panel[data-side="left"] { transform-origin: right center; }
 
     /* Tail: rotated square — two visible border sides form the triangle tip, pointing
        back at the item's card. Side is picked by positionPanel() (data-side); --tail-pos
