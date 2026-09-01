@@ -38,7 +38,7 @@ Use the HTML comments in each file as a guide to the table structure.
 | `details/image.html` | `/details/image` | Same as default — `details-actions` adds the `share` action |
 | `sheet.html` | `/sheet` | `sheet` |
 | `collections.html` | `/collections` | `collections` |
-| `index.html` | `/` | `share-directory` (x2), `hero` |
+| `index.html` | `/` | `teaser` (x9), `hero` |
 | `collections/press-kit.html` | `/collections/press-kit` | `board` (`source: authored`) (an "authored-list" published collection) |
 
 ## Published Collections vs. Personal Collections
@@ -48,15 +48,21 @@ built in their browser, never discoverable by anyone else. A **published**
 collection is different: something you curate once, that has a permanent,
 linkable URL, and that any visitor can browse without having built it themselves
 (e.g. "Spring 2026 Campaign", "Press Kit"). `index.html` (`/`) is a curated
-directory of these — add a row per published collection you create
-(see `blocks/share-directory/share-directory.js` for the row format).
+directory of these — add one `teaser` block per published collection you
+create (see `blocks/teaser/teaser.js` for the full authoring/resolution
+contract).
 
 There are two ways to feature a reusable asset set, and neither needs a new
-collection to be created in browser storage. `index.html` (`/`) shows two
-`share-directory` blocks with ordinary content (a heading, copy, a `hero`
-banner, a button) authored in between — a homepage isn't limited to a single
-directory block, and the featured row in each one doesn't have to be
-authored first (see `hero-index` in the block's own header comment):
+collection to be created in browser storage. `index.html` (`/`) places several
+`teaser` blocks with ordinary content (a heading, copy, a `hero` banner, a
+button) authored in between — a homepage isn't limited to a single directory
+section, and the one featured share doesn't have to be authored first; it's
+just whichever teaser is named `Teaser (Hero)` (see the block's own header
+comment — the variant lives in the block name, not a config row). The rest
+of a section's `teaser` blocks auto-arrange into a grid via that section's
+own `style: grid` metadata (see `docs/GRID_LAYOUT.md` /
+`styles/sections.css`) — no block-level row limit or
+config to juggle:
 
 - **Live search link** — link the directory row directly to `/search` with query
   parameters, as the Spring 2026 starter row does. It stays current as matching

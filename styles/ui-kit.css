@@ -1228,7 +1228,7 @@
    no width of its own since it normally lives in a display:grid ancestor
    (asc-ui-collection-card) that stretches grid items by default. Height is
    deliberately left alone: the mosaic's own inline
-   --collection-card-mosaic-height (see blocks/share-directory/share-directory.js)
+   --collection-card-mosaic-height (see blocks/teaser/teaser.js)
    should determine the box, so a bigger mosaic makes the whole card taller
    instead of being squashed or letterboxed to match some other height. */
 .asc-ui-asset-card__thumb .asc-ui-collection-card__thumbs {
@@ -1832,11 +1832,12 @@
    Combine with --horizontal (the thumb/body split); --hero only tunes
    proportions and typography further, it doesn't redefine the layout.
    Spanning the full grid/row width is a layout decision for whatever
-   container it sits in, not this card — see share-directory.css for how
-   share-directory makes its first card the hero.
+   container it sits in, not this card — a Teaser (Hero) is authored in its
+   own section, before a following section of regular cards laid out with
+   style: grid (see AGENTS.md → "DA.live Block Library").
 
    No min-height override here beyond --horizontal's own 150px floor — a
-   mosaic's own height (rows × row-height, see share-directory.js) already
+   mosaic's own height (rows × row-height, see teaser.js) already
    determines the box; forcing a taller floor than that just centers the
    mosaic inside extra empty space, showing as grey bars top and bottom.
 ───────────────────────────────────────────────────────────────────────── */
@@ -1867,7 +1868,7 @@
    rather than polished. Opt-in rather than folded into --interactive itself,
    since that modifier is shared by every asset card site-wide (search
    results, collections, board) and this flourish is only meant for
-   editorial/teaser contexts like share-directory.
+   editorial/teaser contexts like teaser.
 ───────────────────────────────────────────────────────────────────────── */
 
 .asc-ui-asset-card--zoom-hover .asc-ui-asset-card__thumb > img {

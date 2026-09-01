@@ -1,0 +1,51 @@
+/*
+ * teaser — a single curated teaser (see the block's own header comment).
+ * Built entirely from UI Kit primitives (asc-ui-asset-card --horizontal
+ * --lg/--hero + the collection-card mosaic, asc-ui-filetype, .btn — see
+ * "Collection cards" in docs/UI_KIT.md); only the eyebrow/count labels and
+ * rich-text/CTA spacing are block-specific. Arranging several teaser blocks
+ * into a directory (grid, rail, etc.) is the containing section's job, not
+ * this block's.
+ */
+.block.teaser {
+    height: 100%;
+
+    .asc-ui-asset-card {
+        height: 100%;
+    }
+
+    /* Hover-zoom on the cover image comes from the asc-ui-asset-card--zoom-hover
+       kit variant (styles/ui-kit.css) — see cardHtml() in teaser.js. */
+
+    .teaser__eyebrow {
+        font-size: var(--body-font-size-xs);
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--color-primary);
+    }
+
+    .teaser__content {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-sm);
+    }
+
+    .teaser__count {
+        margin: 0;
+        font-size: var(--body-font-size-xs);
+        font-weight: 600;
+        color: var(--color-muted-fg);
+    }
+
+    .teaser__cta {
+        align-self: flex-start;
+    }
+
+    /* --hero's bigger title/meta (see the "Collection cards" entry for
+       --hero in docs/UI_KIT.md) warrants a matching eyebrow/count bump. */
+    .asc-ui-asset-card--hero .teaser__eyebrow,
+    .asc-ui-asset-card--hero .teaser__count {
+        font-size: var(--body-font-size-s);
+    }
+}

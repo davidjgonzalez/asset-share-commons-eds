@@ -416,7 +416,7 @@ const configurations = {
     maxPixels: 40_000_000,
   },
 
-  // Authored boards and share-directory mosaics resolve UUID/path references
+  // Authored boards and teaser mosaics resolve UUID/path references
   // through a small request pool. Supply resolveReference to integrate a custom
   // provider; it receives one reference and returns an Asset, AssetAccessError,
   // or null.
@@ -425,7 +425,7 @@ const configurations = {
     // resolveReference: async (reference) => myProvider.getAsset(reference),
   },
 
-  shareDirectory: {
+  teaser: {
     previewConcurrency: 2,
   },
 

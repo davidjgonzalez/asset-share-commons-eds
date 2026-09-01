@@ -677,7 +677,7 @@
               </div>
             </article>
           </div>
-          <p class="kit-demo__usage">Put a collection-card mosaic in <code>__thumb</code> instead of one <code>&lt;img&gt;</code> to preview several assets from a link — the pattern proposed for <code>share-directory</code> teasers. The mosaic's own row/height logic already scales with item count — more assets → more rows → smaller thumbnails, automatically. Pair with <code>--lg</code> for a bigger, featured tile.</p>
+          <p class="kit-demo__usage">Put a collection-card mosaic in <code>__thumb</code> instead of one <code>&lt;img&gt;</code> to preview several assets from a link — the pattern used for <code>teaser</code> teasers. The mosaic's own row/height logic already scales with item count — more assets → more rows → smaller thumbnails, automatically. Pair with <code>--lg</code> for a bigger, featured tile.</p>
         </div>
 
         <div class="kit-demo">
@@ -726,7 +726,7 @@
               </div>
             </article>
           </div>
-          <p class="kit-demo__usage"><code>--hero</code>: combine with <code>--horizontal</code> for the one featured, full-width tile at the top of a directory — bigger thumb proportion (58%), bigger title, roomier body. Spanning the full width is up to whatever container it's in, not the card itself — <code>share-directory</code> renders it as a plain sibling <code>&lt;div&gt;</code> before the grid rather than a <code>grid-column: 1 / -1</code> item inside it, so an auto-fit grid's other rows don't get stuck collapsing their unused tracks around it.</p>
+          <p class="kit-demo__usage"><code>--hero</code>: combine with <code>--horizontal</code> for the one featured, full-width tile at the top of a directory — bigger thumb proportion (58%), bigger title, roomier body. Spanning the full width is up to whatever container it's in, not the card itself — a <code>Teaser (Hero)</code> is authored in its own section, before a following section of regular cards laid out with <code>style: grid</code>, rather than as a <code>grid-column: 1 / -1</code> item inside that grid, so the grid's other rows don't get stuck collapsing their unused tracks around it.</p>
         </div>
 
         <div class="kit-demo">

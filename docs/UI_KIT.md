@@ -353,10 +353,10 @@ left, with `__body` filling the rest and centering vertically — a wide teaser 
 the description needs room. `--lg` bumps title/body sizing for a bigger, more prominent
 tile; combine the two for a wide featured teaser. Put a **collection-card mosaic** (below)
 in `__thumb` instead of a single `<img>` to preview several assets at once — this is the
-pattern used for `share-directory` teasers. A single `<img>` fills the thumb completely
+pattern used for `teaser` teasers. A single `<img>` fills the thumb completely
 (width + height); a mosaic only has its *width* forced to 100% — its height stays whatever
 its own inline `--collection-card-mosaic-height` says, so the **whole card's height is free
-to grow with it**. `share-directory` deliberately computes that height per row count itself
+to grow with it**. `teaser` deliberately computes that height per row count itself
 (rather than reusing the collection-card's own, much milder height table) specifically so
 a 2-asset press kit and a 40-asset photo library don't read as the same size — drop cards
 built this way into a plain grid with `align-items: start` (not the default `stretch`) so
@@ -369,13 +369,15 @@ larger title (`heading-font-size-l`), and roomier body copy/padding. It's meant 
 "here's the headline share" tile at the top of a directory, combined with `--horizontal`
 (`--hero` only tunes proportions/typography; it doesn't redefine the thumb/body layout).
 Spanning the full row/grid width is a *layout* decision for whatever container the card
-sits in — not part of the card itself. `share-directory` renders its hero card as a plain
-sibling `<div>` **before** the `<ul>` grid entirely, not as a spanning item inside it — a
-grid item with `grid-column: 1 / -1` keeps `auto-fit` from collapsing the other rows' unused
-tracks, so 2 regular cards below it would get stuck at 33%/33% plus an empty 33% gap instead
-of stretching to fill the row 50/50 (see the comment above `cardHtml()` in
-`share-directory.js`). Pulling the hero out of the grid as a sibling avoids that interaction
-entirely; a taller per-row mosaic height is what makes the size boost visible, not a
+sits in — not part of the card itself. A `Teaser (Hero)` renders one plain teaser (see the
+block's own header comment); arranging it full-width **before** a grid of regular `Teaser`
+blocks is a page-authoring decision, not a CSS class — put the hero teaser in its own
+section, and the rest in a following section with `style: grid` metadata (see
+`docs/GRID_LAYOUT.md`). Don't make the hero card a spanning item inside that same grid
+(`grid-column: 1 / -1`) — that keeps `auto-fit`/equal-column grids from collapsing the other
+rows' unused tracks, so 2 regular cards below it would get stuck at half-width plus an empty
+gap instead of stretching to fill the row; a separate section avoids that interaction
+entirely, and a taller per-row mosaic height is what makes the size boost visible, not a
 grid-spanning CSS rule.
 
 `--zoom-hover` — opt-in editorial flourish: the thumb's single cover image scales up
@@ -385,7 +387,7 @@ deliberately excluded, since zooming every individual mosaic cell at once on hov
 busy/chaotic rather than polished. Kept as an opt-in modifier rather than folded into
 `--interactive` itself, since that base modifier is shared by every asset card site-wide
 (search results, collections, board) and this flourish is only meant for editorial/teaser
-contexts like `share-directory`.
+contexts like `teaser`.
 
 `--overlay-on-hover` hides `__overlay`/`__overlay--bottom` slots (opacity: 0) until the card
 is hovered *or* focused (`:focus-within`, not just `:hover` — so a keyboard-focused button is
@@ -425,7 +427,7 @@ by adding `opacity: 1` for that state in the block's own CSS.
 </article>
 ```
 
-`--horizontal --lg` with a mosaic thumb (share-directory teaser pattern):
+`--horizontal --lg` with a mosaic thumb (`Teaser (Horizontal Card)` pattern):
 ```html
 <article class="asc-ui-asset-card asc-ui-asset-card--interactive asc-ui-asset-card--zoom-hover asc-ui-asset-card--horizontal asc-ui-asset-card--lg">
   <div class="asc-ui-asset-card__thumb">
@@ -443,32 +445,27 @@ by adding `opacity: 1` for that state in the block's own CSS.
 </article>
 ```
 
-`--horizontal --hero` — the one featured tile, rendered as a sibling **before** the grid
-(not a `grid-column: 1 / -1` item inside it — see the note above for why):
+`--horizontal --hero` — the one featured tile (`Teaser (Hero)`), authored in its
+own section **before** a following section of regular cards laid out with `style: grid` (not
+a `grid-column: 1 / -1` item inside that grid — see the note above for why):
 ```html
-<div class="share-directory__grid">…real grid items…</div>
-
-<!-- hero: a plain sibling div before the grid, full-width because it's outside
-     the grid's own column tracks entirely, not because of a spanning rule -->
-<div class="share-directory__card--hero">
-  <article class="asc-ui-asset-card asc-ui-asset-card--interactive asc-ui-asset-card--zoom-hover asc-ui-asset-card--horizontal asc-ui-asset-card--hero">
-    <div class="asc-ui-asset-card__thumb">
-      <div class="asc-ui-collection-card__thumbs" style="--collection-card-mosaic-height: 320px">
-        <div class="asc-ui-collection-card__thumb-row" style="--collection-card-row-cols: 5">
-          <div class="asc-ui-collection-card__thumb"><img src="…" alt=""></div>
-          <div class="asc-ui-collection-card__thumb"><img src="…" alt=""></div>
-          <div class="asc-ui-collection-card__thumb"><img src="…" alt=""></div>
-          <div class="asc-ui-collection-card__thumb"><img src="…" alt=""></div>
-          <div class="asc-ui-collection-card__thumb"><img src="…" alt=""></div>
-        </div>
+<article class="asc-ui-asset-card asc-ui-asset-card--interactive asc-ui-asset-card--zoom-hover asc-ui-asset-card--horizontal asc-ui-asset-card--hero">
+  <div class="asc-ui-asset-card__thumb">
+    <div class="asc-ui-collection-card__thumbs" style="--collection-card-mosaic-height: 320px">
+      <div class="asc-ui-collection-card__thumb-row" style="--collection-card-row-cols: 5">
+        <div class="asc-ui-collection-card__thumb"><img src="…" alt=""></div>
+        <div class="asc-ui-collection-card__thumb"><img src="…" alt=""></div>
+        <div class="asc-ui-collection-card__thumb"><img src="…" alt=""></div>
+        <div class="asc-ui-collection-card__thumb"><img src="…" alt=""></div>
+        <div class="asc-ui-collection-card__thumb"><img src="…" alt=""></div>
       </div>
     </div>
-    <div class="asc-ui-asset-card__body">
-      <p class="asc-ui-asset-card__title">Spring 2026 Campaign</p>
-      <p class="asc-ui-asset-card__meta">Curated hero shots for the spring launch</p>
-    </div>
-  </article>
-</div>
+  </div>
+  <div class="asc-ui-asset-card__body">
+    <p class="asc-ui-asset-card__title">Spring 2026 Campaign</p>
+    <p class="asc-ui-asset-card__meta">Curated hero shots for the spring launch</p>
+  </div>
+</article>
 ```
 
 ### Thumbnail — `@kit thumb` · `styles/ui-kit.css`

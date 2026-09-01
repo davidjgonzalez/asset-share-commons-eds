@@ -57,7 +57,7 @@ the full ownership-zone breakdown.
 | `sheet-controls` | Shared-sheet header — Download / Copy Link buttons. Header text (h1/p) is a **token template** — `{{sheet.title}}` / `{{sheet.description}}` / `{{sheet.count}}` / `{{sheet.expiresAt}}` resolved against the decoded `?sheet=` payload. Pair with `board` (source: sheet, mode: view) on the same page |
 | `board` | Reusable, header-less board canvas — pan/zoom, client-side search, details navigation override; `source: collection\|sheet`, `mode: view\|interactive`, `search-properties`, `details` |
 | `collection-switcher` | Persistent header widget — active collection dropdown, inline create, navigate to /collections |
-| `share-directory` | Curated directory of links to published shares (search links, sheets, or authored boards) — the "here's what we've put together" front door, distinct from search and from a visitor's own personal collections. Each row is `Label \| Description \| URL/path \| optional cover image`; omitted cover images resolve to an auto-generated thumbnail mosaic (up to 15 assets, resolved from a `?sheet=` payload, a live silent search, or by fetching the target page's own `board` block). Optional 2-cell config rows: `view` (`horizontal`, default, or `vertical`) and `hero` (`true`, default — first row renders full-width and featured, or `false`). See the block's own header comment for the full row/resolution contract. |
+| `teaser` | A single curated teaser linking to a published share (search link, sheet, or authored board) — the "here's what we've put together" front door, distinct from search and from a visitor's own personal collections. Free-form rich text, not fixed fields: an optional leading image row, then any rich text, then a CTA row (a lone link — the standard EDS "single link becomes a button" convention) whose href is resolved to figure out what it links to. The visual layout comes from the block name itself (`Teaser`, `Teaser (Hero)`, `Teaser (Horizontal Card)`, `Teaser (Text Only)`), not a config row. Place several side by side in a section and use the section's own `style: grid` metadata to arrange them into a directory — see the block's own header comment for the full authoring/resolution contract. |
 
 ### Board block — authoring reference
 
@@ -1651,7 +1651,7 @@ const assetIds = await url.fromCollectionUrl(window.location.search, 'assets');
 // authors paste share/sheet links copied from whichever environment they were on
 // (aem.live, aem.page, localhost, a custom domain); only the path/query/hash is
 // ever meaningful. Used by board.js (details/sheet-url rows), search-bar.js
-// (redirect row), and share-directory.js (share link cells).
+// (redirect row), and teaser.js (the CTA link).
 const relative = url.toRelativeUrl('https://main--site--org.aem.page/sheet?sheet=abc');
 // → '/sheet?sheet=abc'
 ```
@@ -1663,7 +1663,7 @@ const relative = url.toRelativeUrl('https://main--site--org.aem.page/sheet?sheet
 `scripts/asc/core/services/authored-assets/authored-assets.js` — singleton. Resolves
 site-owner-authored asset references (a UUID or an exact DAM path, one per line) through the
 active search provider, with a bounded concurrency pool so a long list doesn't fire an unbounded
-request burst. Backs `board`'s `source: authored` and `share-directory`'s thumbnail-mosaic
+request burst. Backs `board`'s `source: authored` and `teaser`'s thumbnail-mosaic
 resolution for authored-list/board links.
 
 ```js

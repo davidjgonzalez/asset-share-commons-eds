@@ -11,33 +11,58 @@
   <main>
 
     <!--
-      Section 1: curated directory of published shares — the "here's what
-      we've put together" front door. One row per share; see
-      blocks/share-directory/share-directory.js for the full row format
-      (Label | Description | URL/path | optional cover image).
-
-      This directory doesn't have to be the whole homepage, and the featured
-      row doesn't have to be authored first — "Spring 2026 Campaign" is
-      listed second below, and hero-index: 2 tells the block to feature that
-      row anyway rather than reordering it.
+      Section 1: the one featured share — a single teaser block, variant
+      given right in the block name ("Teaser (Hero)" — the standard DA
+      "block (variant)" convention), full-width above the grid. Content is
+      free-form rich text: an optional leading image row, then any rich
+      text, then a CTA row (a lone link — becomes a button automatically).
+      See blocks/teaser/teaser.js for the full authoring/resolution contract.
     -->
     <div>
 
-      <div class="share-directory">
-        <div><div>hero</div><div>true</div></div>
-        <div><div>hero-index</div><div>2</div></div>
-        <div><div>Press Kit</div><div>Logos, product shots, and boilerplate for media</div><div>/collections/press-kit</div></div>
-        <div><div>Spring 2026 Campaign</div><div>Live assets tagged for the spring launch</div><div>/search?tagid=campaigns%3Aspring-2026</div></div>
-        <div><div>Product Photography</div><div>Full library of current product shots</div><div>/search?tagid=campaigns%3Aproduct</div></div>
+      <div class="teaser hero">
+        <div><h2>Spring 2026 Campaign</h2></div>
+        <div><p>Live assets tagged for the spring launch</p></div>
+        <div><p><a href="/search?tagid=campaigns%3Aspring-2026">View the collection</a></p></div>
       </div>
 
     </div>
 
     <!--
-      Section 2: freeform content between the two directories — a heading,
+      Section 2: the rest of the front-door directory — each share is its
+      own teaser block; the section's own "style: grid" metadata (see
+      styles/sections.css) arranges them side by side. Add or remove teaser
+      blocks here to add or remove shares — there's no row limit or
+      block-level config to juggle, unlike the old single-block
+      share-directory table.
+    -->
+    <div>
+
+      <div class="teaser horizontal-card">
+        <div><h3>Press Kit</h3></div>
+        <div><p>Logos, product shots, and boilerplate for media</p></div>
+        <div><p><a href="/collections/press-kit">View the collection</a></p></div>
+      </div>
+
+      <div class="teaser horizontal-card">
+        <div><h3>Product Photography</h3></div>
+        <div><p>Full library of current product shots</p></div>
+        <div><p><a href="/search?tagid=campaigns%3Aproduct">View the collection</a></p></div>
+      </div>
+
+      <div class="section-metadata">
+        <div><div>style</div><div>grid</div></div>
+        <div><div>columns</div><div>2</div></div>
+      </div>
+
+    </div>
+
+    <!--
+      Section 3: freeform content between the two directories — a heading,
       some copy, a hero banner block, and a button. Anything can go here;
-      this is just demonstrating that a share-directory doesn't have to be
-      the only thing on the page, or stacked back-to-back with another one.
+      this is just demonstrating that a directory of teaser blocks doesn't
+      have to be the only thing on the page, or stacked back-to-back with
+      another one.
     -->
     <div>
 
@@ -63,20 +88,50 @@
     </div>
 
     <!--
-      Section 3: a second share-directory — six rows, hero turned off so
-      every card renders at the same size (a plain grid rather than one
-      featured + rest).
+      Section 4: a second directory — six teaser blocks, three per row, no
+      hero — a plain grid rather than one featured + rest.
     -->
     <div>
 
-      <div class="share-directory">
-        <div><div>hero</div><div>false</div></div>
-        <div><div>Brand Guidelines</div><div>Logos, color palettes, and usage rules</div><div>/collections/brand-guidelines</div></div>
-        <div><div>Product Line — Summer</div><div>Current summer catalog shots</div><div>/search?tagid=campaigns%3Asummer</div></div>
-        <div><div>Product Line — Winter</div><div>Current winter catalog shots</div><div>/search?tagid=campaigns%3Awinter</div></div>
-        <div><div>Event Photography</div><div>Coverage from recent company events</div><div>/search?tagid=events</div></div>
-        <div><div>Executive Headshots</div><div>Approved headshots for leadership</div><div>/search?tagid=people%3Aexecutive</div></div>
-        <div><div>Video B-Roll</div><div>Stock footage for internal and external use</div><div>/search?tagid=media%3Avideo</div></div>
+      <div class="teaser horizontal-card">
+        <div><h3>Brand Guidelines</h3></div>
+        <div><p>Logos, color palettes, and usage rules</p></div>
+        <div><p><a href="/collections/brand-guidelines">View the collection</a></p></div>
+      </div>
+
+      <div class="teaser horizontal-card">
+        <div><h3>Product Line — Summer</h3></div>
+        <div><p>Current summer catalog shots</p></div>
+        <div><p><a href="/search?tagid=campaigns%3Asummer">View the collection</a></p></div>
+      </div>
+
+      <div class="teaser horizontal-card">
+        <div><h3>Product Line — Winter</h3></div>
+        <div><p>Current winter catalog shots</p></div>
+        <div><p><a href="/search?tagid=campaigns%3Awinter">View the collection</a></p></div>
+      </div>
+
+      <div class="teaser horizontal-card">
+        <div><h3>Event Photography</h3></div>
+        <div><p>Coverage from recent company events</p></div>
+        <div><p><a href="/search?tagid=events">View the collection</a></p></div>
+      </div>
+
+      <div class="teaser horizontal-card">
+        <div><h3>Executive Headshots</h3></div>
+        <div><p>Approved headshots for leadership</p></div>
+        <div><p><a href="/search?tagid=people%3Aexecutive">View the collection</a></p></div>
+      </div>
+
+      <div class="teaser horizontal-card">
+        <div><h3>Video B-Roll</h3></div>
+        <div><p>Stock footage for internal and external use</p></div>
+        <div><p><a href="/search?tagid=media%3Avideo">View the collection</a></p></div>
+      </div>
+
+      <div class="section-metadata">
+        <div><div>style</div><div>grid</div></div>
+        <div><div>columns</div><div>3</div></div>
       </div>
 
     </div>
