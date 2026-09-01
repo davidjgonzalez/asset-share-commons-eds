@@ -3,4 +3,8 @@ mountpoints:
     url: https://content.da.live/davidjgonzalez/asset-share-commons-eds/
     type: markup
 folders:
+<<<<<<< HEAD
     /details: /details/default
+=======
+    /details: /details/default
+>>>>>>> e491bd9eaed27b48674fbaf6e6ccd5a64870df9e
