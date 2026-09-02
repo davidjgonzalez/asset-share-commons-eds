@@ -14,16 +14,23 @@
       Section 1: the one featured share — a single teaser block, variant
       given right in the block name ("Teaser (Hero)" — the standard DA
       "block (variant)" convention), full-width above the grid. Content is
-      free-form rich text: an optional leading image row, then any rich
-      text, then a CTA row (a lone link — becomes a button automatically).
-      See blocks/teaser/teaser.js for the full authoring/resolution contract.
+      free-form rich text typed into one cell, exactly like any other
+      rich-text block: an optional cover image (pasted inline at the start
+      of the opening heading, as below, or alone in its own leading
+      paragraph), then any rich text, then a CTA (a lone link — becomes a
+      button automatically). See blocks/teaser/teaser.js for the full
+      authoring/resolution contract.
     -->
     <div>
 
       <div class="teaser hero">
-        <div><h2>Spring 2026 Campaign</h2></div>
-        <div><p>Live assets tagged for the spring launch</p></div>
-        <div><p><a href="/search?tagid=campaigns%3Aspring-2026">View the collection</a></p></div>
+        <div>
+          <div>
+            <h2><img src="/media_spring-2026.jpg" alt="">Spring 2026 Campaign</h2>
+            <p>Live assets tagged for the spring launch</p>
+            <p><a href="/search?tagid=campaigns%3Aspring-2026">View the collection</a></p>
+          </div>
+        </div>
       </div>
 
     </div>

@@ -8,12 +8,16 @@
  * the section's own layout (e.g. `style: grid` section metadata) arranges
  * them; this block only renders one.
  *
- * Authoring is free-form rich text, not fixed key | value fields:
- *   | Teaser (Horizontal Card) |
- *   | (an image, pasted in, or a link/path to one)             |  ← optional, must be the FIRST row
- *   | ## Spring 2026 Campaign                                  |
- *   | Curated hero shots for the spring launch                 |
- *   | [View the collection](/search?tagid=campaigns:spring-2026) |  ← the CTA — a row that's just one link
+ * Authoring is free-form rich text, not fixed key | value fields — type it
+ * all into one table cell, exactly like any other rich-text block:
+ *   | Teaser (Horizontal Card)                                    |
+ *   | ## ![](/path/to/image.png)Spring 2026 Campaign               |
+ *   | Curated hero shots for the spring launch                    |
+ *   | [View the collection](/search?tagid=campaigns:spring-2026)  |
+ * Rows/cells aren't meaningful on their own — DA's table→HTML conversion
+ * wraps a cell's content in a div either way, so spreading the same content
+ * across several rows instead (image alone in its own row, then a row per
+ * paragraph, then the CTA in its own row) authors identically.
  *
  * The visual layout comes from the block name itself, not a config row —
  * this is the standard DA "block (variant)" convention. Add a parenthesized
@@ -24,20 +28,27 @@
  *   Teaser (Text Only)   — no thumbnail at all, just the rich text (skips
  *                          image resolution entirely)
  *
- * Row 1 — image (optional): if the first row is a pasted image, or a link/
- * bare path that looks like one (a file extension, or a DAM path like
- * `/content/dam/foo/bar.png`), it's used as the cover image — a DAM path is
+ * Add "Right Image" as a second, comma-separated variant to any --horizontal
+ * format (Hero or Horizontal Card) to swap sides — thumb-right/body-left
+ * instead of the default thumb-left/body-right, e.g.
+ * "Teaser (Horizontal Card, Right Image)". "Left Image" is also accepted,
+ * for authors who'd rather state the default explicitly.
+ *
+ * Cover image (optional): a pasted image — or a link/bare path that looks
+ * like one (a file extension, or a DAM path like `/content/dam/foo/bar.png`)
+ * — is the cover image as long as it's in the very first paragraph/heading,
+ * either inline (e.g. pasted at the start of the opening heading, as in the
+ * example above) or alone in its own leading paragraph. A DAM path is
  * resolved through the search index to a real asset and rendered via its
  * web-optimized-delivery thumbnail (configurations.renditions.thumbnails)
- * rather than used as a raw <img src>. Anything else in row 1 is treated as
- * ordinary body text instead.
+ * rather than used as a raw <img src>. An image anywhere else is left alone
+ * as ordinary body content instead.
  *
- * The rest of the rows — everything except the leading image row and the CTA
- * row below — are rendered as-is: whatever headings/paragraphs/formatting
- * were authored.
+ * Everything except the cover image and the CTA (below) is rendered as-is:
+ * whatever headings/paragraphs/formatting were authored.
  *
- * CTA / resolver: the last row that's just a single link (the standard EDS
- * "lone link in a paragraph becomes a button" convention — see
+ * CTA / resolver: the last paragraph that's just a single link (the standard
+ * EDS "lone link in a paragraph becomes a button" convention — see
  * `decorateButtons` in scripts/aem.js) is the thing being teased. Its href is
  * resolved to figure out what it links to:
  *   - A `?sheet=` link — the compressed payload identifies the asset list, so
@@ -51,18 +62,14 @@
  *     (its authored share URL — decoded the same way as a `?sheet=` link above).
  *     Other pages fall back to a plain file-type placeholder.
  * That resolution also autopopulates the cover image (from the resolved
- * asset thumbnails) when row 1 didn't already supply one, and drives the
+ * asset thumbnails) when there wasn't already a cover image, and drives the
  * eyebrow ("Live Search" / "Curated Set") — a search link stays current on
  * its own, while a sheet or authored link is a fixed, hand-picked set. None
  * of this runs for format: Text Only, since that never shows a thumbnail.
  */
 import { escHtml, escAttr } from '../../scripts/asc/html.js';
-import { MAX_MOSAIC_THUMBS, mosaicRowCounts } from '../../scripts/asc/core/utils/mosaic.js';
+import { MAX_MOSAIC_THUMBS, mosaicRowCounts, mosaicHeight } from '../../scripts/asc/core/utils/mosaic.js';
 import services from '../../scripts/asc/core/services/services.js';
-
-// Each mosaic row adds this much card height — a teaser's whole point is to
-// visibly signal "how much is behind this link".
-const ROW_HEIGHT = 150;
 
 const configurations = (await import('../../scripts/asc/configurations.js')).default;
 const SEARCH_PAGE = (configurations.search?.page || '/search').replace(/\/$/, '');
@@ -252,33 +259,84 @@ function getFormat(block) {
   return KNOWN_VARIANTS.find((variant) => block.classList.contains(variant)) || 'card';
 }
 
-// Row 1 is the cover image when it's a pasted image, or a link/bare path
-// that looks like one — otherwise it's left alone as ordinary body text.
-function extractImageRow(rows) {
-  const row = rows[0];
-  if (!row) return null;
-  const img = row.querySelector('img');
-  if (img) return { row, raw: img.getAttribute('src') };
-  const link = row.querySelector('a');
-  const raw = (link ? link.getAttribute('href') : row.textContent).trim();
-  if (raw && (DAM_PATH_RE.test(raw) || IMAGE_EXT_RE.test(raw))) return { row, raw };
+// Independent of format: any --horizontal format (Hero, Horizontal Card) can
+// also take a "Right Image" variant, e.g. "Teaser (Horizontal Card, Right
+// Image)" → class="teaser horizontal-card right-image" — the standard DA
+// "Block (Variant, Variant)" convention. "Left Image" is accepted too, for
+// authors who'd rather state the default explicitly; it's a no-op.
+function isRightImage(block) {
+  return block.classList.contains('right-image');
+}
+
+// DA's table→HTML conversion always nests one row div per table row and one
+// cell div per column inside it, even for a single-column table — so a rich-
+// text cell's own headings/paragraphs sit two levels below the block, not
+// directly under the row (a single-row, single-cell teaser with an inline
+// image + copy + CTA all typed into the one cell looks like
+// block > row > cell > [h2, p, p]). Flatten through that wrapping to get the
+// actual content nodes in authoring order, regardless of how many rows/cells
+// they're spread across — a row with no such single-cell wrapper (or with
+// several cells, i.e. a key|value row from some other convention) is passed
+// through as-is instead of guessing.
+function contentNodes(block) {
+  const nodes = [];
+  [...block.children].forEach((row) => {
+    const isSingleCellWrapper = row.children.length === 1
+      && row.firstElementChild.tagName === 'DIV';
+    nodes.push(...(isSingleCellWrapper ? row.firstElementChild : row).children);
+  });
+  return nodes;
+}
+
+// The cover image is a pasted image, or a link/bare path that looks like one
+// (checked against the whole node's content, so body copy that merely
+// mentions a filename isn't mistaken for it) — either as its own node (then
+// dropped entirely) or inline within the leading node, e.g. an image pasted
+// at the start of the opening heading (then just that image is pulled out,
+// leaving the heading's own text in place). Only the first node is eligible,
+// so an image further down in the body stays part of the body.
+function extractImage(nodes) {
+  const [node] = nodes;
+  if (!node) return null;
+  const img = node.querySelector('img');
+  if (img) {
+    const raw = img.getAttribute('src');
+    (img.closest('picture') || img).remove();
+    if (!node.textContent.trim() && !node.children.length) nodes.shift();
+    return { raw };
+  }
+  const link = node.querySelector('a');
+  const raw = (link ? link.getAttribute('href') : node.textContent).trim();
+  const wholeNode = link ? link.textContent.trim() === node.textContent.trim() : true;
+  if (raw && wholeNode && (DAM_PATH_RE.test(raw) || IMAGE_EXT_RE.test(raw))) {
+    nodes.shift();
+    return { raw };
+  }
   return null;
 }
 
-// The CTA is the last row that's just a single link — decorateButtons
+// The CTA is the last node that's just a single link — decorateButtons
 // (scripts/aem.js), which runs on the whole page before any block's own
-// decorate(), already wraps a lone-link paragraph as `.button-container`.
-// Fall back to a bare, unwrapped <a> in case authored HTML skipped that.
-function findCtaRow(rows) {
-  for (let i = rows.length - 1; i >= 0; i -= 1) {
-    const link = rows[i].querySelector(':scope > .button-container a');
-    if (link) return { row: rows[i], link };
+// decorate(), already marks a lone-link paragraph itself as
+// `.button-container` (a's parent gets the class, since it's the one with
+// a single childNode). Fall back to a bare, unwrapped <a> in case authored
+// HTML skipped that.
+function extractCta(nodes) {
+  for (let i = nodes.length - 1; i >= 0; i -= 1) {
+    if (nodes[i].classList.contains('button-container')) {
+      const link = nodes[i].querySelector(':scope > a');
+      if (link) {
+        nodes.splice(i, 1);
+        return { link };
+      }
+    }
   }
-  for (let i = rows.length - 1; i >= 0; i -= 1) {
-    const row = rows[i];
-    const links = row.querySelectorAll('a');
-    if (links.length === 1 && row.textContent.trim() === links[0].textContent.trim()) {
-      return { row, link: links[0] };
+  for (let i = nodes.length - 1; i >= 0; i -= 1) {
+    const node = nodes[i];
+    const links = node.querySelectorAll('a');
+    if (links.length === 1 && node.textContent.trim() === links[0].textContent.trim()) {
+      nodes.splice(i, 1);
+      return { link: links[0] };
     }
   }
   return null;
@@ -301,7 +359,7 @@ function mosaicThumbHtml(thumbnails, total) {
     }).join('');
     return `<div class="asc-ui-collection-card__thumb-row" style="--collection-card-row-cols: ${rowCount}">${cells}</div>`;
   }).join('');
-  return `<div class="asc-ui-collection-card__thumbs" style="--collection-card-mosaic-height: ${rowCounts.length * ROW_HEIGHT}px">${rowsHtml}</div>`;
+  return `<div class="asc-ui-collection-card__thumbs" style="--collection-card-mosaic-height: ${mosaicHeight(rowCounts.length)}px">${rowsHtml}</div>`;
 }
 
 function thumbHtml(state) {
@@ -314,7 +372,7 @@ const EYEBROW_LABEL = {
   sheet: 'Curated Set', authored: 'Curated Set', search: 'Live Search',
 };
 
-function cardHtml(format, state, link, bodyHtml, ctaLabel) {
+function cardHtml(format, reverse, state, link, bodyHtml, ctaLabel) {
   const showThumb = format !== 'text-only';
   const eyebrow = EYEBROW_LABEL[state.kind];
   const count = state.total ? `${state.total} asset${state.total === 1 ? '' : 's'}` : '';
@@ -323,6 +381,7 @@ function cardHtml(format, state, link, bodyHtml, ctaLabel) {
     'asc-ui-asset-card--interactive',
     'asc-ui-asset-card--zoom-hover',
     ...FORMAT_CLASSES[format],
+    reverse ? 'asc-ui-asset-card--reverse' : '',
   ].filter(Boolean).join(' ');
   const thumb = showThumb ? `
     <div class="asc-ui-asset-card__thumb">
@@ -342,19 +401,18 @@ function cardHtml(format, state, link, bodyHtml, ctaLabel) {
 
 export default async function decorate(block) {
   const format = getFormat(block);
-  const rows = [...block.children];
+  const reverse = isRightImage(block);
+  const nodes = contentNodes(block);
 
-  const imageInfo = extractImageRow(rows);
-  if (imageInfo) rows.splice(rows.indexOf(imageInfo.row), 1);
+  const imageInfo = extractImage(nodes);
   const isDamImage = imageInfo && DAM_PATH_RE.test(imageInfo.raw);
   const imagePath = isDamImage ? imageInfo.raw : '';
 
-  const ctaInfo = findCtaRow(rows);
-  if (ctaInfo) rows.splice(rows.indexOf(ctaInfo.row), 1);
+  const ctaInfo = extractCta(nodes);
   const link = ctaInfo ? services.url.toRelativeUrl(ctaInfo.link.getAttribute('href')) : '';
   const ctaLabel = ctaInfo ? (ctaInfo.link.textContent.trim() || 'View') : '';
 
-  const bodyHtml = rows.map((row) => row.innerHTML).join('');
+  const bodyHtml = nodes.map((node) => node.outerHTML).join('');
 
   const state = {
     image: imageInfo && !isDamImage ? imageInfo.raw : '',
@@ -364,7 +422,7 @@ export default async function decorate(block) {
   };
 
   const render = () => {
-    block.innerHTML = cardHtml(format, state, link, bodyHtml, ctaLabel);
+    block.innerHTML = cardHtml(format, reverse, state, link, bodyHtml, ctaLabel);
   };
   render();
 

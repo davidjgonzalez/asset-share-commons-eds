@@ -337,7 +337,7 @@ Compact horizontal asset row (list view). Children: `__thumb` `__title` `__meta`
 
 ### Asset card — `@kit asset-card` · `styles/ui-kit.css`
 Vertical asset tile: thumbnail + title + metadata. Modifiers: `--interactive`, `--natural`,
-`--horizontal`, `--lg`, `--hero`.
+`--horizontal`, `--reverse`, `--lg`, `--hero`.
 Slots: `__thumb` (put `<img>`, `.asc-ui-filetype`, or a collection-card mosaic inside), `__badge`,
 `__overlay` (hover actions, top-right) / `__overlay--bottom` (a second slot, bottom-right — e.g.
 pairing a top-right remove action with a bottom-right secondary one), `__body` / `__title` /
@@ -348,37 +348,39 @@ fixed `aspect-ratio` on the thumb, no `object-fit` crop. Use for preview-first c
 where items don't share a uniform shape (e.g. the board canvas); typically paired with
 no `__body`/`__footer` at all so the card is just the image.
 
-`--horizontal` turns `__thumb` into a fixed-width column (42%, `min-height: 150px`) on the
-left, with `__body` filling the rest and centering vertically — a wide teaser format where
-the description needs room. `--lg` bumps title/body sizing for a bigger, more prominent
-tile; combine the two for a wide featured teaser. Put a **collection-card mosaic** (below)
-in `__thumb` instead of a single `<img>` to preview several assets at once — this is the
-pattern used for `teaser` teasers. A single `<img>` fills the thumb completely
-(width + height); a mosaic only has its *width* forced to 100% — its height stays whatever
-its own inline `--collection-card-mosaic-height` says, so the **whole card's height is free
-to grow with it**. `teaser` deliberately computes that height per row count itself
-(rather than reusing the collection-card's own, much milder height table) specifically so
-a 2-asset press kit and a 40-asset photo library don't read as the same size — drop cards
-built this way into a plain grid with `align-items: start` (not the default `stretch`) so
-each keeps its own natural height instead of being stretched to match taller neighbors.
+`--horizontal` turns the card into a row: `__thumb` becomes a fixed-width column (42%,
+`min-height: 150px`) on the left, with `__body` filling the rest and centering vertically —
+a wide teaser format where the description needs room. `--reverse` swaps that order
+(`__thumb` on the right, `__body` on the left) without touching anything else; it has no
+effect without `--horizontal`, and both collapse back to a plain stacked column below
+480px (there's no "side" left to swap once it's a column). `--lg` bumps title/body sizing
+for a bigger, more prominent tile; combine with `--horizontal` for a wide featured teaser.
+Put a **collection-card mosaic** (below) in `__thumb` instead of a single `<img>` to preview
+several assets at once — this is the pattern used for `teaser` teasers. Either way the thumb
+fills completely: a single `<img>` is forced to width + height 100%, and inside
+`--horizontal` a mosaic is *also* forced to height: 100% (in addition to its own always-100%
+width) so it fills whatever height the row ends up being rather than being letterboxed to
+its own fixed `--collection-card-mosaic-height`. That height still comes from the shared
+`mosaicHeight()` row-count table (`scripts/asc/core/utils/mosaic.js`) — the same one
+`collections.js` uses — so a `teaser` mosaic sizes exactly like a collection card's.
 
-`--hero` goes further still than `--lg` — a bigger thumb proportion (58%; no extra
-`min-height` of its own beyond `--horizontal`'s 150px floor, so a mosaic's own row-count
-height determines the box exactly, with no empty space letterboxing it top/bottom), a
-larger title (`heading-font-size-l`), and roomier body copy/padding. It's meant for the one
-"here's the headline share" tile at the top of a directory, combined with `--horizontal`
-(`--hero` only tunes proportions/typography; it doesn't redefine the thumb/body layout).
-Spanning the full row/grid width is a *layout* decision for whatever container the card
-sits in — not part of the card itself. A `Teaser (Hero)` renders one plain teaser (see the
-block's own header comment); arranging it full-width **before** a grid of regular `Teaser`
-blocks is a page-authoring decision, not a CSS class — put the hero teaser in its own
-section, and the rest in a following section with `style: grid` metadata (see
+`--hero` goes further still than `--lg` — a bigger thumb proportion (58%), a larger title
+(`heading-font-size-l`), roomier body copy/padding, and a `max-height: 600px` clamp so a
+hero with a lot of authored copy (or a many-row mosaic) can't grow past that regardless of
+content — `overflow: hidden` on the base card clips whatever doesn't fit, and the thumb
+still fills the clamped box edge-to-edge rather than leaving empty space. It's meant for the
+one "here's the headline share" tile at the top of a directory, combined with `--horizontal`
+(`--hero` only tunes proportions/typography/height; it doesn't redefine the thumb/body
+layout). Spanning the full row/grid width is a *layout* decision for whatever container the
+card sits in — not part of the card itself. A `Teaser (Hero)` renders one plain teaser (see
+the block's own header comment); arranging it full-width **before** a grid of regular
+`Teaser` blocks is a page-authoring decision, not a CSS class — put the hero teaser in its
+own section, and the rest in a following section with `style: grid` metadata (see
 `docs/GRID_LAYOUT.md`). Don't make the hero card a spanning item inside that same grid
 (`grid-column: 1 / -1`) — that keeps `auto-fit`/equal-column grids from collapsing the other
 rows' unused tracks, so 2 regular cards below it would get stuck at half-width plus an empty
 gap instead of stretching to fill the row; a separate section avoids that interaction
-entirely, and a taller per-row mosaic height is what makes the size boost visible, not a
-grid-spanning CSS rule.
+entirely.
 
 `--zoom-hover` — opt-in editorial flourish: the thumb's single cover image scales up
 slightly on card hover. Combine with `--interactive`. Targets only a **direct-child** `img`

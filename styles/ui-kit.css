@@ -1221,18 +1221,48 @@
     display: block;
 }
 
+/* __thumb's content is sometimes wrapped in a link (e.g. a teaser's CTA
+   preview) — without this, that <a> is just another flex item with
+   flex-basis: auto, so it shrinks to its content's natural size instead of
+   filling __thumb, leaving the surrounding gradient background exposed
+   around the image/mosaic. Force it to fill the box so its own 100%-sized
+   children (img, or the mosaic below) have something definite to fill, and
+   repeat __thumb's own center/center so content that *isn't* 100%-sized
+   (.asc-ui-filetype's fallback glyph, which stays its natural small size)
+   still lands in the middle of the box instead of pinned to flex-start. */
+.asc-ui-asset-card__thumb > a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    color: inherit;
+    text-decoration: none;
+}
+
 /* A collection-card mosaic in __thumb needs its width filled explicitly,
    regardless of orientation — __thumb centers its content (row-direction
    flex, align-items/justify-content: center) rather than stretching it, and
    the mosaic's own base rule (styles/ui-kit.css, collection-card section) has
    no width of its own since it normally lives in a display:grid ancestor
    (asc-ui-collection-card) that stretches grid items by default. Height is
-   deliberately left alone: the mosaic's own inline
+   deliberately left alone here: the mosaic's own inline
    --collection-card-mosaic-height (see blocks/teaser/teaser.js)
    should determine the box, so a bigger mosaic makes the whole card taller
    instead of being squashed or letterboxed to match some other height. */
 .asc-ui-asset-card__thumb .asc-ui-collection-card__thumbs {
     width: 100%;
+}
+
+/* ...except in --horizontal, where __thumb's height is set by the flex row
+   stretching to match the body (title/description/CTA) rather than by the
+   mosaic — a fixed --collection-card-mosaic-height would then rarely match
+   that height exactly, showing as grey letterboxing above/below the mosaic.
+   Fill whatever height the row gives it instead; rows already flex: 1 to
+   share that height evenly, and each thumb img is object-fit: cover, so this
+   never squashes individual thumbnails, only how many pixels they get. */
+.asc-ui-asset-card--horizontal .asc-ui-asset-card__thumb .asc-ui-collection-card__thumbs {
+    height: 100%;
 }
 
 .asc-ui-asset-card__badge {
@@ -1700,6 +1730,14 @@
         width: 100%;
         height: 100%;
     }
+
+    /* --reverse only mirrors left/right in a row layout — on a stacked
+       column there's no "side" left to swap, and row-reverse's higher
+       specificity (two classes) would otherwise win over the plain
+       column rule above and keep it in row layout on narrow screens. */
+    .asc-ui-asset-card--horizontal.asc-ui-asset-card--reverse {
+        flex-direction: column;
+    }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -1809,6 +1847,16 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
+   @kit asset-card --reverse: swaps --horizontal's thumb/body order — thumb
+   on the right, body on the left. No effect without --horizontal (see the
+   mobile collapse below, which forces both back to a stacked column).
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-asset-card--horizontal.asc-ui-asset-card--reverse {
+    flex-direction: row-reverse;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
    @kit asset-card --lg: a bigger, more prominent tile — larger title and
    body padding. Combine with --horizontal for a wide featured teaser.
 ───────────────────────────────────────────────────────────────────────── */
@@ -1836,11 +1884,19 @@
    own section, before a following section of regular cards laid out with
    style: grid (see AGENTS.md → "DA.live Block Library").
 
-   No min-height override here beyond --horizontal's own 150px floor — a
-   mosaic's own height (rows × row-height, see teaser.js) already
-   determines the box; forcing a taller floor than that just centers the
-   mosaic inside extra empty space, showing as grey bars top and bottom.
+   No min-height override here beyond --horizontal's own 150px floor — the
+   thumb (mosaic or single image) fills whatever height the body ends up
+   needing, so there's no separate box to force taller. max-height caps the
+   other direction instead — a hero with a lot of authored copy, or a mosaic
+   with many rows, shouldn't be free to grow indefinitely; base .asc-ui-
+   asset-card's overflow: hidden clips whatever doesn't fit, and the thumb
+   (single image or mosaic, both height: 100%/object-fit: cover) still fills
+   the clamped box edge-to-edge rather than leaving empty space.
 ───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-asset-card--hero {
+    max-height: 600px;
+}
 
 .asc-ui-asset-card--hero.asc-ui-asset-card--horizontal .asc-ui-asset-card__thumb {
     flex-basis: 58%;
