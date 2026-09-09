@@ -309,9 +309,10 @@ const configurations = {
 
   // ─── Analytics ───────────────────────────────────────────────────────────────
   //
-  // Configures the analytics bridge (scripts/asc/analytics.js), which listens to
-  // ASC's asc:{noun}:{verb} event bus and normalizes every event into one
-  // trackEvent() call. Full event catalog + payload shapes: docs/ANALYTICS.md
+  // Configures the analytics service (scripts/asc/core/services/analytics/
+  // analytics.js), which listens to ASC's asc:{noun}:{verb} event bus and
+  // normalizes every event into one trackEvent() call. Full event catalog +
+  // payload shapes: docs/ANALYTICS.md
   //
   // analytics: {
   //   enabled: true,   // master kill switch
@@ -341,15 +342,22 @@ const configurations = {
   //     (name, payload) => window.gtag?.('event', name, payload),
   //     (name, payload) => window.adobeDataLayer?.push({ event: name, ...payload }),
   //   ],
+  //
+  //   // Add your own event → trackEvent() mapping without editing the service —
+  //   // same [target, eventType, handler] shape as its built-in LISTENERS.
+  //   customListeners: [
+  //     [document, 'asc:my-feature:did-thing', (e) => services.analytics.trackEvent('my_feature_thing', { ...e.detail })],
+  //   ],
   // },
 
   // ─── Notifications ───────────────────────────────────────────────────────────
   //
   // Toast feedback for actions with a real effect on the system (download
   // finished, collection created/deleted, share link generated). These are just
-  // the cross-cutting knobs — WHICH events trigger a toast and their wording is
-  // a plain array (LISTENERS) in scripts/asc/notifications.js; edit that file
-  // directly to add/remove/reword them.
+  // the cross-cutting knobs — WHICH events trigger a toast and their default
+  // wording is a plain array (LISTENERS) inside the notifications service
+  // (scripts/asc/core/services/notifications/notifications.js); add to
+  // customListeners below instead of editing that file.
   //
   // notifications: {
   //   enabled: true,
@@ -363,7 +371,32 @@ const configurations = {
   //   // notify() calls). Return null/undefined to suppress it, or a string to
   //   // override the message.
   //   enrich: (message, { type }) => message,
+  //
+  //   // Add your own event → toast mapping without editing the service — same
+  //   // [eventName, handler] shape as its built-in LISTENERS.
+  //   customListeners: [
+  //     ['asc:my-feature:did-thing', () => services.notifications.notify('Did the thing')],
+  //   ],
   // },
+
+  // ─── Activity History ────────────────────────────────────────────────────────
+  //
+  // Configures the per-user activity log (scripts/asc/core/services/activity/
+  // activity.js) — listens to the same asc:{noun}:{verb} event bus as analytics
+  // and records a local timeline (searches, asset views, collection changes,
+  // shares, downloads, rendition copy/download) via
+  // storage.get('activity')/set(...), so it's scoped per-user the same way
+  // collections/recentlyViewed are. These are just the cross-cutting knobs —
+  // WHICH events get recorded is a plain array (LISTENERS) inside the service;
+  // add to customListeners below instead of editing that file. Full schema +
+  // extension recipe: docs/ACTIVITY.md
+  activity: {
+    // customListeners: [
+    //   [document, 'asc:my-feature:did-thing', (e) => services.activity.record('my_feature_thing', { ...e.detail })],
+    // ],
+    enabled: true,
+    max: 200, // capped list length; oldest entries drop off first
+  },
 
   // ─── Theme ───────────────────────────────────────────────────────────────────
   theme: {

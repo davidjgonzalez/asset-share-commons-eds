@@ -46,7 +46,7 @@ Use this table as the first lookup before reading the full catalog.
 | Download sheet rows | `asc-ui-asset-row` + `.btn` |
 | Board canvas | `asc-ui-asset-card` (cards) + `asc-ui-segmented` (toolbar — default size, no modifier); search `<input>` lives inside the segmented as the last child, styled via block-scoped `.board__search` |
 | Color-search control | `asc-ui-dropdown` + `asc-ui-color-picker` (input + presets) |
-| Notification toast | `asc-ui-toast-region` + `asc-ui-toast` — rendered by `scripts/asc/notifications.js`, never hand-built in a block |
+| Notification toast | `asc-ui-toast-region` + `asc-ui-toast` — rendered by `services.notifications`, never hand-built in a block |
 
 ---
 
@@ -209,7 +209,7 @@ clip the ribbon's overhang — most cards already have both. Purely decorative: 
 ```
 
 ### Toast — `@kit toast` · `styles/ui-kit.css`
-Notification feedback, rendered by `scripts/asc/notifications.js` — don't hand-build this markup
+Notification feedback, rendered by `services.notifications` — don't hand-build this markup
 in a block; call `notify(message, { type })` or dispatch `asc:notification:show` on `document`
 instead (see AGENTS.md's event table). `.asc-ui-toast-region` is a fixed corner anchor (one of 6
 position modifiers); toasts stack inside it, newest nearest the screen edge for bottom regions.

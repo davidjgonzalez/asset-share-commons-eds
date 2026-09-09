@@ -21,12 +21,12 @@ aem up              # Start local dev proxy at http://localhost:3000
 ```
 scripts/
   asc.js                ← USER-OWNED: ASC integration entry point (lifecycle hooks)
-  asc/                  ← USER-OWNED: user-facing ASC files
+  asc/                  ← USER-OWNED: exactly these 4 files, no more
     configurations.js   ← USER-OWNED: all site configuration
     section-grid.js     ← USER-OWNED: section grid utility
     tokens.js           ← USER-OWNED: content variable resolver
     html.js             ← USER-OWNED: HTML helpers
-    core/               ← ASC CORE: do not edit; all files begin with "// ASC Core"
+    core/                ← ASC CORE: do not edit; all files begin with "// ASC Core"
       services/
       models/
       utils/
@@ -37,6 +37,23 @@ styles/                 ← USER-OWNED: themes and CSS variables
 ```
 
 Every file in `scripts/asc/core/` starts with `// ASC Core — do not edit.` as a signal. Users customize via `scripts/asc/configurations.js` and `scripts/asc.js` only.
+
+**`scripts/asc/` (root, not `core/`) is exactly the 4 files above — never add a 5th.**
+This list used to drift (`analytics.js`, `notifications.js`, `chrome.js`, and others
+accumulated there over time before being moved into `core/services/` and `core/utils/`
+where they belonged) — before adding any new file directly under `scripts/asc/`, ask:
+
+- Does it hold **site-specific policy or data the owner is expected to edit** (a config
+  value, a swappable default, page-load wiring)? → it probably belongs in
+  `configurations.js` itself, not a new file.
+- Is its *entire* customization surface "add one `[target, eventType, handler]` tuple to
+  a plain array"? A service can still legitimately live in `core/services/` and expose
+  that array as a `customListeners` config option (see `analytics`/`notifications`/
+  `activity` in `configurations.js`) — that's the correct shape, not a reason to place
+  the file outside `core/`.
+- Otherwise — reusable mechanism, UI, or business logic with no site-specific knobs —
+  it belongs in `core/{services,parts,utils,models}/`, marked `// ASC Core — do not
+  edit.`, with any real customization surfaced through `configurations.js`.
 
 ## Architecture
 
@@ -260,4 +277,5 @@ the library needs to know about it regardless of where it's ultimately placed.
 | `docs/PROJECT_STRUCTURE.md` | Ownership zones — EDS boilerplate vs ASC Core vs user-owned |
 | `docs/CSS_CONVENTION.md` | Full CSS coding standards |
 | `docs/CONTENT_VARIABLES.md` | `{{ }}` token system — page-wide registry vs per-asset resolution, full API + authoring examples |
-| `docs/ANALYTICS.md` | Web analytics plan — event catalog mapping, vendor wiring, `scripts/asc/analytics.js` |
+| `docs/ANALYTICS.md` | Web analytics plan — event catalog mapping, vendor wiring, `services.analytics` |
+| `docs/ACTIVITY.md` | Per-user activity history (searches, views, downloads, etc.) — entry schema, storage, `services.activity` |

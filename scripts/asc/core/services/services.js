@@ -16,12 +16,15 @@
 import aem from './aem/aem.js';
 import actionPages from './action-pages/action-pages.js';
 import actions from './actions/actions.js';
+import activity from './activity/activity.js';
+import analytics from './analytics/analytics.js';
 import assetDetails from './asset-details/asset-details.js';
 import authoredAssets from './authored-assets/authored-assets.js';
 import debug from './debug/debug.js';
 import collections from './collections/collections.js';
 import downloads from './downloads/downloads.js';
 import fileType from './file-type/file-type.js';
+import notifications from './notifications/notifications.js';
 import properties from './properties/properties.js';
 import renditions from './renditions/renditions.js';
 import search from './search/search.js';
@@ -35,7 +38,9 @@ import init from './init/init.js';
 const services = {
   actionPages,
   actions,
+  activity,
   aem,
+  analytics,
   assetDetails,
   authoredAssets,
   collections,
@@ -43,6 +48,7 @@ const services = {
   downloads,
   fileType,
   init,
+  notifications,
   properties,
   renditions,
   search,

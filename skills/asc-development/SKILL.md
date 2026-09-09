@@ -45,7 +45,7 @@ This skill fetches content from AEM Author/Publish instances and links to AEM do
 - Any change to `scripts/asc/configurations.js`
 
 **Do NOT use for:**
-- Editing files inside `scripts/asc/` (that is ASC Core — do not edit)
+- Editing files inside `scripts/asc/core/` (that is ASC Core — do not edit)
 - General EDS page layout questions unrelated to asset management
 - AEM backend configuration (OSGi, DAM processing profiles, etc.)
 - da.live / SharePoint / Google Drive content authoring (no code needed for that)
@@ -56,12 +56,21 @@ This skill fetches content from AEM Author/Publish instances and links to AEM do
 
 ```
 scripts/asc/configurations.js  ← YOUR FILE — edit freely, the single customization entry point
-scripts/asc/              ← ASC CORE — never edit; all files start with "// ASC Core — do not edit."
-blocks/                   ← YOUR BLOCKS — copy and modify freely (each has /** @owner user */)
-styles/                   ← YOUR STYLES — add themes, override tokens
+scripts/asc/section-grid.js    ← YOUR FILE — section grid utility
+scripts/asc/tokens.js          ← YOUR FILE — content variable resolver
+scripts/asc/html.js            ← YOUR FILE — HTML helpers
+scripts/asc/core/              ← ASC CORE — never edit; all files start with "// ASC Core — do not edit."
+blocks/                        ← YOUR BLOCKS — copy and modify freely (each has /** @owner user */)
+styles/                        ← YOUR STYLES — add themes, override tokens
 ```
 
-If you find yourself wanting to edit a file in `scripts/asc/`, stop. There is almost always a configuration hook or block-level approach that achieves the same goal without touching core.
+`scripts/asc/` (root) is *only* the 4 files above — nothing else belongs there. Even a file
+whose whole purpose is a directly-editable listener array (like the analytics/notifications/
+activity services) still lives in `core/services/`, with that array's extension point exposed
+as a `customListeners` config option in `configurations.js` — see `CLAUDE.md`'s Ownership
+Boundary section for the full reasoning and the checklist for where a new file belongs.
+
+If you find yourself wanting to edit a file in `scripts/asc/core/`, stop. There is almost always a configuration hook or block-level approach that achieves the same goal without touching core.
 
 ---
 

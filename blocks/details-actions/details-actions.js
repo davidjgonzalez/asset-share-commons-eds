@@ -26,6 +26,13 @@
  * (not just its URL) via scripts/asc/core/utils/clipboard-image.js — falls back to copying
  * the URL if the browser or the delivery host's CORS policy won't allow it.
  *
+ * Every button also carries a `data-asc-action` so the Actions service dispatches
+ * the matching `asc:*` event on click — the same convention details-renditions.js
+ * uses for its own download/copy-url/share buttons (`asc:rendition:download`,
+ * `asc:rendition:copy-url`, `asc:rendition:copy-image`, `asc:asset:share`) — so
+ * anything listening to the event bus (analytics.js, activity.js) sees these
+ * actions regardless of which block the user clicked them from.
+ *
  * Authoring (da.live table):
  *   | Download        | download       |
  *   | Copy URL        | copy-url       |
@@ -126,10 +133,18 @@ function flashIcon(btn, iconSvg) {
 function updateRenditionActions(block, rendition) {
   if (!rendition) return;
 
+  const downloadBtn = block.querySelector('.details-actions__download');
+  if (downloadBtn) downloadBtn.dataset.ascRendition = rendition.id;
   const copyUrlBtn = block.querySelector('[data-copy-url]');
-  if (copyUrlBtn) copyUrlBtn.dataset.copyUrl = rendition.url;
+  if (copyUrlBtn) {
+    copyUrlBtn.dataset.copyUrl = rendition.url;
+    copyUrlBtn.dataset.ascRendition = rendition.id;
+  }
   const copyImageBtn = block.querySelector('.details-actions__copy-image');
-  if (copyImageBtn) copyImageBtn.hidden = !canCopyImage(rendition);
+  if (copyImageBtn) {
+    copyImageBtn.hidden = !canCopyImage(rendition);
+    copyImageBtn.dataset.ascRendition = rendition.id;
+  }
 }
 
 function html(asset, actionPairs, rendition) {
@@ -149,7 +164,9 @@ function htmlButton(asset, action, rendition, label) {
 
     case 'download':
       return `
-        <button type="button" class="asc-ui-action details-actions__download">
+        <button type="button" class="asc-ui-action details-actions__download"
+                data-asc-action="rendition:download@click"
+                data-asc-asset="${esc(asset.uuid)}" data-asc-rendition="${esc(rendition?.id ?? '')}">
           <span class="asc-ui-action__icon" aria-hidden="true">${ICONS.download}</span>
           <span>${esc(label)}</span>
         </button>`;
@@ -158,6 +175,8 @@ function htmlButton(asset, action, rendition, label) {
       return `
         <button class="asc-ui-action" type="button"
                 data-copy-url="${esc(url)}"
+                data-asc-action="rendition:copy-url@click"
+                data-asc-asset="${esc(asset.uuid)}" data-asc-rendition="${esc(rendition?.id ?? '')}"
                 title="${esc(label)}" aria-label="${esc(label)}">
           <span class="asc-ui-action__icon" aria-hidden="true">${ICONS.copyUrl}</span>
           <span>${esc(label)}</span>
@@ -166,16 +185,21 @@ function htmlButton(asset, action, rendition, label) {
     case 'copy-image':
       return `
         <button class="asc-ui-action details-actions__copy-image" type="button"${canCopyImage(rendition) ? '' : ' hidden'}
+                data-asc-action="rendition:copy-image@click"
+                data-asc-asset="${esc(asset.uuid)}" data-asc-rendition="${esc(rendition?.id ?? '')}"
                 title="${esc(label)}" aria-label="${esc(label)}">
           <span class="asc-ui-action__icon" aria-hidden="true">${ICONS.copyImage}</span>
           <span>${esc(label)}</span>
         </button>`;
 
-    // `share` is a deprecated alias — same button/behavior as copy-link.
+    // `share` is a deprecated alias — same button/behavior as copy-link. Uses
+    // the existing asset:share event/noun (see AGENTS.md), not a rendition one —
+    // this copies an asset deep link, not a rendition file.
     case 'copy-link':
     case 'share':
       return `
         <button class="asc-ui-action details-actions__copy-link" type="button"
+                data-asc-action="asset:share@click" data-asc-asset="${esc(asset.uuid)}"
                 title="${esc(label)}" aria-label="${esc(label)}">
           <span class="asc-ui-action__icon" aria-hidden="true">${ICONS.link}</span>
           <span>${esc(label)}</span>

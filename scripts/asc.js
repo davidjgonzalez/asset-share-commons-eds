@@ -15,10 +15,8 @@ import { setupImageFallback } from './asc/core/utils/images.js';
 import { setupRoleButtonKeyboardSupport } from './asc/core/utils/keyboard.js';
 import { decorateASCSections } from './asc/section-grid.js';
 import { registerTokens } from './asc/tokens.js';
-import { initAnalytics } from './asc/analytics.js';
 import { registerSpeculationRules } from './asc/speculation-rules.js';
 import { isChromeless, renderChromeToggle } from './asc/chrome.js';
-import './asc/notifications.js';
 
 setupImageFallback();
 setupRoleButtonKeyboardSupport();
@@ -57,7 +55,11 @@ export function ascLazy() {
   renderChromeToggle();
 }
 
-/** Called once in loadDelayed — non-critical ASC work. */
-export function ascDelayed() {
-  initAnalytics();
-}
+/**
+ * Called once in loadDelayed — non-critical ASC work. Analytics/notifications/
+ * activity used to be wired here explicitly; they're now core services that
+ * auto-initialize on import (like every other service — see
+ * scripts/asc/core/services/services.js), so this is currently a no-op hook,
+ * kept for future use per the boilerplate-modification contract below.
+ */
+export function ascDelayed() {}

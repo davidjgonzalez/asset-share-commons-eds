@@ -2,7 +2,8 @@
 
 ASC does not ship a bundled analytics vendor. Instead, it exposes two mechanisms so any
 vendor — GA4, Adobe Analytics/Launch, Adobe Client Data Layer, Segment, a home-grown
-endpoint — can be wired in without touching ASC Core or block code:
+endpoint — can be wired in through `configurations.js` alone, without touching block
+code or the analytics service's own internals:
 
 1. **A custom-event bus.** Every meaningful user action already dispatches a
    documented `asc:{noun}:{verb}` event (full catalog: `AGENTS.md` → "Custom Events —
@@ -17,17 +18,19 @@ Because both mechanisms already exist for the framework's own internal wiring,
 analytics is purely additive — it never requires new coupling between blocks and a
 vendor SDK.
 
+See also `docs/ACTIVITY.md` — a sibling consumer of the same event bus that records a
+local per-user activity timeline (searches, views, downloads, etc.) instead of sending
+to a vendor.
+
 ## Quick start
 
-`scripts/asc/analytics.js` (user-owned, not ASC Core) is a working starter that
-listens to the event bus and funnels everything through one `trackEvent(name,
-payload)` function. It's wired into `ascDelayed()` in `scripts/asc.js`, so it's
-active on every page load, after the critical path — matching the EDS lifecycle
-convention of doing non-critical work in the delayed phase (see `CLAUDE.md` →
-"Page Lifecycle").
+`scripts/asc/core/services/analytics/analytics.js` is an ASC Core service (`services.analytics`)
+that listens to the event bus and funnels everything through one `trackEvent(name,
+payload)` method. It auto-initializes on import, like every other core service — active
+on every page load with no explicit setup call needed.
 
 To connect a real vendor, configure `analytics.trackers` in
-`scripts/asc/configurations.js` — no edits to `analytics.js` itself needed:
+`scripts/asc/configurations.js` — no edits to the service itself needed:
 
 ```js
 analytics: {
@@ -49,6 +52,9 @@ analytics: {
   ],
 },
 ```
+
+You can also call `services.analytics.trackEvent(name, payload)` directly from any
+block or Part for a one-off event that doesn't warrant its own `asc:*` event.
 
 `console.debug('[ASC Analytics]', name, payload)` always fires alongside your
 trackers (not just while `trackers` is empty) — open devtools and interact with
@@ -137,7 +143,7 @@ your own analytics file:
 const impressionObserver = new IntersectionObserver((entries) => {
   entries.forEach((entry) => {
     if (!entry.isIntersecting) return;
-    trackEvent('asset_impression', { assetId: entry.target.dataset.ascAsset });
+    services.analytics.trackEvent('asset_impression', { assetId: entry.target.dataset.ascAsset });
     impressionObserver.unobserve(entry.target); // fire once per asset
   });
 });
@@ -163,11 +169,16 @@ ASC code required.
 
 Any block or Part you add that dispatches its own event following the
 `asc:{noun}:{verb}` convention (see `AGENTS.md` → "Event Convention") is
-automatically analytics-observable — just add one line to the `LISTENERS` array in
-`scripts/asc/analytics.js`:
+automatically analytics-observable — add one `[target, eventType, handler]` tuple
+to `configurations.js` → `analytics.customListeners` (same shape as the service's
+own built-in `LISTENERS`, merged in at init time — no edits to the service itself):
 
 ```js
-[document, 'asc:my-feature:did-thing', (e) => trackEvent('my_feature_thing', { ...e.detail })],
+analytics: {
+  customListeners: [
+    [document, 'asc:my-feature:did-thing', (e) => services.analytics.trackEvent('my_feature_thing', { ...e.detail })],
+  ],
+},
 ```
 
 No changes to `trackEvent()`, no changes to any block. This is the same reason the
@@ -176,9 +187,9 @@ is just one more consumer of it.
 
 ## Debugging
 
-- Every event fired through `scripts/asc/analytics.js` logs via `console.debug`
-  until you wire a real vendor in `trackEvent()` — use this to verify an event
-  fires with the payload you expect before connecting anything external.
+- Every event routed through `services.analytics.trackEvent()` logs via `console.debug`
+  until you wire a real vendor in `configurations.js` → `analytics.trackers` — use this
+  to verify an event fires with the payload you expect before connecting anything external.
 - If an event you expect isn't firing, check `AGENTS.md`'s event table for the
   correct dispatch scope: most events bubble to `document`, but
   `asc:rendition:activate` / `asc:rendition:preview` are dispatched directly on
