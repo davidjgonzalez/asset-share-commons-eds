@@ -21,12 +21,17 @@ main .section.inline {
  * columns: N         1–6 equal-width columns (default: 2)
  * direction: row     fills left-to-right then wraps (default)
  * direction: column  fills top-to-bottom then right
+ *
+ * align-items: stretch (the grid default) so every cell in a row matches the
+ * tallest one — a block that wants to fill that height (e.g. teaser's own
+ * `.block.teaser { height: 100% }`) can; one that doesn't just keeps sizing
+ * to its own content as usual, since stretch only affects a block that
+ * actually asks for 100% height.
  */
 
 main .section.grid {
     display: grid;
     gap: var(--grid-gap, var(--spacing-md, 1rem));
-    align-items: start;
     grid-template-columns: repeat(2, 1fr); /* default */
 
     > * {
