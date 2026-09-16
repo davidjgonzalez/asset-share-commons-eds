@@ -225,6 +225,56 @@
       </div>
     </section>
 
+    <!-- ───────────────────────── BACK HEADING ───────────────────────── -->
+    <section class="kit-section" id="back-heading">
+      <div class="kit-section__head">
+        <h2 class="kit-section__title">Back heading</h2>
+        <p class="kit-section__sub">A page/section heading with a small chevron "back to X" link tucked to its left — used for a share/collection/board page's title row. Also invocable from plain DA authoring with no explicit class (a "content" block whose first child is a solo-link paragraph immediately followed by an h1/h2) — see docs/UI_KIT.md.</p>
+      </div>
+      <div class="kit-grid">
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Heading with back link</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-layout="block" data-snippet>
+            <div class="asc-ui-back-heading">
+              <a href="#" class="asc-ui-back-heading__back">Back to collections</a>
+              <h1>Collection title<code class="kit-anno" data-omit>&lt;h1&gt;</code></h1>
+              <p>Optional description — larger, drops away entirely when empty<code class="kit-anno" data-omit>h1 + p</code></p>
+              <p>3 assets — Last updated Sep 11, 2026</p>
+            </div>
+            <code class="kit-anno" data-omit>.asc-ui-back-heading</code>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────────────────────── LANDING / MARKETING ───────────────────────── -->
+    <section class="kit-section" id="landing">
+      <div class="kit-section__head">
+        <h2 class="kit-section__title">Landing / marketing</h2>
+        <p class="kit-section__sub">A lede paragraph for page/section intros, and a tinted CTA banner for a "search or browse everything" prompt. Both are also invocable straight from DA section-metadata (<code>style: hero-intro</code> / <code>style: cta-banner</code>) — see docs/UI_KIT.md.</p>
+      </div>
+      <div class="kit-grid">
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Hero intro + lede</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-layout="block" data-snippet>
+            <h1 class="asc-ui-heading-xl">Asset Share Commons</h1>
+            <p class="asc-ui-lede">Browse, search, and share approved brand assets — all in one place.<code class="kit-anno" data-omit>&lt;p&gt; .asc-ui-lede</code></p>
+          </div>
+        </div>
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">CTA banner</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-layout="block" data-snippet>
+            <div class="asc-ui-cta-banner">
+              <h2 class="asc-ui-cta-banner__title">Looking for something specific?</h2>
+              <p class="asc-ui-cta-banner__description">Search across every published asset by keyword, tag, file type, or folder.</p>
+              <div class="asc-ui-cta-banner__actions"><a class="btn btn--primary" href="#">Browse Everything</a></div>
+            </div>
+            <code class="kit-anno" data-omit>.asc-ui-cta-banner</code>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- ───────────────────────── SPACING & RADIUS ───────────────────────── -->
     <section class="kit-section" id="spacing">
       <div class="kit-section__head">
@@ -501,6 +551,15 @@
           <p class="kit-demo__usage">Static tags — e.g. an asset's tags or an active facet label.</p>
         </div>
         <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Chip · muted</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-snippet>
+            <span class="asc-ui-chip">Web</span>
+            <span class="asc-ui-chip asc-ui-chip--muted">JPEG</span>
+            <span class="asc-ui-chip asc-ui-chip--muted">340 KB</span>
+          </div>
+          <p class="kit-demo__usage"><code>--muted</code>: same pill shape, neutral background instead of accent — for a secondary fact pill next to a default chip carrying the primary identity (e.g. <code>details-preview</code>'s rendition name + format/size/dimensions).</p>
+        </div>
+        <div class="kit-demo">
           <div class="kit-demo__bar"><span class="kit-demo__name">Removable chip</span><button class="kit-demo__toggle" type="button">Code</button></div>
           <div class="kit-demo__preview" data-snippet>
             <button type="button" class="asc-ui-chip asc-ui-chip--removable" aria-label="Remove Campaign">Campaign <span class="asc-ui-chip__remove" aria-hidden="true">&#x2715;</span></button>
@@ -598,6 +657,32 @@
             </article>
           </div>
           <p class="kit-demo__usage"><code>--compact</code>: tighter <code>--spacing-sm</code> padding instead of the default <code>--spacing-md</code> — for dense grids of small cards (e.g. <code>details-renditions</code>' format-picker cards) where the default reads as too roomy.</p>
+        </div>
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Card · sizes</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-layout="block" data-snippet>
+            <div style="display:flex; align-items:flex-end; gap:0.75rem; flex-wrap:wrap;">
+              <article class="asc-ui-card asc-ui-card--compact asc-ui-card--xs">
+                <div class="asc-ui-card__body"><p class="asc-ui-card__title" style="font-size:var(--body-font-size-s);">XS</p></div>
+              </article>
+              <article class="asc-ui-card asc-ui-card--compact asc-ui-card--s">
+                <div class="asc-ui-card__body"><p class="asc-ui-card__title" style="font-size:var(--body-font-size-s);">S</p></div>
+              </article>
+              <article class="asc-ui-card asc-ui-card--compact asc-ui-card--m">
+                <div class="asc-ui-card__body"><p class="asc-ui-card__title" style="font-size:var(--body-font-size-s);">M</p></div>
+              </article>
+              <article class="asc-ui-card asc-ui-card--compact asc-ui-card--l">
+                <div class="asc-ui-card__body"><p class="asc-ui-card__title" style="font-size:var(--body-font-size-s);">L (default)</p></div>
+              </article>
+              <article class="asc-ui-card asc-ui-card--compact asc-ui-card--xl">
+                <div class="asc-ui-card__body"><p class="asc-ui-card__title" style="font-size:var(--body-font-size-s);">XL</p></div>
+              </article>
+              <article class="asc-ui-card asc-ui-card--compact asc-ui-card--xxl">
+                <div class="asc-ui-card__body"><p class="asc-ui-card__title" style="font-size:var(--body-font-size-s);">XXL</p></div>
+              </article>
+            </div>
+          </div>
+          <p class="kit-demo__usage">Size scale — <code>--xs</code> <code>--s</code> <code>--m</code> <code>--l</code> <code>--xl</code> <code>--xxl</code> — caps <code>max-width</code> (140px → 420px) for grids of uniformly-sized cards that need an author-facing size knob, e.g. <code>details-renditions</code>' <code>size</code> field.</p>
         </div>
         <div class="kit-demo">
           <div class="kit-demo__bar"><span class="kit-demo__name">Asset row</span><button class="kit-demo__toggle" type="button">Code</button></div>
@@ -1036,6 +1121,7 @@
                   <button class="asc-ui-color-picker__preset" type="button" style="--asc-ui-swatch-color:#2980b9" title="Blue"></button>
                   <button class="asc-ui-color-picker__preset" type="button" style="--asc-ui-swatch-color:#8e44ad" title="Purple"></button>
                 </div>
+                <hr class="asc-ui-menu__separator">
                 <button class="btn btn--ghost btn--sm asc-ui-color-picker__clear" type="button">Clear color</button>
               </div>
             </div>

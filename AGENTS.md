@@ -959,6 +959,11 @@ searchResults: {
       // Escape hatch for complex rendering:
       { label: 'Status', width: '80px', render: (asset) => asset.getProperty('dam:status').html || '—' },
     ],
+
+    // Trailing actions column (favorite/collection toggles + quick actions) —
+    // not a `list` entry, always appended after those columns. Default '220px'
+    // fits all 5 built-in buttons; widen/narrow if you add/remove quick actions.
+    listActionsWidth: '220px',
   },
 },
 ```
@@ -967,6 +972,7 @@ searchResults: {
 - `thumbnail` always renders as `<img>` in the preview area; all other properties go in the meta section
 - For `list`, `label` defaults to a sensible built-in name if omitted
 - The `render` function on a list column receives `(asset, services)` and should return an HTML string; it bypasses the property system entirely
+- `listActionsWidth` is a CSS grid track value (any valid `grid-template-columns` size, e.g. `'220px'`, `'auto'`, `'1fr'`)
 
 ---
 

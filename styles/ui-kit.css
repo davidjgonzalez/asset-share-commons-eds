@@ -69,6 +69,229 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
+   @kit back-heading — page/section heading with a small "back to X" chevron
+   tucked to its left, plus an optional description/meta line that drops to
+   its own full-width row below.
+   Authoring: like @kit landing below, this also keys off a plain-authoring
+   shape with no explicit class needed — a "content" block (see
+   scripts/asc/section-grid.js, used to attach _area grid metadata to plain
+   text) whose first child is a solo-link paragraph immediately followed by
+   an h1/h2 gets this look automatically, since that's exactly the shape DA
+   authoring produces for a `<p><a>Back</a></p><h1>Title</h1>` pair. Use the
+   explicit .asc-ui-back-heading markup when composing a block/template
+   directly instead.
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-back-heading,
+.content.block:has(> p.button-container:first-child + h1, > p.button-container:first-child + h2) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: var(--spacing-sm);
+}
+
+/* The link keeps its real "Back to X" text as its accessible name — link
+   accessible-name computation prefers visible text content over `title`
+   whenever that content is non-empty, so a chevron-only glyph as the actual
+   text would leave screen readers announcing just that glyph. Shrinking the
+   text to 0 and drawing the chevron in ::before keeps the real words as the
+   accessible name while showing only the chevron visually. This also sidesteps
+   DA's content pipeline stripping data- and aria- attributes off plain
+   authored links (see @kit back-heading note above) — nothing here depends
+   on an attribute surviving that round-trip, only on the link's own text
+   and the "button" class EDS's decorateButtons() adds at render time.
+
+   Styled to match the asset-details modal's prev/next nav buttons
+   (@kit icon-btn, blocks/details-modal/details-modal.css) — same bordered
+   circle + card background, same chevron artwork. The icon still has to be
+   CSS-only (a mask-image, not an inserted <svg>) since the plain-authoring
+   path above is a bare anchor with no JS hook to inject markup into. */
+.asc-ui-back-heading__back,
+.content.block:has(> p.button-container:first-child + h1, > p.button-container:first-child + h2)
+    > p.button-container:first-child > a.button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    margin: 0;
+    padding: 0;
+    border: 1px solid color-mix(in srgb, var(--color-border) 85%, var(--color-fg));
+    border-radius: var(--border-radius-full);
+    background: color-mix(in srgb, var(--color-card) 90%, white);
+    font-size: 0;
+    text-decoration: none;
+
+    /* The .asc-ui-back-heading__back plain-authoring form is a bare inline
+       anchor sitting in a normal <p> (see @kit back-heading note above) — as
+       an inline-level box it defaults to vertical-align: baseline, leaving
+       the paragraph's unused descender space below it and nudging the whole
+       button up relative to the heading beside it. middle removes that gap. */
+    vertical-align: middle;
+    transition: transform var(--transition-fast), background var(--transition-fast);
+
+    &::before {
+        content: '';
+        display: block;
+        width: 16px;
+        height: 16px;
+        background-color: var(--color-muted-fg);
+        mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='15 18 9 12 15 6'/%3E%3C/svg%3E");
+        mask-repeat: no-repeat;
+        mask-position: center;
+        mask-size: contain;
+    }
+
+    &:hover {
+        transform: scale(1.1);
+        background: var(--color-card);
+    }
+
+    &:hover::before {
+        background-color: var(--color-fg);
+    }
+}
+
+.asc-ui-back-heading > h1,
+.asc-ui-back-heading > h2 {
+    margin: 0;
+
+    /* The global h1/h2 line-height (styles.css) reserves descender space most
+       headings don't use, so its line-box sits lower than the glyphs — flex's
+       align-items: center centers that whole box against the back button's
+       fixed circle, landing the circle visibly above the text's optical
+       center. Tightening to 1 shrinks the box down to the glyphs themselves. */
+    line-height: 1;
+}
+
+/* Optional description subtitle — the paragraph immediately after the
+   heading (h1 + p) — reads larger/less-muted than the stats line that
+   follows it (h1 + p + p), and collapses entirely when unset (registerTokens
+   resolves an empty {{collection.description}} to '', leaving the <p> with
+   no child nodes at all, which :empty matches below). Ordered by ascending
+   specificity: the plain adjacency selectors, then the generic :not() rule
+   (an extra class outweighs their extra type), then :empty (most specific
+   of all — same class count as :not() plus an extra type). */
+.asc-ui-back-heading > h1 + p,
+.asc-ui-back-heading > h2 + p {
+    font-size: var(--body-font-size-m);
+    color: var(--color-muted-fg);
+}
+
+.asc-ui-back-heading > h1 + p + p,
+.asc-ui-back-heading > h2 + p + p {
+    font-size: var(--body-font-size-s);
+    color: var(--color-muted-fg);
+}
+
+.asc-ui-back-heading > p:not(.asc-ui-back-heading__back) {
+    flex-basis: 100%;
+    margin: 0;
+}
+
+.asc-ui-back-heading > h1 + p:empty,
+.asc-ui-back-heading > h2 + p:empty {
+    display: none;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit landing — page-intro lede + CTA banner for marketing/landing sections
+   Authoring: rather than requiring block markup, these also key off a
+   section's `style` metadata (e.g. `style: fixed-width, hero-intro`) —
+   decorateSections() (scripts/aem.js) puts that value directly as a class on
+   the section element, so `.section.hero-intro` / `.section.cta-banner`
+   below let a DA author invoke the same look on a plain content section with
+   no block authoring at all.
+───────────────────────────────────────────────────────────────────────── */
+
+/* decorateSections() (scripts/aem.js) wraps a section's plain (non-block)
+   content in an extra `.default-content-wrapper` div — the section-scoped
+   selectors below account for that one extra level. */
+
+.asc-ui-lede,
+.section.hero-intro > .default-content-wrapper > p {
+    margin: 0;
+    max-width: 60ch;
+    font-size: var(--heading-font-size-m);
+    font-weight: 400;
+    line-height: 1.5;
+    color: var(--color-muted-fg);
+}
+
+.asc-ui-cta-banner,
+.section.cta-banner {
+    padding: var(--spacing-2xl) var(--spacing-xl);
+    text-align: center;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-xl);
+    background: linear-gradient(135deg,
+        color-mix(in srgb, var(--color-primary) 6%, var(--color-bg)),
+        color-mix(in srgb, var(--color-accent) 45%, var(--color-bg)));
+}
+
+.asc-ui-cta-banner,
+.section.cta-banner > .default-content-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.asc-ui-cta-banner__title,
+.section.cta-banner h2 {
+    margin: 0;
+    font-size: var(--heading-font-size-l);
+}
+
+.asc-ui-cta-banner__description,
+.section.cta-banner > .default-content-wrapper > p:not(.button-container) {
+    margin: 0;
+    max-width: 48ch;
+    color: var(--color-muted-fg);
+}
+
+.asc-ui-cta-banner__actions,
+.section.cta-banner > .default-content-wrapper > .button-container {
+    margin-top: var(--spacing-xs);
+}
+
+/* @kit back-heading's plain-authoring equivalents (see above) — split out
+   from the .asc-ui-back-heading rules and placed after @kit landing purely
+   to satisfy ascending selector specificity (the :has() argument outweighs
+   landing's simple .section.* selectors); same declarations either way. */
+.content.block:has(> p.button-container:first-child + h1, > p.button-container:first-child + h2) > h1,
+.content.block:has(> p.button-container:first-child + h1, > p.button-container:first-child + h2) > h2 {
+    margin: 0;
+    line-height: 1; /* see .asc-ui-back-heading > h1/h2 above — same fix, same reason */
+}
+
+/* Description subtitle plain-authoring equivalent — see the .asc-ui-back-heading
+   > h1 + p rules above for the same reasoning and the same ascending-specificity
+   ordering (adjacency rules, then :not(), then :empty last). */
+.content.block:has(> p.button-container:first-child + h1) > h1 + p,
+.content.block:has(> p.button-container:first-child + h2) > h2 + p {
+    font-size: var(--body-font-size-m);
+    color: var(--color-muted-fg);
+}
+
+.content.block:has(> p.button-container:first-child + h1) > h1 + p + p,
+.content.block:has(> p.button-container:first-child + h2) > h2 + p + p {
+    font-size: var(--body-font-size-s);
+    color: var(--color-muted-fg);
+}
+
+.content.block:has(> p.button-container:first-child + h1, > p.button-container:first-child + h2)
+    > p:not(.button-container) {
+    flex-basis: 100%;
+    margin: 0;
+}
+
+.content.block:has(> p.button-container:first-child + h1) > h1 + p:empty,
+.content.block:has(> p.button-container:first-child + h2) > h2 + p:empty {
+    display: none;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
    @kit field — form field group (label + control + hint/error)
    Controls inherit the global input/select/textarea baseline from styles.css.
 ───────────────────────────────────────────────────────────────────────── */
@@ -120,8 +343,11 @@
 }
 
 /* Specificity matches the global input baseline (styles.css) so the pill
-   radius wins — the baseline's :not() chain would otherwise override it. */
-.asc-ui-search input:not([type="checkbox"], [type="radio"], [type="hidden"], [type="range"]) {
+   radius wins — the baseline's :not() chain would otherwise override it.
+   Scoped to a direct child so it targets only the actual search field —
+   never a control nested deeper inside (e.g. the color-picker's own
+   input, several levels down in .asc-ui-search__action). */
+.asc-ui-search > input:not([type="checkbox"], [type="radio"], [type="hidden"], [type="range"]) {
     width: var(--asc-ui-search-width);
     max-width: 100%;
     height: 2.75rem;
@@ -138,7 +364,7 @@
    applies when .asc-ui-search__action is actually present, so plain search
    inputs elsewhere are unaffected. Specificity intentionally beats the
    baseline rule above (:has() adds a class-level selector). */
-.asc-ui-search:has(.asc-ui-search__action) input:not([type="checkbox"], [type="radio"], [type="hidden"], [type="range"]) {
+.asc-ui-search:has(.asc-ui-search__action) > input:not([type="checkbox"], [type="radio"], [type="hidden"], [type="range"]) {
     padding-inline-end: 2.75rem;
 }
 
@@ -154,7 +380,7 @@
     z-index: 1;
 }
 
-.asc-ui-search input:not([type="checkbox"], [type="radio"], [type="hidden"], [type="range"]):focus {
+.asc-ui-search > input:not([type="checkbox"], [type="radio"], [type="hidden"], [type="range"]):focus {
     width: calc(var(--asc-ui-search-width) * 1.66);
     outline: 2px solid var(--color-ring);
     outline-offset: -2px;
@@ -366,6 +592,35 @@
    format-picker cards) where the default --spacing-md reads as too roomy. */
 .asc-ui-card--compact {
     padding: var(--spacing-sm);
+}
+
+/* Size scale (--xs … --xxl): caps card width for grids of small, uniformly-sized
+   cards (e.g. details-renditions' format-picker cards) that need an author-facing
+   size knob. Unmodified default is unconstrained. Pair with a block-level grid
+   (`grid-template-columns: repeat(auto-fit, minmax(…, 1fr))`) whose minimum scales
+   alongside — that minmax floor is layout, not look, so it stays block-level CSS. */
+.asc-ui-card--xs {
+    max-width: 140px;
+}
+
+.asc-ui-card--s {
+    max-width: 180px;
+}
+
+.asc-ui-card--m {
+    max-width: 220px;
+}
+
+.asc-ui-card--l {
+    max-width: 280px;
+}
+
+.asc-ui-card--xl {
+    max-width: 340px;
+}
+
+.asc-ui-card--xxl {
+    max-width: 420px;
 }
 
 .asc-ui-card__header {
@@ -593,6 +848,16 @@
     font-size: var(--body-font-size-xs);
     font-weight: 500;
     white-space: nowrap;
+}
+
+/* Muted variant — same pill shape, neutral background instead of accent. For a
+   secondary fact pill (e.g. format/size/dimensions) sitting next to a default
+   (accent) chip that carries the primary identity — see details-preview's
+   rendition info overlay (blocks/details-preview/rendition-tags.js). */
+.asc-ui-chip--muted {
+    background: var(--color-muted);
+    color: var(--color-muted-fg);
+    border-color: var(--color-border);
 }
 
 /* Removable variant — use a <button> element; aria-label should describe the remove action */
@@ -1642,6 +1907,7 @@
 }
 
 .asc-ui-color-picker__input {
+    appearance: none;
     width: 100%;
     height: 2.5rem;
     padding: var(--spacing-2xs);
@@ -1688,9 +1954,10 @@
     }
 }
 
+/* Right-aligned, unstretched — reads as a footer action (see .asc-panel__footer)
+   rather than a full-width pill. */
 .asc-ui-color-picker__clear {
-    width: 100%;
-    justify-content: center;
+    align-self: flex-end;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────

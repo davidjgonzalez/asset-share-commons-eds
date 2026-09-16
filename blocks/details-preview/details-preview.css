@@ -95,16 +95,72 @@
 
     /* ── Shared overlay elements ───────────────────────────────────────────── */
 
-    .details-preview__rendition-label {
+    /* Rendition identity (name chip) + facts (format/size/dimensions pills) on
+       the left, actions (download / copy-url / copy-image) on the right — one
+       row anchored across the top of the preview. See rendition-actions.js /
+       rendition-tags.js. Wraps to two lines if the preview is too narrow for
+       both, info first. */
+    .details-preview__rendition-overlay {
         position: absolute;
         top: var(--spacing-md);
+        left: var(--spacing-md);
         right: var(--spacing-md);
-        font-size: var(--body-font-size-s);
-        padding: var(--spacing-xs) var(--spacing-sm);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: var(--spacing-xs);
+    }
+
+    .details-preview__rendition-actions {
+        display: flex;
+        flex-shrink: 0;
+        gap: var(--spacing-xs);
+
+        /* Semi-opaque so a .btn--ghost's transparent default doesn't disappear
+           into the preview underneath — same pattern as search-results cards
+           (.search-results__quick-action). */
+        .btn {
+            background: color-mix(in srgb, var(--color-card) 88%, transparent);
+            border-color: var(--color-border);
+
+            &:hover {
+                background: var(--color-card);
+            }
+        }
+
+        /* Author styles (.btn { display: inline-flex }) otherwise beat the UA
+           [hidden] rule regardless of specificity — without this, hiding a
+           .btn via the hidden attribute (rendition-actions.js) would silently
+           no-op. */
+        .btn[hidden] {
+            display: none;
+        }
+    }
+
+    .details-preview__rendition-info {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--spacing-2xs);
         pointer-events: none;
     }
 
+    .details-preview__rendition-label {
+        font-size: var(--body-font-size-s);
+        padding: var(--spacing-xs) var(--spacing-sm);
+    }
+
     .details-preview__rendition-label:empty {
+        display: none;
+    }
+
+    .details-preview__rendition-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--spacing-2xs);
+    }
+
+    .details-preview__rendition-tags:empty {
         display: none;
     }
 

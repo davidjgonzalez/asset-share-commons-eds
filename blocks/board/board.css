@@ -117,20 +117,20 @@
 
     .board__minimap-marker {
         position: absolute;
-        background: var(--color-muted-fg);
+        background: color-mix(in srgb, var(--color-muted-fg) 45%, transparent);
         border-radius: 1px;
         pointer-events: none;
 
         &.board__minimap-marker--text {
             background: transparent;
-            border: 1px dashed var(--color-muted-fg);
+            border: 1px dashed color-mix(in srgb, var(--color-muted-fg) 45%, transparent);
         }
     }
 
     .board__minimap-viewport {
         position: absolute;
         z-index: 1; /* stay above markers regardless of DOM insertion order */
-        border: 1px solid var(--color-primary);
+        border: 1px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
         background: color-mix(in srgb, var(--color-primary) 12%, transparent);
         pointer-events: none;
     }

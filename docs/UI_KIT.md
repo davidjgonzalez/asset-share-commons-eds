@@ -65,6 +65,85 @@ Conventions: root class `.asc-ui-<name>`, BEM children `__child`, modifiers `--v
 <p class="asc-ui-label">FIELD LABEL</p>
 ```
 
+### Back heading — `@kit back-heading` · `styles/ui-kit.css`
+A page/section heading with a small chevron "back to X" link tucked to its left,
+plus an optional description/meta line that drops to its own row below. Use for a
+share/collection/board page's title row (e.g. `collections/collection`, `sheets/*`).
+Styled to match the asset-details modal's prev/next nav buttons (`@kit icon-btn`) —
+same bordered circle, card background, and chevron artwork, drawn as a CSS
+mask-image rather than an inserted `<svg>` since the plain-authoring path below is
+a bare anchor with no JS hook to inject markup into.
+The link keeps its real words as content — text is visually hidden and the chevron
+drawn via `::before` — instead of authoring the glyph directly, so the accessible
+name stays the real "Back to X" phrase (link accessible-name computation prefers
+visible text content over `title`/`aria-label` whenever that text is non-empty,
+so a bare glyph as the actual text would leave screen readers announcing only the
+glyph). This also sidesteps DA's content pipeline stripping `data-*`/`aria-*`
+attributes off plain authored links (so the intended `data-asc-nav-link` tag can't
+be relied on there either) — nothing here depends on an attribute surviving that
+round-trip, only on the link's own text and the `button` class EDS's
+`decorateButtons()` adds at render time.
+
+Also invocable from plain DA authoring with no explicit class: a "content" block
+(used to attach `_area` grid metadata to passthrough text — see
+`scripts/asc/section-grid.js`) whose first child is a solo-link paragraph
+immediately followed by an `h1`/`h2` gets this look automatically, since that's
+exactly the shape `<p><a>Back to X</a></p><h1>Title</h1>` produces once EDS
+auto-buttonizes the lone link.
+```html
+<div class="asc-ui-back-heading">
+  <a href="/collections/" class="asc-ui-back-heading__back">Back to collections</a>
+  <h1>Collection title</h1>
+  <p>An optional description — sits directly under the title (h1 + p), reads
+     larger and less muted than the stats line below it, and collapses to
+     nothing when empty (:empty).</p>
+  <p>3 assets — Last updated Sep 11, 2026</p>
+</div>
+```
+The description `<p>` is optional — omit it (or leave its token unresolved) and
+only the stats line shows; both rules key off adjacency to the heading (`h1 + p`
+vs `h1 + p + p`), not an explicit class, so plain authoring gets the same
+behavior automatically.
+
+Plain-authoring equivalent (no `asc-ui-*` classes — this is what actually ships in
+`collections/collection`):
+```
+<p><a href="/collections/">Back to collections</a></p>
+<h1>{{collection.title}}</h1>
+<p>{{collection.description}}</p>
+<p>{{collection.count}} assets — Last updated {{collection.lastUpdated}}</p>
+```
+
+### Landing / marketing — `@kit landing` · `styles/ui-kit.css`
+A larger, lighter-weight lede paragraph for page/section intros, and a
+tinted callout banner (heading + description + CTA) for a "search/browse
+everything" style prompt. Both are also invocable from plain DA authoring
+with no block markup: add the class name to a section's `style`
+metadata row (values are comma-separated, e.g. `style: fixed-width,
+hero-intro`) and decorateSections() puts it directly on the section
+element, so `.section.hero-intro` / `.section.cta-banner` pick up the same
+rules as the classes below.
+```html
+<!-- Lede paragraph -->
+<p class="asc-ui-lede">A larger, muted intro line — pairs with a bold H1 above it.</p>
+
+<!-- CTA banner -->
+<div class="asc-ui-cta-banner">
+  <h2 class="asc-ui-cta-banner__title">Looking for something specific?</h2>
+  <p class="asc-ui-cta-banner__description">Search across every published asset by keyword, tag, file type, or folder.</p>
+  <div class="asc-ui-cta-banner__actions">
+    <a class="btn btn--primary" href="/search">Browse Everything</a>
+  </div>
+</div>
+```
+Section-metadata equivalent (no block, just a heading + paragraph + button-link
+authored directly in the section, exactly as `blocks/content` passthrough
+content would be):
+```
+| Section Metadata |            |
+| style            | fixed-width, cta-banner |
+```
+
 ### Button — `.btn` · `styles/styles.css`
 Variants: `--primary` `--secondary` `--ghost` `--danger`. Sizes: `--lg` / (default) / `--sm`.
 Shapes: `--circle` / `--icon` (square, pair with a size). Use on `<button>` or `<a>`.
@@ -233,6 +312,15 @@ Static tag / token (asset tag, active facet label).
 <span class="asc-ui-chip">Campaign</span>
 ```
 
+**Muted variant** — same pill shape, neutral background instead of accent; for a secondary fact
+pill sitting next to a default (accent) chip that carries the primary identity (e.g.
+`details-preview`'s rendition-info overlay: name chip + format/size/dimensions pills):
+```html
+<span class="asc-ui-chip">Web</span>
+<span class="asc-ui-chip asc-ui-chip--muted">JPEG</span>
+<span class="asc-ui-chip asc-ui-chip--muted">340 KB</span>
+```
+
 **Removable variant** — use a `<button>` element; set `aria-label` to describe the remove action:
 ```html
 <button type="button" class="asc-ui-chip asc-ui-chip--removable" aria-label="Remove Campaign">
@@ -272,6 +360,11 @@ Small numeric pill (e.g. active-collection count on the switcher trigger). Modif
 Generic surface. Modifiers: `--interactive` (hover), `--active` (selected), `--compact`
 (tighter `--spacing-sm` padding instead of the default `--spacing-md` — for dense grids of
 small cards, e.g. `details-renditions`' format-picker cards).
+Size scale: `--xs` `--s` `--m` `--l` `--xl` `--xxl` — caps card `max-width` (140px → 420px);
+unmodified is unconstrained. Pick one when a grid of uniformly-sized cards needs an
+author-facing size knob (e.g. `details-renditions`' `size` authoring field). Pair with a
+block-level `grid-template-columns: repeat(auto-fit, minmax(…, 1fr))` whose minimum scales
+alongside — that minmax floor is layout, not look, so it stays block-level CSS, not a kit variant.
 Slots: `__header` `__title` `__body` `__footer`.
 ```html
 <article class="asc-ui-card asc-ui-card--interactive">
@@ -285,6 +378,9 @@ Slots: `__header` `__title` `__body` `__footer`.
     <button class="btn btn--ghost btn--sm" type="button" style="margin-inline-start:auto;">Delete</button>
   </div>
 </article>
+
+<!-- Size scale -->
+<article class="asc-ui-card asc-ui-card--compact asc-ui-card--m">…</article>
 ```
 
 ### Collection card — `@kit collection-card` · `styles/ui-kit.css`
@@ -548,6 +644,7 @@ text label at this size.
       <button class="asc-ui-color-picker__preset" type="button" style="--asc-ui-swatch-color:#c0392b" title="Red"></button>
       <button class="asc-ui-color-picker__preset" type="button" style="--asc-ui-swatch-color:#2980b9" title="Blue"></button>
     </div>
+    <hr class="asc-ui-menu__separator">
     <button class="btn btn--ghost btn--sm asc-ui-color-picker__clear" type="button">Clear color</button>
   </div>
 </div>

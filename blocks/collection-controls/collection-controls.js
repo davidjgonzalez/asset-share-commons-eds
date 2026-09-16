@@ -27,8 +27,8 @@ export default async function decorate(block) {
   document.addEventListener('asc:share:created', () => {
     const pastSharesEl = block.querySelector('.collection-controls__past-shares');
     if (pastSharesEl) {
-      const label = controls.find((c) => c.id === 'past-shares')?.label || '';
-      pastSharesEl.innerHTML = renderPastSharesHtml(label);
+      const control = controls.find((c) => c.id === 'past-shares');
+      pastSharesEl.innerHTML = renderPastSharesHtml(control?.label || '', control?.variant || 'ghost');
     }
   });
 }
@@ -68,6 +68,34 @@ async function render(block, collectionId, controls) {
   const section = block.closest('.section');
   block.innerHTML = html(controls, isDefault, assetCount);
   initInteractions(block, collection, isDefault, section);
+  renderThumbStrip(section, collection);
+}
+
+const THUMB_STRIP_COUNT = 6;
+
+// Lives in the sibling "content" block (see initRename above for why) —
+// pure visual interest for an otherwise text-only header, so it's a no-op
+// rather than an error when there's nothing to show yet.
+function renderThumbStrip(section, collection) {
+  const infoBlock = section?.querySelector('.content.block');
+  if (!infoBlock) return;
+  infoBlock.querySelector('.collection-controls__thumb-strip')?.remove();
+
+  const assets = collection.assets || [];
+  if (!assets.length) return;
+
+  const shown = assets.slice(0, THUMB_STRIP_COUNT);
+  const extra = assets.length - shown.length;
+  const thumbs = shown.map((asset) => {
+    const src = services.renditions.getThumbnailUrl(asset);
+    if (!src) return '';
+    const alt = escAttr(asset.title || asset.filename || '');
+    return `<img class="collection-controls__thumb" src="${escAttr(src)}" alt="" title="${alt}" loading="lazy">`;
+  }).join('');
+  const extraHtml = extra > 0
+    ? `<span class="collection-controls__thumb collection-controls__thumb--more">+${extra}</span>` : '';
+
+  infoBlock.insertAdjacentHTML('beforeend', `<div class="collection-controls__thumb-strip">${thumbs}${extraHtml}</div>`);
 }
 
 const RENDERERS = {
@@ -79,7 +107,9 @@ const RENDERERS = {
 
 function html(controls, isDefault, assetCount) {
   const items = controls
-    .map(({ id, label }) => RENDERERS[id]?.({ label, isDefault, assetCount }) ?? '')
+    .map(({ id, label, variant }) => RENDERERS[id]?.({
+      label, variant, isDefault, assetCount,
+    }) ?? '')
     .join('');
   return `
     <div class="collection-controls__toolbar">
@@ -90,7 +120,7 @@ function html(controls, isDefault, assetCount) {
 function renderEditMenu(label, isDefault, variant) {
   return `
     <div class="collection-controls__menu-wrap">
-      <button type="button" class="collection-controls__menu-trigger btn btn--${variant} btn--sm"
+      <button type="button" class="collection-controls__menu-trigger btn btn--${variant}"
               aria-haspopup="true" aria-expanded="false">${escHtml(label || 'Edit')}</button>
       <div class="collection-controls__menu asc-panel asc-panel--no-pad" hidden>
         <ul class="asc-ui-menu" role="menu">
@@ -145,10 +175,10 @@ function initMenu(block) {
 // ── Rename ────────────────────────────────────────────────────────────────────
 
 function initRename(block, collection, section) {
-  block.querySelector('.collection-controls__rename-btn')?.addEventListener('click', () => {
-    const nameEl = section?.querySelector('h1');
-    if (!nameEl) return;
+  const nameEl = section?.querySelector('h1');
+  if (!nameEl) return;
 
+  function startRename() {
     const current = nameEl.textContent.trim();
     const input = document.createElement('input');
     input.type = 'text';
@@ -170,7 +200,20 @@ function initRename(block, collection, section) {
       if (e.key === 'Enter') { e.preventDefault(); commit(); }
       if (e.key === 'Escape') { input.replaceWith(nameEl); }
     });
-  });
+  }
+
+  block.querySelector('.collection-controls__rename-btn')?.addEventListener('click', startRename);
+
+  // The title lives in the sibling "content" block, which collection-controls'
+  // own re-renders never touch — it's the same persistent element across every
+  // CollectionEvents.CHANGED re-render, so wire the click-to-rename affordance
+  // only once (same accumulation risk the Past shares toggle had).
+  if (!nameEl.dataset.renameWired) {
+    nameEl.dataset.renameWired = 'true';
+    nameEl.classList.add('collection-controls__title--editable');
+    nameEl.title = 'Click to rename';
+    nameEl.addEventListener('click', startRename);
+  }
 }
 
 // ── Delete ────────────────────────────────────────────────────────────────────
@@ -228,6 +271,15 @@ function initShare(block, collection) {
       { collectionId: collection.id },
     );
   });
+
+  // Delegated on the persistent block element, which survives re-renders (render()
+  // calls initShare() again on every CollectionEvents.CHANGED) — must be wired only
+  // once, or each re-render stacks another listener here. With an even number
+  // stacked, a single click fires all of them in sequence and they cancel each
+  // other out (open, then immediately closed again) within that same click,
+  // making the button appear to do nothing.
+  if (block.dataset.pastSharesWired) return;
+  block.dataset.pastSharesWired = 'true';
 
   block.addEventListener('click', (e) => {
     const trigger = e.target.closest('.collection-controls__past-shares-trigger');

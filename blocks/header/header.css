@@ -35,7 +35,16 @@ header h1 {
 
 @media (width >= 768px) {
   header nav {
-    grid-template-columns: 1fr auto 1fr;
+    /* Brand and tools size to their own content (they hold a short logo and a
+       fixed toolbar, not something that benefits from extra space); search
+       is the one column that should flex to fill whatever room is left.
+       minmax(0, ...) on every track keeps each one's automatic minimum at 0 —
+       without it, a track's content-based minimum can force it wider than
+       the space actually available and overflow into its neighbors instead
+       of shrinking (this is what caused brand/search/tools to overlap at
+       tablet widths — brand and tools were forced into equal 1fr shares
+       regardless of their actual content width). */
+    grid-template-columns: minmax(0, auto) minmax(0, 1fr) minmax(0, auto);
     grid-template-areas: "brand search tools";
     align-items: center;
     gap: 1.5rem;
@@ -57,7 +66,15 @@ header nav .nav-brand {
   grid-area: brand;
   display: flex;
   align-items: center;
+  min-width: 0;
+  max-width: 100%;
+
+  /* Safety net, not the fix for the tablet overlap bug (that was the missing
+     min-width:0 below) — this just keeps a long authored site name from
+     spilling into the search column instead of eliding. */
+  overflow: hidden;
   white-space: nowrap;
+  text-overflow: ellipsis;
   font-size: var(--heading-font-size-s);
   font-weight: 700;
   line-height: 1;
@@ -85,6 +102,16 @@ header nav .nav-sections {
   min-width: 0;
 }
 
+/* The nav fragment's own section-wrapper markup nests the search-bar block
+   inside one or more ".*-wrapper" divs before it reaches .nav-sections. Each
+   of those is itself a flex child that needs min-width:0 to shrink — without
+   it, its automatic (content-based) minimum size holds the whole chain at
+   full width and it overflows .nav-sections on both sides instead of
+   compressing with the viewport. */
+header nav .nav-sections * {
+  min-width: 0;
+}
+
 /* Mobile-first: fill the row. Kit re-declares --asc-ui-search-width: 20rem on the
    component element itself, so we must target .asc-ui-search directly to win the
    specificity race. */
@@ -98,10 +125,20 @@ header .block.search-bar .asc-ui-search {
   }
 
   header nav .nav-sections {
+    /* justify-self stays at its default (stretch) so this fills the grid
+       track's actual resolved width; justify-content:center then centers the
+       search UI within that box. A previous justify-self:center here made
+       the item size to its own content instead of the track, so it silently
+       overflowed into the brand/tools columns at tablet widths. */
     justify-content: center;
-    justify-self: center;
   }
 
+  header .block.search-bar .asc-ui-search {
+    --asc-ui-search-width: 18rem;
+  }
+}
+
+@media (width >= 1200px) {
   header .block.search-bar .asc-ui-search {
     --asc-ui-search-width: 28rem;
   }

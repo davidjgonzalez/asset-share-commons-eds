@@ -118,7 +118,7 @@ export default async function decorate(block) {
     };
 
     const setRenditionLabel = (label) => {
-      renditionLabel.textContent = label ? `Rendition: ${label}` : '';
+      renditionLabel.textContent = label || '';
     };
 
     let pendingUnsupported = null;

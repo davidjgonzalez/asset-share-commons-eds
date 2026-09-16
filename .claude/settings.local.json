@@ -130,28 +130,22 @@
       "Bash(scout search:*)",
       "Bash(scout keyword-search:*)",
       "Bash(scout regex-search:*)",
-      "Bash(scout deep-search:*)",
       "Bash(scout go-to-definition:*)",
       "Bash(scout find-references:*)",
       "Bash(scout call-graph:*)",
       "Bash(scout explain-symbol:*)",
       "Bash(scout file-outline:*)",
-      "Bash(scout top-symbols:*)",
       "Bash(scout list:*)",
       "Bash(scout status:*)",
       "Bash(scout doctor:*)",
       "Bash(scout coderank:*)",
       "Bash(scout usage:*)",
       "Bash(scout token show:*)",
-      "Bash(scout broken-links:*)",
-      "Bash(scout orphan-documents:*)",
-      "Bash(scout topic-clusters:*)",
-      "Bash(scout tag-graph:*)",
-      "Bash(scout doc-stats:*)",
       "Bash(scout evaluate:*)",
       "mcp__scout__memory_search",
       "mcp__scout__memory_read",
-      "mcp__scout__memory_write"
+      "mcp__scout__memory_write",
+      "mcp__scout__memory_vote"
     ]
   }
 }

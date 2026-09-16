@@ -128,13 +128,17 @@ Mobile-first. Use the `width >=` syntax:
     grid-template-columns: repeat(var(--search-results-cols-tablet, 3), 1fr);
   }
 
-  @media (width >= 1024px) {
+  @media (width >= 900px) {
     grid-template-columns: repeat(var(--search-results-cols-desktop, 5), 1fr);
   }
 }
 ```
 
-Breakpoints: `768px` (tablet), `1024px` (desktop).
+Breakpoints: `768px` (tablet), `900px` (wide/desktop) — use these two for standard
+layout widening. A component may add its own narrower breakpoint (e.g. a card
+that needs to collapse a horizontal layout around 480px) when there's a
+specific, commented reason tied to that component's own content, rather than
+as a general-purpose third tier.
 
 ## Parts CSS
 

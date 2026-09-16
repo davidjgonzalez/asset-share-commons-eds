@@ -13,6 +13,8 @@
  *   |             |                      |    first then A→Z.
  *   | display     | cards                |  ← optional: "cards" for card grid,
  *   |             |                      |    default is table.
+ *   | size        | l                    |  ← optional, cards display only: card size —
+ *   |             |                      |    one of xs, s, m, l (default), xl, xxl.
  *   | show-all    | true                 |  ← optional: when `renditions` above names a
  *   |             |                      |    curated subset, adds a "Show all formats"
  *   |             |                      |    toggle that reveals every other visible
@@ -48,7 +50,11 @@
  *   filename         suggested download filename (base + ext)
  *   type             rendition type: "static" | "url" | "dm-openapi"
  *   path             JCR node path (static renditions only)
- *   usecase          usecase string from the definition (if authored)
+ *   usecase          usecase string from the definition (if authored) — e.g. "Instagram
+ *                    Post / Story Cover". In `display: cards` mode this is shown
+ *                    automatically under the rendition label whenever present, so
+ *                    people can tell which format to grab without opening each one;
+ *                    in table mode add it as its own column to get the same effect.
  *
  * Asset fields (prefix with `asset.`):
  *   asset.properties.title         asset property via getProperty()
@@ -61,6 +67,8 @@
  *   download   download link for the rendition
  *   share      dispatches asc:rendition:share
  *   copy-url   copies the rendition URL to the clipboard
+ *   copy-image copies the rendition's actual image bytes to the clipboard (image
+ *              renditions only — silently omitted for non-image renditions)
  *   preview    thumbnail image of the rendition; column title may be left empty.
  *              Image renditions use their own URL; non-image renditions fall back
  *              to the asset thumbnail.
@@ -69,8 +77,9 @@ import Asset from '../../scripts/asc/core/models/asset.js';
 import services from '../../scripts/asc/core/services/services.js';
 import { delegateEvent } from '../../scripts/asc/core/utils/events.js';
 import { resolveTokens } from '../../scripts/asc/tokens.js';
+import { canCopyImage, copyImageToClipboard } from '../../scripts/asc/core/utils/clipboard-image.js';
 
-const KNOWN_ACTIONS = new Set(['download', 'share', 'copy-url']);
+const KNOWN_ACTIONS = new Set(['download', 'share', 'copy-url', 'copy-image']);
 const PREVIEW_KEYWORD = 'preview';
 
 // Allowed inline tags for the instructions field — block-level wrappers are
@@ -94,11 +103,15 @@ const DEFAULT_COLUMNS = [
   { title: '', value: 'download' },
 ];
 
+const CARD_SIZES = new Set(['xs', 's', 'm', 'l', 'xl', 'xxl']);
+const DEFAULT_CARD_SIZE = 'l';
+
 export default async function decorate(block) {
   let renditionIds = [];
   let description = '';
   let instructions = '';
   let display = 'table';
+  let cardSize = DEFAULT_CARD_SIZE;
   let showAllToggle = false;
   const columns = [];
   [...block.children].forEach((row) => {
@@ -110,6 +123,9 @@ export default async function decorate(block) {
       renditionIds = parseList(cells[1]);
     } else if (lower === 'display') {
       display = val.toLowerCase() || 'table';
+    } else if (lower === 'size') {
+      const size = val.toLowerCase();
+      if (CARD_SIZES.has(size)) cardSize = size;
     } else if (lower === 'show-all') {
       showAllToggle = val.toLowerCase() === 'true';
     } else if (lower === 'description') {
@@ -160,9 +176,9 @@ export default async function decorate(block) {
     : '';
 
   if (display === 'cards') {
-    block.classList.add('details-renditions--cards');
-    const cards = renditions.map((rendition) => renditionCard(asset, rendition)).join('');
-    const extraCards = extraRenditions.map((rendition) => renditionCard(asset, rendition)).join('');
+    block.classList.add('details-renditions--cards', `details-renditions--size-${cardSize}`);
+    const cards = renditions.map((rendition) => renditionCard(asset, rendition, cardSize)).join('');
+    const extraCards = extraRenditions.map((rendition) => renditionCard(asset, rendition, cardSize)).join('');
     block.innerHTML = `${headerHtml}<div class="details-renditions__cards">${cards}</div>
       ${showAllToggleHtml}
       ${extraCards ? `<div class="details-renditions__cards details-renditions__extra" hidden>${extraCards}</div>` : ''}`;
@@ -170,7 +186,6 @@ export default async function decorate(block) {
     wireShowAllToggle(block);
     wireRenditionInteractions(block, asset, allRenditions, renditions);
     wireClipboardActions(block);
-    lazyLoadFileSizes(block, asset, allRenditions);
     return;
   }
 
@@ -251,29 +266,18 @@ function previewCell(asset, rendition) {
   return `<td class="details-renditions__preview"><img class="details-renditions__thumb" src="${esc(src)}" alt="${esc(alt)}" width="48" height="48" loading="lazy"></td>`;
 }
 
-function renditionCard(asset, rendition) {
-  const ctx = renditionContext(asset, rendition);
+function renditionCard(asset, rendition, size = DEFAULT_CARD_SIZE) {
   const thumbSrc = renditionPreviewSrc(asset, rendition);
   const thumbAlt = `${rendition.label} preview of ${asset.title || asset.filename || ''}`;
   const thumbHtml = thumbSrc
     ? `<img class="details-renditions__card-thumb" src="${esc(thumbSrc)}" alt="${esc(thumbAlt)}" width="320" height="192">`
     : '';
-  const metaItems = [ctx['file-type'], ctx['file-size'], ctx.dimensions].filter(Boolean);
-  const meta = metaItems.map((item, i) => `<span>${esc(item)}${i < metaItems.length - 1 ? ' ·&nbsp;' : ''}</span>`).join('');
-  const ref = `data-asc-asset="${asset.uuid}" data-asc-rendition="${rendition.id}"`;
   return `
-    <article class="asc-ui-card asc-ui-card--compact" data-asc-rendition="${esc(rendition.id)}">
+    <article class="asc-ui-card asc-ui-card--compact asc-ui-card--${size}" data-asc-rendition="${esc(rendition.id)}">
       ${thumbHtml ? `<div class="details-renditions__card-preview">${thumbHtml}</div>` : ''}
-      <div class="details-renditions__card-actions">
-        <a class="btn btn--ghost btn--icon btn--sm" ${downloadAttrs(asset, rendition)}
-           title="Download" aria-label="Download"
-           data-asc-action="rendition:download@click" ${ref}>${ICONS.download}</a>
-        <button class="btn btn--ghost btn--icon btn--sm" type="button" title="Copy URL" aria-label="Copy URL"
-           data-asc-action="rendition:copy-url@click" data-url="${esc(rendition.url)}" ${ref}>${ICONS.copyUrl}</button>
-      </div>
       <div class="asc-ui-card__body">
         <p class="asc-ui-card__title" title="${esc(rendition.label)}">${esc(rendition.label)}</p>
-        ${meta ? `<p class="asc-ui-copy details-renditions__card-meta">${meta}</p>` : ''}
+        ${rendition.usecase ? `<p class="asc-ui-copy details-renditions__card-usecase">${esc(rendition.usecase)}</p>` : ''}
       </div>
     </article>`;
 }
@@ -291,6 +295,10 @@ function renderAction(asset, rendition, action) {
     case 'copy-url':
       return `<button class="btn btn--ghost btn--icon btn--sm" type="button" title="Copy URL" aria-label="Copy URL"
            data-asc-action="rendition:copy-url@click" data-url="${esc(rendition.url)}" ${ref}>${ICONS.copyUrl}</button>`;
+    case 'copy-image':
+      if (!canCopyImage(rendition)) return '';
+      return `<button class="btn btn--ghost btn--icon btn--sm" type="button" title="Copy image" aria-label="Copy image"
+           data-asc-action="rendition:copy-image@click" data-url="${esc(rendition.url)}" data-mime-type="${esc(rendition.mimeType || '')}" ${ref}>${ICONS.copyImage}</button>`;
     default:
       return '';
   }
@@ -387,6 +395,28 @@ function wireClipboardActions(block) {
       btn.innerHTML = ICONS.alert;
     }
     setTimeout(() => { btn.innerHTML = original; }, 2000);
+  });
+
+  // Flashes a checkmark either way, but the aria-label/title distinguish "copied
+  // the image" from "copied the link instead" (e.g. blocked by CORS) — see
+  // clipboard-image.js for why the fallback exists.
+  delegateEvent(block, '[data-asc-action*="rendition:copy-image"]', 'click', async (e) => {
+    const btn = e.target.closest('[data-asc-action*="rendition:copy-image"]');
+    if (!btn) return;
+    const result = await copyImageToClipboard({ url: btn.dataset.url, mimeType: btn.dataset.mimeType });
+    if (result === 'failed') return;
+
+    const original = btn.innerHTML;
+    const originalLabel = btn.getAttribute('aria-label');
+    const label = result === 'image' ? 'Image copied' : 'Link copied (image copy unavailable)';
+    btn.innerHTML = ICONS.check;
+    btn.setAttribute('aria-label', label);
+    btn.title = label;
+    setTimeout(() => {
+      btn.innerHTML = original;
+      btn.setAttribute('aria-label', originalLabel);
+      btn.title = originalLabel;
+    }, 2000);
   });
 }
 
@@ -616,28 +646,8 @@ function lazyLoadFileSizes(block, asset, renditions) {
     const size = await fetchFileSize(rendition.url);
     if (!size) return;
     rendition.fileSize = size;
-    const formatted = formatBytes(size);
-
-    // Update table cells
     block.querySelectorAll(`[data-asc-rendition="${rendition.id}"] [data-asc-field="file-size"]`)
-      .forEach((el) => { el.textContent = formatted; });
-
-    // Update card meta
-    const card = block.querySelector(`.asc-ui-card[data-asc-rendition="${rendition.id}"]`);
-    if (!card) return;
-    const ctx = renditionContext(asset, rendition);
-    const metaItems = [ctx['file-type'], ctx['file-size'], ctx.dimensions].filter(Boolean);
-    const meta = metaItems.map((item, i) => `<span>${esc(item)}${i < metaItems.length - 1 ? ' ·&nbsp;' : ''}</span>`).join('');
-    const metaEl = card.querySelector('.details-renditions__card-meta');
-    if (metaEl) {
-      metaEl.innerHTML = meta;
-    } else if (meta) {
-      const p = Object.assign(document.createElement('p'), {
-        className: 'asc-ui-copy details-renditions__card-meta',
-        innerHTML: meta,
-      });
-      card.querySelector('.asc-ui-card__body')?.appendChild(p);
-    }
+      .forEach((el) => { el.textContent = formatBytes(size); });
   });
 }
 
@@ -645,6 +655,7 @@ const ICONS = {
   download: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
   share: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>',
   copyUrl: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>',
+  copyImage: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>',
   check: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>',
   alert: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
 };

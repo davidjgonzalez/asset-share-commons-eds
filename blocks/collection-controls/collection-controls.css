@@ -21,6 +21,50 @@
     box-sizing: border-box;
 }
 
+/* Click-to-rename affordance on the title itself (see initRename in
+   collection-controls.js) — same reasoning as .collection-controls__name-input
+   above for living outside the block scope. */
+.collection-controls__title--editable {
+    margin-inline: calc(-1 * var(--spacing-xs));
+    padding-inline: var(--spacing-xs);
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    transition: background var(--transition-fast);
+
+    &:hover {
+        background: var(--color-muted);
+    }
+}
+
+/* Thumbnail strip (see renderThumbStrip in collection-controls.js) — a quick
+   visual preview of what's actually in the collection, injected into the
+   sibling "content" block right after the title/meta text. */
+.collection-controls__thumb-strip {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    margin-top: var(--spacing-sm);
+}
+
+.collection-controls__thumb {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: var(--border-radius-md);
+    object-fit: cover;
+    border: 1px solid var(--color-border);
+    background: var(--color-muted);
+}
+
+.collection-controls__thumb--more {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--body-font-size-xs);
+    font-weight: 600;
+    color: var(--color-muted-fg);
+    background: var(--color-muted);
+}
+
 .block.collection-controls {
     --collection-radius: var(--border-radius-md);
 
@@ -68,6 +112,19 @@
     .collection-controls__toolbar .btn {
         min-height: var(--input-height-sm);
         box-sizing: border-box;
+    }
+
+    /* The @kit count badge (styles/ui-kit.css) defaults to 1.25rem tall — taller
+       than this row's own text content box (line-height: 1 at 0.9375rem), so
+       nested in the Past shares trigger it was stretching that one button
+       ~5px taller than its Share/Get-em-now siblings. Shrink it here to match
+       the surrounding button text instead of the other way around. */
+    .collection-controls__past-shares-trigger .asc-ui-count {
+        height: 1rem;
+        min-width: 1rem;
+        line-height: 1rem;
+        padding-inline: var(--spacing-xs);
+        font-size: 0.6875rem;
     }
 
     /* ── Active download jobs ─────────────────────────────────────────── */

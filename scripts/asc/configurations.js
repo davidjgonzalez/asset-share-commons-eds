@@ -111,6 +111,11 @@ const configurations = {
     // see scripts/asc/color-search.js (pulled from this instance's real
     // dam:colorDistribution metadata, not guessed).
     colorSearch: {
+      // Disabled for now — there's no reliable way to know the full universe of
+      // `dam:colorDistribution` name tokens Smart Tags can produce (see
+      // scripts/asc/color-search.js), so the picker can offer colors that never
+      // match anything. Re-enable once that vocabulary is confirmed complete.
+      enabled: false,
       palette: DEFAULT_PALETTE,
       // "Looseness" of a color search — how many nearby palette colors (by
       // RGB distance) to match in addition to the closest one. 1 = exact
@@ -193,12 +198,18 @@ const configurations = {
   //       { property: 'title',      width: '1fr'   },
   //       { property: 'file-type',  width: '120px' },
   //       { property: 'file-size',  width: '90px'  },
-  //       { property: 'modified',   width: '120px' },
+  //       { property: 'modified',   width: '150px' },
   //       // Custom property — must be registered in properties.custom:
   //       // { property: 'brand',   label: 'Brand', width: '120px' },
   //       // Escape hatch — custom render function when a property name isn't enough:
   //       // { label: 'Status', width: '80px', render: (asset) => asset.getProperty('dam:status').text || '—' },
   //     ],
+  //
+  //     // Trailing actions column (favorite/collection toggles + quick actions)
+  //     // isn't a `list` entry — it's always appended after those columns.
+  //     // Widen this if you add/remove quick actions elsewhere; default fits
+  //     // all 5 built-in buttons. Any CSS grid track value works ('auto', '1fr', ...).
+  //     listActionsWidth: '220px',
   //   },
   // },
   searchResults: {
@@ -437,7 +448,18 @@ const configurations = {
       tags,
       colors,
       'smart-tags': smartTags,
-      history,
+      // Built-in modified/created format an always-present Date (missing metadata
+      // still yields a Date instance, just an invalid one) — without this check
+      // that renders as the string "Invalid Date" instead of falling back to '—'.
+      modified: (asset) => (Number.isNaN(asset.lastModified?.getTime()) ? null : asset.lastModified.toLocaleDateString()),
+      created: (asset) => (Number.isNaN(asset.created?.getTime()) ? null : asset.created.toLocaleDateString()),
+      // Swap the history entry's action label from the chip primitive to the
+      // badge primitive (chips are for tags/tokens; badges are for status labels).
+      history: (asset) => {
+        const result = history(asset);
+        if (result?.html) result.html = result.html.replaceAll('asc-ui-chip', 'asc-ui-badge');
+        return result;
+      },
     },
   },
 

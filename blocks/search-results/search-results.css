@@ -47,12 +47,28 @@
             grid-template-columns: repeat(auto-fill, minmax(var(--card-min-width, 275px), 1fr));
         gap: var(--spacing-xl);
 
-        /* Show full asset without cropping across all display modes.
-           Specificity bump via [data-asc-results] beats the ASC Core
-           .asc-asset-teaser--card / --list rules (loaded later). */
-        .asc-asset-teaser__preview img,
-        .asc-asset-teaser__preview picture {
-            object-fit: contain;
+        /* Show full asset without cropping in list/masonry. Cards mode is
+           excluded — it falls through to ASC Core's own object-fit: cover
+           (.asc-asset-teaser--card rule, loaded later) so mixed-aspect photos
+           zoom/crop to fill the fixed 3:2 box instead of showing grey
+           pillar/letterbox bars. Specificity bump via [data-asc-results]
+           beats the ASC Core .asc-asset-teaser--list rule. */
+        &:not([data-display="cards"]) {
+            .asc-asset-teaser__preview img,
+            .asc-asset-teaser__preview picture {
+                object-fit: contain;
+            }
+        }
+
+        /* Grid rows stretch every card to match the row's tallest card (default
+           align-items: stretch), but ASC Core's fixed aspect-ratio: 3/2 preview
+           box doesn't grow with it — shorter cards (fewer meta lines) were left
+           with blank white space between the meta text and the card's bottom
+           border. Letting the preview absorb that leftover height means the
+           (already object-fit: cover'd) image just zooms in a bit further to
+           fill it, instead of leaving a dead gap. */
+        &[data-display="cards"] .asc-asset-teaser__preview {
+            flex: 1 1 auto;
         }
     }
 
@@ -122,6 +138,7 @@
             align-items: center;
             gap: 0;
             padding: var(--spacing-md) var(--spacing-lg) var(--spacing-md);
+            background: #f7f7f7;
         }
 
         .asc-asset-teaser__title {
@@ -152,6 +169,16 @@
         gap: var(--spacing-xs);
     }
 
+    /* In list mode the quick-action cluster sits inline in the actions cell
+       (not absolutely positioned like the card/masonry overlay below) — give
+       it its own flex + gap instead of relying on inline whitespace between
+       the buttons. */
+    .asc-list-view__actions .search-results__quick-actions {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+    }
+
     .asc-list-view__actions .asc-collection-toggle {
         --collection-toggle-add-bg: var(--color-card);
         --collection-toggle-add-fg: var(--color-fg);
@@ -166,25 +193,35 @@
         --collection-toggle-btn-backdrop: none;
     }
 
-    [data-asc-results]:not([data-display="list"]) .asc-asset-teaser .asc-collection-toggle {
+    /* Declared on the teaser itself (not the toggle) — the quick-action cluster
+       below is a sibling of the toggle, not a descendant, so it needs these on
+       a common ancestor to inherit them too. */
+    [data-asc-results]:not([data-display="list"]) .asc-asset-teaser {
         --search-results-action-bg: color-mix(in srgb, var(--color-card) 88%, transparent);
         --search-results-action-bg-hover: var(--color-card);
         --search-results-action-border: var(--color-border);
         --search-results-action-fg: var(--color-fg);
         --search-results-action-fg-hover: var(--color-fg);
+    }
 
+    /* Left group: favorite + "add to current collection". Right group: the
+       quick-action cluster (download/copy-url/copy-image), positioned further
+       below. Splitting them onto opposite edges keeps the collection-related
+       actions distinct from the one-off rendition actions. */
+    [data-asc-results]:not([data-display="list"]) .asc-asset-teaser .asc-collection-toggle {
         display: flex;
         flex-direction: row;
         align-items: center;
         gap: var(--spacing-sm);
         top: 0.5rem;
-        right: 0.5rem;
+        left: 0.5rem;
+        right: auto; /* cancel the core part's own right offset (asset-teaser.css) */
 
-        /* Small circle buttons for card/masonry overlay. Backdrop blur off: the
-           favorite toggle's background is deliberately transparent (styles.css —
-           "no yellow pill, just the glyph filled black"), and a blur with nothing
-           behind it just reads as a hazy smudge over the photo, inconsistent with
-           the crisp download/copy-url circles next to it. */
+        /* Small circle buttons for card/masonry overlay. Backdrop blur off: these
+           circles already get an opaque/near-opaque background (white for the
+           favorite toggle's active state — styles.css), and a blur behind an
+           opaque fill is wasted work that can still read as a hazy smudge at the
+           edges, inconsistent with the crisp download/copy-url circles next to it. */
         --collection-toggle-btn-width:     2rem;
         --collection-toggle-btn-min-width: 2rem;
         --collection-toggle-btn-height:    2rem;
@@ -205,20 +242,27 @@
         --collection-toggle-remove-hover-border: var(--search-results-action-border);
     }
 
-    /* Favorite toggle sits just to the left of the generic one — this selector's
-       specificity has to match/exceed the base rule above (right: 0.5rem) since it
-       also sets `right`, or the base rule's later declaration would win regardless
-       of source order. */
-    [data-asc-results]:not([data-display="list"]) .asc-asset-teaser .asc-collection-toggle--favorite {
-        right: calc(0.5rem + var(--collection-toggle-btn-width, 2rem) + var(--spacing-sm));
+    /* Generic "add to collection" toggle sits just right of the favorite one.
+       Favorite always stays flush at the base offset — unlike the old shared
+       right-edge layout, it no longer needs to collapse based on the generic
+       toggle's hidden state, since each toggle now has its own fixed slot. */
+    [data-asc-results]:not([data-display="list"]) .asc-asset-teaser .asc-collection-toggle--generic {
+        left: calc(0.5rem + var(--collection-toggle-btn-width, 2rem) + var(--spacing-sm));
     }
 
-    /* ...but the generic toggle hides itself (collection-toggle.js) whenever the
-       active collection IS favorites — reserving space for it then leaves a dead
-       gap to the favorite toggle's right. Collapse back to the base offset in
-       that case so the favorite/quick-action cluster sits flush against the edge. */
-    [data-asc-results]:not([data-display="list"]) .asc-asset-teaser:has(.asc-collection-toggle[hidden]) .asc-collection-toggle--favorite {
+    /* Quick-action cluster (download/copy-url/copy-image) anchors to the right
+       edge, independent of the toggle group on the left. It's a sibling of the
+       toggles (search-results.js inserts it after the generic toggle, not
+       inside it), so its own width never feeds into the toggles' offset math. */
+    [data-asc-results]:not([data-display="list"]) .asc-asset-teaser .search-results__quick-actions {
+        position: absolute;
+        top: 0.5rem;
         right: 0.5rem;
+        z-index: 3;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: var(--spacing-sm);
     }
 
     /* Dark overlay style — matches the collection toggle circles */
@@ -309,6 +353,12 @@
         padding-inline: var(--spacing-sm);
     }
 
+    .asc-list-view__empty {
+        display: block;
+        text-align: center;
+        color: var(--color-muted-fg);
+    }
+
     .asc-list-view__cell .asc-list-view__thumb {
         flex: 0 0 2.875rem;
         width: 2.875rem;
@@ -321,7 +371,7 @@
         margin-block: 0.3125rem;
         border-radius: var(--border-radius-full);
         overflow: hidden;
-        object-fit: contain;
+        object-fit: cover;
         background: var(--color-muted);
     }
 
@@ -342,14 +392,14 @@
     [data-asc-results][data-display="masonry"] {
         display: flex;
         align-items: flex-start;
-        gap: var(--spacing-xxl);
+        gap: var(--spacing-2xl);
 
         .masonry-col {
             flex: 1 1 clamp(240px, 22vw, 420px);
             min-width: 0;
             display: flex;
             flex-direction: column;
-            gap: var(--spacing-xxl);
+            gap: var(--spacing-2xl);
         }
 
         /* Natural image sizing — no skeleton, no forced aspect ratio.

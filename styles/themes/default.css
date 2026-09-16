@@ -94,6 +94,10 @@
   border-color: transparent;
   box-shadow: 0 1px 2px rgb(13 13 13 / 4%);
 
+  /* Match asc-ui-asset-card's corner radius (styles/ui-kit.css) — the part's
+     own fallback is --border-radius-md, which otherwise leaves search-result
+     cards visibly less rounded than every teaser/board/collection card. */
+  --asset-teaser-border-radius: var(--border-radius-lg);
   --asset-teaser-hover-border-color: transparent;
   --asset-teaser-hover-shadow:
     0 16px 32px -12px rgb(13 13 13 / 16%),

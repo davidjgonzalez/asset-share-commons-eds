@@ -139,6 +139,28 @@ main .section[data-layout="grid"] > div {
     }
 }
 
+/* Board pages (collection/board): the info+controls section above the board is
+ * chrome, not a marketing hero — its default h1/p spacing (sized for long-form
+ * editorial content) ate most of the vertical room the board canvas needs (see
+ * sizeViewport() in blocks/board/board.js, which sizes the board to whatever
+ * space is left below it). Tighten just this section's own headings/paragraphs
+ * rather than the global h1/p rules used everywhere else.
+ */
+.page-board main .section[data-layout="grid"] {
+    padding-top: var(--spacing-md, 1rem);
+}
+
+.page-board main .section[data-layout="grid"] h1 {
+    margin-top: 0;
+    margin-bottom: var(--spacing-xs, 0.25rem);
+    font-size: var(--heading-font-size-l);
+}
+
+.page-board main .section[data-layout="grid"] p {
+    margin-top: 0;
+    margin-bottom: var(--spacing-xs, 0.25rem);
+}
+
 @media (width < 768px) {
     main .section[data-layout="grid"] {
         grid-template-columns: 1fr;

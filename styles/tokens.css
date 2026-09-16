@@ -19,9 +19,6 @@
   --section-padding:      24px;
   --section-padding-wide: 32px;
 
-  /* ── Micro-spacing ──────────────────────────────────────────────── */
-  --spacing-2xs: 0.125rem;
-
   /* ── Icon sizes ─────────────────────────────────────────────────── */
   --icon-size-sm: 16px;
   --icon-size-md: 24px;

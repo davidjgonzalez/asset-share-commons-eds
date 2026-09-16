@@ -1,5 +1,7 @@
 /** @owner user */
 import { escAttr } from '../../scripts/asc/html.js';
+import { renditionTagsHtml, parseFields } from './rendition-tags.js';
+import { renditionActionsHtml, updateRenditionActions } from './rendition-actions.js';
 
 const FORMAT_NAMES = {
   'video/quicktime': 'QuickTime',
@@ -27,6 +29,7 @@ function renditionDisplay(rendition) {
 }
 
 export function mount(container, asset, initialRendition, config) {
+  const fields = parseFields(config.info);
   const bool = (key, def) => (config[key] === undefined ? def : config[key] !== 'false');
   const cfg = {
     controls: bool('controls', true),
@@ -68,7 +71,13 @@ export function mount(container, asset, initialRendition, config) {
 
   container.innerHTML = `
     ${playerHtml}
-    <span class="asc-ui-chip details-preview__rendition-label"></span>
+    <div class="details-preview__rendition-overlay">
+      <div class="details-preview__rendition-info">
+        <span class="asc-ui-chip details-preview__rendition-label"></span>
+        <span class="details-preview__rendition-tags"></span>
+      </div>
+      ${renditionActionsHtml()}
+    </div>
     <div class="details-preview__unsupported details-preview__unsupported--hidden asc-ui-empty-state">
       <p class="asc-ui-empty-state__title">Video format not supported</p>
       <p class="asc-ui-empty-state__hint details-preview__unsupported-hint"></p>
@@ -82,6 +91,8 @@ export function mount(container, asset, initialRendition, config) {
   const unsupportedHint = container.querySelector('.details-preview__unsupported-hint');
   const unsupportedDownload = container.querySelector('.details-preview__unsupported-download');
   const renditionLabel = container.querySelector('.details-preview__rendition-label');
+  const renditionTags = container.querySelector('.details-preview__rendition-tags');
+  const renditionOverlay = container.querySelector('.details-preview__rendition-overlay');
 
   const showPlayer = () => {
     if (videoEl) videoEl.classList.remove('details-preview__video--hidden');
@@ -144,9 +155,13 @@ export function mount(container, asset, initialRendition, config) {
       sourceEl.type = mime;
       videoEl.load();
       showPlayer();
-      renditionLabel.textContent = rendition.label ? `Rendition: ${rendition.label}` : '';
+      renditionLabel.textContent = rendition.label ? rendition.label : '';
+      renditionTags.innerHTML = renditionTagsHtml(rendition, fields);
+      updateRenditionActions(renditionOverlay, asset, rendition);
     } else {
       renditionLabel.textContent = '';
+      renditionTags.innerHTML = '';
+      updateRenditionActions(renditionOverlay, asset, null);
       showUnsupported(mime, renditionDisplay(rendition) || asset.filename, rendition.url);
     }
   };

@@ -75,11 +75,35 @@
             align-items: stretch;
         }
 
-        /* Tighter padding comes from the asc-ui-card--compact kit variant
-           (styles/ui-kit.css) — see renditionCard() in details-renditions.js. */
+        /* Grid minimum scales with the authored `size` field (details-renditions.js
+           adds one details-renditions--size-<xs|s|m|l|xl|xxl> block modifier); the
+           matching max-width lives on the asc-ui-card--<size> kit variant itself
+           (styles/ui-kit.css) — size-l matches the 160px default above, so it has
+           no override here. */
+        &.details-renditions--size-xs .details-renditions__cards {
+            grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+        }
+
+        &.details-renditions--size-s .details-renditions__cards {
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        }
+
+        &.details-renditions--size-m .details-renditions__cards {
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        }
+
+        &.details-renditions--size-xl .details-renditions__cards {
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        }
+
+        &.details-renditions--size-xxl .details-renditions__cards {
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        }
+
+        /* Tighter padding + size-scaled max-width come from the asc-ui-card--compact
+           and asc-ui-card--<size> kit variants (styles/ui-kit.css) — see
+           renditionCard() in details-renditions.js. */
         .details-renditions__cards > .asc-ui-card {
-            position: relative;
-            max-width: 280px;
             cursor: pointer;
         }
 
@@ -104,37 +128,6 @@
             display: block;
         }
 
-        /* Hover actions — same pattern as search-results cards
-           (.search-results__quick-action): overlaid on the preview, hidden
-           until hover/focus, with their own semi-opaque background so a
-           .btn--ghost's transparent default doesn't disappear into the
-           thumbnail image underneath. */
-        .details-renditions__card-actions {
-            position: absolute;
-            top: var(--spacing-xs);
-            right: var(--spacing-xs);
-            display: flex;
-            gap: var(--spacing-xs);
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity var(--transition-fast);
-
-            .btn {
-                background: color-mix(in srgb, var(--color-card) 88%, transparent);
-                border-color: var(--color-border);
-
-                &:hover {
-                    background: var(--color-card);
-                }
-            }
-        }
-
-        .details-renditions__cards > .asc-ui-card:hover .details-renditions__card-actions,
-        .details-renditions__cards > .asc-ui-card:focus-within .details-renditions__card-actions {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
         /* Truncate to one line — a wrapped title (e.g. "Smart Crop — Medium")
            would inflate its whole grid row's height (align-items: stretch),
            pushing every other card's footer down with it. Full label still
@@ -150,13 +143,11 @@
             font-size: var(--body-font-size-xs);
         }
 
-        .details-renditions__card-meta {
-            display: flex;
-            flex-wrap: wrap;
-
-            span {
-                white-space: nowrap;
-            }
+        /* Distinguish "what it's for" (usecase) from "what it is" (the rendition
+           label above it) — italic is enough at this font size without adding a
+           second color/weight to track. */
+        .details-renditions__card-usecase {
+            font-style: italic;
         }
 
         .details-renditions__show-all {

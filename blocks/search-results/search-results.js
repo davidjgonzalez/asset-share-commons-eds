@@ -39,8 +39,13 @@ const DEFAULT_LIST_COLS = [
   { property: 'title',     width: '1fr'   },
   { property: 'file-type', width: '120px' },
   { property: 'file-size', width: '90px'  },
-  { property: 'modified',  width: '120px' },
+  { property: 'modified',  width: '150px' },
 ];
+
+// Trailing actions cell holds up to 5 icon buttons (favorite + collection
+// toggles, download/copy-url/copy-image) at ~32px each plus gaps/padding —
+// narrower than this clips or overlaps them.
+const DEFAULT_ACTIONS_WIDTH = '220px';
 
 function getListCols() {
   const configured = configurations.searchResults?.views?.list;
@@ -49,13 +54,19 @@ function getListCols() {
   return configured.map((c) => (typeof c === 'string' ? { property: c } : c));
 }
 
+function getActionsWidth() {
+  return configurations.searchResults?.views?.listActionsWidth || DEFAULT_ACTIONS_WIDTH;
+}
+
 function esc(str) {
   return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+const EMPTY_CELL_HTML = '<span class="asc-list-view__empty">—</span>';
+
 function renderListCell(col, asset) {
   // Escape-hatch: custom render function
-  if (col.render) return col.render(asset, services) ?? '—';
+  if (col.render) return col.render(asset, services) ?? EMPTY_CELL_HTML;
 
   const { property } = col;
   if (property === 'thumbnail') {
@@ -67,26 +78,29 @@ function renderListCell(col, asset) {
     }
     return `<img class="asc-list-view__thumb" src="${esc(asset.thumbnail)}" alt="${alt}" loading="lazy">`;
   }
-  return esc(asset.getProperty(property).text || '—');
+  const { text } = asset.getProperty(property);
+  return text ? esc(text) : EMPTY_CELL_HTML;
 }
 
 function quickActionButtonsHtml(assetId) {
   return `
-    <button type="button"
-            class="search-results__quick-action search-results__quick-download asc-ui-icon-btn"
-            data-asc-asset="${esc(assetId)}"
-            aria-haspopup="true" aria-expanded="false"
-            aria-label="Download asset">${ICONS.download}</button>
-    <button type="button"
-            class="search-results__quick-action search-results__quick-copy-url asc-ui-icon-btn"
-            data-asc-asset="${esc(assetId)}"
-            aria-haspopup="true" aria-expanded="false"
-            aria-label="Copy rendition URL">${ICONS.copyUrl}</button>
-    <button type="button"
-            class="search-results__quick-action search-results__quick-copy-image asc-ui-icon-btn"
-            data-asc-asset="${esc(assetId)}"
-            aria-haspopup="true" aria-expanded="false"
-            aria-label="Copy image">${ICONS.copyImage}</button>`;
+    <div class="search-results__quick-actions">
+      <button type="button"
+              class="search-results__quick-action search-results__quick-download asc-ui-icon-btn"
+              data-asc-asset="${esc(assetId)}"
+              aria-haspopup="true" aria-expanded="false"
+              aria-label="Download asset" title="Download asset">${ICONS.download}</button>
+      <button type="button"
+              class="search-results__quick-action search-results__quick-copy-url asc-ui-icon-btn"
+              data-asc-asset="${esc(assetId)}"
+              aria-haspopup="true" aria-expanded="false"
+              aria-label="Copy rendition URL" title="Copy rendition URL">${ICONS.copyUrl}</button>
+      <button type="button"
+              class="search-results__quick-action search-results__quick-copy-image asc-ui-icon-btn"
+              data-asc-asset="${esc(assetId)}"
+              aria-haspopup="true" aria-expanded="false"
+              aria-label="Copy image" title="Copy image">${ICONS.copyImage}</button>
+    </div>`;
 }
 
 // Fallback face for assets with no image preview — glyph + short label using the
@@ -120,6 +134,23 @@ function renderListActionsCell(asset) {
       ${collectionToggle(asset, { addLabel: 'Add to collection', removeLabel: 'Remove from collection' })}
       ${quickActionButtonsHtml(asset.uuid)}
     </div>`;
+}
+
+// Native-tooltip support: mirrors aria-label onto title for any button inside
+// the results grid. Covers the quick-action buttons' static labels (set inline
+// above) as well as labels set asynchronously elsewhere — e.g. the favorite/
+// add-to-collection toggle labels hydrated by collection-toggle.js (ASC Core),
+// and the transient "Image copied"/"Link copied" swaps during copy feedback.
+function observeAriaLabelTitles(root) {
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach(({ target, attributeName }) => {
+      if (attributeName !== 'aria-label') return;
+      const label = target.getAttribute('aria-label');
+      if (label) target.title = label;
+      else target.removeAttribute('title');
+    });
+  });
+  observer.observe(root, { attributes: true, attributeFilter: ['aria-label'], subtree: true });
 }
 
 function getMasonryState(container) {
@@ -196,7 +227,7 @@ function renderListRows(assets, cols) {
 
 function renderListView(assets) {
   const cols = getListCols();
-  const trackSizes = [...cols.map((c) => c.width || 'auto'), '136px'].join(' ');
+  const trackSizes = [...cols.map((c) => c.width || 'auto'), getActionsWidth()].join(' ');
   const headers = cols.map((col) => {
     const label = col.label ?? PROP_LABELS[col.property] ?? col.property ?? '';
     return `<div class="asc-list-view__cell asc-list-view__cell--header" role="columnheader">${label}</div>`;
@@ -254,13 +285,19 @@ function attachImageHandlers(resultsEl) {
 function injectQuickActionButtons(resultsEl, display) {
   if (display === 'list') return;
 
-  resultsEl.querySelectorAll('.asc-asset-teaser .asc-collection-toggle').forEach((toggle) => {
-    if (toggle.querySelector('.search-results__quick-download')) return;
+  // Only the generic +/− toggle, not the favorite star toggle — each card renders
+  // both (asset-teaser.js), and injecting into both would duplicate the download/
+  // copy-url/copy-image buttons and overlap them behind the favorite toggle.
+  // Inserted as a sibling of the toggle (not a child) so the toggle's own width
+  // stays fixed at one button — the favorite toggle's left offset is computed
+  // from that fixed width and would otherwise land on top of these buttons.
+  resultsEl.querySelectorAll('.asc-asset-teaser .asc-collection-toggle--generic').forEach((toggle) => {
     const teaser = toggle.closest('.asc-asset-teaser');
-    const assetId = teaser?.dataset?.ascAsset;
+    if (!teaser || teaser.querySelector('.search-results__quick-actions')) return;
+    const assetId = teaser.dataset?.ascAsset;
     if (!assetId) return;
 
-    toggle.insertAdjacentHTML('beforeend', quickActionButtonsHtml(assetId));
+    toggle.insertAdjacentHTML('afterend', quickActionButtonsHtml(assetId));
   });
 }
 
@@ -321,7 +358,7 @@ function skeletonCardHtml() {
 
 function skeletonListHtml() {
   const cols = getListCols();
-  const trackSizes = [...cols.map((c) => c.width || 'auto'), '136px'].join(' ');
+  const trackSizes = [...cols.map((c) => c.width || 'auto'), getActionsWidth()].join(' ');
   const rows = Array.from({ length: SKELETON_COUNT }, () => `
     <div class="asc-list-view__row" aria-hidden="true">
       ${cols.map((col) => `<div class="asc-list-view__cell">${col.property === 'thumbnail'
@@ -396,6 +433,7 @@ async function addEventListeners(block, _config) {
 
   const resultsEl = block.querySelector('[data-asc-results]');
   new ResizeObserver(() => reflowMasonryColumns(resultsEl)).observe(resultsEl);
+  observeAriaLabelTitles(resultsEl);
 
   function requestLoadMore() {
     isLoadingMore = true;

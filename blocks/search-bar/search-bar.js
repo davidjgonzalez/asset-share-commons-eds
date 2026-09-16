@@ -15,7 +15,9 @@
  *   |              | Title : @jcr:content/metadata/dc:title             |
  *   | order        | Descending : desc                                  |  ← first option = default
  *   |              | Ascending : asc                                    |
- *   | color-search | false                                               |  ← optional: hide the color-search control (default: shown)
+ *   | color-search | false                                               |  ← optional: hide the color-search control
+ *                                                                            (currently disabled site-wide via
+ *                                                                            configurations.js search.colorSearch.enabled)
  *
  *   Each option is authored as "Label : value" on its own paragraph within the cell.
  *   The first option listed becomes the default when nothing is stored in localStorage.
@@ -28,6 +30,7 @@ import services from '../../scripts/asc/core/services/services.js';
 
 const configurations = (await import('../../scripts/asc/configurations.js')).default;
 const SEARCH_PAGE = configurations.search?.page || '';
+const COLOR_SEARCH_ENABLED = configurations.search?.colorSearch?.enabled !== false;
 const COLOR_PALETTE = configurations.search?.colorSearch?.palette || DEFAULT_PALETTE;
 
 const LS_DISPLAY = 'asc.search-results.display';
@@ -104,7 +107,7 @@ export default function decorate(block) {
   const display = viewOptions.some((o) => o.value === storedDisplay) ? storedDisplay : viewOptions[0].value;
   const orderby    = params.get('orderby')      || localStorage.getItem(LS_ORDERBY)    || sortOptions[0].value;
   const orderbySort= params.get('orderby.sort') || localStorage.getItem(LS_ORDERBY_SORT) || orderOptions[0].value;
-  const colorSearchEnabled = config['color-search'] !== 'false';
+  const colorSearchEnabled = COLOR_SEARCH_ENABLED && config['color-search'] !== 'false';
   const color = colorSearchEnabled ? (localStorage.getItem(LS_COLOR) || '') : '';
 
   block.innerHTML = html(config, {
@@ -153,6 +156,7 @@ function html(config, {
               ${COLOR_PALETTE.map(({ label, hex }) =>
                 `<button type="button" class="asc-ui-color-picker__preset" style="--asc-ui-swatch-color:${escAttr(hex)}" data-color="${escAttr(hex)}" title="${escAttr(label)}"></button>`).join('')}
             </div>
+            <hr class="asc-ui-menu__separator">
             <button type="button" class="btn btn--ghost btn--sm asc-ui-color-picker__clear">Clear color</button>
           </div>
         </div>

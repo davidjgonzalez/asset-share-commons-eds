@@ -97,12 +97,12 @@
   --nav-height: 4rem;
 
   /* Spacing scale */
+  --spacing-2xs: 0.125rem;
   --spacing-xs:  0.25rem;
   --spacing-sm:  0.5rem;
   --spacing-md:  1rem;
   --spacing-lg:  1.5rem;
   --spacing-xl:  2rem;
-  --spacing-xxl: 3rem;
   --spacing-2xl: 3rem;
   --spacing-3xl: 4rem;
 
@@ -221,7 +221,7 @@ footer .footer[data-block-status="loaded"] { visibility: visible; }
 
 h1, h2, h3, h4, h5, h6 {
   margin-top: 0.8em;
-  margin-bottom: 0.25em;
+  margin-bottom: 0.5em;
   font-family: var(--heading-font-family);
   font-weight: 600;
   line-height: 1.25;
@@ -264,13 +264,20 @@ main {
 
 main > div { margin: 2.5rem 1rem; }
 
+/* Board pages (collections, boards) size their canvas to whatever vertical space
+   is left below it (see sizeViewport() in blocks/board/board.js) — every pixel of
+   fixed chrome margin above the board is a pixel the canvas doesn't get, so shrink
+   the standard page-top spacing here instead of leaving it at the marketing-page
+   default. */
+.page-board main { margin-top: var(--spacing-lg, 1.5rem); }
+
 main img {
   max-width: 100%;
   width: auto;
   height: auto;
 }
 
-.icon { display: inline-block; height: 24px; width: 24px; }
+.icon { display: inline-block; height: var(--icon-size-md); width: var(--icon-size-md); }
 .icon img { height: 100%; width: 100%; }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -573,7 +580,7 @@ button {
   font: inherit;
 }
 
-input:not([type="checkbox"], [type="radio"], [type="hidden"], [type="range"]),
+input:not([type="checkbox"], [type="radio"], [type="hidden"], [type="range"], [type="color"]),
 textarea {
   background: var(--color-input);
   color: var(--color-fg);
@@ -827,6 +834,23 @@ main > .section > div {
   padding: 0 var(--section-padding, 24px);
 }
 
+/* A plain section can hold several stacked children — the default content
+   wrapper (h1/p) plus one or more block wrappers — with nothing of their own
+   to separate them. Grid/aside/inline/grid-layout sections manage their own
+   spacing via `gap` (sections.css) and reset child margins to 0, so they're
+   excluded here — `.inline` in particular lays its children out as a
+   horizontal flex row (e.g. the search-filters dropdown row), where an added
+   margin-top would only stretch-inflate whichever child it skips (the first
+   one, having no preceding sibling to trigger `div + div`) via default
+   align-items:stretch. `[data-layout="grid"]` (the named-area section grid,
+   a separate mechanism from the `.grid` class — see sections.css) needs the
+   same exclusion: `div + div` matches DOM order, not grid position, so a
+   block that's merely the 2nd+ child in markup but sits at the *top* of its
+   own named grid cell would otherwise get a spurious top margin. */
+main > .section:not(.grid, .aside, .inline, [data-layout="grid"]) > div + div {
+  margin-top: var(--spacing-xl, 2rem);
+}
+
 main .section.grid,
 main .section.aside {
   padding-left: var(--section-padding, 24px);
@@ -835,6 +859,11 @@ main .section.aside {
 }
 
 main > .section:first-of-type { margin-top: 0; }
+
+/* Same reasoning as the .page-board main rule above — the gap between the
+   info/toolbar section and the board section is chrome the board doesn't get. */
+.page-board main > .section { margin: var(--spacing-md, 1rem) 0; }
+.page-board main > .section:first-of-type { margin-top: 0; }
 
 @media (width >= 900px) {
   main > .section > div,
@@ -1073,13 +1102,16 @@ main .section.search-filters ol {
    COLLECTION TOGGLE — favorite variant override
 ───────────────────────────────────────────────────────────────────────── */
 
-/* Favorited state: no yellow pill — just the star glyph itself filled black.
+/* Favorited state: same look as the regular collection toggle's "in collection"
+   state — not a yellow pill — in every context (card/masonry, list view), so
+   just point the favorite variant's variables at the generic "remove" ones
+   instead of hardcoding colors here.
    Variables consumed by the core component (scripts/asc/core/parts/collection-toggle). */
 .asc-collection-toggle {
-  --collection-toggle-favorite-bg: transparent;
-  --collection-toggle-favorite-border: transparent;
-  --collection-toggle-favorite-fg: var(--color-fg);
-  --collection-toggle-favorite-hover-bg: transparent;
-  --collection-toggle-favorite-hover-border: transparent;
-  --collection-toggle-favorite-hover-fg: var(--color-fg);
+  --collection-toggle-favorite-bg: var(--collection-toggle-remove-bg);
+  --collection-toggle-favorite-border: var(--collection-toggle-remove-border);
+  --collection-toggle-favorite-fg: var(--collection-toggle-remove-fg);
+  --collection-toggle-favorite-hover-bg: var(--collection-toggle-remove-hover-bg);
+  --collection-toggle-favorite-hover-border: var(--collection-toggle-remove-hover-border);
+  --collection-toggle-favorite-hover-fg: var(--collection-toggle-remove-hover-fg);
 }

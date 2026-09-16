@@ -19,6 +19,7 @@ let _itemDragMoved = false;
 let _rubberBandJustSelected = false;
 let _openPanelState = null;
 let _noteHoverTimer = null;
+let _dragZCounter = 0;
 const _selectedItems = new Set();
 
 // ─── localStorage key helpers ─────────────────────────────────────────────────
@@ -827,8 +828,8 @@ function initItemDrag(block, collectionId, panZoom) {
     const isInGroup = _selectedItems.has(card) && _selectedItems.size > 1;
     const dragGroup = isInGroup ? [..._selectedItems] : [card];
 
-    const zVal = Date.now();
-    dragGroup.forEach((c) => { c.style.zIndex = zVal; });
+    _dragZCounter += 1;
+    dragGroup.forEach((c) => { c.style.zIndex = _dragZCounter; });
 
     const startPositions = dragGroup.map((c) => ({
       el: c,
@@ -1417,7 +1418,7 @@ function sizeViewport(block) {
   viewport.style.height = `${Math.max(available, BOARD_MIN_HEIGHT)}px`;
 }
 
-function initBoard(block, config, collectionId) {
+function initBoard(block, config, collectionId, { forceFit = false } = {}) {
   _selectedItems.clear();
   sizeViewport(block);
 
@@ -1449,7 +1450,12 @@ function initBoard(block, config, collectionId) {
     initViewClicks(block, config, panZoom);
   }
 
-  if (!panZoom.hasValidSavedViewport) {
+  // forceFit covers opening the page: a board should always greet you with everything in
+  // view rather than wherever a previous visit last left the pan/zoom. A saved viewport is
+  // still honored for in-session re-renders (e.g. adding an asset from search triggers
+  // CollectionEvents.CHANGED without a page reload) as long as its content signature still
+  // matches — see initPanZoom above.
+  if (forceFit || !panZoom.hasValidSavedViewport) {
     requestAnimationFrame(() => requestAnimationFrame(() => panZoom.fitView(false)));
   }
 }
@@ -1478,7 +1484,7 @@ export default async function decorate(block) {
       return;
     }
 
-    async function renderCollection() {
+    async function renderCollection(forceFit) {
       const result = await loadFromCollection(id);
       if (!result) {
         block.innerHTML = '<p class="board__error">Collection not found.</p>';
@@ -1486,20 +1492,24 @@ export default async function decorate(block) {
       }
       const { assetItems, textItems } = result;
       block.innerHTML = viewportHtml(assetItems, textItems, config);
-      initBoard(block, config, id);
+      initBoard(block, config, id, { forceFit });
     }
 
-    await renderCollection();
+    await renderCollection(true);
 
     document.addEventListener(CollectionEvents.CHANGED, async (e) => {
       if (e.detail?.id && e.detail.id !== id) return;
-      await renderCollection();
+      // A rename only touches the collection's title — the board never displays
+      // it, so a full re-render here would just discard live, unpersisted view
+      // state (search-narrowed pan/zoom, current selection) for no visible gain.
+      if (e.detail?.action === 'renamed') return;
+      await renderCollection(false);
     });
   } else if (config.source === 'authored') {
     const { assetItems, textItems } = await loadFromAuthoredList(config.items);
     const boardConfig = { ...config, mode: 'view' };
     block.innerHTML = viewportHtml(assetItems, textItems, boardConfig);
-    initBoard(block, boardConfig, null);
+    initBoard(block, boardConfig, null, { forceFit: true });
   } else {
     const sheetParam = config.mode === 'sheet-url'
       ? sheetParamFromUrl(config.sheetUrl)
@@ -1524,6 +1534,6 @@ export default async function decorate(block) {
     const boardConfig = config.mode === 'sheet-url' ? { ...config, mode: 'view' } : config;
     block.innerHTML = viewportHtml(assetItems, textItems, boardConfig);
 
-    initBoard(block, boardConfig, null);
+    initBoard(block, boardConfig, null, { forceFit: true });
   }
 }

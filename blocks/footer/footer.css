@@ -19,3 +19,90 @@ footer {
     }
 }
 
+/* ── Footer columns — brand + site links ──────────────────────────────────
+ * Reuses the stock `columns` block (blocks/columns/) so it stays authorable
+ * as a plain DA table, but a footer wants top-aligned columns of differing
+ * length (link lists) rather than that block's marketing default of
+ * vertically centering an image/text pair, and the brand column reads better
+ * with more room than the link columns. Scoped under `footer` so the shared
+ * columns.css behavior elsewhere on the site is untouched. */
+footer .block.columns {
+    margin-bottom: var(--spacing-2xl);
+
+    /* Below 900px the base columns.css stacks columns with no gap of its own
+       (it only adds one once columns sit side by side) — without this, the
+       stacked link lists run straight into each other. */
+    > div {
+        gap: var(--spacing-xl);
+    }
+
+    > div > div {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-sm);
+    }
+
+    /* Brand column (first) reads as the heading; link columns get a small
+       label above the list, mirroring .asc-ui-heading-eyebrow's look
+       (styles/ui-kit.css) — DA's plain table authoring has no way to apply
+       that class to an individual paragraph, so the same values are
+       replicated here via structural position instead. */
+    > div > div:first-child > p:first-child {
+        font-size: var(--heading-font-size-m);
+        font-weight: 500;
+    }
+
+    /* Version / platform line right under the brand name. */
+    > div > div:first-child > p:nth-child(2) {
+        color: var(--color-muted-fg);
+    }
+
+    > div > div:not(:first-child) > p:first-child {
+        margin: 0;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--color-muted-fg);
+    }
+
+    ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xs);
+    }
+
+    a {
+        color: var(--color-muted-fg);
+        text-decoration: none;
+
+        &:hover {
+            color: var(--color-fg);
+            text-decoration: underline;
+        }
+    }
+}
+
+@media (width >= 900px) {
+    footer .block.columns > div {
+        align-items: flex-start;
+        gap: var(--spacing-2xl);
+    }
+
+    footer .block.columns > div > div:first-child {
+        flex: 1.5;
+    }
+}
+
+/* ── Bottom bar — copyright line, set apart via section-metadata
+ * (`style: footer-bottom`) so its border/spacing don't depend on guessing
+ * how EDS nests a bare paragraph inside the section. */
+footer .section.footer-bottom {
+    margin-top: 0;
+    padding-top: var(--spacing-lg);
+    border-top: 1px solid var(--color-border);
+    color: var(--color-muted-fg);
+}
+

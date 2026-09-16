@@ -2,6 +2,7 @@
 import { readBlockConfig } from '../../scripts/aem.js';
 import Asset from '../../scripts/asc/core/models/asset.js';
 import { escHtml } from '../../scripts/asc/html.js';
+import { wireRenditionActions } from './rendition-actions.js';
 
 const OFFICE_EXTS = new Set(['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx']);
 
@@ -28,6 +29,16 @@ function resolveInitial(asset, priorityList) {
   return asset.renditions[0] ?? null;
 }
 
+/**
+ * Authoring (da.live table), in addition to `renditions` (priority list):
+ *
+ *   | info | file-type, file-size, dimensions |  ← optional: which rendition facts to
+ *   |      |                                   |    show as pills next to the rendition-
+ *   |      |                                   |    name chip over the preview. Omit for
+ *   |      |                                   |    the default shown. Keys: file-type,
+ *   |      |                                   |    format, file-size, dimensions, width,
+ *   |      |                                   |    height, usecase — see rendition-tags.js.
+ */
 export default async function decorate(block) {
   const config = readBlockConfig(block);
   const priority = (config.renditions || 'original')
@@ -35,6 +46,7 @@ export default async function decorate(block) {
 
   block.innerHTML = '<div class="details-preview__viewer"></div>';
   const viewer = block.querySelector('.details-preview__viewer');
+  wireRenditionActions(block);
 
   try {
     const asset = await Asset.create(block);
