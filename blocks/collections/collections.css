@@ -161,27 +161,6 @@
     }
 }
 
-/* "New Collection" button — injected as a sibling of the authored <h1> in the
-   page's "content" block (see renderHeaderActions in collections.js), not
-   rendered inside this block's own DOM, so it's styled unscoped rather than
-   nested under .block.collections. The grid below is what actually lands it
-   on the same row as the title; scoped to sections that also contain this
-   block so no unrelated ".content" block elsewhere in the site is affected. */
-.section:has(> .block.collections) > .content.block:has(> h1) {
-    display: grid;
-    grid-template-columns: 1fr;
-    align-items: center;
-    gap: var(--spacing-sm);
-
-    @media (width >= 768px) {
-        grid-template-columns: 1fr auto;
-    }
-}
-
-.collections__new-btn {
-    flex-shrink: 0;
-}
-
 /* New collection dialog — Name + Description stacked fields (see
    openNewCollectionDialog in collections.js). Appended to document.body,
    so unscoped like the rest of this section. */

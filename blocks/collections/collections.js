@@ -14,7 +14,10 @@ const COLLECTION_PATH = configurations.collections?.collectionPath || '/collecti
 /**
  * Collections block — index/management page for all user collections, or a
  * compact horizontal rail (e.g. for placing on the homepage).
- * Page title and intro copy are authored in DA.live above this block.
+ * Page title lives in a sibling "content" block and "New Collection" in a
+ * sibling collections-actions block — both authored above this one, sharing
+ * its header row via the named-area section grid (docs/GRID_LAYOUT.md); see
+ * docs/starter-kit/collections.html.
  *
  * Content config (key | value rows):
  *   display  'grid' (default, full management page) | 'rail' (compact strip —
@@ -24,8 +27,8 @@ const COLLECTION_PATH = configurations.collections?.collectionPath || '/collecti
  * Features:
  *   - Grid or rail of collection cards: mosaic of up to 4 asset thumbnails
  *     (lazy-loaded), name, asset type counts, total count, last updated
- *   - Grid mode adds: "New Collection" modal dialog, Set active / Duplicate /
- *     Delete actions per card
+ *   - Grid mode adds: Set active / Duplicate / Delete actions per card
+ *     ("New Collection" itself lives in the sibling collections-actions block)
  *   - Re-renders on any collection change event
  *   - Navigate to collection detail page at COLLECTION_PATH?id=<uuid>
  */
@@ -58,7 +61,6 @@ async function render(block, isRail, limit) {
   block.innerHTML = html(shown, activeId, defaultId, isRail);
   initInteractions(block, isRail);
   loadMosaics(block);
-  renderHeaderActions(block, isRail);
 }
 
 function html(collections, activeId, defaultId, isRail) {
@@ -258,37 +260,6 @@ function initInteractions(block, isRail) {
       if (!window.confirm(`Delete "${name}"? This cannot be undone.`)) return;
       services.collections.delete(btn.dataset.collectionId);
     });
-  });
-}
-
-// ─── Header actions ───────────────────────────────────────────────────────────
-
-// "New Collection" is injected as a DOM sibling of the authored <h1> in the
-// page's sibling "content" block (docs/starter-kit/collections.html), rather
-// than rendered inside this block's own toolbar, so it lands on the same row
-// as the page title via CSS grid (collections.css). Same technique as
-// renderTitleMenu in collection-controls.js — must land as an `afterend`
-// sibling of h1, never a child: tokens.js's page-wide `{{ }}` registry can
-// re-resolve h1's textContent at any time (e.g. an unrelated fragment reload
-// calling registerTokens() again), which would wipe any children stuffed
-// inside it. Sibling placement is immune.
-function renderHeaderActions(block, isRail) {
-  const titleBlock = block.closest('.section')?.querySelector('.content.block:has(> h1)');
-  if (!titleBlock) return;
-
-  const existing = titleBlock.querySelector('.collections__new-btn');
-  if (isRail) {
-    existing?.remove();
-    return;
-  }
-  if (existing) return;
-
-  titleBlock.querySelector('h1').insertAdjacentHTML(
-    'afterend',
-    '<button type="button" class="collections__new-btn btn btn--primary">New Collection</button>',
-  );
-  titleBlock.querySelector('.collections__new-btn').addEventListener('click', () => {
-    openNewCollectionDialog();
   });
 }
 

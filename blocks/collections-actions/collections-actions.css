@@ -1,0 +1,12 @@
+/*
+ * collections-actions — composed from UI Kit primitives (see docs/UI_KIT.md):
+ *   button → .btn / --primary
+ * Layout only: aligns the button within its named grid area (see
+ * scripts/asc/section-grid.js) on the Collections index header row.
+ */
+
+.block.collections-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
