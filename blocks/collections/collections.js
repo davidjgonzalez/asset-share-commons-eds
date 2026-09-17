@@ -58,16 +58,12 @@ async function render(block, isRail, limit) {
   block.innerHTML = html(shown, activeId, defaultId, isRail);
   initInteractions(block, isRail);
   loadMosaics(block);
+  renderHeaderActions(block, isRail);
 }
 
 function html(collections, activeId, defaultId, isRail) {
   return `
     <section class="collections__shell" aria-label="Collections">
-      ${isRail ? '' : `
-      <div class="collections__toolbar">
-        <button type="button" class="collections__new-btn btn btn--primary">New Collection</button>
-      </div>`}
-
       <ul class="collections__grid${isRail ? ' collections__grid--rail' : ''}" role="list">
         ${collections.length
     ? collections.map((c) => collectionCard(c, activeId, defaultId, isRail)).join('')
@@ -236,11 +232,6 @@ function initInteractions(block, isRail) {
   // below is rendered into the DOM, so nothing to wire up.
   if (isRail) return;
 
-  // New collection dialog
-  block.querySelector('.collections__new-btn').addEventListener('click', () => {
-    openNewCollectionDialog();
-  });
-
   // Set active
   block.querySelectorAll('.collections__card-activate').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -267,6 +258,37 @@ function initInteractions(block, isRail) {
       if (!window.confirm(`Delete "${name}"? This cannot be undone.`)) return;
       services.collections.delete(btn.dataset.collectionId);
     });
+  });
+}
+
+// ─── Header actions ───────────────────────────────────────────────────────────
+
+// "New Collection" is injected as a DOM sibling of the authored <h1> in the
+// page's sibling "content" block (docs/starter-kit/collections.html), rather
+// than rendered inside this block's own toolbar, so it lands on the same row
+// as the page title via CSS grid (collections.css). Same technique as
+// renderTitleMenu in collection-controls.js — must land as an `afterend`
+// sibling of h1, never a child: tokens.js's page-wide `{{ }}` registry can
+// re-resolve h1's textContent at any time (e.g. an unrelated fragment reload
+// calling registerTokens() again), which would wipe any children stuffed
+// inside it. Sibling placement is immune.
+function renderHeaderActions(block, isRail) {
+  const titleBlock = block.closest('.section')?.querySelector('.content.block:has(> h1)');
+  if (!titleBlock) return;
+
+  const existing = titleBlock.querySelector('.collections__new-btn');
+  if (isRail) {
+    existing?.remove();
+    return;
+  }
+  if (existing) return;
+
+  titleBlock.querySelector('h1').insertAdjacentHTML(
+    'afterend',
+    '<button type="button" class="collections__new-btn btn btn--primary">New Collection</button>',
+  );
+  titleBlock.querySelector('.collections__new-btn').addEventListener('click', () => {
+    openNewCollectionDialog();
   });
 }
 

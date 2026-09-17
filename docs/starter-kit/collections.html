@@ -12,9 +12,31 @@
 
     <!--
       Section 1: Collections listing
-      The collections block renders all saved collections from localStorage.
+
+      Top-level nav destination (sibling of /search) — no back-heading/breadcrumb
+      here, same as /search has no heading at all. The title uses the compact
+      @kit typography class (docs/UI_KIT.md) instead of a bare <h1>, since the
+      default h1 (--heading-font-size-xxl, large top/bottom margins) is sized
+      for hero/landing use, not a utility index page header.
+
+      The title is wrapped in a "content" block (rather than left as loose
+      text) purely so it's an addressable DOM element — collections.js injects
+      its "New Collection" button as a sibling of the <h1> inside it
+      (renderHeaderActions), and collections.css lays the two out as grid
+      columns so the button lands on the same row as the title. Same
+      cross-block sibling-injection technique as collection-controls.js's
+      title menu on the single collection page (see docs/starter-kit/collection.html).
     -->
     <div>
+
+      <!-- content block: title (addressable for the injected button above) -->
+      <div class="content">
+        <div>
+          <div>
+            <h1 class="asc-ui-heading-l">Collections</h1>
+          </div>
+        </div>
+      </div>
 
       <!-- collections block (zero-config) -->
       <div class="collections"></div>
