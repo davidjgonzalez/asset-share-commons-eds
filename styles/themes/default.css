@@ -79,7 +79,7 @@
   --search-bar-shell-radius:   var(--border-radius-full);
   --search-bar-shell-overflow: hidden;
 
-  /* ── Collection toggle — styled contextually per block (see details-actions.css, search-results.css) */
+  /* ── Collection toggle — styled contextually per block (see asset-teaser.css, search-results.css) */
 }
 
 /* ── Asset teasers: trade the hairline border for a soft ambient shadow —

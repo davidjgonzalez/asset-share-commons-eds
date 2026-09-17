@@ -13,31 +13,92 @@
     <!--
       Section 1: Collection header + toolbar.
 
-      Authored content (h1, p) uses {{collection.*}} tokens resolved by the
+      Named-area grid (docs/GRID_LAYOUT.md), two rows:
+
+        areas:  collection-main collection-details
+                collection-main collection-actions
+
+      "collection-main" (title + description) repeats down both rows, so it
+      spans the full left column height. "collection-details" (the stat list)
+      and "collection-actions" (the toolbar) are two *separate* blocks/areas —
+      not one block stacking both internally — so each row is sized to its own
+      content instead of one shared row height getting sized off whichever
+      side is taller. Below 768px the grid drops out and everything stacks in
+      source order (docs/GRID_LAYOUT.md → Responsive behavior).
+
+      Authored content uses {{collection.*}} tokens resolved by the
       collection-controls block after it loads collection data.
 
       Tokens available:
-        {{collection.title}}       — collection name (editable via Edit › Rename)
-        {{collection.description}} — optional description (empty if unset)
-        {{collection.count}}       — number of assets in the collection
-        {{collection.lastUpdated}} — human-readable last-modified date
+        {{collection.title}}       — collection name (editable via ⋯ → Edit details)
+        {{collection.description}} — optional description (editable via the same modal)
 
-      collection-controls block: rows declare which controls to show (in order).
-      Left col = control ID, right col = button label.
-      Valid IDs: past-shares, edit, share, download
+      "content" block (area: collection-main): leading paragraph uses two links
+      (Home, Collections) instead of one, which gives a breadcrumb trail row
+      above the title instead of a single chevron — see "Breadcrumb trail
+      variant" under @kit back-heading in docs/UI_KIT.md. Use this shape here
+      because a collection sits under the Collections index (a real
+      intermediate list level); a page one level from Home (most sheets)
+      should keep the single "← Back to X" chevron instead.
+
+      "collection-meta" block (area: collection-details): the assets/last-
+      updated stat list — a compact @kit metadata list (docs/UI_KIT.md,
+      --compact variant). Takes no authored rows; it reads the same collection
+      collection-controls does. Not authored as {{collection.count}}/
+      {{collection.lastUpdated}} tokens the way title/description are — DA's
+      authoring + preview pipeline only carries plain rich text
+      (p/h1-h6/ul-ol-li/a/img/table) through; a `<dl class="asc-ui-metadata">`
+      typed directly into a page comes back out the other side flattened to a
+      bare `<ul>`, classes gone. So the block renders it in JS instead
+      (collection-meta.js), the same way collection-controls renders its own
+      toolbar buttons below.
+
+      "collection-controls" block (area: collection-actions): rows declare
+      which controls to show (in order). Left col = control ID, right col =
+      button label. Valid IDs: past-shares, edit, share, download — of these,
+      only share/download render as toolbar buttons; past-shares/edit render
+      as items in the "⋯" menu injected next to the <h1> instead (collection
+      settings, not primary actions).
     -->
     <div>
 
-      <p><a href="/collections/">&#8592; Collections</a></p>
-      <h1>{{collection.title}}</h1>
-      <p>{{collection.description}}</p>
-      <p>{{collection.count}} assets &#8212; Last updated {{collection.lastUpdated}}</p>
+      <!-- content block: title + description (area: collection-main) -->
+      <div class="content">
+        <div>
+          <div>
+            <p><a href="/">Home</a> <a href="/collections/">Collections</a></p>
+            <h1>{{collection.title}}</h1>
+            <p>{{collection.description}}</p>
+          </div>
+        </div>
+        <div><div>area</div><div>collection-main</div></div>
+      </div>
+
+      <!-- collection-meta block: stat list (area: collection-details) -->
+      <div class="collection-meta">
+        <div><div>area</div><div>collection-details</div></div>
+      </div>
 
       <div class="collection-controls">
         <div><div>past-shares</div><div>Past Shares</div><div>ghost</div></div>
         <div><div>edit</div><div>Edit</div><div>ghost</div></div>
         <div><div>share</div><div>Share</div><div>secondary</div></div>
         <div><div>download</div><div>Download</div><div>primary</div></div>
+        <div><div>area</div><div>collection-actions</div></div>
+      </div>
+
+      <div class="section-metadata">
+        <div><div>layout</div><div>grid</div></div>
+        <div>
+          <div>areas</div>
+          <div>
+            <p>collection-main collection-details</p>
+            <p>collection-main collection-actions</p>
+          </div>
+        </div>
+        <div><div>columns</div><div>1fr auto</div></div>
+        <div><div>rows</div><div>auto auto</div></div>
+        <div><div>gap</div><div>m</div></div>
       </div>
 
     </div>

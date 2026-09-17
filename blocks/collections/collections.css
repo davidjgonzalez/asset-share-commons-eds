@@ -33,37 +33,6 @@
         flex-shrink: 0;
     }
 
-    /* ── New collection (inline panel) ───────────────────────────────── */
-
-    .collections__new-form {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: flex-end;
-        gap: var(--spacing-md);
-        margin-block-end: var(--spacing-xl);
-        padding: var(--spacing-md);
-        background: var(--color-muted);
-        border: 1px solid var(--color-border);
-        border-radius: var(--collections-card-radius);
-
-        &[hidden] {
-            display: none;
-        }
-    }
-
-    /* asc-ui-field handles label/control styling; this only sizes it in the row */
-    .collections__new-label {
-        flex: 1;
-        min-width: min(100%, 220px);
-    }
-
-    .collections__new-actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: var(--spacing-sm);
-        align-items: center;
-    }
-
     /* ── Grid (list semantics) ───────────────────────────────────────── */
 
     .collections__grid {
@@ -204,4 +173,13 @@
             width: 220px;
         }
     }
+}
+
+/* New collection dialog — Name + Description stacked fields (see
+   openNewCollectionDialog in collections.js). Appended to document.body,
+   so unscoped like the rest of this section. */
+.collections__new-fields {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
 }

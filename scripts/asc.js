@@ -9,7 +9,7 @@
  * Configuration lives in scripts/asc/configurations.js — do not edit scripts/asc/core/.
  */
 import { loadCSS } from './aem.js';
-import './asc/core/services/services.js';
+import services from './asc/core/services/services.js';
 import configurations from './asc/configurations.js';
 import { setupImageFallback } from './asc/core/utils/images.js';
 import { setupRoleButtonKeyboardSupport } from './asc/core/utils/keyboard.js';
@@ -51,6 +51,10 @@ export function ascDecorateMain(main) {
 
 /** Called once in loadLazy — prefetch same-origin links for faster navigation. */
 export function ascLazy() {
+  // Page-type body classes (page-search/page-collections/page-sheet/page-board)
+  // are already set by now — addPageTypeClasses() runs at the end of loadEager(),
+  // which always resolves before loadLazy() runs.
+  services.seo.applyPage();
   registerSpeculationRules();
   renderChromeToggle();
 }

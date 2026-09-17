@@ -28,6 +28,7 @@ import notifications from './notifications/notifications.js';
 import properties from './properties/properties.js';
 import renditions from './renditions/renditions.js';
 import search from './search/search.js';
+import seo from './seo/seo.js';
 import storage from './storage/storage.js';
 import url from './url/url.js';
 import users from './users/users.js';
@@ -52,6 +53,7 @@ const services = {
   properties,
   renditions,
   search,
+  seo,
   storage,
   url,
   users,

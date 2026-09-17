@@ -256,6 +256,78 @@ const configurations = {
     },
   },
 
+  // ─── SEO / Page Metadata ─────────────────────────────────────────────────────
+  //
+  // Configures the seo service (scripts/asc/core/services/seo/seo.js) — sets
+  // document.title, meta description, canonical link, Open Graph + Twitter Card
+  // tags, and JSON-LD structured data. Applied per page type (search/collections/
+  // sheet/board) and specially for the Asset Details overlay, which gets a
+  // canonical URL of its own instead of inheriting whatever search/collection
+  // URL it happened to be opened from. Full reference: docs/SEO.md
+  //
+  // IMPORTANT: everything here is written client-side, after JS runs. That's
+  // enough for document.title/canonical/JSON-LD as far as Google's JS-rendering
+  // crawl pass goes (including AI Overviews, which ride Googlebot's index),
+  // but NOT for any crawler that only fetches raw HTML — that's most link-
+  // preview bots (Slack, X/Twitter, Facebook, LinkedIn, iMessage) AND most
+  // AI/answer-engine crawlers (GPTBot, ClaudeBot, PerplexityBot, etc.), which
+  // generally skip JS execution entirely. Both categories only ever see
+  // whatever is authored directly into <title>/<meta> in da.live. Fixing that
+  // needs a server/edge component outside this repo; see docs/SEO.md.
+  //
+  // seo: {
+  //   enabled: true,
+  //   siteName: 'Asset Library',
+  //   defaultImage: '/path/to/default-social-share.jpg',
+  //
+  //   // Pathname used for the Asset Details canonical URL, instead of whatever
+  //   // page the modal happened to be opened on top of (AssetDetails auto-opens
+  //   // off the ?asset= query param alone, with no pathname check, so any page
+  //   // works — but point this at a real authored page, or the canonical URL
+  //   // 404s if a crawler or shared link actually visits it).
+  //   canonicalBase: '/asset',
+  //
+  //   // Opt-in per-page-type hooks. No built-in defaults — collection/sheet/
+  //   // board business data isn't visible from here, so omitted fields simply
+  //   // leave whatever's already authored in <title>/<meta name="description">
+  //   // (after {{ }} token resolution) untouched. Return only what you want to
+  //   // override.
+  //   pages: {
+  //     search: (ctx) => ({ title: `Search — ${ctx.siteName}` }),
+  //     collections: (ctx) => ({}),
+  //     sheet: (ctx) => ({}),
+  //     board: (ctx) => ({}),
+  //   },
+  //
+  //   // Asset Details has enough intrinsic data (title/description/mimeType/
+  //   // renditions) to get sensible defaults with zero config — this hook only
+  //   // needs to return the fields you want to override.
+  //   assetDetails: (asset) => ({
+  //     title: asset.title,
+  //     description: asset.description,
+  //   }),
+  //
+  //   jsonLd: {
+  //     // Page-type hooks: return a full JSON-LD object, or omit for none.
+  //     collections: (ctx) => ({
+  //       '@context': 'https://schema.org',
+  //       '@type': 'CollectionPage',
+  //     }),
+  //
+  //     // Merged over the built-in ImageObject/VideoObject/DigitalDocument
+  //     // default (chosen by MIME type). Return null to suppress entirely.
+  //     assetDetails: (asset) => ({ creator: asset.getProperty('dc:creator').text }),
+  //   },
+  //
+  //   // Add refresh triggers beyond the built-in ones (page load + Asset
+  //   // Details open/close) without editing the service — same
+  //   // [target, eventType, handler] shape as every other core service's
+  //   // customListeners.
+  //   customListeners: [
+  //     [document, 'asc:search:complete', () => services.seo.applyPage()],
+  //   ],
+  // },
+
   // ─── Action Pages ────────────────────────────────────────────────────────────
   //
   // Controls the action-pages service — the framework that intercepts clicks on

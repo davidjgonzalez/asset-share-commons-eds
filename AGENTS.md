@@ -33,7 +33,7 @@ the full ownership-zone breakdown.
 | `search-date-range` | Date range filter (from/to date inputs) | Via QB `daterange` predicate; OpenAPI maps via `DATE_PROPERTY_MAP` |
 | `search-tags` | Tag filter (checkbox / radio / dropdown) | Via QB `tagid` predicate; OpenAPI maps `filter[assetTagIds][]` |
 | `search-hidden` | ~~Removed~~ — replaced by the search config sheet (see below) | — |
-| `search-statistics` | Displays result counts ("Showing N of M assets") | No — reads `asc:search:complete` event |
+| `search-statistics` | ~~Removed~~ — result counts are no longer displayed | — |
 | `search-results` | Infinite-scroll results grid with sort/layout controls. Masonry view uses JS-managed flex columns (`MASONRY_COLS = 3`) so load-more never reflows existing items. | No — renders assets from `asc:search:complete` |
 
 ### Details blocks (used on details fragment pages)
@@ -45,7 +45,6 @@ the full ownership-zone breakdown.
 | `details-property` | Displays a single metadata property (label + value; `pill` variant → badge) |
 | `details-metadata` | A panel of property rows (`asc-ui-metadata`). Rows are `Label \| property-key`; `display: list\|grid`; array values (e.g. `tags`) render as `asc-ui-chip` pills |
 | `details-renditions` | Renditions as an `asc-ui-table` (default) or card grid (`\| display \| cards \|`). Author-configurable columns; highlights original rendition as active on load and dispatches `asc:rendition:activate`. Optional `instructions` row accepts inline HTML (strong/em/code/br). Cards mode: initial card AR from `asset.renditionsBoundingAspectRatio`, snapped per-card to natural image dimensions after load; `max-height: 12rem` clamps portrait cards with side bars. See "Renditions Table Templates" below |
-| `details-actions` | Action buttons (`asc-ui-action` circle-icon + label). One row per action: `\| Label \| action-name \|`. Actions: `download`, `copy-url`, `copy-image`, `share`, `collection`. Labels are used exactly as authored. Updates `href`/`data-copy-url` on `asc:rendition:activate`. Download filename uses `asset-base + rendition.label + ext` (e.g. `photo-preview.mp4`); `rendition.label` is already cleaned by `Rendition.deriveLabel` (strips `cq5dam.` prefix). `copy-image` copies the active rendition's image bytes to the clipboard via `scripts/asc/core/utils/clipboard-image.js`, falling back to copying the URL when the browser or delivery-host CORS policy won't allow it; hidden automatically for non-image renditions. |
 | `details-map` | Interactive Leaflet map centered on the asset's GPS capture location. Hides itself completely when coordinates are absent or invalid. Loads Leaflet 1.9.4 and OpenStreetMap tiles from CDN (no API key). EXIF DMS strings (`"42,59.35N"`) are converted to signed decimal degrees internally; full precision is passed to Leaflet and map links — never rounded before use. Authored rows: `latitude` (JCR path, default `jcr:content/metadata/exif:GPSLatitude`), `longitude` (default `jcr:content/metadata/exif:GPSLongitude`), `label` (default `"Location"`), `zoom` (default `10`). Falls back to coordinates text + Google Maps link if Leaflet fails to load. Uses `ResizeObserver` to call `map.invalidateSize()` so the map sizes correctly when the details `<dialog>` opens. |
 
 ### Collections / cart blocks
@@ -53,7 +52,7 @@ the full ownership-zone breakdown.
 |-------|---------|
 | `stub` | Cart bar — shows active collection count and link to download sheet |
 | `collections` | Collections index/management page — list, create, delete, activate. Content config: `display` (`grid`, default, or `rail` — a compact horizontal strip with no create/manage actions, e.g. for a homepage placement) and `limit` (max collections shown, 0/omitted = no limit) |
-| `collection-controls` | Collection header — editable name, asset count, Share / Download / past-shares buttons, jobs indicator. Header text (h1/p) is a **token template** — `{{collection.title}}` / `{{collection.description}}` / `{{collection.count}}` / `{{collection.lastUpdated}}` resolved against the hydrated collection. Pair with `board` (source: collection, mode: interactive) on the same page |
+| `collection-controls` | Collection header — Share / Download as the toolbar's primary buttons; Edit details (name + description modal), Past shares (modal), and Delete live in a "⋯" menu injected next to the `<h1>` instead, since those are collection-settings actions rather than primary tasks. Header text (h1/p) is a **token template** — `{{collection.title}}` / `{{collection.description}}` / `{{collection.count}}` / `{{collection.lastUpdated}}` resolved against the hydrated collection. Pair with `board` (source: collection, mode: interactive) on the same page |
 | `sheet-controls` | Shared-sheet header — Download / Copy Link buttons. Header text (h1/p) is a **token template** — `{{sheet.title}}` / `{{sheet.description}}` / `{{sheet.count}}` / `{{sheet.expiresAt}}` resolved against the decoded `?sheet=` payload. Pair with `board` (source: sheet, mode: view) on the same page |
 | `board` | Reusable, header-less board canvas — pan/zoom, client-side search, details navigation override; `source: collection\|sheet`, `mode: view\|interactive`, `search-properties`, `details` |
 | `collection-switcher` | Persistent header widget — active collection dropdown, inline create, navigate to /collections |
@@ -421,7 +420,7 @@ title and description update once the owning block registers real data.
 
 | Accessor | Returns | Example |
 |---|---|---|
-| `collection.title` | Collection name (editable via ⋯ → Rename) | `"Q3 Campaign Assets"` |
+| `collection.title` | Collection name (editable via ⋯ → Edit details) | `"Q3 Campaign Assets"` |
 | `collection.description` | Collection description (empty if unset) | `"Assets for Q3"` |
 | `collection.count` | Number of assets in the collection | `"14"` |
 | `collection.lastUpdated` | Human-formatted last-modified date | `"July 10, 2025"` |
@@ -435,17 +434,21 @@ title and description update once the owning block registers real data.
 | `sheet.count` | Number of assets in the sheet | `"14"` |
 | `sheet.expiresAt` | Human-formatted expiry date (empty if the link never expires) | `"July 10, 2025"` |
 
-**Authoring example** (da.live document, collection page — same section as `collection-controls`):
+**Authoring example** (da.live document, collection page — same section as `collection-controls`).
+`past-shares` and `edit` labels are used inside the "⋯" menu next to the `<h1>`, not the toolbar
+— only `share` and `download` render as toolbar buttons. The leading paragraph has two links
+(Home, Collections) rather than one, which gives a breadcrumb trail row instead of a single
+chevron — see "Breadcrumb trail variant" under `@kit back-heading` in `docs/UI_KIT.md`:
 
 ```
-← Collections            [link to /collections/]
+Home / Collections       [links to / and /collections/]
 {{collection.title}}     [H1]
 {{collection.description}}
 {{collection.count}} assets — Last updated {{collection.lastUpdated}}
 
 | collection-controls |
 | past-shares | Past Shares | ghost     |
-| edit        | Edit        | ghost     |
+| edit        | Edit details | ghost    |
 | share       | Share       | secondary |
 | download    | Download    | primary   |
 ```
@@ -587,7 +590,7 @@ All ASC custom events follow `asc:{noun}:{verb}`. Dispatched on `document` unles
 | Event | Dispatched by | Listened to by | `detail` shape |
 |-------|--------------|----------------|----------------|
 | `asc:search:execute` | All search filter blocks, search-results | SearchService | `{ form?, type?, source? }` |
-| `asc:search:complete` | SearchService | search-results, search-statistics | `{ results, type, formData }` |
+| `asc:search:complete` | SearchService | search-results | `{ results, type, formData }` |
 | `asc:search:error` | SearchService | (custom handlers) | `{ error, formData }` |
 | `asc:asset:details:open` | Actions service | AssetDetails service | `{ data: { ascAsset } }` |
 | `asc:asset:details:close` | Actions service | AssetDetails service, details-modal | — |
@@ -604,11 +607,11 @@ All ASC custom events follow `asc:{noun}:{verb}`. Dispatched on `document` unles
 | `asc:download:failed` | Downloads service | collection block | `{ jobId, error }` |
 | `asc:download:change` | Downloads service | (UI handlers) | `{ jobId, status }` |
 | `asc:blocks:loaded` | Init service | SearchService | `{ blocks }` |
-| `asc:rendition:activate` | `details-renditions` | `details-preview`, `details-actions`, `details-rendition-metadata` | `{ rendition, asset }` — sticky selection; dispatched on `document.body` |
+| `asc:rendition:activate` | `details-renditions` | `details-preview`, `details-rendition-metadata` | `{ rendition, asset }` — sticky selection; dispatched on `document.body` |
 | `asc:rendition:preview` | `details-renditions` | `details-preview` | `{ rendition, asset }` — transient hover preview; `rendition: null` on mouseleave to restore sticky |
-| `asc:rendition:download` | Actions service (`details-renditions`, `details-actions`) | (custom handlers) | `{ data: { ascAsset, ascRendition } }` |
-| `asc:rendition:copy-url` | Actions service (`details-renditions`, `details-actions`) | (custom handlers) | `{ data: { ascAsset, ascRendition } }` |
-| `asc:rendition:copy-image` | Actions service (`details-actions`) | (custom handlers) | `{ data: { ascAsset, ascRendition } }` |
+| `asc:rendition:download` | Actions service (`details-renditions`, `details-preview`) | (custom handlers) | `{ data: { ascAsset, ascRendition } }` |
+| `asc:rendition:copy-url` | Actions service (`details-renditions`, `details-preview`) | (custom handlers) | `{ data: { ascAsset, ascRendition } }` |
+| `asc:rendition:copy-image` | Actions service (`details-renditions`, `details-preview`) | (custom handlers) | `{ data: { ascAsset, ascRendition } }` |
 | `asc:rendition:share` | Actions service (`details-renditions`) | (custom handlers) | `{ data: { ascAsset, ascRendition } }` — dispatched but no built-in listener; wire your own handler (e.g. open a share dialog) |
 | `asc:share:created` | `action-share` block | `collection` block (past-shares panel) | `{ url, title, collectionId }` — fired after share URL is generated and saved to history |
 | `asc:notification:show` | Any block/service (event-bus escape hatch) | notifications service | `{ message, type?, duration? }` — dispatched on `document`; prefer calling `services.notifications.notify()` directly when possible |
@@ -849,7 +852,7 @@ Wraps the generic `readBlockConfig` and adds search-specific context:
 - `fieldset` — the fieldset ID for dependency grouping
 - `initial` — initial values for this group parsed from the current URL (used to restore state on page load / from a shared URL)
 
-**Only call this from actual filter blocks.** Display blocks (`search-results`, `search-statistics`) must NOT call this — it consumes a group slot and must not be wasted on blocks that produce no group-scoped predicates. Display blocks that need `SEARCH_FORM` should import it directly from `search.js`.
+**Only call this from actual filter blocks.** Display blocks (`search-results`) must NOT call this — it consumes a group slot and must not be wasted on blocks that produce no group-scoped predicates. Display blocks that need `SEARCH_FORM` should import it directly from `search.js`.
 
 ### `SearchService.searchSilent(formData)`
 Background search that applies `basePredicates`, sheet predicates, and `accepts` rules — but does NOT update the browser URL, fire `asc:search:complete`, or block concurrent searches. Use for programmatic fetches from detail or non-search pages.
@@ -1427,11 +1430,12 @@ Stored under `storage.get('collections')` (user-scoped):
   defaultId: "uuid",     // permanent default collection — never deleted
   items: {
     "uuid": {
-      id:         string,  // crypto.randomUUID()
-      name:       string,
-      createdAt:  ISO string,
-      modifiedAt: ISO string,
-      items:      Array<AssetItem | SectionItem>
+      id:           string,  // crypto.randomUUID()
+      name:         string,
+      description?: string,
+      createdAt:    ISO string,
+      modifiedAt:   ISO string,
+      items:        Array<AssetItem | SectionItem>
     }
   }
 }
@@ -1451,7 +1455,7 @@ const { collections } = services;
 // CRUD
 collections.create(name)           // → Collection (not hydrated)
 collections.delete(id)             // default collection is protected
-collections.rename(id, name)
+collections.updateDetails(id, { name?, description? })
 
 // Getters  (hydrateAssets=true adds an `assets: Asset[]` array)
 await collections.getAll(hydrateAssets?)          // → Collection[]

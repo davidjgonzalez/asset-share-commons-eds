@@ -149,11 +149,11 @@ The grid properties are only active at `@media (width >= 768px)`.
 
 ```
 | Section Metadata |                        |
-|------------------|--------------------|
-| layout           | grid               |
-| areas            | preview actions    |
-|                  | preview metadata   |
-| columns          | 1.5fr 1fr          |
+|------------------|------------------------|
+| layout           | grid                   |
+| areas            | preview metadata       |
+|                  | renditions renditions  |
+| columns          | 1.5fr 1fr              |
 ```
 
 Block config for `details-preview`:
@@ -162,20 +162,20 @@ Block config for `details-preview`:
 | area              | preview |
 ```
 
-Block config for `details-actions`:
-```
-| details-actions |         |
-| area            | actions |
-```
-
 Block config for `details-metadata`:
 ```
 | details-metadata |          |
 | area             | metadata |
 ```
 
-Result: `preview` spans both rows on the left (1.5fr), `actions` is top-right, `metadata`
-is bottom-right (both 1fr). On mobile all three stack in source order.
+Block config for `details-renditions`:
+```
+| details-renditions |            |
+| area                | renditions |
+```
+
+Result: `preview` is top-left (1.5fr), `metadata` is top-right (1fr), and `renditions`
+spans the full width beneath both. On mobile all three stack in source order.
 
 ---
 

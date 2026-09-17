@@ -105,14 +105,35 @@ only the stats line shows; both rules key off adjacency to the heading (`h1 + p`
 vs `h1 + p + p`), not an explicit class, so plain authoring gets the same
 behavior automatically.
 
-Plain-authoring equivalent (no `asc-ui-*` classes — this is what actually ships in
-`collections/collection`):
+Plain-authoring equivalent (no `asc-ui-*` classes):
 ```
 <p><a href="/collections/">Back to collections</a></p>
 <h1>{{collection.title}}</h1>
 <p>{{collection.description}}</p>
 <p>{{collection.count}} assets — Last updated {{collection.lastUpdated}}</p>
 ```
+
+**Breadcrumb trail variant** — for a page with a real intermediate list level between
+it and Home (e.g. a specific collection, one level under the Collections index), author
+*two or more* links in that first paragraph instead of one:
+```
+<p><a href="/">Home</a> <a href="/collections/">Collections</a></p>
+<h1>{{collection.title}}</h1>
+<p>{{collection.description}}</p>
+<p>{{collection.count}} assets — Last updated {{collection.lastUpdated}}</p>
+```
+This renders as a full-width "Home / Collections" trail row above the heading instead
+of the single chevron button — `decorateButtons()` only auto-buttonizes a paragraph
+whose *only* child is one `<a>`, so a multi-link paragraph is left exactly as authored,
+and the CSS keys off that (`a + a` — two adjacent anchors) to tell the two shapes apart.
+Explicit markup equivalent: `<p class="asc-ui-back-heading__trail">` in place of the
+`__back` anchor, holding the same multi-link content.
+
+Use the single chevron for anything one level from Home (most `sheets/*` pages); use the
+trail for pages with a real intermediate list (`collections/collection` sits under
+`collections/` — see that page's actual authoring in
+`docs/starter-kit/collection.html`). Don't build a deeper trail than the page's real
+nesting — nothing in ASC today goes more than two levels from Home.
 
 ### Landing / marketing — `@kit landing` · `styles/ui-kit.css`
 A larger, lighter-weight lede paragraph for page/section intros, and a
@@ -566,6 +587,18 @@ a `grid-column: 1 / -1` item inside that grid — see the note above for why):
 </article>
 ```
 
+### Selection state — `@kit selected` · `styles/ui-kit.css`
+Generic selection ring for a list/grid item — an asset card, a list row, or a custom view's
+own item root. Not a modifier on any one primitive: `scripts/asc/core/utils/selection.js`
+toggles the bare `.asc-ui-selected` class directly on whatever element represents the item,
+so any results view gets the same selected look for free just by giving each item's outermost
+element a `data-asc-asset` attribute (the contract `asset:details:open`/drag-and-drop/
+`resolveAssetFor()` already require). Search results wire this up as ctrl/cmd-click (toggle)
+and shift-click (range) multi-select; see `blocks/search-results/search-results.js`.
+```html
+<article class="asc-ui-asset-card asc-ui-selected" aria-selected="true">…</article>
+```
+
 ### Thumbnail — `@kit thumb` · `styles/ui-kit.css`
 Small fixed-size asset thumbnail for dense contexts (table cells, list rows, menus).
 Size via `--asc-ui-thumb-size` (default 2.5rem). Put an `<img>` inside, or leave empty as a placeholder.
@@ -606,13 +639,62 @@ of controls; save `<ul>`/`asc-ui-menu` for actual enumerable content/menus).
 </div>
 ```
 
+### Selection bar — `@kit selection-bar` · `styles/ui-kit.css`
+Compact bulk-action toolbar for a multi-select: a count, inline icon+label pill buttons, and a
+trailing group of plain buttons — unlike `@kit actions`' stacked icon-over-label buttons,
+everything sits on one line so it fits a toolbar row (e.g. a sticky bar). `__group` pushes itself
+to the end via `margin-inline-start: auto` and lays out its own children with `gap`; pair each of
+its buttons with `.btn.btn--ghost.btn--sm` rather than `__action`, since they aren't bulk actions
+themselves. Search results uses this for its ctrl/cmd+click + shift+click multi-select (see
+`@kit selected` and `blocks/search-results/search-results.js`), teleporting the bar into the
+sticky page header the same way `search-active-filters` does.
+Add/remove pairs (favorite, and the active collection) toggle `hidden` per-button based on
+selection membership: the add button hides once *every* selected asset already belongs, the
+remove button shows as soon as *any* of them do — both can show at once for a mixed selection.
+The "add to collection" pair also hides entirely once the active collection IS Favorites
+(duplicate of the favorite pair); see `refreshActions()` in `blocks/search-results/search-results.js`.
+```html
+<div class="asc-ui-selection-bar" role="toolbar" aria-label="Bulk actions">
+  <span class="asc-ui-selection-bar__count"><span class="asc-ui-count">8</span> selected</span>
+  <div class="asc-ui-selection-bar__actions">
+    <button class="asc-ui-selection-bar__action" type="button">
+      <span class="asc-ui-selection-bar__icon"><!-- svg icon --></span>
+      Favorite
+    </button>
+    <button class="asc-ui-selection-bar__action" type="button" hidden>
+      <span class="asc-ui-selection-bar__icon"><!-- svg icon --></span>
+      Remove from Favorites
+    </button>
+    <button class="asc-ui-selection-bar__action" type="button">
+      <span class="asc-ui-selection-bar__icon"><!-- svg icon --></span>
+      Add to <!-- active collection name -->
+    </button>
+    <button class="asc-ui-selection-bar__action" type="button" hidden>
+      <span class="asc-ui-selection-bar__icon"><!-- svg icon --></span>
+      Remove from <!-- active collection name -->
+    </button>
+  </div>
+  <div class="asc-ui-selection-bar__group">
+    <button class="btn btn--ghost btn--sm" type="button">Select all</button>
+    <button class="btn btn--ghost btn--sm" type="button">Clear</button>
+  </div>
+</div>
+```
+
 ### Metadata — `@kit metadata` · `styles/ui-kit.css`
-Asset property pairs. Default = stacked rows (sidebar); `--grid` = responsive cells (wide panel).
-Markup is a `<dl>` with each pair wrapped in a `__row` div.
+Asset property pairs. Default = stacked rows (sidebar); `--grid` = responsive cells (wide panel);
+`--compact` = quiet right-aligned stat list, term + value on one line, no borders (page-header
+column, e.g. collection header). Markup is a `<dl>` with each pair wrapped in a `__row` div.
 ```html
 <dl class="asc-ui-metadata">
   <div class="asc-ui-metadata__row"><dt class="asc-ui-metadata__term">Format</dt><dd class="asc-ui-metadata__value">JPEG</dd></div>
   <div class="asc-ui-metadata__row"><dt class="asc-ui-metadata__term">Size</dt><dd class="asc-ui-metadata__value">4.2 MB</dd></div>
+</dl>
+```
+```html
+<dl class="asc-ui-metadata asc-ui-metadata--compact">
+  <div class="asc-ui-metadata__row"><dt class="asc-ui-metadata__term">Assets</dt><dd class="asc-ui-metadata__value">11</dd></div>
+  <div class="asc-ui-metadata__row"><dt class="asc-ui-metadata__term">Last updated</dt><dd class="asc-ui-metadata__value">Sep 16, 2026</dd></div>
 </dl>
 ```
 

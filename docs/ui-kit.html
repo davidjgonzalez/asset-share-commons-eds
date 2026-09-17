@@ -1045,6 +1045,31 @@
         </div>
 
         <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Selection state</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-layout="block" data-snippet>
+            <div style="display:flex; gap:1rem;">
+              <article class="asc-ui-asset-card asc-ui-asset-card--interactive asc-ui-selected" aria-selected="true" style="max-width:12rem;">
+                <div class="asc-ui-asset-card__thumb">
+                  <div class="asc-ui-filetype"><span class="asc-ui-filetype__glyph">🖼️</span><span class="asc-ui-filetype__ext">JPEG</span></div>
+                </div>
+                <div class="asc-ui-asset-card__body">
+                  <p class="asc-ui-asset-card__title">Selected</p>
+                </div>
+              </article>
+              <article class="asc-ui-asset-card asc-ui-asset-card--interactive" aria-selected="false" style="max-width:12rem;">
+                <div class="asc-ui-asset-card__thumb">
+                  <div class="asc-ui-filetype"><span class="asc-ui-filetype__glyph">🖼️</span><span class="asc-ui-filetype__ext">JPEG</span></div>
+                </div>
+                <div class="asc-ui-asset-card__body">
+                  <p class="asc-ui-asset-card__title">Not selected</p>
+                </div>
+              </article>
+            </div>
+          </div>
+          <p class="kit-demo__usage">Bare <code>asc-ui-selected</code> class — toggled by <code>scripts/asc/core/utils/selection.js</code>, works on any item root (card, list row, custom view), not just <code>asc-ui-asset-card</code>.</p>
+        </div>
+
+        <div class="kit-demo">
           <div class="kit-demo__bar"><span class="kit-demo__name">Labeled action bar</span><button class="kit-demo__toggle" type="button">Code</button></div>
           <div class="kit-demo__preview" data-layout="block" data-snippet>
             <div class="asc-ui-actions" role="toolbar" aria-label="Asset actions">
@@ -1063,6 +1088,30 @@
             </div>
           </div>
           <p class="kit-demo__usage">Stacked icon + text so each option is self-explanatory. Variants: <code>--primary</code>, <code>--danger</code>. A row of standalone actions is a toolbar, not a list — use <code>role="toolbar"</code> + <code>aria-label</code> rather than <code>&lt;ul&gt;&lt;li&gt;</code>.</p>
+        </div>
+
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Selection bar</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-layout="block" data-snippet>
+            <div class="asc-ui-selection-bar" role="toolbar" aria-label="Bulk actions">
+              <span class="asc-ui-selection-bar__count"><span class="asc-ui-count">8</span> selected</span>
+              <div class="asc-ui-selection-bar__actions">
+                <button class="asc-ui-selection-bar__action" type="button">
+                  <span class="asc-ui-selection-bar__icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
+                  Favorite
+                </button>
+                <button class="asc-ui-selection-bar__action" type="button">
+                  <span class="asc-ui-selection-bar__icon"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M8 3.5v9M3.5 8h9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span>
+                  Add to collection
+                </button>
+              </div>
+              <div class="asc-ui-selection-bar__group">
+                <button class="btn btn--ghost btn--sm" type="button">Select all</button>
+                <button class="btn btn--ghost btn--sm" type="button">Clear</button>
+              </div>
+            </div>
+          </div>
+          <p class="kit-demo__usage">Compact bulk-action bar for a multi-select — count + inline icon+label pills + a trailing group of plain buttons, all on one line (unlike <code>@kit actions</code>' stacked buttons) so it fits a toolbar row.</p>
         </div>
 
         <div class="kit-demo">
@@ -1091,6 +1140,17 @@
             </dl>
           </div>
           <p class="kit-demo__usage">Responsive cells — good for a wide metadata panel on a details page.</p>
+        </div>
+
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Metadata · compact</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-layout="block" data-snippet>
+            <dl class="asc-ui-metadata asc-ui-metadata--compact" style="max-width:14rem; margin-left:auto;">
+              <div class="asc-ui-metadata__row"><dt class="asc-ui-metadata__term">Assets</dt><dd class="asc-ui-metadata__value">11</dd></div>
+              <div class="asc-ui-metadata__row"><dt class="asc-ui-metadata__term">Last updated</dt><dd class="asc-ui-metadata__value">Sep 16, 2026</dd></div>
+            </dl>
+          </div>
+          <p class="kit-demo__usage">Quiet right-aligned stat list, term + value on one line, no borders — a page-header column next to a title (e.g. collection header), not a details sidebar.</p>
         </div>
 
         <div class="kit-demo">

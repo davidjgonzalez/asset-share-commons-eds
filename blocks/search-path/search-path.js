@@ -17,6 +17,7 @@
  **/
 
 import { readBlockConfig, getOptions, addSearchEventListeners, enhanceSearchFilterDropdown } from '../../scripts/asc/core/utils/search.js';
+import { mountToHeader } from '../../scripts/asc/core/utils/header-mount.js';
 
 export default function decorate(block) {
   const config = readBlockConfig(block, {
@@ -31,6 +32,31 @@ export default function decorate(block) {
   block.innerHTML = html(config);
   enhanceSearchFilterDropdown(block, config.title || 'Filter');
   addSearchEventListeners(block, config);
+
+  // Dropdown-style filter blocks (style: top|inline dropdowns search-filters) relocate
+  // into the header's shared .search-filter-dropdowns row (see blocks/header/header.js)
+  // — same mountToHeader() mechanism as search-active-filters — so every dropdown filter
+  // block on the page ends up in one horizontal row regardless of which section(s) they
+  // were authored in.
+  const section = block.closest('.section.inline.dropdowns.search-filters, .section.top.dropdowns.search-filters');
+  if (section) {
+    mountToHeader(block, () => {
+      document.querySelector('header .search-filter-dropdowns')?.append(block);
+      // Once the last dropdown filter has left, this section no longer needs its
+      // dropdown-row framing (centered flex row, card-style .block styling) — other
+      // authored blocks (e.g. search-statistics) commonly share the section and should
+      // fall back to rendering as plain page content instead of an odd, mostly-empty
+      // card. Remove it outright if nothing else was ever authored alongside the filters.
+      if (!section.querySelector('.search-filter-dropdown')) {
+        section.classList.remove('inline', 'top', 'dropdowns', 'search-filters');
+        if (!section.querySelector('.block')) {
+          section.remove();
+        } else {
+          section.classList.add('filters-relocated');
+        }
+      }
+    });
+  }
 }
 
 function html(config) {

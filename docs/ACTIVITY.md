@@ -80,16 +80,18 @@ asset somehow isn't cached when its event fires, the entry still records `assetI
 
 ## Why some rendition-scoped events needed adding
 
-`details-renditions.js` already dispatched `asc:rendition:download`/`copy-url`/`share` via the
+`details-renditions.js` dispatches `asc:rendition:download`/`copy-url`/`copy-image`/`share` via the
 declarative Actions system (`data-asc-action="rendition:download@click"`, etc. — see AGENTS.md
-→ "Actions system"). `details-actions.js` (the details-view action-button toolbar) did the same
-work — download, copy URL, copy image, copy asset link — with its own hand-rolled click handler
-and no `data-asc-action` at all, so none of it was visible on the event bus. It now carries the
-same attributes `details-renditions.js` uses, so both blocks' buttons are indistinguishable to
-anything listening on the bus (this service, the analytics service, or your own code) regardless
-of which one the user actually clicked. `asc:rendition:copy-image` is the one genuinely new event
-name this required — `download`/`copy-url` already existed, and the "Copy asset link" / deprecated
-"Share" button now dispatches the existing (previously unused) `asc:asset:share` event.
+→ "Actions system"). `details-preview`'s inline rendition toolbar (`rendition-actions.js`) carries
+the same `data-asc-action` attributes for its download/copy-url/copy-image buttons, so both blocks'
+buttons are indistinguishable to anything listening on the bus (this service, the analytics
+service, or your own code) regardless of which one the user actually clicked.
+
+> **Note:** the `details-actions` block — the previous details-page action-button toolbar this
+> section used to describe — has been removed, along with its `collection`/`favorite`/`copy-link`
+> ("Share") actions. `asc:asset:share` (the `asset-share` activity type above) currently has no
+> dispatcher anywhere in the codebase as a result; the row is kept for reference in case a future
+> block dispatches it again.
 
 ## The Escape-key gap (and why it doesn't matter here)
 

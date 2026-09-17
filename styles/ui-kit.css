@@ -80,14 +80,67 @@
    authoring produces for a `<p><a>Back</a></p><h1>Title</h1>` pair. Use the
    explicit .asc-ui-back-heading markup when composing a block/template
    directly instead.
+
+   Breadcrumb trail variant: a first-child paragraph with *two or more*
+   links (`<p><a>Home</a> <a>Collections</a></p><h1>Title</h1>`) instead of
+   one gets a full-width trail row above the heading instead of the single
+   chevron button — decorateButtons() (scripts/aem.js) only auto-buttonizes
+   a paragraph whose only child is one `<a>`, so a multi-link paragraph is
+   never touched by it and stays exactly as authored, letting `a + a` below
+   distinguish the two shapes reliably. Use for any page with a real
+   intermediate list level (e.g. collection detail: Home / Collections); the
+   single chevron stays the right call for a page one level from Home.
+
+   row-gap gives the wrapped rows (trail, title, description, stats line)
+   breathing room between them — column-gap alone only spaces items sharing
+   a row, so without it those wrapped rows sat flush against each other.
 ───────────────────────────────────────────────────────────────────────── */
 
 .asc-ui-back-heading,
-.content.block:has(> p.button-container:first-child + h1, > p.button-container:first-child + h2) {
+.content.block:has(> p.button-container:first-child + h1, > p.button-container:first-child + h2),
+.content.block:has(> p:first-child a + a):has(> p:first-child + h1, > p:first-child + h2) {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     column-gap: var(--spacing-sm);
+    row-gap: var(--spacing-sm);
+}
+
+/* Breadcrumb trail row — same "content.block:has()" plain-authoring mirror as the
+   chevron above, but :has() can't nest another :has() in its own argument, so
+   "first-child p contains 2+ links" (`> p:first-child a + a`, no nested :has) and
+   "first-child p precedes h1/h2" are two separate chained :has() clauses on the
+   same selector rather than one combined clause. */
+.asc-ui-back-heading__trail,
+.content.block:has(> p:first-child a + a):has(> p:first-child + h1, > p:first-child + h2) > p:first-child {
+    margin: 0;
+    flex-basis: 100%;
+    /* Sorts ahead of the title-menu trigger's `order: -1` (collection-controls.css)
+       so the trail row still renders first even though that trigger is DOM-adjacent
+       to h1, not to this paragraph — see the note there for why it can't move in
+       the DOM instead. */
+    order: -2;
+    font-size: var(--body-font-size-s);
+    color: var(--color-muted-fg);
+}
+
+.asc-ui-back-heading__trail a,
+.content.block:has(> p:first-child a + a):has(> p:first-child + h1, > p:first-child + h2) > p:first-child a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.asc-ui-back-heading__trail a:hover,
+.content.block:has(> p:first-child a + a):has(> p:first-child + h1, > p:first-child + h2) > p:first-child a:hover {
+    color: var(--color-fg);
+    text-decoration: underline;
+}
+
+.asc-ui-back-heading__trail a:not(:last-of-type)::after,
+.content.block:has(> p:first-child a + a):has(> p:first-child + h1, > p:first-child + h2) > p:first-child a:not(:last-of-type)::after {
+    content: '/';
+    margin-inline: var(--spacing-xs);
+    color: var(--color-muted-fg);
 }
 
 /* The link keeps its real "Back to X" text as its accessible name — link
@@ -260,34 +313,46 @@
    to satisfy ascending selector specificity (the :has() argument outweighs
    landing's simple .section.* selectors); same declarations either way. */
 .content.block:has(> p.button-container:first-child + h1, > p.button-container:first-child + h2) > h1,
-.content.block:has(> p.button-container:first-child + h1, > p.button-container:first-child + h2) > h2 {
+.content.block:has(> p.button-container:first-child + h1, > p.button-container:first-child + h2) > h2,
+.content.block:has(> p:first-child a + a):has(> p:first-child + h1, > p:first-child + h2) > h1,
+.content.block:has(> p:first-child a + a):has(> p:first-child + h1, > p:first-child + h2) > h2 {
     margin: 0;
     line-height: 1; /* see .asc-ui-back-heading > h1/h2 above — same fix, same reason */
 }
 
 /* Description subtitle plain-authoring equivalent — see the .asc-ui-back-heading
    > h1 + p rules above for the same reasoning and the same ascending-specificity
-   ordering (adjacency rules, then :not(), then :empty last). */
+   ordering (adjacency rules, then :not(), then :empty last). Applies the same to
+   the breadcrumb-trail shape (@kit back-heading above) — same declarations,
+   just triggered by a first-child paragraph with 2+ links instead of one. */
 .content.block:has(> p.button-container:first-child + h1) > h1 + p,
-.content.block:has(> p.button-container:first-child + h2) > h2 + p {
+.content.block:has(> p.button-container:first-child + h2) > h2 + p,
+.content.block:has(> p:first-child a + a):has(> p:first-child + h1) > h1 + p,
+.content.block:has(> p:first-child a + a):has(> p:first-child + h2) > h2 + p {
     font-size: var(--body-font-size-m);
     color: var(--color-muted-fg);
 }
 
 .content.block:has(> p.button-container:first-child + h1) > h1 + p + p,
-.content.block:has(> p.button-container:first-child + h2) > h2 + p + p {
+.content.block:has(> p.button-container:first-child + h2) > h2 + p + p,
+.content.block:has(> p:first-child a + a):has(> p:first-child + h1) > h1 + p + p,
+.content.block:has(> p:first-child a + a):has(> p:first-child + h2) > h2 + p + p {
     font-size: var(--body-font-size-s);
     color: var(--color-muted-fg);
 }
 
 .content.block:has(> p.button-container:first-child + h1, > p.button-container:first-child + h2)
+    > p:not(.button-container),
+.content.block:has(> p:first-child a + a):has(> p:first-child + h1, > p:first-child + h2)
     > p:not(.button-container) {
     flex-basis: 100%;
     margin: 0;
 }
 
 .content.block:has(> p.button-container:first-child + h1) > h1 + p:empty,
-.content.block:has(> p.button-container:first-child + h2) > h2 + p:empty {
+.content.block:has(> p.button-container:first-child + h2) > h2 + p:empty,
+.content.block:has(> p:first-child a + a):has(> p:first-child + h1) > h1 + p:empty,
+.content.block:has(> p:first-child a + a):has(> p:first-child + h2) > h2 + p:empty {
     display: none;
 }
 
@@ -1598,6 +1663,18 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
+   @kit selected — generic selection ring for a list/grid item (an asset
+   card, a list row, or a custom view's own item root). Toggled by
+   scripts/asc/core/utils/selection.js — not tied to any one item shape, so
+   any results view gets a consistent selected look for free.
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-selected {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
    @kit thumb — small fixed-size asset thumbnail for dense contexts
    (table cells, list rows, menus). Size via --asc-ui-thumb-size.
 ───────────────────────────────────────────────────────────────────────── */
@@ -1725,6 +1802,87 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
+   @kit selection-bar — compact inline bar for bulk actions on a multi-select
+   (count + inline icon+label pills + clear), unlike @kit actions' stacked
+   icon-over-label buttons which need more vertical room. Sized to fit a
+   single toolbar row — e.g. a sticky bar that appears once a selection is
+   non-empty (see search-results' selection bar, which teleports into the
+   page header the same way search-active-filters does).
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-selection-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--spacing-md);
+    min-height: 2.75rem;
+}
+
+.asc-ui-selection-bar[hidden] {
+    display: none;
+}
+
+.asc-ui-selection-bar__count {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    color: var(--color-fg);
+    font-size: var(--body-font-size-s);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.asc-ui-selection-bar__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-2xs);
+}
+
+.asc-ui-selection-bar__action {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-2xs);
+    border: 0;
+    border-radius: var(--border-radius-full);
+    padding: var(--spacing-xs) var(--spacing-md);
+    background: transparent;
+    color: var(--color-fg);
+    font-size: var(--body-font-size-s);
+    font-weight: 500;
+    line-height: 1;
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+
+.asc-ui-selection-bar__action:hover {
+    background: color-mix(in srgb, var(--color-fg) 8%, transparent);
+}
+
+.asc-ui-selection-bar__action:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}
+
+.asc-ui-selection-bar__icon {
+    display: inline-flex;
+    width: 1rem;
+    height: 1rem;
+    transform: translateY(-0.03em); /* optical nudge vs. adjacent label text, matches .asc-collection-toggle__icon */
+}
+
+.asc-ui-selection-bar__icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+.asc-ui-selection-bar__group {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-inline-start: auto;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
    @kit metadata — asset property pairs. Default = stacked rows (sidebars);
    --grid = responsive cells (wide panels). Markup: <dl> > __row(div) > dt/dd.
 ───────────────────────────────────────────────────────────────────────── */
@@ -1771,6 +1929,24 @@
 
 .asc-ui-metadata--grid .asc-ui-metadata__row {
     grid-template-columns: 1fr;
+    gap: var(--spacing-2xs);
+    padding: 0;
+    border-bottom: 0;
+}
+
+/* Compact variant — a quiet stat list for tight spaces (e.g. a page-header
+   column alongside a title): term and value share one line instead of the
+   default's own stacked/bordered row, and the whole list right-aligns —
+   reads as a couple of trailing stats next to a title, not a details-sidebar
+   panel. */
+.asc-ui-metadata--compact {
+    gap: var(--spacing-2xs);
+}
+
+.asc-ui-metadata--compact .asc-ui-metadata__row {
+    display: flex;
+    justify-content: flex-end;
+    align-items: baseline;
     gap: var(--spacing-2xs);
     padding: 0;
     border-bottom: 0;

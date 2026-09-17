@@ -192,6 +192,7 @@
         &.board__text-element--readonly {
             background: none;
             border-color: transparent;
+            resize: none;
 
             &:hover {
                 border-color: transparent;

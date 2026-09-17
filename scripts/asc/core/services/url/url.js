@@ -1,6 +1,13 @@
 // ASC Core — do not edit. Customize via scripts/asc/configurations.js
 import serviceConfigurations from "../configurations.js";
 
+// Bump only when the sheet-payload wire shape changes in a way a v1 decoder
+// couldn't read (e.g. an item's shape is restructured or renamed). Adding a
+// new optional key to the payload, or to an item within it, is NOT a breaking
+// change — destructure it with a default at the read site; older links just
+// omit it.
+const SHEET_PAYLOAD_VERSION = 1;
+
 class Url {
   constructor(config) {
     this.config = config || {};
@@ -70,7 +77,31 @@ class Url {
     }
   }
 
-  // 3. Build a collection URL from an array of asset IDs
+  // 3. Encode a versioned sheet-share payload (`?sheet=`) — the title/items/etc.
+  // for an ad hoc collection share. Items and any other payload fields are
+  // plain objects/values, not delimited strings, so adding a new one later
+  // (e.g. a per-item or per-share rendition list) needs no new parsing —
+  // callers just read the extra key with a default.
+  async encodeSheetPayload(payload) {
+    return this.compressArray([JSON.stringify({ v: SHEET_PAYLOAD_VERSION, ...payload })]);
+  }
+
+  // 4. Decode a payload built by encodeSheetPayload. Returns null for corrupt,
+  // tampered, or unrecognized-version input so callers can show an explicit
+  // invalid-link state rather than guessing at a shape they don't support.
+  async decodeSheetPayload(encoded) {
+    const parts = await this.decompressToArray(encoded);
+    if (!parts) return null;
+    let payload;
+    try {
+      payload = JSON.parse(parts.join(","));
+    } catch {
+      return null;
+    }
+    return payload?.v === SHEET_PAYLOAD_VERSION ? payload : null;
+  }
+
+  // 5. Build a collection URL from an array of asset IDs
   async toCollectionUrl(assetIds, options = {}) {
     const param = options.param || "assets";
 
@@ -94,7 +125,7 @@ class Url {
     return u.toString();
   }
 
-  // 4. Read asset IDs from a collection URL search string
+  // 6. Read asset IDs from a collection URL search string
   async fromCollectionUrl(searchString = window.location.search, param = "assets") {
     const params = new URLSearchParams(searchString);
     const value = params.get(param);

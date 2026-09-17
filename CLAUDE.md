@@ -279,3 +279,4 @@ the library needs to know about it regardless of where it's ultimately placed.
 | `docs/CONTENT_VARIABLES.md` | `{{ }}` token system — page-wide registry vs per-asset resolution, full API + authoring examples |
 | `docs/ANALYTICS.md` | Web analytics plan — event catalog mapping, vendor wiring, `services.analytics` |
 | `docs/ACTIVITY.md` | Per-user activity history (searches, views, downloads, etc.) — entry schema, storage, `services.activity` |
+| `docs/SEO.md` | Page metadata/SEO — canonical URLs, Open Graph/Twitter Card tags, JSON-LD structured data, `services.seo` |

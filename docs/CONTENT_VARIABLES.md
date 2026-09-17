@@ -115,15 +115,20 @@ already-resolved text, so there's no risk of double-resolving or losing the temp
 
 ### Authoring example — collection page
 
+`past-shares` and `edit` labels are used inside the "⋯" menu next to the `<h1>`, not the toolbar
+— only `share` and `download` render as toolbar buttons. The leading paragraph has two links
+(Home, Collections) rather than one, giving a breadcrumb trail row instead of a single chevron —
+see "Breadcrumb trail variant" under `@kit back-heading` in `docs/UI_KIT.md`:
+
 ```
-← Collections            [link to /collections/]
+Home / Collections       [links to / and /collections/]
 {{collection.title}}     [H1]
 {{collection.description}}
 {{collection.count}} assets — Last updated {{collection.lastUpdated}}
 
 | collection-controls |
 | past-shares | Past Shares | ghost     |
-| edit        | Edit        | ghost     |
+| edit        | Edit details | ghost    |
 | share       | Share       | secondary |
 | download    | Download    | primary   |
 ```

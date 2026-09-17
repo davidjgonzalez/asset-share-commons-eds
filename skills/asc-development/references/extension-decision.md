@@ -62,7 +62,7 @@ Describe what you want in one sentence. Find the closest match below. Follow the
 | Add a new metadata field to the details panel | Author a `details-property` block | da.live authoring — no code |
 | Different panel layout for images vs. videos | `assetDetails.templates` routing function | [→ Asset details routing](#asset-details-routing) |
 | Different panel layout for a specific brand/folder | `assetDetails.templates` routing function | [→ Asset details routing](#asset-details-routing) |
-| New action button (e.g. "Open in Adobe Express") | Author `details-actions` with `share` action; handle `asc:asset:share` event | [→ Details actions](#details-actions) |
+| New action button (e.g. "Open in Adobe Express") | Custom block button with `data-asc-action="asset:share@click"`; handle `asc:asset:share` event | [→ Details actions](#details-actions) |
 | Add a "similar assets" section | Author `details-similar` block on details page | da.live authoring — no code |
 | Show a custom rendition (smart crop, preset) | Add to `renditions.definitions` | [→ Rendition definitions](#rendition-definitions) |
 | Hide a rendition from the download list | `visible: false` on rendition definition | [→ Rendition definitions](#rendition-definitions) |
@@ -528,10 +528,17 @@ Each path (`/details`, `/details/video`, etc.) is a da.live page containing `det
 
 **Use when**: You want to add a custom action button to the asset details panel (e.g. "Open in Lightroom", "Add to project", "Send for approval").
 
-**Step 1**: Author the `details-actions` block with the `share` action enabled:
+There's no dedicated action-button block for this anymore — build the button into a small
+custom block (see [→ New details block](../templates/details-block.md)) or into the details
+fragment's own markup. Rely on the same declarative Actions convention every other details
+block uses (see AGENTS.md → "Declarative Actions"): give the button `data-asc-action="asset:share@click"`
+and `data-asc-asset="<uuid>"`, and the Actions service dispatches `asc:asset:share` automatically —
+no manual `dispatchEvent()` needed.
 
-```
-| actions | collection-toggle download share |
+**Step 1**: Add the button, e.g. in your custom block's rendered markup:
+
+```html
+<button data-asc-action="asset:share@click" data-asc-asset="${asset.uuid}">Share</button>
 ```
 
 **Step 2**: Add an event listener in `scripts/delayed.js` or a custom block to handle `asc:asset:share`:
@@ -549,7 +556,9 @@ document.body.addEventListener('asc:asset:share', (event) => {
 });
 ```
 
-For a fully custom action not covered by `collection-toggle`, `download`, or `share`, copy and modify the `details-actions` block to add your own button and event.
+For a "download" or "add to collection" action, wire `data-asc-action="rendition:download@click"`
+(see `details-renditions.js`) or use the `collectionToggle` part (see `details-similar.js`) instead
+of hand-rolling either.
 
 ---
 

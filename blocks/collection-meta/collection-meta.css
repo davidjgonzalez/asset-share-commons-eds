@@ -1,0 +1,11 @@
+/* Composed entirely from @kit metadata --compact (styles/ui-kit.css,
+   docs/UI_KIT.md) — see collection-meta.js. Layout-only rules belong here:
+   max-width caps a long term/value pair so it can't stretch wider than the
+   grid column (docs/starter-kit/collection.html) needs; margin-left:auto
+   hugs the block to that column's right edge (the wrapper div stretches to
+   the full `auto`-sized column, which is normally as wide as the sibling
+   collection-controls toolbar it sits above) so both line up flush-right. */
+.block.collection-meta {
+    max-width: 16rem;
+    margin-left: auto;
+}

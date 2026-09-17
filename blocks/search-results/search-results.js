@@ -3,6 +3,9 @@ import { readBlockConfig } from '../../scripts/asc/core/utils/blocks.js';
 import { SEARCH_FORM } from '../../scripts/asc/core/utils/search.js';
 import assetTeaser from '../../scripts/asc/core/parts/asset-teaser/asset-teaser.js';
 import collectionToggle from '../../scripts/asc/core/parts/collection-toggle/collection-toggle.js';
+import { initSelection } from '../../scripts/asc/core/utils/selection.js';
+import { mountToHeader } from '../../scripts/asc/core/utils/header-mount.js';
+import { Events as CollectionEvents } from '../../scripts/asc/core/services/collections/collections.js';
 import services from '../../scripts/asc/core/services/services.js';
 import configurations from '../../scripts/asc/configurations.js';
 import { toggleRenditionMenu, prefetchRenditionSizes } from '../../scripts/asc/rendition-download-menu.js';
@@ -13,13 +16,23 @@ const MASONRY_SIZES = '(min-width: 1400px) 25vw, (min-width: 1000px) 33vw, (min-
 const MASONRY_COL_WIDTH = 360; // target column width — smaller value = more columns at wider viewports
 const FILL_LEAD_PX = 1200; // how far below the viewport bottom triggers a load, in px
 const MAX_AUTO_FILL_ROUNDS = 50; // safety cap on consecutive auto-triggered loads per fresh search
-const SKELETON_COUNT = 12;
+// Kept low deliberately: the skeleton always renders a full page's worth of
+// placeholders with no way to know the real result count in advance, so a
+// narrow query (fewer real results than the skeleton assumed) shrinks the
+// results container — and everything below it, including the footer —
+// right after the response lands. A smaller count bounds how large that
+// shrink can be, at the cost of the loading state looking less "full" when
+// a query does return many results.
+const SKELETON_COUNT = 6;
 
 const ICONS = {
   download: '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
   copyUrl: '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>',
   copyImage: '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>',
   check: '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>',
+  star: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+  plus: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M8 3.5v9M3.5 8h9"/></svg>',
+  minus: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M3.5 8h9"/></svg>',
 };
 
 // Per-container masonry state: tracks column elements and round-robin index.
@@ -202,6 +215,22 @@ function reflowMasonryColumns(container) {
   state.next = items.length;
 }
 
+// Masonry has no fixed aspect-ratio box (unlike cards/list — see
+// asset-teaser.css), so without intrinsic size hints the browser can't
+// reserve an image's footprint before it loads; every image finishing then
+// shifts everything below it in the column (CLS). Setting width/height
+// attrs (not CSS) lets the browser compute the right aspect ratio up front
+// while still rendering at width:100%/height:auto.
+function applyMasonryDimensions(col, asset) {
+  const img = col.lastElementChild?.querySelector('.asc-asset-teaser__preview img');
+  if (!img) return;
+  const { width, height } = asset.getProperty('dimensions').data || {};
+  if (width && height) {
+    img.width = width;
+    img.height = height;
+  }
+}
+
 function appendMasonryItems(container, assets) {
   const state = getMasonryState(container);
   assets.forEach((asset) => {
@@ -209,6 +238,7 @@ function appendMasonryItems(container, assets) {
     col.insertAdjacentHTML('beforeend',
       assetTeaser(asset, { mode: 'card', view: 'masonry' })
         .replace(/sizes="[^"]*"/, `sizes="${MASONRY_SIZES}"`));
+    applyMasonryDimensions(col, asset);
     state.next += 1;
   });
 }
@@ -388,6 +418,124 @@ function skeletonHtml(display, container) {
   return Array.from({ length: SKELETON_COUNT }, skeletonCardHtml).join('');
 }
 
+function pluralAssets(count) {
+  return `${count} asset${count === 1 ? '' : 's'}`;
+}
+
+// Which collection each bulk action targets, and the copy for its confirmation toast.
+const BULK_ACTIONS = {
+  favorite: {
+    method: 'addAsset', verb: 'Added', preposition: 'to', collectionId: () => services.collections.getDefaultId(), destination: () => 'Favorites',
+  },
+  unfavorite: {
+    method: 'removeAsset', verb: 'Removed', preposition: 'from', collectionId: () => services.collections.getDefaultId(), destination: () => 'Favorites',
+  },
+  collection: {
+    method: 'addAsset', verb: 'Added', preposition: 'to', collectionId: () => services.collections.getActiveId(), destination: (name) => name,
+  },
+  uncollection: {
+    method: 'removeAsset', verb: 'Removed', preposition: 'from', collectionId: () => services.collections.getActiveId(), destination: (name) => name,
+  },
+};
+
+// Ctrl/cmd+click and shift+click (wired by initSelection() on [data-asc-results])
+// select results without opening the details modal; this bar surfaces once that
+// selection is non-empty, favoriting/collecting every selected asset in one action
+// instead of one toggle click per result.
+function setupBulkActions(block, bar, selection) {
+  const countEl = bar.querySelector('[data-bulk-count]');
+  const favoriteBtn = bar.querySelector('[data-bulk-action="favorite"]');
+  const unfavoriteBtn = bar.querySelector('[data-bulk-action="unfavorite"]');
+  const collectionBtn = bar.querySelector('[data-bulk-action="collection"]');
+  const uncollectionBtn = bar.querySelector('[data-bulk-action="uncollection"]');
+  const addLabelEl = bar.querySelector('[data-bulk-add-label]');
+  const removeLabelEl = bar.querySelector('[data-bulk-remove-label]');
+  let activeCollectionName = 'the collection';
+
+  // Recomputes which add/remove buttons show, and the active-collection labels,
+  // against the current selection. Runs on every selection change and whenever
+  // collection membership changes elsewhere (another block adding/removing an
+  // asset, or switching the active collection) while the bar stays open.
+  // Add hides only once every selected asset already belongs (still useful to
+  // add the rest of a mixed selection); Remove shows as soon as any of them do.
+  async function refreshActions(assetIds) {
+    if (assetIds.length === 0) return;
+
+    const favoriteId = services.collections.getDefaultId();
+    const activeId = services.collections.getActiveId();
+    const favoriteIsActive = activeId === favoriteId;
+
+    const favoriteMembership = await Promise.all(
+      assetIds.map((id) => services.collections.hasAsset(id, favoriteId)),
+    );
+    favoriteBtn.hidden = favoriteMembership.every(Boolean);
+    unfavoriteBtn.hidden = !favoriteMembership.some(Boolean);
+
+    // Duplicate of the favorite pair once the active collection IS Favorites —
+    // same dedup rule the per-asset collection-toggle part applies.
+    if (favoriteIsActive) {
+      collectionBtn.hidden = true;
+      uncollectionBtn.hidden = true;
+      return;
+    }
+
+    const active = await services.collections.get(activeId);
+    activeCollectionName = active?.name || 'the collection';
+    addLabelEl.textContent = `Add to ${activeCollectionName}`;
+    removeLabelEl.textContent = `Remove from ${activeCollectionName}`;
+
+    const activeMembership = await Promise.all(
+      assetIds.map((id) => services.collections.hasAsset(id, activeId)),
+    );
+    collectionBtn.hidden = activeMembership.every(Boolean);
+    uncollectionBtn.hidden = !activeMembership.some(Boolean);
+  }
+
+  // Selection events bubble from [data-asc-results] (see selection.js) up through
+  // block — listening here keeps working even though that element's contents (but
+  // not the element itself) get replaced on every render.
+  block.addEventListener('asc:selection:change', (event) => {
+    const { selected } = event.detail;
+    bar.hidden = selected.size === 0;
+    countEl.textContent = String(selected.size);
+    refreshActions([...selected]);
+  });
+
+  document.addEventListener(CollectionEvents.CHANGED, () => {
+    if (bar.hidden) return;
+    refreshActions([...selection.getSelected()]);
+  });
+
+  bar.addEventListener('click', (event) => {
+    const trigger = event.target.closest('[data-bulk-action]');
+    if (!trigger) return;
+
+    const { bulkAction } = trigger.dataset;
+    if (bulkAction === 'clear') {
+      selection.clear();
+      return;
+    }
+    if (bulkAction === 'select-all') {
+      selection.selectAll();
+      return;
+    }
+
+    const action = BULK_ACTIONS[bulkAction];
+    if (!action) return;
+
+    const assetIds = [...selection.getSelected()];
+    const collectionId = action.collectionId();
+    assetIds.forEach((assetId) => services.collections[action.method](assetId, collectionId));
+
+    const destination = action.destination(activeCollectionName);
+    services.notifications.notify(
+      `${action.verb} ${pluralAssets(assetIds.length)} ${action.preposition} ${destination}`,
+      { type: 'success' },
+    );
+    selection.clear();
+  });
+}
+
 export default async function decorate(block) {
   const config = readBlockConfig(block, {}, {
     'asc.search-results.display': 'masonry',
@@ -418,6 +566,32 @@ function html(config) {
     <input type="hidden" name="asc.search-results.more" value="true"/>
     <input type="hidden" name="asc.search-results.total" value="0"/>
 
+    <div class="search-results__bulk-actions asc-ui-selection-bar" role="toolbar" aria-label="Bulk actions" hidden>
+      <span class="asc-ui-selection-bar__count"><span class="asc-ui-count" data-bulk-count>0</span> selected</span>
+      <div class="asc-ui-selection-bar__actions">
+        <button type="button" class="asc-ui-selection-bar__action" data-bulk-action="favorite">
+          <span class="asc-ui-selection-bar__icon" aria-hidden="true">${ICONS.star}</span>
+          Favorite
+        </button>
+        <button type="button" class="asc-ui-selection-bar__action" data-bulk-action="unfavorite" hidden>
+          <span class="asc-ui-selection-bar__icon" aria-hidden="true">${ICONS.minus}</span>
+          Remove from Favorites
+        </button>
+        <button type="button" class="asc-ui-selection-bar__action" data-bulk-action="collection">
+          <span class="asc-ui-selection-bar__icon" aria-hidden="true">${ICONS.plus}</span>
+          <span data-bulk-add-label>Add to collection</span>
+        </button>
+        <button type="button" class="asc-ui-selection-bar__action" data-bulk-action="uncollection" hidden>
+          <span class="asc-ui-selection-bar__icon" aria-hidden="true">${ICONS.minus}</span>
+          <span data-bulk-remove-label>Remove from collection</span>
+        </button>
+      </div>
+      <div class="asc-ui-selection-bar__group">
+        <button type="button" class="btn btn--ghost btn--sm" data-bulk-action="select-all">Select all</button>
+        <button type="button" class="btn btn--ghost btn--sm" data-bulk-action="clear">Clear</button>
+      </div>
+    </div>
+
     <div data-asc-results data-loading></div>
     <p class="search-results__end" hidden>
       <span class="asc-ui-badge">${esc(config['no-more-results-text'])}</span>
@@ -434,6 +608,13 @@ async function addEventListeners(block, _config) {
   const resultsEl = block.querySelector('[data-asc-results]');
   new ResizeObserver(() => reflowMasonryColumns(resultsEl)).observe(resultsEl);
   observeAriaLabelTitles(resultsEl);
+
+  const selection = initSelection(resultsEl);
+  const bulkActionsBar = block.querySelector('.search-results__bulk-actions');
+  setupBulkActions(block, bulkActionsBar, selection);
+  // Teleport into the sticky header (same mechanism as search-active-filters) so
+  // the bar stays visible while scrolling through a long results list.
+  mountToHeader(bulkActionsBar);
 
   function requestLoadMore() {
     isLoadingMore = true;
@@ -536,7 +717,14 @@ async function addEventListeners(block, _config) {
     isLoadingMore = false;
     setupSentinel(); // no-op after first call; observer handles further scroll-driven loads
 
-    if (event.detail.type !== 'load-more') fillRounds = 0;
+    // A fresh render (new query, or a view-mode switch that re-renders from cached
+    // results) replaces every item element — any prior selection no longer refers
+    // to anything on screen, so drop it. load-more only appends, existing selected
+    // items stay put.
+    if (event.detail.type !== 'load-more') {
+      fillRounds = 0;
+      selection.clear();
+    }
 
     // IntersectionObserver only fires on a not-intersecting -> intersecting transition.
     // If a page of results doesn't fill the viewport, the sentinel stays continuously

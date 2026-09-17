@@ -5,6 +5,7 @@ import { Events as CollectionEvents } from '../../scripts/asc/core/services/coll
 import { escHtml, escAttr, formatUpdated } from '../../scripts/asc/html.js';
 import { readBlockConfig } from '../../scripts/asc/core/utils/blocks.js';
 import { MAX_MOSAIC_THUMBS, mosaicRowCounts, mosaicHeight } from '../../scripts/asc/core/utils/mosaic.js';
+import { wireDialogClose } from '../../scripts/asc.js';
 
 const configurations = (await import('../../scripts/asc/configurations.js')).default;
 
@@ -23,7 +24,7 @@ const COLLECTION_PATH = configurations.collections?.collectionPath || '/collecti
  * Features:
  *   - Grid or rail of collection cards: mosaic of up to 4 asset thumbnails
  *     (lazy-loaded), name, asset type counts, total count, last updated
- *   - Grid mode adds: inline "New collection" form, Set active / Duplicate /
+ *   - Grid mode adds: "New Collection" modal dialog, Set active / Duplicate /
  *     Delete actions per card
  *   - Re-renders on any collection change event
  *   - Navigate to collection detail page at COLLECTION_PATH?id=<uuid>
@@ -65,18 +66,7 @@ function html(collections, activeId, defaultId, isRail) {
       ${isRail ? '' : `
       <div class="collections__toolbar">
         <button type="button" class="collections__new-btn btn btn--primary">New Collection</button>
-      </div>
-
-      <form class="collections__new-form" hidden>
-        <label class="collections__new-label asc-ui-field">
-          <span class="asc-ui-field__label">Name</span>
-          <input type="text" class="collections__new-name" placeholder="e.g. Q1 campaign" maxlength="80" autocomplete="off" />
-        </label>
-        <div class="collections__new-actions">
-          <button type="submit" class="btn btn--primary">Create</button>
-          <button type="button" class="collections__new-cancel btn btn--secondary">Cancel</button>
-        </div>
-      </form>`}
+      </div>`}
 
       <ul class="collections__grid${isRail ? ' collections__grid--rail' : ''}" role="list">
         ${collections.length
@@ -242,31 +232,13 @@ async function loadCardMosaic(card) {
 // ─── Interactions ─────────────────────────────────────────────────────────────
 
 function initInteractions(block, isRail) {
-  // Rail mode omits the toolbar/create-form and per-card management actions —
-  // nothing below is rendered into the DOM, so nothing to wire up.
+  // Rail mode omits the toolbar and per-card management actions — nothing
+  // below is rendered into the DOM, so nothing to wire up.
   if (isRail) return;
 
-  // Show/hide create form
+  // New collection dialog
   block.querySelector('.collections__new-btn').addEventListener('click', () => {
-    const form = block.querySelector('.collections__new-form');
-    form.removeAttribute('hidden');
-    form.querySelector('.collections__new-name').focus();
-  });
-
-  block.querySelector('.collections__new-cancel').addEventListener('click', () => {
-    const form = block.querySelector('.collections__new-form');
-    form.setAttribute('hidden', '');
-    form.querySelector('.collections__new-name').value = '';
-  });
-
-  block.querySelector('.collections__new-form').addEventListener('submit', (e) => {
-    e.preventDefault();
-    const input = block.querySelector('.collections__new-name');
-    const name = input.value.trim();
-    if (!name) return;
-    services.collections.create(name);
-    input.value = '';
-    block.querySelector('.collections__new-form').setAttribute('hidden', '');
+    openNewCollectionDialog();
   });
 
   // Set active
@@ -296,4 +268,54 @@ function initInteractions(block, isRail) {
       services.collections.delete(btn.dataset.collectionId);
     });
   });
+}
+
+export function openNewCollectionDialog({ activate = false } = {}) {
+  const dialog = document.createElement('dialog');
+  dialog.className = 'asc-dialog asc-dialog--narrow collections__new-dialog';
+  dialog.setAttribute('aria-labelledby', 'collections-new-title');
+  dialog.innerHTML = `
+    <header class="asc-dialog__header">
+      <div class="asc-dialog__header-main">
+        <h2 class="asc-dialog__title" id="collections-new-title">New Collection</h2>
+      </div>
+      <button type="button" class="btn btn--ghost btn--icon asc-dialog__close" aria-label="Close" data-dialog-close>&#x2715;</button>
+    </header>
+    <div class="asc-dialog__body collections__new-fields">
+      <label class="asc-ui-field">
+        <span class="asc-ui-field__label">Name</span>
+        <input type="text" class="collections__new-name" placeholder="e.g. Q1 campaign" maxlength="80" autocomplete="off" />
+      </label>
+      <label class="asc-ui-field">
+        <span class="asc-ui-field__label">Description</span>
+        <textarea class="collections__new-description" rows="3" maxlength="500"></textarea>
+        <span class="asc-ui-field__hint">Optional.</span>
+      </label>
+    </div>
+    <footer class="asc-dialog__footer">
+      <button type="button" class="btn btn--secondary" data-dialog-close>Cancel</button>
+      <div class="asc-dialog__footer-end">
+        <button type="button" class="collections__new-submit btn btn--primary">Create</button>
+      </div>
+    </footer>`;
+
+  document.body.appendChild(dialog);
+  dialog.showModal();
+  wireDialogClose(dialog);
+  dialog.addEventListener('close', () => dialog.remove());
+
+  const input = dialog.querySelector('.collections__new-name');
+  const descInput = dialog.querySelector('.collections__new-description');
+  input.focus();
+
+  const submit = () => {
+    const name = input.value.trim();
+    if (!name) return;
+    const created = services.collections.create(name, descInput.value.trim());
+    if (activate) services.collections.setActive(created.id);
+    dialog.close();
+  };
+
+  dialog.querySelector('.collections__new-submit').addEventListener('click', submit);
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
 }

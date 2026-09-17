@@ -1,6 +1,7 @@
 /** @owner user */
 import services from '../../scripts/asc/core/services/services.js';
 import { Events as CollectionEvents } from '../../scripts/asc/core/services/collections/collections.js';
+import { openNewCollectionDialog } from '../collections/collections.js';
 import { escHtml, escAttr } from '../../scripts/asc/html.js';
 
 const configurations = (await import('../../scripts/asc/configurations.js')).default;
@@ -15,7 +16,8 @@ const COLLECTION_PATH = configurations.collections?.collectionPath || '/collecti
  * Clicking it opens a dropdown that lets the user:
  *   - See all collections with their asset counts
  *   - Click any collection to make it the active collection
- *   - Create a new collection inline
+ *   - Create a new collection via the "New Collection" modal (shared with
+ *     the collections block), activating it immediately
  *   - Navigate to the full collections management page
  *
  * Place in the site header or any persistent area of the page.
@@ -63,11 +65,6 @@ function html(active, all, activeId) {
         </ul>
 
         <div class="collection-switcher__create-wrap">
-          <form class="collection-switcher__create-form" hidden>
-            <input type="text" class="collection-switcher__create-input" placeholder="Collection name" maxlength="80" />
-            <button type="submit" class="btn btn--primary">Create</button>
-            <button type="button" class="collection-switcher__create-cancel btn btn--ghost btn--sm">✕</button>
-          </form>
           <button class="collection-switcher__create-btn">+ New collection</button>
         </div>
 
@@ -129,31 +126,13 @@ function initInteractions(block) {
     });
   });
 
-  // Show create form
+  // Open "New Collection" modal
   block.querySelector('.collection-switcher__create-btn').addEventListener('click', (e) => {
     e.stopPropagation();
-    block.querySelector('.collection-switcher__create-form').removeAttribute('hidden');
-    block.querySelector('.collection-switcher__create-btn').setAttribute('hidden', '');
-    block.querySelector('.collection-switcher__create-input').focus();
-  });
-
-  // Hide create form
-  block.querySelector('.collection-switcher__create-cancel').addEventListener('click', () => {
-    block.querySelector('.collection-switcher__create-form').setAttribute('hidden', '');
-    block.querySelector('.collection-switcher__create-btn').removeAttribute('hidden');
-    block.querySelector('.collection-switcher__create-input').value = '';
-  });
-
-  // Submit new collection
-  block.querySelector('.collection-switcher__create-form').addEventListener('submit', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const input = block.querySelector('.collection-switcher__create-input');
-    const name = input.value.trim();
-    if (!name) return;
-    const newCollection = services.collections.create(name);
-    services.collections.setActive(newCollection.id);
-    // Dropdown will re-render via CHANGED event
+    dropdown.setAttribute('hidden', '');
+    trigger.setAttribute('aria-expanded', 'false');
+    openNewCollectionDialog({ activate: true });
+    // Dropdown will re-render via CHANGED event once the collection is created
   });
 }
 

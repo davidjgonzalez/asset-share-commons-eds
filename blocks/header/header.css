@@ -1,11 +1,22 @@
 /* Header — 3-column layout */
 
+/* nav and .search-filter-dropdowns are plain block siblings here (see
+   header.js), so when their combined height is less than min-height the
+   slack has to be distributed explicitly — otherwise block layout stacks
+   them from the top and dumps all of it below as extra whitespace.
+   No padding-block here: nav (its own top/bottom padding) and every row
+   that can be the last child (.search-filter-dropdowns, .search-active-filters,
+   .search-results__bulk-actions — all mounted via mountToHeader()) already
+   carry their own symmetric padding-block, so adding more here would only
+   double up on whichever one currently sits at the bottom. */
 header .nav-wrapper {
   background-color: var(--color-bg);
   width: 100%;
   border-bottom: 1px solid var(--color-border);
-  padding: 0.5rem 0;
   min-height: var(--nav-height);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 /* Mobile-first: brand + tools on one row, search wraps to its own row below.
@@ -19,7 +30,7 @@ header nav {
     "search search";
   align-items: center;
   gap: 0.5rem 0.75rem;
-  margin: 0 auto;
+  width: 100%;
   max-width: 100%;
   height: auto;
   padding: 0.5rem 1rem;
@@ -35,16 +46,25 @@ header h1 {
 
 @media (width >= 768px) {
   header nav {
-    /* Brand and tools size to their own content (they hold a short logo and a
-       fixed toolbar, not something that benefits from extra space); search
-       is the one column that should flex to fill whatever room is left.
+    /* Brand and tools get equal (1fr) flanking tracks and search sizes to its
+       own content (auto) in the middle — this is what makes the search-bar's
+       centerline match the full-width .search-filter-dropdowns row below it
+       (see header.css's search-filter-dropdowns rules): that row centers
+       against the *entire* nav-wrapper, so the search column has to be
+       centered the same way, not merely centered within whatever space is
+       left over after brand/tools claim their own content width. A previous
+       `auto 1fr auto` here centered search only within the leftover space,
+       which drifted off true-center whenever the logo and toolbar weren't
+       the same width.
        minmax(0, ...) on every track keeps each one's automatic minimum at 0 —
        without it, a track's content-based minimum can force it wider than
        the space actually available and overflow into its neighbors instead
        of shrinking (this is what caused brand/search/tools to overlap at
        tablet widths — brand and tools were forced into equal 1fr shares
-       regardless of their actual content width). */
-    grid-template-columns: minmax(0, auto) minmax(0, 1fr) minmax(0, auto);
+       regardless of their actual content width; equal 1fr flanks are safe
+       here specifically because both sides shrink together in lockstep,
+       staying symmetric even when they hit their minimum). */
+    grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, 1fr);
     grid-template-areas: "brand search tools";
     align-items: center;
     gap: 1.5rem;
@@ -66,6 +86,7 @@ header nav .nav-brand {
   grid-area: brand;
   display: flex;
   align-items: center;
+  justify-self: start;
   min-width: 0;
   max-width: 100%;
 
@@ -142,6 +163,74 @@ header .block.search-bar .asc-ui-search {
   header .block.search-bar .asc-ui-search {
     --asc-ui-search-width: 28rem;
   }
+}
+
+/* Shared row that search-filter dropdown blocks (search-property,
+   search-date-range, search-path, search-tags) relocate themselves into via
+   mountToHeader() — see header.js and those blocks' decorate(). Collapses to
+   nothing when empty (no dropdown filters configured on this page, or not
+   decorated yet) so it never reserves stray header height. */
+header .search-filter-dropdowns {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: var(--spacing-sm);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Force every filter block onto the same cross-axis centerline instead of
+   stretching (the flex default) to the row's tallest item — align-items:
+   center on the row alone only centers items that are already their natural
+   height. */
+header .search-filter-dropdowns > .block {
+  flex: 0 0 auto;
+  align-self: center;
+  margin: 0;
+}
+
+header .search-filter-dropdowns:empty {
+  display: none;
+}
+
+header .search-filter-dropdowns:not(:empty) {
+  padding-block: var(--spacing-md);
+  padding-inline: var(--spacing-lg);
+}
+
+/* Trigger/panel look — the dropdown markup already carries the .asc-ui-dropdown
+   kit classes (position:relative / absolute panel / [hidden] handling all come
+   from styles/ui-kit.css); these just widen the panel and size the trigger to
+   match how the same block looks in the page's own top/inline dropdown row
+   (see the main .section...dropdowns.search-filters rules in styles.css). */
+header .search-filter-dropdowns .search-filter-dropdown__trigger {
+  min-width: 8rem;
+  justify-content: flex-start;
+  gap: var(--spacing-sm);
+}
+
+header .search-filter-dropdowns .search-filter-dropdown__trigger[aria-expanded="true"] {
+  background: var(--color-accent);
+  box-shadow: none;
+}
+
+header .search-filter-dropdowns .search-filter-dropdown__arrow {
+  margin-left: auto;
+  font-size: var(--body-font-size-m);
+  line-height: 1;
+  color: var(--color-muted-fg);
+}
+
+header .search-filter-dropdowns .search-filter-dropdown__panel {
+  min-width: 17.5rem;
+  max-width: min(28rem, calc(100vw - 2rem));
+}
+
+header .search-filter-dropdowns .search-filter-dropdown__panel ul,
+header .search-filter-dropdowns .search-filter-dropdown__panel ol {
+  max-height: 15rem;
+  overflow-y: auto;
 }
 
 /* Depth effect — shadow + glass blur when page is scrolled */

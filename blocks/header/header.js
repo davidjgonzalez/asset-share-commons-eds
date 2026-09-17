@@ -60,6 +60,18 @@ export default async function decorate(block) {
   nav.append(toolsSection);
 
   navWrapper.append(nav);
+
+  // Always-present (initially empty) shared row that search-filter dropdown
+  // blocks (search-property/date-range/path/tags) relocate themselves into
+  // via mountToHeader() — see those blocks' decorate(). Building it here,
+  // synchronously as part of the header's own markup, means it already
+  // exists the moment any block's MutationObserver first finds
+  // `header .nav-wrapper`, so every dropdown converges on one flex row
+  // regardless of how many separate sections they were authored across.
+  const filterDropdownsRow = document.createElement('div');
+  filterDropdownsRow.className = 'search-filter-dropdowns';
+  navWrapper.append(filterDropdownsRow);
+
   block.innerHTML = '';
   block.append(navWrapper);
 

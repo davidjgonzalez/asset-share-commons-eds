@@ -3,96 +3,103 @@
     --line-height-base: 1.5;
 }
 
-/* Inline rename input — replaces the authored {{collection.title}} heading,
-   so it lives outside the block scope to inherit the heading's position. */
-.collection-controls__name-input {
-    width: 100%;
-    margin: 0;
-    font-size: var(--heading-font-size-xxl);
-    font-weight: 600;
-    color: var(--color-fg);
-    border: 1px solid var(--color-ring);
-    border-radius: var(--input-border-radius);
-    padding: var(--spacing-xs) var(--spacing-sm);
-    background: var(--color-input);
-    box-shadow: var(--focus-ring);
-    font-family: inherit;
-    line-height: 1.25;
-    box-sizing: border-box;
+/* Title menu (Edit details / Past shares / Delete) — see renderTitleMenu in
+   collection-controls.js. It's injected as an `afterend` *sibling* of the authored
+   <h1> in the sibling "content" block — deliberately not a child of h1 (see the
+   long comment in renderTitleMenu for why: tokens.js's page-wide registry can
+   re-resolve h1's textContent at any time from an unrelated fragment load,
+   wiping any children stuffed inside it). DOM order alone (no `order` override)
+   is what lands it to the right of h1 in the back-heading flex row (ui-kit.css) —
+   also keeps the breadcrumb's "p:first-child + h1" adjacency selector intact.
+   Outside this block's own DOM, so it's styled unscoped rather than nested
+   under .block.collection-controls. */
+.collection-controls__title-menu-wrap {
+    position: relative;
+    display: inline-flex;
+    vertical-align: middle;
+    margin-inline-start: var(--spacing-2xs);
 }
 
-/* Click-to-rename affordance on the title itself (see initRename in
-   collection-controls.js) — same reasoning as .collection-controls__name-input
-   above for living outside the block scope. */
-.collection-controls__title--editable {
-    margin-inline: calc(-1 * var(--spacing-xs));
-    padding-inline: var(--spacing-xs);
-    border-radius: var(--border-radius-sm);
-    cursor: pointer;
-    transition: background var(--transition-fast);
+/* Hidden until the title is hovered/focused, so the header reads as plain text
+   until an editor goes looking for settings — matches the "hover the title to
+   reveal" ask rather than a permanently-visible kebab crowding the heading. The
+   light-muted background floats in with it (rather than waiting for a second,
+   direct hover on the button itself) so the trigger reads as already-there,
+   not as a plain hitbox the editor has to find. The trigger is a sibling of h1,
+   not a descendant, so revealing it on title-hover needs :has() on their shared
+   parent rather than a plain descendant selector.
+
+   Keeping it revealed also needs a *second* :has() condition on the wrap itself
+   (not just h1) — mousing from the title over to the trigger to click it leaves
+   h1's own box, so a reveal condition keyed on h1 alone would fade the trigger
+   out from under the pointer before the click lands. The wrap covers the trigger
+   and its dropdown, so hovering either keeps this true once the pointer arrives. */
+.collection-controls__title-menu-trigger {
+    opacity: 0;
+    transition: opacity var(--transition-fast), background var(--transition-fast);
+}
+
+.content.block:has(> h1:hover, .collection-controls__title-menu-wrap:hover) .collection-controls__title-menu-trigger,
+.collection-controls__title-menu-trigger:focus-visible,
+.collection-controls__title-menu-trigger[aria-expanded="true"] {
+    opacity: 1;
+    background: var(--color-muted);
+}
+
+.collection-controls__title-menu {
+    position: absolute;
+    inset-block-start: calc(100% + var(--spacing-xs));
+    inset-inline-start: 0;
+    min-width: 12rem;
+    z-index: var(--z-dropdown);
+}
+
+.collection-controls__menu-item--danger {
+    color: var(--color-destructive);
 
     &:hover {
-        background: var(--color-muted);
+        background: color-mix(in srgb, var(--color-destructive) 10%, transparent);
+        color: var(--color-destructive);
     }
 }
 
-/* Thumbnail strip (see renderThumbStrip in collection-controls.js) — a quick
-   visual preview of what's actually in the collection, injected into the
-   sibling "content" block right after the title/meta text. */
-.collection-controls__thumb-strip {
+/* Edit details dialog — Name + Description stacked fields (see
+   openEditDetailsDialog in collection-controls.js). Appended to document.body,
+   so unscoped like the rest of this section. */
+.collection-controls__edit-fields {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+/* Past shares dialog list (see openPastSharesDialog in collection-controls.js).
+   Also appended to document.body — unscoped. */
+.collection-controls__past-shares-list {
+    font-size: var(--body-font-size-s);
+}
+
+.collection-controls__past-share-row {
     display: flex;
     align-items: center;
-    gap: var(--spacing-xs);
-    margin-top: var(--spacing-sm);
-}
+    gap: var(--spacing-sm);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-top: 1px solid var(--color-border);
 
-.collection-controls__thumb {
-    width: 2.5rem;
-    height: 2.5rem;
-    border-radius: var(--border-radius-md);
-    object-fit: cover;
-    border: 1px solid var(--color-border);
-    background: var(--color-muted);
-}
+    &:first-child { border-top: none; }
 
-.collection-controls__thumb--more {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: var(--body-font-size-xs);
-    font-weight: 600;
-    color: var(--color-muted-fg);
-    background: var(--color-muted);
+    .asc-ui-menu__item-label {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
 }
 
 .block.collection-controls {
     --collection-radius: var(--border-radius-md);
 
     container-type: inline-size;
-
-    /* ── Actions menu (Edit trigger + dropdown) ───────────────────────── */
-
-    .collection-controls__menu-wrap {
-        position: relative;
-        flex-shrink: 0;
-    }
-
-    .collection-controls__menu {
-        position: absolute;
-        inset-block-start: calc(100% + var(--spacing-xs));
-        inset-inline-end: 0;
-        min-width: 10rem;
-        z-index: var(--z-dropdown);
-    }
-
-    .collection-controls__menu-item--danger {
-        color: var(--color-destructive);
-
-        &:hover {
-            background: color-mix(in srgb, var(--color-destructive) 10%, transparent);
-            color: var(--color-destructive);
-        }
-    }
 
     /* ── Toolbar ─────────────────────────────────────────────────────── */
 
@@ -112,19 +119,6 @@
     .collection-controls__toolbar .btn {
         min-height: var(--input-height-sm);
         box-sizing: border-box;
-    }
-
-    /* The @kit count badge (styles/ui-kit.css) defaults to 1.25rem tall — taller
-       than this row's own text content box (line-height: 1 at 0.9375rem), so
-       nested in the Past shares trigger it was stretching that one button
-       ~5px taller than its Share/Get-em-now siblings. Shrink it here to match
-       the surrounding button text instead of the other way around. */
-    .collection-controls__past-shares-trigger .asc-ui-count {
-        height: 1rem;
-        min-width: 1rem;
-        line-height: 1rem;
-        padding-inline: var(--spacing-xs);
-        font-size: 0.6875rem;
     }
 
     /* ── Active download jobs ─────────────────────────────────────────── */
@@ -172,34 +166,5 @@
 
         &.collection-controls__job-status--running,
         &.collection-controls__job-status--pending { color: var(--color-muted-fg); }
-    }
-
-    /* ── Past shares dropdown (toolbar) ─────────────────────────────── */
-
-    .collection-controls__past-shares-panel {
-        right: 0;
-        left: auto;
-        min-width: 22rem;
-        max-width: min(90vw, 32rem);
-        padding: 0;
-        font-size: var(--body-font-size-s);
-    }
-
-    .collection-controls__past-share-row {
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-sm);
-        padding: var(--spacing-xs) var(--spacing-sm);
-        border-top: 1px solid var(--color-border);
-
-        &:first-child { border-top: none; }
-
-        .asc-ui-menu__item-label {
-            flex: 1;
-            min-width: 0;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
     }
 }

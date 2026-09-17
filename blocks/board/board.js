@@ -215,37 +215,6 @@ function viewportHtml(assetItems, textItems, config) {
 
 // ─── Data loading ─────────────────────────────────────────────────────────────
 
-function parseSectionEntry(entry) {
-  const sep = entry.indexOf('|||', 1);
-  return {
-    type: 'section',
-    title: sep === -1 ? entry.slice(1) : entry.slice(1, sep),
-    body: sep === -1 ? '' : entry.slice(sep + 3),
-  };
-}
-
-function parseAssetEntry(entry) {
-  const sep = entry.indexOf('|||');
-  const base = sep !== -1 ? entry.slice(0, sep) : entry;
-  const notes = sep !== -1 ? entry.slice(sep + 3) : undefined;
-  const at = base.indexOf('@');
-  const id = at !== -1 ? base.slice(0, at) : base;
-  const item = { type: 'asset', id };
-  if (notes) item.notes = notes;
-  if (at !== -1) {
-    const [xStr, yStr] = base.slice(at + 1).split(',');
-    if (yStr !== undefined) {
-      item.x = parseInt(xStr, 10);
-      item.y = parseInt(yStr, 10);
-    }
-  }
-  return item;
-}
-
-function parseEntry(entry) {
-  return entry.startsWith('~') ? parseSectionEntry(entry) : parseAssetEntry(entry);
-}
-
 async function loadFromCollection(id) {
   const collection = await services.collections.get(id, true);
   if (!collection) return null;
@@ -266,13 +235,8 @@ async function loadFromSheet(sheetParam) {
       textItems: [],
     };
   }
-  let payload;
-  try {
-    const parts = await services.url.decompressToArray(sheetParam);
-    if (!parts) throw new Error('decompression failed');
-    payload = JSON.parse(parts.join(','));
-  } catch (err) {
-    console.warn('[ASC] Failed to decode sheet URL — treating as invalid:', err);
+  const payload = await services.url.decodeSheetPayload(sheetParam);
+  if (!payload) {
     return { meta: { invalid: true, title: '', description: '', expiresAt: null }, assetItems: [], textItems: [] };
   }
 
@@ -280,14 +244,13 @@ async function loadFromSheet(sheetParam) {
     title = '', description = '', expiresAt = null, items = [], textElements = [],
   } = payload;
 
-  const mixedItems = items.map(parseEntry);
-  const assetIds = mixedItems.filter((i) => i.type === 'asset').map((i) => i.id);
+  const assetIds = items.filter((i) => i.type === 'asset').map((i) => i.id);
   const fetchedAssets = await Promise.all(assetIds.map((id) => services.search.getAssetById(id)));
   // Keyed by the requested id, not the resolved asset's uuid — same reasoning as
   // collections.js _hydrateAssets: a forbidden/missing lookup has no uuid of its own.
   const resultMap = new Map(assetIds.map((id, i) => [id, fetchedAssets[i]]));
 
-  const assetItems = mixedItems
+  const assetItems = items
     .filter((i) => i.type === 'asset')
     .map((i) => {
       const result = resultMap.get(i.id);
@@ -572,6 +535,7 @@ function initPanZoom(block, persistId, onChange) {
       fitView() {},
       centerOn() {},
       hasValidSavedViewport: false,
+      isManuallyPositioned: () => false,
     };
   }
 
@@ -580,12 +544,26 @@ function initPanZoom(block, persistId, onChange) {
   const savedRaw = persistId ? getViewport(persistId) : null;
   const hasValidSavedViewport = !!savedRaw
     && (savedRaw.sig == null || savedRaw.sig === contentSignature(currentItems()));
-  let { panX, panY, zoom } = hasValidSavedViewport ? savedRaw : { panX: 0, panY: 0, zoom: 1 };
+  // Default to the fit-view computation rather than a hardcoded {0,0,1} — without a saved
+  // viewport to restore, the board's first paint should already look "fit to view" instead of
+  // flashing at zoom 1/pan 0 for a frame before initBoard's forceFit corrects it.
+  let { panX, panY, zoom } = hasValidSavedViewport
+    ? savedRaw
+    : computeFitViewport(currentItems(), viewport);
 
   canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
 
   const MIN_ZOOM = 0.2;
   const MAX_ZOOM = 3.0;
+
+  // A restored saved viewport only counts as "manual" if it was saved by a real pan/wheel/
+  // centerOn — those are stored without a `sig` (see endPan/wheel/centerOn below) and are
+  // always trusted regardless of content changes. A restored *fit* (from the "Fit view"
+  // button, Align to grid, or a forced initial fit) is tagged with a `sig` and is just a
+  // computed result, not a deliberate override — treating it as "manual" would permanently
+  // block the layout-shift-triggered re-fit in decorate()'s ResizeObserver below for any
+  // board that has ever been fit before, which is the opposite of what that re-fit is for.
+  let manuallyPositioned = hasValidSavedViewport && savedRaw.sig == null;
 
   let panning = false;
   let lastX = 0;
@@ -602,6 +580,7 @@ function initPanZoom(block, persistId, onChange) {
 
   viewport.addEventListener('pointermove', (e) => {
     if (!panning) return;
+    manuallyPositioned = true;
     panX += e.clientX - lastX;
     panY += e.clientY - lastY;
     lastX = e.clientX;
@@ -623,6 +602,7 @@ function initPanZoom(block, persistId, onChange) {
 
   viewport.addEventListener('wheel', (e) => {
     e.preventDefault();
+    manuallyPositioned = true;
     if (e.ctrlKey || e.metaKey) {
       const rect = viewport.getBoundingClientRect();
       const cursorX = e.clientX - rect.left;
@@ -664,6 +644,7 @@ function initPanZoom(block, persistId, onChange) {
   }
 
   function centerOn(x, y) {
+    manuallyPositioned = true;
     panX = viewport.clientWidth / 2 - x * zoom;
     panY = viewport.clientHeight / 2 - y * zoom;
     canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
@@ -678,6 +659,7 @@ function initPanZoom(block, persistId, onChange) {
     fitView,
     centerOn,
     hasValidSavedViewport,
+    isManuallyPositioned: () => manuallyPositioned,
   };
 }
 
@@ -1458,6 +1440,8 @@ function initBoard(block, config, collectionId, { forceFit = false } = {}) {
   if (forceFit || !panZoom.hasValidSavedViewport) {
     requestAnimationFrame(() => requestAnimationFrame(() => panZoom.fitView(false)));
   }
+
+  return panZoom;
 }
 
 // ─── Main decorate ────────────────────────────────────────────────────────────
@@ -1471,10 +1455,18 @@ export default async function decorate(block) {
   // Window resizes AND layout shifts from async content above the board (e.g. the
   // collection-controls toolbar expanding once its data loads) can change how much
   // space is left — re-measure whenever the page's layout changes, not just on resize.
+  // Re-running the fit alongside it (when nobody has manually panned/zoomed) matters
+  // because the very first fit is often computed before that async content above has
+  // settled — without this, the board keeps a fit sized against a taller-than-actual
+  // viewport and its lower items spill past the real, later-shrunk bottom edge.
   let resizeRaf;
+  let currentPanZoom = null;
   new ResizeObserver(() => {
     cancelAnimationFrame(resizeRaf);
-    resizeRaf = requestAnimationFrame(() => sizeViewport(block));
+    resizeRaf = requestAnimationFrame(() => {
+      sizeViewport(block);
+      if (currentPanZoom && !currentPanZoom.isManuallyPositioned()) currentPanZoom.fitView(false);
+    });
   }).observe(document.body);
 
   if (config.source === 'collection' && config.mode !== 'sheet-url') {
@@ -1492,7 +1484,7 @@ export default async function decorate(block) {
       }
       const { assetItems, textItems } = result;
       block.innerHTML = viewportHtml(assetItems, textItems, config);
-      initBoard(block, config, id, { forceFit });
+      currentPanZoom = initBoard(block, config, id, { forceFit });
     }
 
     await renderCollection(true);
@@ -1509,7 +1501,7 @@ export default async function decorate(block) {
     const { assetItems, textItems } = await loadFromAuthoredList(config.items);
     const boardConfig = { ...config, mode: 'view' };
     block.innerHTML = viewportHtml(assetItems, textItems, boardConfig);
-    initBoard(block, boardConfig, null, { forceFit: true });
+    currentPanZoom = initBoard(block, boardConfig, null, { forceFit: true });
   } else {
     const sheetParam = config.mode === 'sheet-url'
       ? sheetParamFromUrl(config.sheetUrl)
@@ -1534,6 +1526,6 @@ export default async function decorate(block) {
     const boardConfig = config.mode === 'sheet-url' ? { ...config, mode: 'view' } : config;
     block.innerHTML = viewportHtml(assetItems, textItems, boardConfig);
 
-    initBoard(block, boardConfig, null, { forceFit: true });
+    currentPanZoom = initBoard(block, boardConfig, null, { forceFit: true });
   }
 }

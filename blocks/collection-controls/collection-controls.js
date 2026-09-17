@@ -3,7 +3,7 @@ import services from '../../scripts/asc/core/services/services.js';
 import storage from '../../scripts/asc/core/services/storage/storage.js';
 import { Events as CollectionEvents } from '../../scripts/asc/core/services/collections/collections.js';
 import { escHtml, escAttr, formatUpdated } from '../../scripts/asc/html.js';
-import { triggerAction } from '../../scripts/asc.js';
+import { triggerAction, wireDialogClose } from '../../scripts/asc.js';
 import { registerTokens } from '../../scripts/asc/tokens.js';
 
 const configurations = (await import('../../scripts/asc/configurations.js')).default;
@@ -21,15 +21,18 @@ export default async function decorate(block) {
   });
 
   document.addEventListener('click', (e) => {
-    if (!block.contains(e.target)) closeMenu(block);
+    const wrap = block.closest('.section')?.querySelector('.collection-controls__title-menu-wrap');
+    if (wrap && !wrap.contains(e.target)) closeTitleMenu(wrap);
   });
 
   document.addEventListener('asc:share:created', () => {
-    const pastSharesEl = block.querySelector('.collection-controls__past-shares');
-    if (pastSharesEl) {
-      const control = controls.find((c) => c.id === 'past-shares');
-      pastSharesEl.innerHTML = renderPastSharesHtml(control?.label || '', control?.variant || 'ghost');
-    }
+    const wrap = block.closest('.section')?.querySelector('.collection-controls__title-menu-wrap');
+    const item = wrap?.querySelector('.collection-controls__past-shares-btn')?.closest('li');
+    if (!item) return;
+    const history = storage.get(SHARE_HISTORY_KEY) || [];
+    item.hidden = history.length === 0;
+    const meta = item.querySelector('.asc-ui-menu__item-meta');
+    if (meta) meta.textContent = String(history.length);
   });
 }
 
@@ -57,6 +60,7 @@ async function render(block, collectionId, controls) {
   const items = collection.hydratedItems || [];
   const assetCount = items.filter((i) => i.type === 'asset').length;
   const updated = formatUpdated(collection.modifiedAt);
+  const historyCount = (storage.get(SHARE_HISTORY_KEY) || []).length;
 
   registerTokens({
     'collection.title': collection.name,
@@ -66,50 +70,20 @@ async function render(block, collectionId, controls) {
   });
 
   const section = block.closest('.section');
-  block.innerHTML = html(controls, isDefault, assetCount);
-  initInteractions(block, collection, isDefault, section);
-  renderThumbStrip(section, collection);
-}
-
-const THUMB_STRIP_COUNT = 6;
-
-// Lives in the sibling "content" block (see initRename above for why) —
-// pure visual interest for an otherwise text-only header, so it's a no-op
-// rather than an error when there's nothing to show yet.
-function renderThumbStrip(section, collection) {
-  const infoBlock = section?.querySelector('.content.block');
-  if (!infoBlock) return;
-  infoBlock.querySelector('.collection-controls__thumb-strip')?.remove();
-
-  const assets = collection.assets || [];
-  if (!assets.length) return;
-
-  const shown = assets.slice(0, THUMB_STRIP_COUNT);
-  const extra = assets.length - shown.length;
-  const thumbs = shown.map((asset) => {
-    const src = services.renditions.getThumbnailUrl(asset);
-    if (!src) return '';
-    const alt = escAttr(asset.title || asset.filename || '');
-    return `<img class="collection-controls__thumb" src="${escAttr(src)}" alt="" title="${alt}" loading="lazy">`;
-  }).join('');
-  const extraHtml = extra > 0
-    ? `<span class="collection-controls__thumb collection-controls__thumb--more">+${extra}</span>` : '';
-
-  infoBlock.insertAdjacentHTML('beforeend', `<div class="collection-controls__thumb-strip">${thumbs}${extraHtml}</div>`);
+  block.innerHTML = html(controls, assetCount);
+  initShare(block, collection);
+  initDownload(block, collection);
+  renderTitleMenu(section, controls, collection.id, isDefault, historyCount);
 }
 
 const RENDERERS = {
-  'past-shares': ({ label, variant }) => `<div class="collection-controls__past-shares">${renderPastSharesHtml(label, variant || 'ghost')}</div>`,
-  edit: ({ label, isDefault, variant }) => renderEditMenu(label, isDefault, variant || 'ghost'),
   share: ({ label, variant }) => `<button type="button" class="collection-controls__share-btn btn btn--${variant || 'secondary'}" aria-label="Share this collection">${escHtml(label || 'Share')}</button>`,
   download: ({ label, assetCount, variant }) => `<button type="button" class="collection-controls__download-btn btn btn--${variant || 'primary'}" aria-label="Download all assets in collection"${assetCount === 0 ? ' disabled' : ''}>${escHtml(label || 'Download')}</button>`,
 };
 
-function html(controls, isDefault, assetCount) {
+function html(controls, assetCount) {
   const items = controls
-    .map(({ id, label, variant }) => RENDERERS[id]?.({
-      label, variant, isDefault, assetCount,
-    }) ?? '')
+    .map(({ id, label, variant }) => RENDERERS[id]?.({ label, variant, assetCount }) ?? '')
     .join('');
   return `
     <div class="collection-controls__toolbar">
@@ -117,15 +91,33 @@ function html(controls, isDefault, assetCount) {
     </div>`;
 }
 
-function renderEditMenu(label, isDefault, variant) {
+// ─── Title menu (Edit details / Past shares / Delete) ──────────────────────────
+
+const ICON_KEBAB = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>';
+
+function titleMenuHtml(controls, isDefault, historyCount) {
+  const editLabel = controls.find((c) => c.id === 'edit')?.label || 'Edit details';
+  const pastSharesLabel = controls.find((c) => c.id === 'past-shares')?.label || 'Past shares';
   return `
-    <div class="collection-controls__menu-wrap">
-      <button type="button" class="collection-controls__menu-trigger btn btn--${variant}"
-              aria-haspopup="true" aria-expanded="false">${escHtml(label || 'Edit')}</button>
-      <div class="collection-controls__menu asc-panel asc-panel--no-pad" hidden>
+    <div class="collection-controls__title-menu-wrap">
+      <button type="button" class="collection-controls__title-menu-trigger btn btn--ghost btn--circle btn--sm"
+              aria-haspopup="true" aria-expanded="false" aria-label="Collection settings">${ICON_KEBAB}</button>
+      <div class="collection-controls__title-menu asc-panel asc-panel--no-pad" hidden>
         <ul class="asc-ui-menu" role="menu">
           <li role="none">
-            <button type="button" class="collection-controls__rename-btn asc-ui-menu__item" role="menuitem">Rename</button>
+            <button type="button" class="collection-controls__edit-details-btn asc-ui-menu__item" role="menuitem">
+              <span class="asc-ui-menu__item-label">${escHtml(editLabel)}</span>
+            </button>
+          </li>
+          <li role="none"${historyCount ? '' : ' hidden'}>
+            <button type="button" class="collection-controls__past-shares-btn asc-ui-menu__item" role="menuitem">
+              <span class="asc-ui-menu__item-label">${escHtml(pastSharesLabel)}</span>
+              <span class="asc-ui-menu__item-meta asc-ui-count asc-ui-count--muted">${historyCount}</span>
+            </button>
+          </li>
+          <li role="none"><hr class="asc-ui-menu__separator"></li>
+          <li role="none">
+            <button type="button" class="collection-controls__clear-btn asc-ui-menu__item collection-controls__menu-item--danger" role="menuitem">Clear collection</button>
           </li>
           <li role="none"${isDefault ? ' hidden' : ''}><hr class="asc-ui-menu__separator"></li>
           <li role="none"${isDefault ? ' hidden' : ''}>
@@ -136,104 +128,174 @@ function renderEditMenu(label, isDefault, variant) {
     </div>`;
 }
 
-// ─── Interactions ─────────────────────────────────────────────────────────────
+// Injected next to the authored `<h1>` in the sibling "content" block (rather than
+// this block's own toolbar) so Rename/Description/Delete/Past-shares — collection
+// *settings*, not primary actions — read as attached to the title, not the CTAs.
+//
+// Must land as an `afterend` *sibling* of h1, not a child inside it: tokens.js's
+// page-wide registry re-resolves every recorded `{{...}}` template — including this
+// h1 — via `el.textContent = resolved` any time *any* block on the page calls
+// registerTokens() again (e.g. header/footer fragments re-running decorateMain on
+// their own content triggers scripts/asc.js's registerTokens(urlParams) call, which
+// re-resolves globally, not just for that fragment). textContent assignment wipes
+// all of h1's children, so anything injected *inside* h1 gets silently deleted a
+// few dozen ms after insert — confirmed by tracing it live. Sibling placement is
+// immune since resolveAll() never touches h1's siblings, and it also happens to
+// land the wrap right of the title in the flex layout (ui-kit.css) for free — no
+// `order` override needed, since a same-order flex tie breaks by DOM position and
+// this sits right after h1 there. That DOM order also keeps the breadcrumb
+// paragraph's `p:first-child + h1` adjacency intact for the back-heading detection
+// CSS.
+//
+// `:has(h1)` disambiguates from the sibling "content" block that holds the
+// compact `@kit metadata` stat list (count/last-updated) in the header's grid
+// "meta" area (see docs/starter-kit/collection.html) — same "content" block
+// name, no h1 inside it.
+function renderTitleMenu(section, controls, collectionId, isDefault, historyCount) {
+  const infoBlock = section?.querySelector('.content.block:has(h1)');
+  const h1 = infoBlock?.querySelector('h1');
+  if (!h1) return;
 
-function initInteractions(block, collection, isDefault, section) {
-  initMenu(block);
-  initRename(block, collection, section);
-  initShare(block, collection);
-  initDownload(block, collection);
-  if (!isDefault) initDelete(block, collection);
+  infoBlock.querySelector('.collection-controls__title-menu-wrap')?.remove();
+  h1.insertAdjacentHTML('afterend', titleMenuHtml(controls, isDefault, historyCount));
+
+  // The wrap's own markup is torn down and rebuilt above on every re-render, but
+  // infoBlock itself persists across CollectionEvents.CHANGED re-renders — delegate
+  // once here (same accumulation risk noted elsewhere in this file for Share).
+  if (!infoBlock.dataset.titleMenuWired) {
+    infoBlock.dataset.titleMenuWired = 'true';
+    initTitleMenu(infoBlock, collectionId);
+  }
 }
 
-// ── Actions menu ──────────────────────────────────────────────────────────────
-
-function closeMenu(block) {
-  block.querySelector('.collection-controls__menu')?.setAttribute('hidden', '');
-  block.querySelector('.collection-controls__menu-trigger')?.setAttribute('aria-expanded', 'false');
+function closeTitleMenu(wrap) {
+  wrap?.querySelector('.collection-controls__title-menu')?.setAttribute('hidden', '');
+  wrap?.querySelector('.collection-controls__title-menu-trigger')?.setAttribute('aria-expanded', 'false');
 }
 
-function initMenu(block) {
-  const trigger = block.querySelector('.collection-controls__menu-trigger');
-  const menu = block.querySelector('.collection-controls__menu');
-  if (!trigger || !menu) return;
+function initTitleMenu(infoBlock, collectionId) {
+  infoBlock.addEventListener('click', (e) => {
+    const trigger = e.target.closest('.collection-controls__title-menu-trigger');
+    if (trigger) {
+      e.stopPropagation();
+      const wrap = trigger.closest('.collection-controls__title-menu-wrap');
+      const menu = wrap.querySelector('.collection-controls__title-menu');
+      if (menu.hasAttribute('hidden')) {
+        menu.removeAttribute('hidden');
+        trigger.setAttribute('aria-expanded', 'true');
+      } else {
+        closeTitleMenu(wrap);
+      }
+      return;
+    }
 
-  trigger.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const isOpen = !menu.hasAttribute('hidden');
-    if (isOpen) {
-      closeMenu(block);
-    } else {
-      menu.removeAttribute('hidden');
-      trigger.setAttribute('aria-expanded', 'true');
+    const editBtn = e.target.closest('.collection-controls__edit-details-btn');
+    if (editBtn) {
+      closeTitleMenu(editBtn.closest('.collection-controls__title-menu-wrap'));
+      openEditDetailsDialog(collectionId);
+      return;
+    }
+
+    const pastSharesBtn = e.target.closest('.collection-controls__past-shares-btn');
+    if (pastSharesBtn) {
+      closeTitleMenu(pastSharesBtn.closest('.collection-controls__title-menu-wrap'));
+      openPastSharesDialog();
+      return;
+    }
+
+    const clearBtn = e.target.closest('.collection-controls__clear-btn');
+    if (clearBtn) {
+      closeTitleMenu(clearBtn.closest('.collection-controls__title-menu-wrap'));
+      confirmClear(collectionId);
+      return;
+    }
+
+    const deleteBtn = e.target.closest('.collection-controls__delete-btn');
+    if (deleteBtn) {
+      closeTitleMenu(deleteBtn.closest('.collection-controls__title-menu-wrap'));
+      confirmDelete(collectionId);
     }
   });
-
-  menu.addEventListener('click', () => closeMenu(block));
 }
 
-// ── Rename ────────────────────────────────────────────────────────────────────
+// ── Edit details (Name + Description) ─────────────────────────────────────────
 
-function initRename(block, collection, section) {
-  const nameEl = section?.querySelector('h1');
-  if (!nameEl) return;
+async function openEditDetailsDialog(collectionId) {
+  const collection = await services.collections.get(collectionId);
+  if (!collection) return;
 
-  function startRename() {
-    const current = nameEl.textContent.trim();
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.className = 'collection-controls__name-input';
-    input.value = current;
-    nameEl.replaceWith(input);
-    input.focus();
-    input.select();
+  const dialog = document.createElement('dialog');
+  dialog.className = 'asc-dialog asc-dialog--narrow collection-controls__edit-dialog';
+  dialog.setAttribute('aria-labelledby', 'collection-edit-title');
+  dialog.innerHTML = `
+    <header class="asc-dialog__header">
+      <div class="asc-dialog__header-main">
+        <h2 class="asc-dialog__title" id="collection-edit-title">Edit collection details</h2>
+      </div>
+      <button type="button" class="btn btn--ghost btn--icon asc-dialog__close" aria-label="Close" data-dialog-close>&#x2715;</button>
+    </header>
+    <div class="asc-dialog__body collection-controls__edit-fields">
+      <label class="asc-ui-field">
+        <span class="asc-ui-field__label">Name</span>
+        <input type="text" class="collection-controls__edit-name" maxlength="80" autocomplete="off" value="${escAttr(collection.name)}" />
+      </label>
+      <label class="asc-ui-field">
+        <span class="asc-ui-field__label">Description</span>
+        <textarea class="collection-controls__edit-description" rows="3" maxlength="500">${escHtml(collection.description || '')}</textarea>
+      </label>
+    </div>
+    <footer class="asc-dialog__footer">
+      <button type="button" class="btn btn--secondary" data-dialog-close>Cancel</button>
+      <div class="asc-dialog__footer-end">
+        <button type="button" class="collection-controls__edit-submit btn btn--primary">Save</button>
+      </div>
+    </footer>`;
 
-    function commit() {
-      const val = input.value.trim();
-      if (val && val !== current) services.collections.rename(collection.id, val);
-      input.replaceWith(nameEl);
-      nameEl.textContent = val || current;
-    }
+  document.body.appendChild(dialog);
+  dialog.showModal();
+  wireDialogClose(dialog);
+  dialog.addEventListener('close', () => dialog.remove());
 
-    input.addEventListener('blur', commit);
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') { e.preventDefault(); commit(); }
-      if (e.key === 'Escape') { input.replaceWith(nameEl); }
-    });
-  }
+  const nameInput = dialog.querySelector('.collection-controls__edit-name');
+  const descInput = dialog.querySelector('.collection-controls__edit-description');
+  nameInput.focus();
+  nameInput.select();
 
-  block.querySelector('.collection-controls__rename-btn')?.addEventListener('click', startRename);
+  const submit = () => {
+    const name = nameInput.value.trim();
+    if (!name) return;
+    services.collections.updateDetails(collectionId, { name, description: descInput.value.trim() });
+    dialog.close();
+  };
 
-  // The title lives in the sibling "content" block, which collection-controls'
-  // own re-renders never touch — it's the same persistent element across every
-  // CollectionEvents.CHANGED re-render, so wire the click-to-rename affordance
-  // only once (same accumulation risk the Past shares toggle had).
-  if (!nameEl.dataset.renameWired) {
-    nameEl.dataset.renameWired = 'true';
-    nameEl.classList.add('collection-controls__title--editable');
-    nameEl.title = 'Click to rename';
-    nameEl.addEventListener('click', startRename);
-  }
+  dialog.querySelector('.collection-controls__edit-submit').addEventListener('click', submit);
+  nameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
+}
+
+// ── Clear ─────────────────────────────────────────────────────────────────────
+
+async function confirmClear(collectionId) {
+  const collection = await services.collections.get(collectionId);
+  if (!collection || !(collection.items || []).length) return;
+  if (!window.confirm(`Remove everything from "${collection.name}"? This cannot be undone.`)) return;
+  services.collections.clear(collectionId);
 }
 
 // ── Delete ────────────────────────────────────────────────────────────────────
 
-function initDelete(block, collection) {
-  block.querySelector('.collection-controls__delete-btn')?.addEventListener('click', () => {
-    if (!window.confirm(`Delete "${collection.name}"? This cannot be undone.`)) return;
-    services.collections.delete(collection.id);
-    const managePath = configurations.collections?.managePath || '/collections/';
-    window.location.href = managePath;
-  });
+async function confirmDelete(collectionId) {
+  const collection = await services.collections.get(collectionId);
+  if (!collection) return;
+  if (!window.confirm(`Delete "${collection.name}"? This cannot be undone.`)) return;
+  services.collections.delete(collectionId);
+  const managePath = configurations.collections?.managePath || '/collections/';
+  window.location.href = managePath;
 }
 
 // ── Share ─────────────────────────────────────────────────────────────────────
 
-function renderPastSharesHtml(label, variant) {
-  const history = storage.get(SHARE_HISTORY_KEY) || [];
-  if (!history.length) return '';
-
-  const dateItems = history.map((entry) => {
+function pastSharesRows(history) {
+  return history.map((entry) => {
     const dateLabel = new Date(entry.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
     return `
       <li class="collection-controls__past-share-row">
@@ -241,7 +303,7 @@ function renderPastSharesHtml(label, variant) {
         <span class="asc-ui-menu__item-meta">${escHtml(dateLabel)}</span>
         <button type="button" class="btn btn--ghost btn--circle btn--sm collection-controls__share-history-copy"
                 data-url="${escAttr(entry.url)}" aria-label="Copy link">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          ${ICON_COPY}
         </button>
         <a href="${escAttr(entry.url)}" target="_blank" rel="noopener noreferrer"
            class="btn btn--ghost btn--circle btn--sm" aria-label="Open link">
@@ -249,19 +311,34 @@ function renderPastSharesHtml(label, variant) {
         </a>
       </li>`;
   }).join('');
+}
 
-  return `
-    <div class="asc-ui-dropdown collection-controls__past-shares-dropdown">
-      <button type="button"
-              class="btn btn--${variant} collection-controls__past-shares-trigger"
-              aria-expanded="false"
-              aria-haspopup="true">
-        ${escHtml(label || 'Past Shares')} <span class="asc-ui-count asc-ui-count--muted">${history.length}</span>
-      </button>
-      <div class="asc-ui-dropdown__panel collection-controls__past-shares-panel" hidden>
-        <ul class="asc-ui-menu">${dateItems}</ul>
+function openPastSharesDialog() {
+  const history = storage.get(SHARE_HISTORY_KEY) || [];
+
+  const dialog = document.createElement('dialog');
+  dialog.className = 'asc-dialog asc-dialog--narrow collection-controls__past-shares-dialog';
+  dialog.setAttribute('aria-labelledby', 'collection-past-shares-title');
+  dialog.innerHTML = `
+    <header class="asc-dialog__header">
+      <div class="asc-dialog__header-main">
+        <h2 class="asc-dialog__title" id="collection-past-shares-title">Past shares</h2>
       </div>
+      <button type="button" class="btn btn--ghost btn--icon asc-dialog__close" aria-label="Close" data-dialog-close>&#x2715;</button>
+    </header>
+    <div class="asc-dialog__body">
+      <ul class="asc-ui-menu collection-controls__past-shares-list">${pastSharesRows(history)}</ul>
     </div>`;
+
+  document.body.appendChild(dialog);
+  dialog.showModal();
+  wireDialogClose(dialog);
+  dialog.addEventListener('close', () => dialog.remove());
+
+  dialog.addEventListener('click', (e) => {
+    const copyBtn = e.target.closest('.collection-controls__share-history-copy');
+    if (copyBtn) flashCopy(copyBtn, copyBtn.dataset.url);
+  });
 }
 
 function initShare(block, collection) {
@@ -270,44 +347,6 @@ function initShare(block, collection) {
       configurations.share?.actionPath || '/actions/share',
       { collectionId: collection.id },
     );
-  });
-
-  // Delegated on the persistent block element, which survives re-renders (render()
-  // calls initShare() again on every CollectionEvents.CHANGED) — must be wired only
-  // once, or each re-render stacks another listener here. With an even number
-  // stacked, a single click fires all of them in sequence and they cancel each
-  // other out (open, then immediately closed again) within that same click,
-  // making the button appear to do nothing.
-  if (block.dataset.pastSharesWired) return;
-  block.dataset.pastSharesWired = 'true';
-
-  block.addEventListener('click', (e) => {
-    const trigger = e.target.closest('.collection-controls__past-shares-trigger');
-    if (trigger) {
-      const panel = trigger.closest('.collection-controls__past-shares-dropdown')
-        ?.querySelector('.collection-controls__past-shares-panel');
-      if (!panel) return;
-      const expanded = trigger.getAttribute('aria-expanded') === 'true';
-      panel.hidden = expanded;
-      trigger.setAttribute('aria-expanded', String(!expanded));
-      return;
-    }
-
-    const copyBtn = e.target.closest('.collection-controls__share-history-copy');
-    if (copyBtn) {
-      flashCopy(copyBtn, copyBtn.dataset.url);
-      return;
-    }
-
-    if (!e.target.closest('.collection-controls__past-shares-dropdown')) {
-      const openDropdown = block.querySelector('.collection-controls__past-shares-panel:not([hidden])');
-      if (openDropdown) {
-        openDropdown.hidden = true;
-        openDropdown.closest('.collection-controls__past-shares-dropdown')
-          ?.querySelector('.collection-controls__past-shares-trigger')
-          ?.setAttribute('aria-expanded', 'false');
-      }
-    }
   });
 }
 
@@ -324,7 +363,10 @@ function initDownload(block, collection) {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function resolveCollectionId() {
+// Exported for the sibling collection-meta block (blocks/collection-meta), which
+// needs to resolve the same "which collection is this page about" id — a plain
+// ?id= UUID override, falling back to the active collection.
+export function resolveCollectionId() {
   const id = new URLSearchParams(window.location.search).get('id') || '';
   if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(id)) {
     return id;

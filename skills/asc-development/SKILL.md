@@ -189,7 +189,7 @@ Invoke the **building-blocks** skill, but use ASC references instead of Adobe's 
 **Block implementation checklist**:
 - [ ] `decorate(block)` exported as default
 - [ ] Content extracted via `readBlockConfig(block)` (details blocks) or `readBlockConfig(block, transform, defaults)` (search filter blocks)
-- [ ] **Search filter blocks only**: imports `readBlockConfig` from `../../scripts/asc/core/utils/search.js` — this assigns a stable group number used for URL-serialised predicates. Display blocks (`search-results`, `search-statistics`) must NOT import from `search.js` `readBlockConfig` — they should use `blocks.js` or `aem.js` and import `SEARCH_FORM` directly.
+- [ ] **Search filter blocks only**: imports `readBlockConfig` from `../../scripts/asc/core/utils/search.js` — this assigns a stable group number used for URL-serialised predicates. Display blocks (`search-results`) must NOT import from `search.js` `readBlockConfig` — they should use `blocks.js` or `aem.js` and import `SEARCH_FORM` directly.
 - [ ] CSS scoped to `main .{block-name}` root selector
 - [ ] All colors use `--color-*` tokens
 - [ ] All spacing uses `--spacing-*` tokens

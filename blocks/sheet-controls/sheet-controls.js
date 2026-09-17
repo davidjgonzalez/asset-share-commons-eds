@@ -56,35 +56,23 @@ function parseControls(block) {
   })).filter((c) => c.id);
 }
 
-function parseAssetId(entry) {
-  const sep = entry.indexOf('|||');
-  const base = sep !== -1 ? entry.slice(0, sep) : entry;
-  const at = base.indexOf('@');
-  return at !== -1 ? base.slice(0, at) : base;
-}
-
 // ─── Data loading ─────────────────────────────────────────────────────────────
 
 async function loadSheet(sheetParam) {
   if (!sheetParam) return null;
-  try {
-    const parts = await services.url.decompressToArray(sheetParam);
-    if (!parts) return null;
-    const {
-      title = '', description = '', expiresAt = null, items = [],
-    } = JSON.parse(parts.join(','));
+  const payload = await services.url.decodeSheetPayload(sheetParam);
+  if (!payload) return null;
+  const {
+    title = '', description = '', expiresAt = null, items = [],
+  } = payload;
 
-    const assetIds = items.filter((entry) => !entry.startsWith('~')).map(parseAssetId);
-    const assets = (await Promise.all(assetIds.map((id) => services.search.getAssetById(id))))
-      .filter(Boolean);
+  const assetIds = items.filter((i) => i.type === 'asset').map((i) => i.id);
+  const assets = (await Promise.all(assetIds.map((id) => services.search.getAssetById(id))))
+    .filter(Boolean);
 
-    return {
-      title, description, expiresAt, assetCount: assetIds.length, assets,
-    };
-  } catch (err) {
-    console.warn('[ASC] Failed to decode sheet URL:', err);
-    return null;
-  }
+  return {
+    title, description, expiresAt, assetCount: assetIds.length, assets,
+  };
 }
 
 // ─── Token resolution ─────────────────────────────────────────────────────────

@@ -182,17 +182,17 @@ All exported from [scripts/asc/core/services/services.js](../scripts/asc/core/se
 
 ---
 
-## 5. Block Inventory (24 blocks)
+## 5. Block Inventory (22 blocks)
 
 ### 5.1 Categorization
 
 ```
-Search Blocks (8):       search-bar, search-property, search-path, 
+Search Blocks (7):       search-bar, search-property, search-path, 
                          search-date-range, search-tags, search-hidden, 
-                         search-results, search-statistics
+                         search-results
 
-Details Blocks (6):      details-modal, details-preview, details-property,
-                         details-renditions, details-actions, details-similar
+Details Blocks (5):      details-modal, details-preview, details-property,
+                         details-renditions, details-similar
 
 Collections Blocks (4):  stub, sheet, collections, collection, 
                          collection-switcher
@@ -271,7 +271,7 @@ All events follow `asc:{noun}:{verb}` pattern. Full reference in AGENTS.md.
 
 | Scope | Events | Listeners |
 |-------|--------|-----------|
-| `document` | `asc:search:*` | SearchService, search-statistics, search-results |
+| `document` | `asc:search:*` | SearchService, search-results |
 | `document.body` | `asc:asset:*`, `asc:collection:*`, `asc:download:*` | Services, UI handlers, custom blocks |
 | Block element | Block-local | Internal block handlers (rare) |
 

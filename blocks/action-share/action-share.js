@@ -135,13 +135,14 @@ export default async function decorate(block) {
 
     const fresh = await services.collections.get(collection?.id);
     const liveItems = (fresh || collection)?.items || [];
-    const encodedItems = liveItems.map((item) => {
-      if (item.type === 'section') return `~${item.title}|||${item.body}`;
-      const pos = (item.x != null && item.y != null)
-        ? `@${Math.round(item.x)},${Math.round(item.y)}`
-        : '';
-      return item.notes ? `${item.id}${pos}|||${item.notes}` : `${item.id}${pos}`;
-    });
+    const items = liveItems.map((item) => (item.type === 'section'
+      ? { type: 'section', title: item.title, body: item.body }
+      : {
+        type: 'asset',
+        id: item.id,
+        ...(item.x != null && item.y != null && { x: Math.round(item.x), y: Math.round(item.y) }),
+        ...(item.notes && { notes: item.notes }),
+      }));
 
     const textItems = collection?.id ? getBoardTextItems(collection.id) : [];
     const payload = {
@@ -149,7 +150,7 @@ export default async function decorate(block) {
       ...(description && { description }),
       // eslint-disable-next-line no-underscore-dangle
       ...(days > 0 && { expiresAt: new Date(Date.now() + days * 86_400_000).toISOString() }),
-      items: encodedItems,
+      items,
       ...(textItems.length && {
         textElements: textItems.map(({ x, y, w, h, content }) => ({
           x, y, w, h, content,
@@ -157,7 +158,7 @@ export default async function decorate(block) {
       }),
     };
 
-    const compressed = await services.url.compressArray([JSON.stringify(payload)]);
+    const compressed = await services.url.encodeSheetPayload(payload);
     // Explicit chrome= param rather than relying only on the implicit "any
     // ?sheet= link is standalone" default (scripts/asc/chrome.js) — makes the
     // sharer's choice durable even if that default ever changes.

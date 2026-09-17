@@ -174,12 +174,8 @@ header {
   position: sticky;
   top: 0;
   z-index: var(--z-sticky);
-  height: var(--nav-height);
+  min-height: var(--nav-height);
   flex-shrink: 0;
-}
-
-header:has(.block.search-active-filters:not(:empty)) {
-  height: auto;
 }
 
 /* Chrome duality (share/sheet/board pages) — see scripts/asc/chrome.js.
@@ -386,8 +382,8 @@ a.btn:any-link:visited {
   text-decoration: none;
 }
 
-/* Same for UI Kit action buttons rendered as anchors (e.g. details-actions
-   Download): drop the link underline + colour so they match the button siblings. */
+/* Same for UI Kit action buttons rendered as anchors (e.g. a download button):
+   drop the link underline + colour so they match the button siblings. */
 a.asc-ui-action:any-link,
 a.asc-ui-action:any-link:hover,
 a.asc-ui-action:any-link:visited {
@@ -885,13 +881,33 @@ main .section.highlight {
 
 /*
   Apply via section metadata:
-    style: right search-filters   — sticky rail on the right
-    style: left search-filters    — sticky rail on the left
-    style: top search-filters     — horizontal row above results
+    style: right search-filters            — sticky rail on the right
+    style: left search-filters             — sticky rail on the left
+    style: top search-filters              — horizontal row above results
+    style: top dropdowns search-filters    — dropdown row; each filter block's
+    style: inline dropdowns search-filters   decorate() also relocates itself
+                                              into the sticky header's shared
+                                              .search-filter-dropdowns row (see
+                                              blocks/header/header.js and
+                                              header.css) instead of rendering
+                                              here — this section is removed
+                                              once decorated, unless a non-filter
+                                              block (e.g. search-statistics) still
+                                              shares it, in which case it's marked
+                                              .filters-relocated instead (see below).
 
   Filter blocks get a card appearance automatically.
   Adjust --search-filters-width and --nav-height as needed.
 */
+
+/* Once every dropdown filter block has relocated into the header, a section
+   that only shares space with a non-filter block (e.g. search-statistics)
+   falls back to plain page content — but the default main > .section margin
+   (40px) is sized for hero/editorial sections, not a single caption line
+   sitting above search results. Tighten it instead. */
+main .section.filters-relocated {
+  margin: 0 0 var(--spacing-sm, 0.5rem);
+}
 
 main .section.search-filters .block {
   background: var(--color-card);

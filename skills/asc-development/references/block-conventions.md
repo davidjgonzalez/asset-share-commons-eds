@@ -311,7 +311,8 @@ export default function decorate(block) {
 | `search-results` | Display results | Services integration, multiple view modes (cards/masonry/list), Parts usage |
 | `details-property` | Simple display | Asset from DOM, `readBlockConfig`, null safety |
 | `details-modal` | Fragment loading | `loadFragment()`, modal injection, asset context propagation |
-| `details-actions` | Buttons + events | Declarative `data-asc-action`, conditional rendering, Part usage (`collectionToggle`) |
+| `details-renditions` | Buttons + events | Declarative `data-asc-action`, conditional rendering per rendition |
+| `details-similar` | Asset grid | Part usage (`collectionToggle` via `assetTeaser`) |
 | `collection` | Form + state | Collections service integration, localStorage, reactive updates |
 | `stub` | Simple display | Asset count, link, minimal JS |
 

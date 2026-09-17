@@ -330,6 +330,40 @@
         &:not(:last-child) { border-bottom: 1px solid var(--color-border); }
     }
 
+    /* Selected rows: the kit's generic .asc-ui-selected outline (with its
+       2px offset) is meant for items with gaps between them (cards, masonry).
+       List rows sit flush against each other, so per-row outlines would
+       overlap into neighboring rows — instead draw the ring as an inset
+       box-shadow and drop the shared edge between consecutive selected rows,
+       so a run of selected rows reads as one bordered group. */
+    .asc-list-view__row.asc-ui-selected {
+        position: relative;
+        z-index: 1;
+        outline: none;
+
+        --asc-list-row-selected-top: 2px;
+        --asc-list-row-selected-bottom: 2px;
+
+        box-shadow:
+            inset 2px 0 0 var(--color-primary),
+            inset -2px 0 0 var(--color-primary),
+            inset 0 var(--asc-list-row-selected-top) 0 var(--color-primary),
+            inset 0 calc(-1 * var(--asc-list-row-selected-bottom)) 0 var(--color-primary);
+    }
+
+    .asc-list-view__row.asc-ui-selected + .asc-list-view__row.asc-ui-selected {
+        --asc-list-row-selected-top: 0px;
+    }
+
+    /* border-bottom-color: transparent alone would leave a 1px gap the inset
+       box-shadow can't reach (it paints inside the border box) — a visible
+       hole at each seam. Dropping the border width entirely closes it. */
+    .asc-list-view__row.asc-ui-selected:has(+ .asc-list-view__row.asc-ui-selected) {
+        --asc-list-row-selected-bottom: 0px;
+
+        border-bottom: none;
+    }
+
     .asc-list-view__cell {
         padding: var(--spacing-sm) var(--spacing-md);
         font-size: var(--body-font-size-s);
@@ -507,6 +541,24 @@
         background: var(--color-muted);
         border-radius: var(--border-radius-md);
     }
+}
+
+/* Ctrl/cmd+click and shift+click select results (see initSelection() in
+   search-results.js); this bar surfaces once that selection is non-empty.
+   It's teleported into the sticky header (mountToHeader(), same mechanism
+   search-active-filters uses) so it stays visible while scrolling through a
+   long results list — these rules are scoped to it living there, not to
+   .block.search-results, since by the time anything is visible it no longer is. */
+header .search-results__bulk-actions {
+    width: 100%;
+    box-sizing: border-box;
+    border-top: 1px solid var(--color-border);
+    padding-inline: var(--spacing-lg);
+    padding-block: var(--spacing-sm);
+}
+
+header .search-results__bulk-actions[hidden] {
+    display: none;
 }
 
 @keyframes asc-search-results-teaser-in {

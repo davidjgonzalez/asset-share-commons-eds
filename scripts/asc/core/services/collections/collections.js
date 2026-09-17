@@ -20,11 +20,12 @@ export const Events = {
  *   defaultId: "uuid",
  *   items: {
  *     "uuid": {
- *       id:         string,
- *       name:       string,
- *       createdAt:  ISO string,
- *       modifiedAt: ISO string,
- *       items:      Array<AssetItem | SectionItem>
+ *       id:          string,
+ *       name:        string,
+ *       description: string (optional),
+ *       createdAt:   ISO string,
+ *       modifiedAt:  ISO string,
+ *       items:       Array<AssetItem | SectionItem>
  *     }
  *   }
  * }
@@ -210,14 +211,16 @@ class Collections {
   /**
    * Creates a new collection.
    * @param {string} name
+   * @param {string} [description]
    * @returns {Object} The new collection (assets not hydrated)
    */
-  create(name) {
+  create(name, description) {
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
     const collection = {
       id,
       name,
+      ...(description ? { description } : {}),
       createdAt: now,
       modifiedAt: now,
       items: [],
@@ -309,18 +312,19 @@ class Collections {
   }
 
   /**
-   * Renames a collection.
+   * Updates a collection's name and/or description.
    * @param {string} id
-   * @param {string} name
+   * @param {{ name?: string, description?: string }} details
    */
-  rename(id, name) {
+  updateDetails(id, { name, description } = {}) {
     const data = this._getData();
     const collection = data.items[id];
     if (!collection) {
       console.error(`Collection "${id}" not found`);
       return;
     }
-    collection.name = name;
+    if (name !== undefined) collection.name = name;
+    if (description !== undefined) collection.description = description;
     this._saveCollection(collection);
     document.dispatchEvent(
       new CustomEvent(Events.CHANGED, { detail: { action: "renamed", id } }),
@@ -639,6 +643,30 @@ class Collections {
     document.dispatchEvent(
       new CustomEvent(Events.CHANGED, {
         detail: { action: "sectionRemoved", collectionId: id },
+      }),
+    );
+  }
+
+  /**
+   * Removes all items (assets and sections) from a collection.
+   * @param {string} collectionId
+   */
+  clear(collectionId) {
+    const id = collectionId || this.getActiveId();
+    const data = this._getData();
+    const collection = data.items[id];
+    if (!collection) {
+      console.error(`Collection "${id}" not found`);
+      return;
+    }
+    if (!(collection.items || []).length) return;
+
+    collection.items = [];
+    this._saveCollection(collection);
+
+    document.dispatchEvent(
+      new CustomEvent(Events.CHANGED, {
+        detail: { action: "cleared", id },
       }),
     );
   }

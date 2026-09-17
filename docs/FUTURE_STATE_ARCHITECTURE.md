@@ -127,7 +127,7 @@ box-shadow: var(--shadow-md);
 **Examples**:
 - Modify search-results to show asset ratings
 - Add a new sub-renderer to details-preview for audio playback
-- Change search-statistics to show facet counts instead of total
+- Change search-active-filters to show facet counts instead of labels
 
 **Effort**: 2–4 hours
 
