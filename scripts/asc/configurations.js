@@ -692,7 +692,7 @@ const configurations = {
     ],
     definitions: [
       { id: 'original', label: 'Original', usecase: 'Full Resolution / Print', type: 'static', name: 'original' },
-      { id: 'web', label: 'Web', usecase: 'Website (1280px)', type: 'static', name: 'cq5dam.web.1280.1280', accepts: (asset) => asset.mimeType?.startsWith('image/') },
+      { id: 'web', label: 'Web', usecase: 'Website (1280px)', type: 'static', name: /^cq5dam\.web\.1280\.1280\./, accepts: (asset) => asset.mimeType?.startsWith('image/') },
       // Smart crop rendition definitions. `id` uses the "smart-crop-*" spelling
       // (hyphen after "smart") because that's the literal id authors reference
       // from da.live action fragments (e.g. /actions/download); keep the two in

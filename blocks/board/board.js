@@ -205,19 +205,20 @@ function viewportHtml(assetItems, textItems, config) {
       </div>
       <div class="board__controls">
         <div class="asc-ui-segmented board__toolbar" role="toolbar" aria-label="Board tools">
-          <button type="button" class="asc-ui-segmented__option board__fit">Fit view</button>
+          <button type="button" class="asc-ui-segmented__option board__zoom-out" aria-label="Zoom out">&#x2212;</button>
+          <button type="button" class="asc-ui-segmented__option board__zoom-fit">Fit to view</button>
+          <button type="button" class="asc-ui-segmented__option board__zoom-in" aria-label="Zoom in">+</button>
           ${interactive ? `
+          <span class="board__toolbar-divider" aria-hidden="true"></span>
           <button type="button" class="asc-ui-segmented__option board__align-grid">Align to grid</button>
-          <button type="button" class="asc-ui-segmented__option board__add-text">+ Text</button>` : ''}
-          ${config.searchProperties.length ? `<input type="search" class="board__search" placeholder="Search…" aria-label="Search assets">` : ''}
+          <span class="board__toolbar-divider" aria-hidden="true"></span>
+          <button type="button" class="asc-ui-segmented__option board__add-text">Add Text</button>` : ''}
+          ${config.searchProperties.length ? `
+          <span class="board__toolbar-divider" aria-hidden="true"></span>
+          <input type="search" class="board__search" placeholder="Search…" aria-label="Search assets">` : ''}
         </div>
       </div>
       <div class="board__minimap asc-panel asc-panel--no-pad" hidden aria-hidden="true">
-        <div class="asc-panel__header board__minimap-zoom" role="group" aria-label="Zoom">
-          <button type="button" class="btn btn--ghost btn--icon btn--sm board__zoom-out" aria-label="Zoom out">&#x2212;</button>
-          <button type="button" class="board__zoom-level" aria-label="Reset zoom to 100%">100%</button>
-          <button type="button" class="btn btn--ghost btn--icon btn--sm board__zoom-in" aria-label="Zoom in">+</button>
-        </div>
         <div class="board__minimap-inner">
           <div class="board__minimap-viewport"></div>
         </div>
@@ -645,23 +646,27 @@ function initPanZoom(block, persistId, onChange) {
   // fresh) — this is what caused boards to load "not fitting": a stale fit for a smaller/older
   // set of cards was being trusted verbatim regardless of what's actually on the board now.
   let fitTransitionTimer;
-  function applyFit(fit, persist = true) {
+  // `animate` is false only for the initial forced fit on load (see initBoard) — there's
+  // nothing on screen yet to visibly "correct", so animating it would just read as the
+  // board resizing itself for no reason; the canvas fades in afterward instead (see the
+  // --hidden/opacity handling in initBoard).
+  function applyFit(fit, persist = true, animate = true) {
     ({ panX, panY, zoom } = fit);
     // Animate the correction instead of snapping — computeFitViewport() is often re-run after
     // first paint (async content above the board settling, other sections/fonts loading) and an
     // instant transform jump there reads as the board "resizing" out of nowhere.
-    canvas.classList.add('board__canvas--fitting');
+    if (animate) canvas.classList.add('board__canvas--fitting');
     canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
     clearTimeout(fitTransitionTimer);
-    fitTransitionTimer = setTimeout(() => canvas.classList.remove('board__canvas--fitting'), 300);
+    if (animate) fitTransitionTimer = setTimeout(() => canvas.classList.remove('board__canvas--fitting'), 300);
     if (persist && persistId) setViewport(persistId, { ...fit, sig: contentSignature(currentItems()) });
     repositionOpenPanel();
     onChange?.();
   }
 
-  function fitView(persist = true) {
+  function fitView(persist = true, animate = true) {
     const allCards = [...canvas.querySelectorAll('.board__item, .board__text-element')];
-    applyFit(computeFitViewport(allCards, viewport), persist);
+    applyFit(computeFitViewport(allCards, viewport), persist, animate);
   }
 
   function centerOn(x, y) {
@@ -1327,9 +1332,6 @@ function initMinimap(block, panZoom) {
   const minimap = block.querySelector('.board__minimap');
   const inner = block.querySelector('.board__minimap-inner');
   const indicator = block.querySelector('.board__minimap-viewport');
-  const zoomLevel = block.querySelector('.board__zoom-level');
-  const zoomOutBtn = block.querySelector('.board__zoom-out');
-  const zoomInBtn = block.querySelector('.board__zoom-in');
   if (!viewport || !canvas || !minimap || !inner || !indicator) return { updateIndicator() {} };
 
   let bounds = null;
@@ -1338,7 +1340,6 @@ function initMinimap(block, panZoom) {
   let offsetY = 0;
 
   function updateIndicator() {
-    if (zoomLevel) zoomLevel.textContent = `${Math.round(panZoom.getState().zoom * 100)}%`;
     if (!bounds) return;
     const { panX, panY, zoom } = panZoom.getState();
     const vx = -panX / zoom;
@@ -1413,9 +1414,6 @@ function initMinimap(block, panZoom) {
     inner.addEventListener('pointercancel', onUp);
   });
 
-  zoomOutBtn?.addEventListener('click', (e) => { e.stopPropagation(); panZoom.zoomBy(1 / 1.2); });
-  zoomInBtn?.addEventListener('click', (e) => { e.stopPropagation(); panZoom.zoomBy(1.2); });
-  zoomLevel?.addEventListener('click', (e) => { e.stopPropagation(); panZoom.zoomTo(1); });
 
   let refreshScheduled = false;
   const observer = new MutationObserver(() => {
@@ -1458,11 +1456,42 @@ function sizeViewport(block, config) {
   viewport.style.height = `${Math.max(available, BOARD_MIN_HEIGHT)}px`;
 }
 
-function initBoard(block, config, collectionId, { forceFit = false } = {}) {
+// EDS loads a block's CSS (board.css) in parallel with running its JS decorate() (see
+// loadBlock() in scripts/aem.js) — there's no guarantee board.css has applied yet when
+// initBoard runs. Without it, cards aren't positioned absolute yet and read back the
+// wrong size/position, so the very first fit-view calc is measured against bogus
+// geometry; a moment later a corrective re-fit snaps/animates to the real layout, which
+// reads as the whole board "resizing". `.board__canvas { position: absolute }` is
+// board.css's own doing, so polling for it is a reliable "board.css is applied" signal —
+// capped so a failed/slow CSS load can't hide the board forever.
+const BOARD_CSS_WAIT_CAP_MS = 2000;
+
+function waitForBoardCss(canvas) {
+  return new Promise((resolve) => {
+    const deadline = performance.now() + BOARD_CSS_WAIT_CAP_MS;
+    function check() {
+      if (getComputedStyle(canvas).position === 'absolute' || performance.now() >= deadline) {
+        resolve();
+      } else {
+        requestAnimationFrame(check);
+      }
+    }
+    check();
+  });
+}
+
+async function initBoard(block, config, collectionId, { forceFit = false } = {}) {
   _selectedItems.clear();
-  sizeViewport(block, config);
 
   const canvas = block.querySelector('.board__canvas');
+  // Hidden until the board's real layout (post-CSS) has been measured and fit — avoids
+  // rendering (and then visibly correcting) a fit computed against unstyled geometry.
+  // Opacity (not visibility) so the reveal below can be a quick fade instead of a hard cut.
+  canvas.classList.add('board__canvas--hidden');
+  await waitForBoardCss(canvas);
+
+  sizeViewport(block, config);
+
   const panZoom = initPanZoom(block, collectionId, () => {
     minimap?.updateIndicator();
     scheduleZoomResolutionUpgrade();
@@ -1474,7 +1503,9 @@ function initBoard(block, config, collectionId, { forceFit = false } = {}) {
   // triggers this itself, so this call is a no-op harmless repeat in that case.
   scheduleZoomResolutionUpgrade();
 
-  block.querySelector('.board__fit')?.addEventListener('click', () => panZoom.fitView());
+  block.querySelector('.board__zoom-out')?.addEventListener('click', () => panZoom.zoomBy(1 / 1.2));
+  block.querySelector('.board__zoom-in')?.addEventListener('click', () => panZoom.zoomBy(1.2));
+  block.querySelector('.board__zoom-fit')?.addEventListener('click', () => panZoom.fitView());
 
   initSearch(block, panZoom);
   initRenditionActions(block);
@@ -1496,9 +1527,13 @@ function initBoard(block, config, collectionId, { forceFit = false } = {}) {
   // CollectionEvents.CHANGED without a page reload) as long as its content signature still
   // matches — see initPanZoom above.
   if (forceFit || !panZoom.hasValidSavedViewport) {
-    requestAnimationFrame(() => requestAnimationFrame(() => panZoom.fitView(false)));
+    await new Promise((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(resolve));
+    });
+    panZoom.fitView(false, false);
   }
 
+  canvas.classList.remove('board__canvas--hidden');
   return panZoom;
 }
 
@@ -1542,7 +1577,7 @@ export default async function decorate(block) {
       }
       const { assetItems, textItems } = result;
       block.innerHTML = viewportHtml(assetItems, textItems, config);
-      currentPanZoom = initBoard(block, config, id, { forceFit });
+      currentPanZoom = await initBoard(block, config, id, { forceFit });
     }
 
     await renderCollection(true);
@@ -1559,7 +1594,7 @@ export default async function decorate(block) {
     const { assetItems, textItems } = await loadFromAuthoredList(config.items);
     const boardConfig = { ...config, mode: 'view' };
     block.innerHTML = viewportHtml(assetItems, textItems, boardConfig);
-    currentPanZoom = initBoard(block, boardConfig, null, { forceFit: true });
+    currentPanZoom = await initBoard(block, boardConfig, null, { forceFit: true });
   } else {
     const sheetParam = config.mode === 'sheet-url'
       ? sheetParamFromUrl(config.sheetUrl)
@@ -1584,6 +1619,6 @@ export default async function decorate(block) {
     const boardConfig = config.mode === 'sheet-url' ? { ...config, mode: 'view' } : config;
     block.innerHTML = viewportHtml(assetItems, textItems, boardConfig);
 
-    currentPanZoom = initBoard(block, boardConfig, null, { forceFit: true });
+    currentPanZoom = await initBoard(block, boardConfig, null, { forceFit: true });
   }
 }

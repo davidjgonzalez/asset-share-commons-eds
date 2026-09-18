@@ -44,7 +44,7 @@ Use this table as the first lookup before reading the full catalog.
 | Asset details modal | `.asc-dialog --wide` + `asc-ui-detail` + `asc-ui-actions` + `asc-ui-metadata` |
 | Switcher / popover menu | `asc-ui-dropdown` + `asc-ui-menu` + `asc-ui-count` |
 | Download sheet rows | `asc-ui-asset-row` + `.btn` |
-| Board canvas | `asc-ui-asset-card` (cards) + `asc-ui-segmented` (toolbar — default size, no modifier); search `<input>` lives inside the segmented as the last child, styled via block-scoped `.board__search`. Minimap is `.asc-panel --no-pad` with an `asc-panel__header` zoom row (`.btn--ghost.btn--icon.btn--sm` +/− buttons flanking a block-scoped `.board__zoom-level` button — click resets to 100%) above the marker canvas |
+| Board canvas | `asc-ui-asset-card` (cards) + `asc-ui-segmented` (toolbar — default size, no modifier) holding every control in one strip: zoom out/`Fit to view`/zoom in options, then (interactive mode) Align to grid / Add Text, then search — groups split by a block-scoped `.board__toolbar-divider` vertical rule; search `<input>` lives inside the segmented as the last child, styled via block-scoped `.board__search`. Minimap is `.asc-panel --no-pad` with just the marker canvas — no header |
 | Color-search control | `asc-ui-dropdown` + `asc-ui-color-picker` (input + presets) |
 | Notification toast | `asc-ui-toast-region` + `asc-ui-toast` — rendered by `services.notifications`, never hand-built in a block |
 | Page header (breadcrumb/title/actions/metadata) | `asc-ui-back-heading` + `asc-ui-toolbar` + an `asc-ui-copy` stats line, wired together via the named-area section grid (`docs/GRID_LAYOUT.md`) — see "Page header" below |

@@ -54,6 +54,17 @@
         width: 0;
         height: 0;
         transform-origin: 0 0;
+        opacity: 1;
+        transition: opacity 0.15s ease;
+
+        /* Set while initBoard measures/fits the initial layout (see board.js) — opacity
+           rather than visibility so removing this class reads as a quick fade-in instead
+           of a hard cut, and no transition of its own so the fade only plays on reveal. */
+        &.board__canvas--hidden {
+            opacity: 0;
+            pointer-events: none;
+            transition: none;
+        }
 
         /* Only during a programmatic fit correction (see applyFit() in board.js) — pan/wheel/
            drag set the transform directly on every pointer event and must stay instant. */
@@ -77,11 +88,24 @@
         box-shadow: var(--shadow-sm);
     }
 
+    /* Zoom out/in read as icon glyphs rather than wide text options */
+    .board__zoom-out,
+    .board__zoom-in {
+        padding-inline: var(--spacing-sm);
+    }
+
+    /* Vertical rule separating zoom / edit / search groups within the segmented toolbar */
+    .board__toolbar-divider {
+        align-self: stretch;
+        width: 1px;
+        margin-block: var(--spacing-2xs);
+        background: var(--color-border);
+    }
+
     /* Search input — lives inside the segmented toolbar as the last item */
     .board__search {
         border: none;
-        border-left: 1px solid var(--color-border);
-        border-radius: 0 var(--border-radius-full) var(--border-radius-full) 0;
+        border-radius: var(--border-radius-full);
         background: transparent;
         color: var(--color-fg);
         font-size: var(--body-font-size-s);
@@ -110,31 +134,6 @@
         bottom: var(--spacing-sm, 8px);
         width: 180px;
         z-index: 10;
-    }
-
-    .board__minimap-zoom {
-        justify-content: center;
-        gap: var(--spacing-xs);
-        padding-block: var(--spacing-xs);
-        font-weight: 400;
-    }
-
-    .board__zoom-level {
-        min-width: 3em;
-        padding: 2px 4px;
-        border: none;
-        border-radius: var(--border-radius-sm, 4px);
-        background: none;
-        font-size: var(--body-font-size-xs);
-        font-family: inherit;
-        color: var(--color-muted-fg);
-        text-align: center;
-        cursor: pointer;
-
-        &:hover {
-            background: var(--color-muted);
-            color: var(--color-fg);
-        }
     }
 
     .board__minimap-inner {

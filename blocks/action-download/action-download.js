@@ -1,97 +1,116 @@
 import services from '../../scripts/asc/core/services/services.js';
-import configurations from '../../scripts/asc/configurations.js';
 import { escHtml, escAttr } from '../../scripts/asc/html.js';
 import { parseActionFragment, wireDialogClose } from '../../scripts/asc.js';
 
-const BINARIES_POLL_INTERVAL = 1000;
-const BINARIES_MAX_ATTEMPTS = 10;
+const JSZIP_URL = 'https://esm.sh/jszip@3.10.1';
+const FETCH_CONCURRENCY = 6;
+const MIME_EXTENSIONS = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/gif': 'gif', 'image/webp': 'webp' };
 
-function buildTargets(assets, selectedRenditionIds, archiveName) {
-  const defsById = new Map(services.renditions.definitions.map((d) => [d.id, d]));
-  const targets = [];
+// AEM's OOTB download-as-zip servlet (dam.downloadbinaries.json) only knows how to zip plain
+// JCR paths under /content/dam — it has no processor for Dynamic Media/Scene7-delivered
+// binaries (smart crops included, once the Scene7 feature flag is on) and silently produces a
+// broken/empty archive rather than erroring. services.renditions already resolves a fetchable
+// URL for every rendition type (static, dm-scene7, dm-openapi, url, ...), so build the zip
+// client-side from those URLs instead of relying on the server-side archive job.
+
+function extensionFromPath(path) {
+  const match = path?.match(/\.([a-zA-Z0-9]+)$/);
+  return match ? match[1] : null;
+}
+
+function fileNameFor(asset, rendition) {
+  if (rendition.filename) return rendition.filename;
+  const stem = (asset.filename?.replace(/\.[^.]+$/, '')) || asset.title || asset.uuid || 'asset';
+  if (rendition.id === 'original') return asset.filename || `${stem}.${extensionFromPath(rendition.path) || 'bin'}`;
+  const ext = extensionFromPath(rendition.path) || MIME_EXTENSIONS[rendition.mimeType] || 'jpg';
+  return `${stem}-${rendition.id}.${ext}`;
+}
+
+function zipEntryPath(asset, rendition, nestPerAsset) {
+  const name = fileNameFor(asset, rendition).replace(/[\\/:*?"<>|]/g, '-');
+  if (!nestPerAsset) return name;
+  const folder = (asset.filename?.replace(/\.[^.]+$/, '') || asset.title || asset.uuid || 'asset')
+    .replace(/[\\/:*?"<>|]/g, '-');
+  return `${folder}/${name}`;
+}
+
+function buildDownloadItems(assets, selectedRenditionIds) {
+  const ids = selectedRenditionIds.length ? selectedRenditionIds : ['original'];
+  const nestPerAsset = ids.length > 1;
+  const items = [];
 
   assets.forEach((asset) => {
-    const { path: assetPath } = asset;
-    if (!assetPath) return;
-
-    if (!selectedRenditionIds.length) {
-      targets.push({ parameters: { path: assetPath, archiveName } });
-      return;
-    }
-
-    const addedKeys = new Set();
-
-    selectedRenditionIds.forEach((id) => {
-      const def = defsById.get(id);
-      const type = def?.type;
-
-      if (def?.accepts && !def.accepts(asset)) return;
-
-      if (type === 'static' && typeof def.name === 'string') {
-        if (def.name === 'original') {
-          if (!addedKeys.has('original')) {
-            addedKeys.add('original');
-            targets.push({
-              parameters: { path: assetPath, archiveName, excludeDefaultRenditions: 'true' },
-            });
-          }
-        } else {
-          targets.push({
-            parameters: { path: `${assetPath}/jcr:content/renditions/${def.name}`, archiveName },
-          });
-        }
-      } else if (type === 'dm-scene7') {
-        if (!addedKeys.has('smartcrop')) {
-          addedKeys.add('smartcrop');
-          targets.push({ parameters: { path: assetPath, archiveName, assetTarget: 'smartcrop' } });
-        }
-      }
+    if (!asset.path) return;
+    const seenUrls = new Set();
+    ids.forEach((id) => {
+      const rendition = services.renditions.getRendition(asset, id);
+      if (!rendition?.url || seenUrls.has(rendition.url)) return;
+      seenUrls.add(rendition.url);
+      items.push({ asset, rendition, entryPath: zipEntryPath(asset, rendition, nestPerAsset) });
     });
   });
 
-  return targets;
+  return items;
 }
 
-function openArtifacts(data) {
-  (data.artifacts || []).forEach((artifact) => {
-    window.open(services.aem.getUrl(artifact.uri), '_blank');
-  });
-}
-
-async function downloadAsZip(targets) {
-  const endpoint = configurations.downloads?.binariesUrl || '/content/dam.downloadbinaries.json';
-  const headers = await services.aem.getHeaders();
-
-  const res = await fetch(services.aem.getUrl(endpoint), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...headers },
-    credentials: 'include',
-    body: JSON.stringify({ targets }),
-  });
-
+async function fetchBinary(url) {
+  // AEM's CORS config allows credentialed cross-origin requests for API endpoints (e.g.
+  // dam.downloadbinaries.json) but not for raw binary rendition paths — and auth here is a
+  // Bearer token in a header anyway (see users.js), never a cookie, so credentials aren't
+  // needed. Sending credentials: 'include' against a host that doesn't echo back
+  // Access-Control-Allow-Credentials just makes the browser block the response outright.
+  const isAemHost = url.startsWith(services.aem.getHost());
+  const headers = isAemHost ? await services.aem.getHeaders() : {};
+  const res = await fetch(url, { headers });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.blob();
+}
 
-  let data = await res.json();
-
-  if (!data.isComplete) {
-    for (let i = 0; i < BINARIES_MAX_ATTEMPTS; i++) {
-      // eslint-disable-next-line no-await-in-loop
-      await new Promise((resolve) => { setTimeout(resolve, BINARIES_POLL_INTERVAL); });
-      // eslint-disable-next-line no-await-in-loop
-      const pollRes = await fetch(
-        `${services.aem.getUrl(endpoint)}?downloadId=${data.downloadId}`,
-        { credentials: 'include', headers },
-      );
-      if (!pollRes.ok) throw new Error(`Poll failed: HTTP ${pollRes.status}`);
-      // eslint-disable-next-line no-await-in-loop
-      data = await pollRes.json();
-      if (data.isComplete) break;
+async function mapWithConcurrency(items, limit, fn) {
+  const results = new Array(items.length);
+  let next = 0;
+  async function worker() {
+    while (next < items.length) {
+      const i = next;
+      next += 1;
+      results[i] = await fn(items[i], i);
     }
-    if (!data.isComplete) throw new Error('Download timed out — try again later');
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return results;
+}
+
+async function downloadAsZip(items, archiveName, onProgress) {
+  const { default: JSZip } = await import(JSZIP_URL);
+  const zip = new JSZip();
+  const failures = [];
+  let done = 0;
+
+  await mapWithConcurrency(items, FETCH_CONCURRENCY, async (item) => {
+    try {
+      const blob = await fetchBinary(item.rendition.url);
+      zip.file(item.entryPath, blob);
+    } catch (err) {
+      failures.push({ item, message: err.message });
+    } finally {
+      done += 1;
+      onProgress?.(done, items.length);
+    }
+  });
+
+  if (failures.length === items.length) {
+    throw new Error(failures[0]?.message || 'Could not retrieve any files');
   }
 
-  if (!data.artifacts?.length) throw new Error('No download artifacts in response');
-  openArtifacts(data);
+  const zipBlob = await zip.generateAsync({ type: 'blob' });
+  const url = URL.createObjectURL(zipBlob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = archiveName;
+  link.click();
+  URL.revokeObjectURL(url);
+
+  return failures;
 }
 
 export default async function decorate(block) {
@@ -167,15 +186,21 @@ export default async function decorate(block) {
       }
 
       const archiveName = `${collection?.name || ctx.title || 'assets'}.zip`;
-      const targets = buildTargets(resolvedAssets, selectedRenditionIds, archiveName);
+      const items = buildDownloadItems(resolvedAssets, selectedRenditionIds);
+      if (!items.length) {
+        alert('No downloadable renditions were found for the selected assets.');
+        return;
+      }
 
       btn.disabled = true;
       btn.textContent = 'Preparing zip…';
       dialog.querySelector('.action-download__error')?.remove();
 
       try {
-        await downloadAsZip(targets);
-        btn.textContent = 'Download started ✓';
+        const failures = await downloadAsZip(items, archiveName, (done, total) => {
+          btn.textContent = `Fetching files… (${done}/${total})`;
+        });
+        btn.textContent = failures.length ? `Download started — ${failures.length} file(s) skipped` : 'Download started ✓';
         setTimeout(() => dialog.close(), 2000);
       } catch (err) {
         btn.disabled = false;

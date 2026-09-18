@@ -49,13 +49,16 @@ function toggleUrl(makeChromeless) {
   return url.toString();
 }
 
-/** Adds a small floating link to flip between branded and standalone views. */
+/**
+ * Adds a small floating link to switch a branded share page to standalone.
+ * Standalone pages never offer a link back — that's the point of chromeless
+ * (no way back into the site via the UI); see CLAUDE.md's Chrome Duality note.
+ */
 export function renderChromeToggle() {
-  if (!isSharePage()) return;
-  const chromeless = isChromeless();
+  if (!isSharePage() || isChromeless()) return;
   const link = document.createElement('a');
   link.className = 'asc-chrome-toggle';
-  link.href = toggleUrl(!chromeless);
-  link.textContent = chromeless ? 'View with site navigation' : 'View as standalone page';
+  link.href = toggleUrl(true);
+  link.textContent = 'View as standalone page';
   document.body.append(link);
 }
