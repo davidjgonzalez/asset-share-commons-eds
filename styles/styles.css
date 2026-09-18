@@ -866,8 +866,12 @@ main .section.aside {
 main > .section:first-of-type { margin-top: 0; }
 
 /* Same reasoning as the .page-board main rule above — the gap between the
-   info/toolbar section and the board section is chrome the board doesn't get. */
-.page-board main > .section { margin: var(--spacing-md, 1rem) 0; }
+   info/toolbar section and the board section is chrome the board doesn't get.
+   margin-block (not the `margin` shorthand) — this must only touch top/bottom;
+   the shorthand's implicit left/right:0 was clobbering any section's own
+   horizontal margin (e.g. `style: fixed-width`'s centering `margin-inline: auto`),
+   since both rules tie at the same specificity and this one comes later. */
+.page-board main > .section { margin-block: var(--spacing-md, 1rem); }
 .page-board main > .section:first-of-type { margin-top: 0; }
 
 @media (width >= 900px) {
