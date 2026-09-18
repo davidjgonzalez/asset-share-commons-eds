@@ -27,13 +27,20 @@ export default async function decorate(block) {
 
   document.addEventListener('asc:share:created', () => {
     const wrap = block.closest('.section')?.querySelector('.collection-controls__title-menu-wrap');
-    const item = wrap?.querySelector('.collection-controls__past-shares-btn')?.closest('li');
-    if (!item) return;
-    const history = storage.get(SHARE_HISTORY_KEY) || [];
-    item.hidden = history.length === 0;
-    const meta = item.querySelector('.asc-ui-menu__item-meta');
-    if (meta) meta.textContent = String(history.length);
+    updatePastSharesBadge(wrap);
   });
+}
+
+// Keeps the "⋯" menu's Past shares row (count + visibility) in sync after either a
+// new share is created (asc:share:created, above) or an entry is removed from the
+// dialog (openPastSharesDialog, below) — single source of truth for both call sites.
+function updatePastSharesBadge(wrap) {
+  const item = wrap?.querySelector('.collection-controls__past-shares-btn')?.closest('li');
+  if (!item) return;
+  const history = storage.get(SHARE_HISTORY_KEY) || [];
+  item.hidden = history.length === 0;
+  const meta = item.querySelector('.asc-ui-menu__item-meta');
+  if (meta) meta.textContent = String(history.length);
 }
 
 // ─── Parsing ──────────────────────────────────────────────────────────────────
@@ -198,8 +205,9 @@ function initTitleMenu(infoBlock, collectionId) {
 
     const pastSharesBtn = e.target.closest('.collection-controls__past-shares-btn');
     if (pastSharesBtn) {
-      closeTitleMenu(pastSharesBtn.closest('.collection-controls__title-menu-wrap'));
-      openPastSharesDialog();
+      const wrap = pastSharesBtn.closest('.collection-controls__title-menu-wrap');
+      closeTitleMenu(wrap);
+      openPastSharesDialog(wrap);
       return;
     }
 
@@ -298,7 +306,7 @@ function pastSharesRows(history) {
   return history.map((entry) => {
     const dateLabel = new Date(entry.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
     return `
-      <li class="collection-controls__past-share-row">
+      <li class="collection-controls__past-share-row" data-share-id="${escAttr(entry.id)}">
         <span class="asc-ui-menu__item-label" title="${escAttr(entry.url)}">${escHtml(entry.title || 'Untitled')}</span>
         <span class="asc-ui-menu__item-meta">${escHtml(dateLabel)}</span>
         <button type="button" class="btn btn--ghost btn--circle btn--sm collection-controls__share-history-copy"
@@ -309,11 +317,26 @@ function pastSharesRows(history) {
            class="btn btn--ghost btn--circle btn--sm" aria-label="Open link">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
         </a>
+        <button type="button" class="btn btn--ghost btn--circle btn--sm collection-controls__share-history-remove"
+                data-share-id="${escAttr(entry.id)}" aria-label="Remove from history">
+          ${ICON_REMOVE}
+        </button>
       </li>`;
   }).join('');
 }
 
-function openPastSharesDialog() {
+// No confirm step — removing one entry from up to MAX_SHARE_HISTORY past shares only
+// clears it from this local history list (the share link itself keeps working; its
+// payload is self-contained in the URL). Same low-stakes precedent as removing a
+// single asset from a collection (board.js removeAsset), unlike deleting/clearing a
+// whole collection, which does confirm.
+function removeShareHistoryEntry(id) {
+  const history = (storage.get(SHARE_HISTORY_KEY) || []).filter((entry) => entry.id !== id);
+  storage.set(SHARE_HISTORY_KEY, history);
+  return history;
+}
+
+function openPastSharesDialog(wrap) {
   const history = storage.get(SHARE_HISTORY_KEY) || [];
 
   const dialog = document.createElement('dialog');
@@ -337,7 +360,15 @@ function openPastSharesDialog() {
 
   dialog.addEventListener('click', (e) => {
     const copyBtn = e.target.closest('.collection-controls__share-history-copy');
-    if (copyBtn) flashCopy(copyBtn, copyBtn.dataset.url);
+    if (copyBtn) { flashCopy(copyBtn, copyBtn.dataset.url); return; }
+
+    const removeBtn = e.target.closest('.collection-controls__share-history-remove');
+    if (removeBtn) {
+      const remaining = removeShareHistoryEntry(removeBtn.dataset.shareId);
+      removeBtn.closest('.collection-controls__past-share-row')?.remove();
+      updatePastSharesBadge(wrap);
+      if (!remaining.length) dialog.close();
+    }
   });
 }
 
@@ -376,6 +407,7 @@ export function resolveCollectionId() {
 
 const ICON_COPY = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
 const ICON_CHECK = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
+const ICON_REMOVE = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
 
 function flashCopy(btn, text) {
   navigator.clipboard.writeText(text).then(() => {

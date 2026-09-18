@@ -38,6 +38,7 @@ function parseConfig(block) {
     details: null,
     sheetUrl: null,
     items: [],
+    height: null,
   };
   [...block.children].forEach((row) => {
     const [keyCell, valCell] = [...row.children];
@@ -47,6 +48,12 @@ function parseConfig(block) {
     if (key === 'source') config.source = val || 'sheet';
     else if (key === 'mode') config.mode = val || 'view';
     else if (key === 'notes') config.notes = val.toLowerCase() !== 'false';
+    // Any valid CSS length (e.g. "90vh", "800px") — overrides the dynamic
+    // fill-remaining-space calculation in sizeViewport() below. Unset by default:
+    // most pages want the canvas to fill whatever room is left below the header,
+    // which varies per page, rather than a fixed size that risks overlapping
+    // taller header content.
+    else if (key === 'height') config.height = val || null;
     else if (key === 'search-properties') {
       config.searchProperties = val ? val.split(',').map((p) => p.trim()).filter(Boolean) : [];
     } else if (key === 'details') config.details = val ? services.url.toRelativeUrl(val) : null;
@@ -1436,17 +1443,24 @@ const BOARD_MIN_HEIGHT = 420;
 // Fill down to the bottom of the browser viewport instead of guessing a fixed vh —
 // how much page content sits above the board (title, toolbar, etc.) varies per page,
 // so a fixed vh percentage either overshoots (cut off below the fold) or undershoots
-// (a gap before the viewport's bottom edge) depending on the page.
-function sizeViewport(block) {
+// (a gap before the viewport's bottom edge) depending on the page. config.height
+// (authored `height` row, e.g. "90vh") opts a specific page out of that calculation
+// in favor of an explicit size — the author's job to make sure it doesn't overlap
+// whatever sits above the board on that page.
+function sizeViewport(block, config) {
   const viewport = block.querySelector('.board__viewport');
   if (!viewport) return;
+  if (config?.height) {
+    viewport.style.height = config.height;
+    return;
+  }
   const available = window.innerHeight - viewport.getBoundingClientRect().top - BOARD_BOTTOM_MARGIN;
   viewport.style.height = `${Math.max(available, BOARD_MIN_HEIGHT)}px`;
 }
 
 function initBoard(block, config, collectionId, { forceFit = false } = {}) {
   _selectedItems.clear();
-  sizeViewport(block);
+  sizeViewport(block, config);
 
   const canvas = block.querySelector('.board__canvas');
   const panZoom = initPanZoom(block, collectionId, () => {
@@ -1508,7 +1522,7 @@ export default async function decorate(block) {
   new ResizeObserver(() => {
     cancelAnimationFrame(resizeRaf);
     resizeRaf = requestAnimationFrame(() => {
-      sizeViewport(block);
+      sizeViewport(block, config);
       if (currentPanZoom && !currentPanZoom.isManuallyPositioned()) currentPanZoom.fitView(false);
     });
   }).observe(document.body);
