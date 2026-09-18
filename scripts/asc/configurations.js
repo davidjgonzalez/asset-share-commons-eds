@@ -819,6 +819,47 @@ const configurations = {
     ],
   },
 
+  // ─── WebMCP ──────────────────────────────────────────────────────────────────
+  //
+  // Configures the webmcp service (scripts/asc/core/services/webmcp/webmcp.js),
+  // which registers ASC capabilities as tools an in-browser AI agent can call
+  // directly via the emerging WebMCP standard (document.modelContext.registerTool
+  // — Chrome 149 origin trial as of writing). No-ops entirely in browsers that
+  // don't support it yet.
+  //
+  // Built-in tools (search, get-asset, get-renditions) are read-only lookups —
+  // see webmcp.js. Add your own tool without editing that file via customTools:
+  // an array of WebMCP tool definitions ({ name, description, inputSchema,
+  // execute, annotations }), merged in at init time. E.g., once you're ready to
+  // expose write actions like creating a collection/sheet:
+  //
+  // webmcp: {
+  //   enabled: true,
+  //   customTools: [
+  //     {
+  //       name: 'asc_collections_create',
+  //       description: 'Create a new collection and add one or more assets to it by UUID.',
+  //       annotations: { readOnlyHint: false },
+  //       inputSchema: {
+  //         type: 'object',
+  //         properties: {
+  //           name: { type: 'string' },
+  //           assetIds: { type: 'array', items: { type: 'string' } },
+  //         },
+  //         required: ['name'],
+  //       },
+  //       execute: async ({ name, assetIds = [] }) => {
+  //         const collection = services.collections.create(name);
+  //         assetIds.forEach((id) => services.collections.addAsset(id, collection.id));
+  //         return JSON.stringify({ id: collection.id, name: collection.name });
+  //       },
+  //     },
+  //   ],
+  // },
+  webmcp: {
+    enabled: true,
+  },
+
   // ─── Init / Preloading ───────────────────────────────────────────────────────
   // init: {
   //   preload: true,  // Prefetch asset detail pages on hover for faster perceived load

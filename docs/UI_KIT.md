@@ -44,9 +44,10 @@ Use this table as the first lookup before reading the full catalog.
 | Asset details modal | `.asc-dialog --wide` + `asc-ui-detail` + `asc-ui-actions` + `asc-ui-metadata` |
 | Switcher / popover menu | `asc-ui-dropdown` + `asc-ui-menu` + `asc-ui-count` |
 | Download sheet rows | `asc-ui-asset-row` + `.btn` |
-| Board canvas | `asc-ui-asset-card` (cards) + `asc-ui-segmented` (toolbar — default size, no modifier); search `<input>` lives inside the segmented as the last child, styled via block-scoped `.board__search` |
+| Board canvas | `asc-ui-asset-card` (cards) + `asc-ui-segmented` (toolbar — default size, no modifier); search `<input>` lives inside the segmented as the last child, styled via block-scoped `.board__search`. Minimap is `.asc-panel --no-pad` with an `asc-panel__header` zoom row (`.btn--ghost.btn--icon.btn--sm` +/− buttons flanking a block-scoped `.board__zoom-level` button — click resets to 100%) above the marker canvas |
 | Color-search control | `asc-ui-dropdown` + `asc-ui-color-picker` (input + presets) |
 | Notification toast | `asc-ui-toast-region` + `asc-ui-toast` — rendered by `services.notifications`, never hand-built in a block |
+| Page header (breadcrumb/title/actions/metadata) | `asc-ui-back-heading` + `asc-ui-toolbar` + an `asc-ui-copy` stats line, wired together via the named-area section grid (`docs/GRID_LAYOUT.md`) — see "Page header" below |
 
 ---
 
@@ -66,33 +67,19 @@ Conventions: root class `.asc-ui-<name>`, BEM children `__child`, modifiers `--v
 ```
 
 ### Back heading — `@kit back-heading` · `styles/ui-kit.css`
-A page/section heading with a small chevron "back to X" link tucked to its left,
-plus an optional description/meta line that drops to its own row below. Use for a
-share/collection/board page's title row (e.g. `collections/collection`, `sheets/*`).
-Styled to match the asset-details modal's prev/next nav buttons (`@kit icon-btn`) —
-same bordered circle, card background, and chevron artwork, drawn as a CSS
-mask-image rather than an inserted `<svg>` since the plain-authoring path below is
-a bare anchor with no JS hook to inject markup into.
-The link keeps its real words as content — text is visually hidden and the chevron
-drawn via `::before` — instead of authoring the glyph directly, so the accessible
-name stays the real "Back to X" phrase (link accessible-name computation prefers
-visible text content over `title`/`aria-label` whenever that text is non-empty,
-so a bare glyph as the actual text would leave screen readers announcing only the
-glyph). This also sidesteps DA's content pipeline stripping `data-*`/`aria-*`
-attributes off plain authored links (so the intended `data-asc-nav-link` tag can't
-be relied on there either) — nothing here depends on an attribute surviving that
-round-trip, only on the link's own text and the `button` class EDS's
-`decorateButtons()` adds at render time.
+A page/section heading: an `h1`, an optional description line, and an optional stats
+line, plus — for a page with a real intermediate list level between it and Home — a
+breadcrumb trail row above it. There is no "back to X" link/button variant; a page one
+level from Home (most `sheets/*` pages) just shows the title with nothing else in the
+header, relying on browser back or the page's own nav rather than an in-header link.
 
 Also invocable from plain DA authoring with no explicit class: a "content" block
 (used to attach `_area` grid metadata to passthrough text — see
-`scripts/asc/section-grid.js`) whose first child is a solo-link paragraph
-immediately followed by an `h1`/`h2` gets this look automatically, since that's
-exactly the shape `<p><a>Back to X</a></p><h1>Title</h1>` produces once EDS
-auto-buttonizes the lone link.
+`scripts/asc/section-grid.js`) whose `h1`/`h2` is immediately followed by one or two
+paragraphs gets the description/stats-line typography automatically, no explicit class
+needed.
 ```html
 <div class="asc-ui-back-heading">
-  <a href="/collections/" class="asc-ui-back-heading__back">Back to collections</a>
   <h1>Collection title</h1>
   <p>An optional description — sits directly under the title (h1 + p), reads
      larger and less muted than the stats line below it, and collapses to
@@ -107,7 +94,6 @@ behavior automatically.
 
 Plain-authoring equivalent (no `asc-ui-*` classes):
 ```
-<p><a href="/collections/">Back to collections</a></p>
 <h1>{{collection.title}}</h1>
 <p>{{collection.description}}</p>
 <p>{{collection.count}} assets — Last updated {{collection.lastUpdated}}</p>
@@ -115,25 +101,100 @@ Plain-authoring equivalent (no `asc-ui-*` classes):
 
 **Breadcrumb trail variant** — for a page with a real intermediate list level between
 it and Home (e.g. a specific collection, one level under the Collections index), author
-*two or more* links in that first paragraph instead of one:
+a leading paragraph with *two or more* links:
 ```
 <p><a href="/">Home</a> <a href="/collections/">Collections</a></p>
 <h1>{{collection.title}}</h1>
 <p>{{collection.description}}</p>
 <p>{{collection.count}} assets — Last updated {{collection.lastUpdated}}</p>
 ```
-This renders as a full-width "Home / Collections" trail row above the heading instead
-of the single chevron button — `decorateButtons()` only auto-buttonizes a paragraph
-whose *only* child is one `<a>`, so a multi-link paragraph is left exactly as authored,
-and the CSS keys off that (`a + a` — two adjacent anchors) to tell the two shapes apart.
-Explicit markup equivalent: `<p class="asc-ui-back-heading__trail">` in place of the
-`__back` anchor, holding the same multi-link content.
+This renders as a full-width "Home / Collections" trail row above the heading —
+`decorateButtons()` only auto-buttonizes a paragraph whose *only* child is one `<a>`,
+so a multi-link paragraph is left exactly as authored, and the CSS keys off that
+(`a + a` — two adjacent anchors) to detect it. Explicit markup equivalent:
+`<p class="asc-ui-back-heading__trail">` as the first child, holding the same
+multi-link content.
 
-Use the single chevron for anything one level from Home (most `sheets/*` pages); use the
-trail for pages with a real intermediate list (`collections/collection` sits under
-`collections/` — see that page's actual authoring in
-`docs/starter-kit/collection.html`). Don't build a deeper trail than the page's real
-nesting — nothing in ASC today goes more than two levels from Home.
+Use the trail for a page with a real intermediate list (`collections/collection` sits
+under `collections/` — see that page's actual authoring in
+`docs/starter-kit/collection.html`); omit it entirely for a page one level from Home
+(most sheets). Don't build a deeper trail than the page's real nesting — nothing in
+ASC today goes more than two levels from Home.
+
+### Page header — composition pattern · not a new primitive
+A page (not site) header — breadcrumb/back, title, description, primary actions, and
+supporting metadata — is a **recipe of existing primitives wired together via the
+named-area section grid** (`docs/GRID_LAYOUT.md`), not one new component. Title/description
+are authored tokens, actions and metadata are read from live data (a collection, a sheet) —
+each piece already has a natural owner, so the recipe keeps them as separate blocks in
+separate grid areas instead of merging everything into one block. Pick the variant that
+matches how much of the pattern a given page actually needs:
+
+**1. Full header** — breadcrumb/back + title + description + a primary-action toolbar +
+metadata (e.g. a collection page — see `docs/starter-kit/collection.html`). Two-row
+named-area grid:
+```
+| Section Metadata |                            |
+|-------------------|----------------------------|
+| layout            | grid                       |
+| areas             | collection-header collection-meta |
+|                   | collection-header collection-actions |
+| columns           | 1fr auto                   |
+```
+- `collection-header` (spans both rows): `@kit back-heading` — breadcrumb trail + h1 +
+  description.
+- `collection-meta` (row 1, right): a plain `asc-ui-copy` stats line (e.g. "11 assets —
+  Last updated Sep 16, 2026") — *not* the `@kit metadata` `<dl>` component, which mixes an
+  uppercase term style with the value style; a stat sentence in one font reads as the quiet
+  trailing note it's meant to be.
+- `collection-actions` (row 2, right): `@kit toolbar` — a plain row of `.btn`s (primary +
+  secondary), *not* `@kit actions` (that's the stacked icon-over-label style used in the
+  asset-details modal — page-header actions are just text buttons).
+- Area names are scoped to that page's own grid, so prefix them with the page
+  (`collection-header`/`collection-actions`/`collection-meta`, `collections-header`/
+  `collections-actions` below) rather than reusing bare names across pages — this also
+  avoids collisions with unrelated grids elsewhere (the asset-details modal's own
+  `preview`/`metadata`/`renditions`).
+- Secondary/destructive controls (Edit details, Past shares, Delete) do **not** belong in
+  the actions toolbar — they go in a "⋯" icon button + popover menu (`@kit icon-btn` +
+  `@kit menu`) placed as a DOM sibling immediately after the `<h1>`, so they read as
+  attached to the title ("page settings") rather than competing with the primary CTAs.
+  See `renderTitleMenu()` in `blocks/collection-controls/collection-controls.js`.
+
+**2. Minimal, stats only** — title + a single small stats line, no breadcrumb, actions, or
+metadata block (e.g. a personal share sheet — see `docs/starter-kit/sheet.html`). No grid
+needed: this is just `@kit back-heading`'s built-in third line — `<h1>` + an (often-empty,
+collapses via `:empty`) description `<p>` + a stats `<p>` (`h1 + p + p` — smaller, muted).
+Use for a page one level from Home with nothing to act on from the header itself.
+
+**3. Simple, single action** — title + one primary action, no breadcrumb, description, or
+metadata (e.g. the Collections index — see `docs/starter-kit/collections.html`).
+Single-row grid:
+```
+| areas   | collections-header collections-actions |
+| columns | 1fr auto                               |
+```
+Use for a top-level nav destination (no parent list page to breadcrumb back to) that still
+needs exactly one page-level action. If it needs no action at all — e.g. the Search page
+(`docs/starter-kit/search.html`) — drop the grid entirely and just author the title alone;
+the grid only earns its keep once there's a second element sharing the row.
+
+The title itself is a bare `<h1>Collections</h1>` — **not** `<h1 class="asc-ui-heading-l">`.
+DA's rich-text authoring can't carry a class attribute through to the rendered page (same
+constraint as `@kit back-heading`'s note on `data-*` being stripped from plain authored
+links) — writing the class directly into a source document still leaves it in the raw
+source, but it's gone by the time the page renders, silently falling back to the default
+h1's hero-sized margins (a large gap that visually splits the title from an action sharing
+its grid row). Instead, a `content` block whose *only* content is one `<h1>` (no back-link,
+no trail, no description — `.content.block > h1:only-child`, `styles/ui-kit.css`) gets the
+compact `asc-ui-heading-l` sizing automatically, no class needed.
+
+**Choosing a variant** — Does the page sit under a real intermediate list (not just Home)?
+Use the breadcrumb trail (variant 1); omit it entirely one level from Home. Does the page
+have primary, page-wide actions? Add the actions toolbar — otherwise the stats-only shape
+(variant 2) is enough. Is there summarizable data about the page itself (a count, a
+last-updated date)? Add a stats line — otherwise fold it into the description
+or omit it.
 
 ### Landing / marketing — `@kit landing` · `styles/ui-kit.css`
 A larger, lighter-weight lede paragraph for page/section intros, and a
@@ -682,21 +743,19 @@ The "add to collection" pair also hides entirely once the active collection IS F
 ```
 
 ### Metadata — `@kit metadata` · `styles/ui-kit.css`
-Asset property pairs. Default = stacked rows (sidebar); `--grid` = responsive cells (wide panel);
-`--compact` = quiet right-aligned stat list, term + value on one line, no borders (page-header
-column, e.g. collection header). Markup is a `<dl>` with each pair wrapped in a `__row` div.
+Asset property pairs. Default = stacked rows (sidebar); `--grid` = responsive cells (wide panel).
+Markup is a `<dl>` with each pair wrapped in a `__row` div.
 ```html
 <dl class="asc-ui-metadata">
   <div class="asc-ui-metadata__row"><dt class="asc-ui-metadata__term">Format</dt><dd class="asc-ui-metadata__value">JPEG</dd></div>
   <div class="asc-ui-metadata__row"><dt class="asc-ui-metadata__term">Size</dt><dd class="asc-ui-metadata__value">4.2 MB</dd></div>
 </dl>
 ```
-```html
-<dl class="asc-ui-metadata asc-ui-metadata--compact">
-  <div class="asc-ui-metadata__row"><dt class="asc-ui-metadata__term">Assets</dt><dd class="asc-ui-metadata__value">11</dd></div>
-  <div class="asc-ui-metadata__row"><dt class="asc-ui-metadata__term">Last updated</dt><dd class="asc-ui-metadata__value">Sep 16, 2026</dd></div>
-</dl>
-```
+For a page-header stat line (e.g. "11 assets — Last updated Sep 16, 2026"), don't use this
+component — use a plain `asc-ui-copy` stats line instead (see "Page header" above and `@kit
+typography`). A label/value `dl` reads as two different fonts (uppercase term, plain value)
+mashed onto one line; a single sentence in one font reads as what it is — a quiet trailing
+note next to a title, not a data table.
 
 ### Color swatch — `@kit swatch` · `styles/ui-kit.css`
 Pill-shaped color tags — a color circle on the left, label on the right, fully rounded border.

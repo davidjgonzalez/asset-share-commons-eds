@@ -68,28 +68,46 @@
     font-weight: 600;
 }
 
+/* Plain-authoring equivalent of .asc-ui-heading-l for a utility index page's
+   title (e.g. Collections, Search — see "Page header" → "Simple" variant,
+   docs/UI_KIT.md): a "content" block whose *only* content is one h1, nothing
+   else. DA's rich-text authoring can't carry a class attribute through to the
+   rendered page (same constraint as @kit back-heading's note on data-* being
+   stripped from plain authored links), so a real author could never actually
+   produce `<h1 class="asc-ui-heading-l">` — this selector gets the same
+   compact size with no class needed. Scoped to :only-child so it never
+   touches an h1 that's part of a back-heading shape (which always has a
+   sibling link/paragraph). */
+.content.block > h1:only-child {
+    margin: 0;
+    font-size: var(--heading-font-size-l);
+    line-height: 1.2;
+}
+
 /* ─────────────────────────────────────────────────────────────────────────
-   @kit back-heading — page/section heading with a small "back to X" chevron
-   tucked to its left, plus an optional description/meta line that drops to
-   its own full-width row below.
+   @kit back-heading — page/section heading: an h1, an optional description
+   line, and an optional stats line, plus (for a page with a real
+   intermediate list level between it and Home) a breadcrumb trail row above
+   it. Does NOT include a "back to X" link/button — that single-chevron
+   variant was removed; a page one level from Home (most `sheets/*`) just
+   shows the title with no back-nav element in the header at all.
+
    Authoring: like @kit landing below, this also keys off a plain-authoring
    shape with no explicit class needed — a "content" block (see
    scripts/asc/section-grid.js, used to attach _area grid metadata to plain
-   text) whose first child is a solo-link paragraph immediately followed by
-   an h1/h2 gets this look automatically, since that's exactly the shape DA
-   authoring produces for a `<p><a>Back</a></p><h1>Title</h1>` pair. Use the
-   explicit .asc-ui-back-heading markup when composing a block/template
-   directly instead.
+   text) whose `h1`/`h2` is immediately followed by one or two paragraphs
+   gets the description/stats-line typography automatically, no link or
+   explicit class required. Use the explicit .asc-ui-back-heading markup
+   when composing a block/template directly instead.
 
    Breadcrumb trail variant: a first-child paragraph with *two or more*
-   links (`<p><a>Home</a> <a>Collections</a></p><h1>Title</h1>`) instead of
-   one gets a full-width trail row above the heading instead of the single
-   chevron button — decorateButtons() (scripts/aem.js) only auto-buttonizes
-   a paragraph whose only child is one `<a>`, so a multi-link paragraph is
-   never touched by it and stays exactly as authored, letting `a + a` below
-   distinguish the two shapes reliably. Use for any page with a real
-   intermediate list level (e.g. collection detail: Home / Collections); the
-   single chevron stays the right call for a page one level from Home.
+   links (`<p><a>Home</a> <a>Collections</a></p><h1>Title</h1>`) gets a
+   full-width trail row above the heading — decorateButtons()
+   (scripts/aem.js) only auto-buttonizes a paragraph whose only child is one
+   `<a>`, so a multi-link paragraph is never touched by it and stays exactly
+   as authored, letting `a + a` below detect it reliably. Use for any page
+   with a real intermediate list level (e.g. collection detail: Home /
+   Collections).
 
    row-gap gives the wrapped rows (trail, title, description, stats line)
    breathing room between them — column-gap alone only spaces items sharing
@@ -97,7 +115,7 @@
 ───────────────────────────────────────────────────────────────────────── */
 
 .asc-ui-back-heading,
-.content.block:has(> p.button-container:first-child + h1, > p.button-container:first-child + h2),
+.content.block:has(> h1 + p, > h2 + p),
 .content.block:has(> p:first-child a + a):has(> p:first-child + h1, > p:first-child + h2) {
     display: flex;
     flex-wrap: wrap;
@@ -143,68 +161,6 @@
     color: var(--color-muted-fg);
 }
 
-/* The link keeps its real "Back to X" text as its accessible name — link
-   accessible-name computation prefers visible text content over `title`
-   whenever that content is non-empty, so a chevron-only glyph as the actual
-   text would leave screen readers announcing just that glyph. Shrinking the
-   text to 0 and drawing the chevron in ::before keeps the real words as the
-   accessible name while showing only the chevron visually. This also sidesteps
-   DA's content pipeline stripping data- and aria- attributes off plain
-   authored links (see @kit back-heading note above) — nothing here depends
-   on an attribute surviving that round-trip, only on the link's own text
-   and the "button" class EDS's decorateButtons() adds at render time.
-
-   Styled to match the asset-details modal's prev/next nav buttons
-   (@kit icon-btn, blocks/details-modal/details-modal.css) — same bordered
-   circle + card background, same chevron artwork. The icon still has to be
-   CSS-only (a mask-image, not an inserted <svg>) since the plain-authoring
-   path above is a bare anchor with no JS hook to inject markup into. */
-.asc-ui-back-heading__back,
-.content.block:has(> p.button-container:first-child + h1, > p.button-container:first-child + h2)
-    > p.button-container:first-child > a.button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 1.75rem;
-    height: 1.75rem;
-    margin: 0;
-    padding: 0;
-    border: 1px solid color-mix(in srgb, var(--color-border) 85%, var(--color-fg));
-    border-radius: var(--border-radius-full);
-    background: color-mix(in srgb, var(--color-card) 90%, white);
-    font-size: 0;
-    text-decoration: none;
-
-    /* The .asc-ui-back-heading__back plain-authoring form is a bare inline
-       anchor sitting in a normal <p> (see @kit back-heading note above) — as
-       an inline-level box it defaults to vertical-align: baseline, leaving
-       the paragraph's unused descender space below it and nudging the whole
-       button up relative to the heading beside it. middle removes that gap. */
-    vertical-align: middle;
-    transition: transform var(--transition-fast), background var(--transition-fast);
-
-    &::before {
-        content: '';
-        display: block;
-        width: 16px;
-        height: 16px;
-        background-color: var(--color-muted-fg);
-        mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='15 18 9 12 15 6'/%3E%3C/svg%3E");
-        mask-repeat: no-repeat;
-        mask-position: center;
-        mask-size: contain;
-    }
-
-    &:hover {
-        transform: scale(1.1);
-        background: var(--color-card);
-    }
-
-    &:hover::before {
-        background-color: var(--color-fg);
-    }
-}
-
 .asc-ui-back-heading > h1,
 .asc-ui-back-heading > h2 {
     margin: 0;
@@ -237,7 +193,7 @@
     color: var(--color-muted-fg);
 }
 
-.asc-ui-back-heading > p:not(.asc-ui-back-heading__back) {
+.asc-ui-back-heading > p {
     flex-basis: 100%;
     margin: 0;
 }
@@ -311,9 +267,13 @@
 /* @kit back-heading's plain-authoring equivalents (see above) — split out
    from the .asc-ui-back-heading rules and placed after @kit landing purely
    to satisfy ascending selector specificity (the :has() argument outweighs
-   landing's simple .section.* selectors); same declarations either way. */
-.content.block:has(> p.button-container:first-child + h1, > p.button-container:first-child + h2) > h1,
-.content.block:has(> p.button-container:first-child + h1, > p.button-container:first-child + h2) > h2,
+   landing's simple .section.* selectors); same declarations either way.
+   Gated on "h1/h2 immediately followed by a p" (no leading link required,
+   now that the single-chevron back-link variant is gone) so a plain
+   heading + description/stats content block gets this for free; the
+   breadcrumb-trail shape keeps its own separate clause below. */
+.content.block:has(> h1 + p) > h1,
+.content.block:has(> h2 + p) > h2,
 .content.block:has(> p:first-child a + a):has(> p:first-child + h1, > p:first-child + h2) > h1,
 .content.block:has(> p:first-child a + a):has(> p:first-child + h1, > p:first-child + h2) > h2 {
     margin: 0;
@@ -321,38 +281,36 @@
 }
 
 /* Description subtitle plain-authoring equivalent — see the .asc-ui-back-heading
-   > h1 + p rules above for the same reasoning and the same ascending-specificity
-   ordering (adjacency rules, then :not(), then :empty last). Applies the same to
-   the breadcrumb-trail shape (@kit back-heading above) — same declarations,
-   just triggered by a first-child paragraph with 2+ links instead of one. */
-.content.block:has(> p.button-container:first-child + h1) > h1 + p,
-.content.block:has(> p.button-container:first-child + h2) > h2 + p,
+   > h1 + p rules above for the same reasoning. Plain adjacency selectors need no
+   :has() gate here (they only ever match the specific sibling p right after the
+   heading); the breadcrumb-trail shape still needs its own :has()-scoped clause
+   since it's the same "h1 + p" shape one level further from the block root. */
+.content.block > h1 + p,
+.content.block > h2 + p,
 .content.block:has(> p:first-child a + a):has(> p:first-child + h1) > h1 + p,
 .content.block:has(> p:first-child a + a):has(> p:first-child + h2) > h2 + p {
     font-size: var(--body-font-size-m);
     color: var(--color-muted-fg);
 }
 
-.content.block:has(> p.button-container:first-child + h1) > h1 + p + p,
-.content.block:has(> p.button-container:first-child + h2) > h2 + p + p,
+.content.block > h1 + p + p,
+.content.block > h2 + p + p,
 .content.block:has(> p:first-child a + a):has(> p:first-child + h1) > h1 + p + p,
 .content.block:has(> p:first-child a + a):has(> p:first-child + h2) > h2 + p + p {
     font-size: var(--body-font-size-s);
     color: var(--color-muted-fg);
 }
 
-.content.block:has(> p.button-container:first-child + h1, > p.button-container:first-child + h2)
-    > p:not(.button-container),
+.content.block:has(> h1 + p) > p,
+.content.block:has(> h2 + p) > p,
 .content.block:has(> p:first-child a + a):has(> p:first-child + h1, > p:first-child + h2)
     > p:not(.button-container) {
     flex-basis: 100%;
     margin: 0;
 }
 
-.content.block:has(> p.button-container:first-child + h1) > h1 + p:empty,
-.content.block:has(> p.button-container:first-child + h2) > h2 + p:empty,
-.content.block:has(> p:first-child a + a):has(> p:first-child + h1) > h1 + p:empty,
-.content.block:has(> p:first-child a + a):has(> p:first-child + h2) > h2 + p:empty {
+.content.block > h1 + p:empty,
+.content.block > h2 + p:empty {
     display: none;
 }
 
@@ -1934,24 +1892,6 @@
     border-bottom: 0;
 }
 
-/* Compact variant — a quiet stat list for tight spaces (e.g. a page-header
-   column alongside a title): term and value share one line instead of the
-   default's own stacked/bordered row, and the whole list right-aligns —
-   reads as a couple of trailing stats next to a title, not a details-sidebar
-   panel. */
-.asc-ui-metadata--compact {
-    gap: var(--spacing-2xs);
-}
-
-.asc-ui-metadata--compact .asc-ui-metadata__row {
-    display: flex;
-    justify-content: flex-end;
-    align-items: baseline;
-    gap: var(--spacing-2xs);
-    padding: 0;
-    border-bottom: 0;
-}
-
 /* ─────────────────────────────────────────────────────────────────────────
    @kit filmstrip — horizontal scroll strip of related assets (e.g. similar
    assets on the details page). Children are fixed-width asset tiles/cards.
@@ -2024,6 +1964,22 @@
     .asc-ui-detail {
         grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
     }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit toolbar — a plain row of `.btn`s (primary/secondary/ghost), wrapping
+   and gapped. Distinct from @kit actions (stacked icon-over-label options,
+   e.g. the asset-details modal) and @kit selection-bar (bulk-select toolbar
+   with a leading count) — this is just "a few text buttons together," the
+   shape a page header's primary-action row needs (see "Page header" under
+   @kit back-heading, docs/UI_KIT.md).
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────

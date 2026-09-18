@@ -98,10 +98,12 @@ navigation, not AEM/DAM permissions.
   to the other mode — nothing is a dead end.
 
 If you add your own "back to search" / "back to shares" style link to a share
-page's authored content, tag it `data-asc-nav-link` (see the examples in
-`sheet.html` and `collections/press-kit.html`) so it's hidden along with
+page's authored content, tag it `data-asc-nav-link` so it's hidden along with
 the header/footer in standalone mode — otherwise it'd be the one way back
-into the site a standalone page isn't supposed to have.
+into the site a standalone page isn't supposed to have. (Neither `sheet.html`
+nor `collections/press-kit.html` authors one by default — see "Page header"
+in `docs/UI_KIT.md` for why a page one level from Home doesn't need a back
+link in its header at all.)
 
 ## Customising Filter Options
 

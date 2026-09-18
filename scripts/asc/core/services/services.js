@@ -32,6 +32,7 @@ import seo from './seo/seo.js';
 import storage from './storage/storage.js';
 import url from './url/url.js';
 import users from './users/users.js';
+import webmcp from './webmcp/webmcp.js';
 
 /* Import init last */
 import init from './init/init.js';
@@ -57,6 +58,7 @@ const services = {
   storage,
   url,
   users,
+  webmcp,
 };
 
 export default services;

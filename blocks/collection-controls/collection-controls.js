@@ -87,7 +87,7 @@ function html(controls, assetCount) {
     .join('');
   return `
     <div class="collection-controls__toolbar">
-      <div class="collection-controls__toolbar-end" role="toolbar" aria-label="Collection actions">${items}</div>
+      <div class="asc-ui-toolbar" role="toolbar" aria-label="Collection actions">${items}</div>
     </div>`;
 }
 

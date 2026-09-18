@@ -14,10 +14,13 @@
       Section 1: Header row — title + primary action.
 
       Top-level nav destination (sibling of /search) — no back-heading/breadcrumb
-      here, same as /search has no heading at all. The title uses the compact
-      @kit typography class (docs/UI_KIT.md) instead of a bare <h1>, since the
-      default h1 (--heading-font-size-xxl, large top/bottom margins) is sized
-      for hero/landing use, not a utility index page header.
+      here, same as /search's own title-only header (docs/starter-kit/search.html).
+      The title is a bare, only-child <h1> — no class, since DA's rich-text
+      authoring can't carry a class attribute through to the rendered page
+      (same constraint as @kit back-heading's data-* note). A "content" block
+      whose only content is one h1 gets the compact @kit typography sizing
+      automatically instead of the default h1 (--heading-font-size-xxl, large
+      top/bottom margins) sized for hero/landing use — see docs/UI_KIT.md.
 
       Named-area grid (docs/GRID_LAYOUT.md), same convention as the single
       collection page's header (docs/starter-kit/collection.html):
@@ -28,6 +31,15 @@
       "collections-actions" block (area: collections-actions): the "New
       Collection" button, a separate block (not rendered by collections.js
       itself) purely so it can claim its own grid area next to the title.
+
+      `style: full-width` alongside `_layout: grid` — this header is a dashboard
+      toolbar (title + one action), not editorial copy, so it should span the
+      same full width as the collections listing below it instead of getting
+      centered/capped at --section-max-width like a body-copy grid (e.g. the
+      single collection page's richer header, which keeps the default centered
+      width since it carries a description). See styles/sections.css → "Full-width
+      page header". Generic opt-in — any page's title+action header grid can add
+      the same `style: full-width` row.
     -->
     <div>
 
@@ -35,7 +47,7 @@
       <div class="content">
         <div>
           <div>
-            <h1 class="asc-ui-heading-l">Collections</h1>
+            <h1>Collections</h1>
           </div>
         </div>
         <div><div>_area</div><div>collections-header</div></div>
@@ -47,6 +59,7 @@
       </div>
 
       <div class="section-metadata">
+        <div><div>style</div><div>full-width</div></div>
         <div><div>_layout</div><div>grid</div></div>
         <div><div>_areas</div><div>collections-header collections-actions</div></div>
         <div><div>_columns</div><div>1fr auto</div></div>

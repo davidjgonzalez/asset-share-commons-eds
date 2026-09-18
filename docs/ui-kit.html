@@ -229,19 +229,62 @@
     <section class="kit-section" id="back-heading">
       <div class="kit-section__head">
         <h2 class="kit-section__title">Back heading</h2>
-        <p class="kit-section__sub">A page/section heading with a small chevron "back to X" link tucked to its left — used for a share/collection/board page's title row. Also invocable from plain DA authoring with no explicit class (a "content" block whose first child is a solo-link paragraph immediately followed by an h1/h2) — see docs/UI_KIT.md.</p>
+        <p class="kit-section__sub">A page/section heading: an h1, an optional description line, and an optional stats line. No "back to X" link/button variant — a page one level from Home just shows the title with nothing else in the header. Also invocable from plain DA authoring with no explicit class (a "content" block whose h1/h2 is immediately followed by one or two paragraphs) — see docs/UI_KIT.md. For the breadcrumb-trail variant, see the "Full header" tile under Page header below.</p>
       </div>
       <div class="kit-grid">
         <div class="kit-demo">
-          <div class="kit-demo__bar"><span class="kit-demo__name">Heading with back link</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__bar"><span class="kit-demo__name">Heading with description + stats</span><button class="kit-demo__toggle" type="button">Code</button></div>
           <div class="kit-demo__preview" data-layout="block" data-snippet>
             <div class="asc-ui-back-heading">
-              <a href="#" class="asc-ui-back-heading__back">Back to collections</a>
               <h1>Collection title<code class="kit-anno" data-omit>&lt;h1&gt;</code></h1>
               <p>Optional description — larger, drops away entirely when empty<code class="kit-anno" data-omit>h1 + p</code></p>
               <p>3 assets — Last updated Sep 11, 2026</p>
             </div>
             <code class="kit-anno" data-omit>.asc-ui-back-heading</code>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────────────────────── PAGE HEADER ───────────────────────── -->
+    <section class="kit-section" id="page-header">
+      <div class="kit-section__head">
+        <h2 class="kit-section__title">Page header</h2>
+        <p class="kit-section__sub">Not a new primitive — a recipe combining back heading, a plain button toolbar, and a plain stats line via the named-area section grid (docs/GRID_LAYOUT.md). Three variants, by how much of the pattern a page needs — see docs/UI_KIT.md.</p>
+      </div>
+      <div class="kit-grid">
+        <div class="kit-demo" data-span>
+          <div class="kit-demo__bar"><span class="kit-demo__name">Full header — breadcrumb + actions + metadata</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-layout="block" data-snippet style="display: flex; align-items: stretch; justify-content: space-between; gap: var(--spacing-2xl); flex-wrap: wrap; padding-block: var(--spacing-xl);">
+            <div class="asc-ui-back-heading">
+              <p class="asc-ui-back-heading__trail"><a href="#">Home</a> <a href="#">Collections</a></p>
+              <h1>Pink</h1>
+              <p>New pink sneaker release. must cop.</p>
+            </div>
+            <div style="display: flex; flex-direction: column; justify-content: space-between; align-items: flex-end; gap: var(--spacing-md);">
+              <p class="asc-ui-copy">11 assets — Last updated Sep 17, 2026</p>
+              <div class="asc-ui-toolbar" role="toolbar" aria-label="Collection actions">
+                <button class="btn btn--primary" type="button">Get em now!</button>
+                <button class="btn btn--secondary" type="button">Share</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Minimal — stats only</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-layout="block" data-snippet>
+            <div class="asc-ui-back-heading">
+              <h1>Download Sheet</h1>
+              <p></p>
+              <p>0 assets — Expires Never</p>
+            </div>
+          </div>
+        </div>
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Simple — single action</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-layout="block" data-snippet style="display: flex; align-items: center; justify-content: space-between; gap: var(--spacing-md);">
+            <h1 class="asc-ui-heading-l">Collections</h1>
+            <button class="btn btn--primary" type="button">New Collection</button>
           </div>
         </div>
       </div>
@@ -1140,17 +1183,6 @@
             </dl>
           </div>
           <p class="kit-demo__usage">Responsive cells — good for a wide metadata panel on a details page.</p>
-        </div>
-
-        <div class="kit-demo">
-          <div class="kit-demo__bar"><span class="kit-demo__name">Metadata · compact</span><button class="kit-demo__toggle" type="button">Code</button></div>
-          <div class="kit-demo__preview" data-layout="block" data-snippet>
-            <dl class="asc-ui-metadata asc-ui-metadata--compact" style="max-width:14rem; margin-left:auto;">
-              <div class="asc-ui-metadata__row"><dt class="asc-ui-metadata__term">Assets</dt><dd class="asc-ui-metadata__value">11</dd></div>
-              <div class="asc-ui-metadata__row"><dt class="asc-ui-metadata__term">Last updated</dt><dd class="asc-ui-metadata__value">Sep 16, 2026</dd></div>
-            </dl>
-          </div>
-          <p class="kit-demo__usage">Quiet right-aligned stat list, term + value on one line, no borders — a page-header column next to a title (e.g. collection header), not a details sidebar.</p>
         </div>
 
         <div class="kit-demo">

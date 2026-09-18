@@ -179,11 +179,20 @@ header {
 }
 
 /* Chrome duality (share/sheet/board pages) — see scripts/asc/chrome.js.
-   is-chromeless hides header/footer (skipped before they're even fetched,
-   see scripts/scripts.js) plus any in-page "back to X" links authors have
-   tagged data-asc-nav-link, so a standalone share has no way back into the
-   wider site. asc-chrome-toggle is the one control offered either way — a
-   small link back to whichever mode isn't currently showing. */
+   is-chromeless skips loadHeader()/loadFooter() (scripts/scripts.js) entirely,
+   but the <header>/<footer> elements themselves stay in the DOM, empty —
+   header's own min-height: var(--nav-height) above still reserves that space
+   even with nothing inside it, showing up as a blank bar at the top of a
+   standalone page. display:none removes both from layout, not just their
+   content. Also hides any in-page "back to X" links authors have tagged
+   data-asc-nav-link, so a standalone share has no way back into the wider
+   site. asc-chrome-toggle is the one control offered either way — a small
+   link back to whichever mode isn't currently showing. */
+body.is-chromeless header,
+body.is-chromeless footer {
+  display: none;
+}
+
 body.is-chromeless [data-asc-nav-link] {
   display: none;
 }

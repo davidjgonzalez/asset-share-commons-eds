@@ -10,7 +10,7 @@
     .sheet-controls__toolbar-end {
         display: flex;
         align-items: center;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
         gap: var(--spacing-sm);
     }
 

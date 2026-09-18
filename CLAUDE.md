@@ -90,9 +90,8 @@ otherwise `<meta name="chrome" content="none">` (authored, for fixed/authored sh
 `.sheet` block / `?sheet=` param (ad hoc personal shares — this has always been their default)
 decide it. The "Share as a standalone page" switch in `blocks/action-share` makes that default an
 explicit per-share choice by appending `&chrome=none`/`&chrome=full` to the generated URL. Any
-custom "back to X" link authored into share-page content should carry `data-asc-nav-link` (see
-`docs/starter-kit/sheet.html`) so it's hidden the same way header/footer are. Full authoring
-details in `docs/starter-kit/README.md`.
+custom "back to X" link authored into share-page content should carry `data-asc-nav-link` so it's
+hidden the same way header/footer are. Full authoring details in `docs/starter-kit/README.md`.
 
 ### Core Layers
 

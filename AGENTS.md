@@ -140,7 +140,6 @@ job (see above), authored as `{{sheet.*}}` tokens in the same section.
 ```html
 <!-- Section 1: sheet header — token template + controls -->
 <div>
-  <p><a href="/">&#8592; Back to search</a></p>
   <h1>{{sheet.title}}</h1>
   <p>{{sheet.description}}</p>
   <p>{{sheet.count}} assets &#8212; Expires {{sheet.expiresAt|Never}}</p>
@@ -456,7 +455,6 @@ Home / Collections       [links to / and /collections/]
 **Authoring example** (da.live document, sheet page — same section as `sheet-controls`):
 
 ```
-← Back to search           [link to /]
 {{sheet.title}}            [H1]
 {{sheet.description}}
 {{sheet.count}} assets — Expires {{sheet.expiresAt|Never}}

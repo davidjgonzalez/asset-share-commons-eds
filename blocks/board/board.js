@@ -206,6 +206,11 @@ function viewportHtml(assetItems, textItems, config) {
         </div>
       </div>
       <div class="board__minimap asc-panel asc-panel--no-pad" hidden aria-hidden="true">
+        <div class="asc-panel__header board__minimap-zoom" role="group" aria-label="Zoom">
+          <button type="button" class="btn btn--ghost btn--icon btn--sm board__zoom-out" aria-label="Zoom out">&#x2212;</button>
+          <button type="button" class="board__zoom-level" aria-label="Reset zoom to 100%">100%</button>
+          <button type="button" class="btn btn--ghost btn--icon btn--sm board__zoom-in" aria-label="Zoom in">+</button>
+        </div>
         <div class="board__minimap-inner">
           <div class="board__minimap-viewport"></div>
         </div>
@@ -534,6 +539,8 @@ function initPanZoom(block, persistId, onChange) {
       applyFit() {},
       fitView() {},
       centerOn() {},
+      zoomBy() {},
+      zoomTo() {},
       hasValidSavedViewport: false,
       isManuallyPositioned: () => false,
     };
@@ -630,9 +637,16 @@ function initPanZoom(block, persistId, onChange) {
   // load only restores it if the board's contents haven't changed since (otherwise it recomputes
   // fresh) — this is what caused boards to load "not fitting": a stale fit for a smaller/older
   // set of cards was being trusted verbatim regardless of what's actually on the board now.
+  let fitTransitionTimer;
   function applyFit(fit, persist = true) {
     ({ panX, panY, zoom } = fit);
+    // Animate the correction instead of snapping — computeFitViewport() is often re-run after
+    // first paint (async content above the board settling, other sections/fonts loading) and an
+    // instant transform jump there reads as the board "resizing" out of nowhere.
+    canvas.classList.add('board__canvas--fitting');
     canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
+    clearTimeout(fitTransitionTimer);
+    fitTransitionTimer = setTimeout(() => canvas.classList.remove('board__canvas--fitting'), 300);
     if (persist && persistId) setViewport(persistId, { ...fit, sig: contentSignature(currentItems()) });
     repositionOpenPanel();
     onChange?.();
@@ -653,11 +667,33 @@ function initPanZoom(block, persistId, onChange) {
     onChange?.();
   }
 
+  // Same clamped scale-toward-a-point math as the ctrl/cmd+wheel handler above, but anchored
+  // on the viewport center rather than the cursor — for button-driven zoom (minimap +/− controls
+  // and the "reset to 100%" zoom-level readout) where there's no cursor position to anchor to.
+  function setZoomCentered(target) {
+    manuallyPositioned = true;
+    const centerX = viewport.clientWidth / 2;
+    const centerY = viewport.clientHeight / 2;
+    const newZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, target));
+    panX = centerX - (centerX - panX) * (newZoom / zoom);
+    panY = centerY - (centerY - panY) * (newZoom / zoom);
+    zoom = newZoom;
+    canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
+    if (persistId) setViewport(persistId, { panX, panY, zoom });
+    repositionOpenPanel();
+    onChange?.();
+  }
+
+  const zoomBy = (factor) => setZoomCentered(zoom * factor);
+  const zoomTo = (target) => setZoomCentered(target);
+
   return {
     getState: () => ({ panX, panY, zoom }),
     applyFit,
     fitView,
     centerOn,
+    zoomBy,
+    zoomTo,
     hasValidSavedViewport,
     isManuallyPositioned: () => manuallyPositioned,
   };
@@ -1284,6 +1320,9 @@ function initMinimap(block, panZoom) {
   const minimap = block.querySelector('.board__minimap');
   const inner = block.querySelector('.board__minimap-inner');
   const indicator = block.querySelector('.board__minimap-viewport');
+  const zoomLevel = block.querySelector('.board__zoom-level');
+  const zoomOutBtn = block.querySelector('.board__zoom-out');
+  const zoomInBtn = block.querySelector('.board__zoom-in');
   if (!viewport || !canvas || !minimap || !inner || !indicator) return { updateIndicator() {} };
 
   let bounds = null;
@@ -1292,6 +1331,7 @@ function initMinimap(block, panZoom) {
   let offsetY = 0;
 
   function updateIndicator() {
+    if (zoomLevel) zoomLevel.textContent = `${Math.round(panZoom.getState().zoom * 100)}%`;
     if (!bounds) return;
     const { panX, panY, zoom } = panZoom.getState();
     const vx = -panX / zoom;
@@ -1365,6 +1405,10 @@ function initMinimap(block, panZoom) {
     inner.addEventListener('pointerup', onUp);
     inner.addEventListener('pointercancel', onUp);
   });
+
+  zoomOutBtn?.addEventListener('click', (e) => { e.stopPropagation(); panZoom.zoomBy(1 / 1.2); });
+  zoomInBtn?.addEventListener('click', (e) => { e.stopPropagation(); panZoom.zoomBy(1.2); });
+  zoomLevel?.addEventListener('click', (e) => { e.stopPropagation(); panZoom.zoomTo(1); });
 
   let refreshScheduled = false;
   const observer = new MutationObserver(() => {

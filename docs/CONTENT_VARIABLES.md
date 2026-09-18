@@ -117,8 +117,8 @@ already-resolved text, so there's no risk of double-resolving or losing the temp
 
 `past-shares` and `edit` labels are used inside the "⋯" menu next to the `<h1>`, not the toolbar
 — only `share` and `download` render as toolbar buttons. The leading paragraph has two links
-(Home, Collections) rather than one, giving a breadcrumb trail row instead of a single chevron —
-see "Breadcrumb trail variant" under `@kit back-heading` in `docs/UI_KIT.md`:
+(Home, Collections), giving a breadcrumb trail row above the title — see "Breadcrumb trail
+variant" under `@kit back-heading` in `docs/UI_KIT.md`:
 
 ```
 Home / Collections       [links to / and /collections/]
@@ -136,7 +136,6 @@ Home / Collections       [links to / and /collections/]
 ### Authoring example — sheet page
 
 ```
-← Back to search           [link to /]
 {{sheet.title}}            [H1]
 {{sheet.description}}
 {{sheet.count}} assets — Expires {{sheet.expiresAt|Never}}

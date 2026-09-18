@@ -1,11 +1,16 @@
-/* Composed entirely from @kit metadata --compact (styles/ui-kit.css,
-   docs/UI_KIT.md) — see collection-meta.js. Layout-only rules belong here:
-   max-width caps a long term/value pair so it can't stretch wider than the
-   grid column (docs/starter-kit/collection.html) needs; margin-left:auto
-   hugs the block to that column's right edge (the wrapper div stretches to
-   the full `auto`-sized column, which is normally as wide as the sibling
-   collection-controls toolbar it sits above) so both line up flush-right. */
+/* Composed entirely from @kit typography's asc-ui-copy (styles/ui-kit.css,
+   docs/UI_KIT.md) — see collection-meta.js. A plain muted stats line, same
+   style as @kit back-heading's own stats line, rather than a label/value
+   metadata list — one font throughout instead of mixing the metadata dl's
+   uppercase term style with its value style. Layout-only rules belong here:
+   max-width keeps a long stats line from stretching wider than the grid
+   column (docs/starter-kit/collection.html) needs; text-align/margin-left
+   right-align the line and hug it to the column's right edge (the wrapper
+   div stretches to the full `auto`-sized column, which is normally as wide
+   as the sibling collection-controls toolbar it sits above) so both line up
+   flush-right. */
 .block.collection-meta {
     max-width: 16rem;
     margin-left: auto;
+    text-align: right;
 }

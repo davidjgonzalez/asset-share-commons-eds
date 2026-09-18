@@ -9,9 +9,34 @@
 <body>
   <header></header>
   <main>
-    
+
     <!--
-      Section 1: Filter sidebar
+      Section 1: Page header — title only.
+
+      Top-level nav destination (sibling of /collections) — no back-heading/
+      breadcrumb here, same reasoning as /collections' own header (see
+      docs/starter-kit/collections.html and "Page header" in docs/UI_KIT.md,
+      "Simple" variant). No action or grid needed since there's nothing else
+      sharing the row. The title is a bare, only-child <h1> — no class, since
+      DA's rich-text authoring can't carry a class attribute through to the
+      rendered page; a "content" block whose only content is one h1 gets the
+      compact @kit typography sizing automatically instead of the default h1
+      (sized for hero/landing use) — see docs/UI_KIT.md.
+    -->
+    <div>
+
+      <div class="content">
+        <div>
+          <div>
+            <h1>Search</h1>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!--
+      Section 2: Filter sidebar
       In da.live, each block below is a separate table.
     -->
     <div>
@@ -137,7 +162,7 @@
     </div>
 
     <!--
-      Section 2: Results area
+      Section 3: Results area
     -->
     <div>
 

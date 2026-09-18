@@ -13,8 +13,17 @@
     <!--
       Section 1: Sheet header + toolbar.
 
-      Authored content (h1, p) uses {{sheet.*}} tokens resolved by the
-      sheet-controls block after it decodes the ?sheet= payload.
+      Named-area grid (docs/GRID_LAYOUT.md), same "title + action row" convention
+      as the Collections index (docs/starter-kit/collections.html):
+
+        areas:  sheet-header sheet-actions
+
+      "content" block (area: sheet-header): title + description + stats — uses
+      {{sheet.*}} tokens resolved by the sheet-controls block after it decodes the
+      ?sheet= payload. Wrapping this in an explicit "content" block (rather than
+      leaving it as bare passthrough text) is what lets it claim a grid area, and
+      it also picks up the compact h1 + p + p back-heading typography (@kit
+      back-heading, docs/UI_KIT.md) instead of the default hero-sized heading.
 
       Tokens available:
         {{sheet.title}}       — sheet title (falls back to "Download Sheet")
@@ -22,28 +31,50 @@
         {{sheet.count}}       — number of assets in the sheet
         {{sheet.expiresAt}}   — human-readable expiry date (empty if the link never expires)
 
-      sheet-controls block: rows declare which controls to show (in order).
-      Left col = control ID, right col = button label.
+      "sheet-controls" block (area: sheet-actions): rows declare which controls to
+      show (in order). Left col = control ID, right col = button label.
       Valid IDs: download, copy-link
+
+      `style: full-width` alongside `_layout: grid` — same rationale as the
+      Collections index: a share's title + action row is a toolbar, not editorial
+      copy, so it spans the full page width instead of being centered/capped at
+      --section-max-width (see styles/sections.css → "Full-width page header").
 
       This page is standalone (no site header/footer) by default whenever a
       ?sheet= param is present — see scripts/asc/chrome.js. The sharer's
       "Share as a standalone page" switch (blocks/action-share) makes this an
       explicit per-share choice via &chrome=none|full on the generated URL,
-      rather than an implicit rule. Any other "back to X" link an author adds
-      to a share/sheet page should carry data-asc-nav-link (like the one
-      below) so it's hidden the same way header/footer are when standalone.
+      rather than an implicit rule. If you add your own "back to X" link to a
+      share/sheet page's authored content, tag it data-asc-nav-link so it's
+      hidden the same way header/footer are when standalone (see
+      docs/starter-kit/README.md).
     -->
     <div>
 
-      <p><a href="/search" data-asc-nav-link>&#8592; Back to search</a></p>
-      <h1>{{sheet.title}}</h1>
-      <p>{{sheet.description}}</p>
-      <p>{{sheet.count}} assets &#8212; Expires {{sheet.expiresAt|Never}}</p>
+      <!-- content block: title + description + stats (area: sheet-header) -->
+      <div class="content">
+        <div>
+          <div>
+            <h1>{{sheet.title}}</h1>
+            <p>{{sheet.description}}</p>
+            <p>{{sheet.count}} assets &#8212; Expires {{sheet.expiresAt|Never}}</p>
+          </div>
+        </div>
+        <div><div>_area</div><div>sheet-header</div></div>
+      </div>
 
+      <!-- sheet-controls block: Download / Copy Link buttons (area: sheet-actions) -->
       <div class="sheet-controls">
         <div><div>download</div><div>Download</div><div>primary</div></div>
         <div><div>copy-link</div><div>Copy Link</div><div>secondary</div></div>
+        <div><div>_area</div><div>sheet-actions</div></div>
+      </div>
+
+      <div class="section-metadata">
+        <div><div>style</div><div>full-width</div></div>
+        <div><div>_layout</div><div>grid</div></div>
+        <div><div>_areas</div><div>sheet-header sheet-actions</div></div>
+        <div><div>_columns</div><div>1fr auto</div></div>
       </div>
 
     </div>

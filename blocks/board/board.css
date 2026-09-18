@@ -54,6 +54,12 @@
         width: 0;
         height: 0;
         transform-origin: 0 0;
+
+        /* Only during a programmatic fit correction (see applyFit() in board.js) — pan/wheel/
+           drag set the transform directly on every pointer event and must stay instant. */
+        &.board__canvas--fitting {
+            transition: transform 0.3s ease;
+        }
     }
 
     /* ── Controls (toolbar) ────────────────────────────────────────── */
@@ -103,14 +109,38 @@
         right: var(--spacing-sm, 8px);
         bottom: var(--spacing-sm, 8px);
         width: 180px;
-        height: 120px;
         z-index: 10;
+    }
+
+    .board__minimap-zoom {
+        justify-content: center;
+        gap: var(--spacing-xs);
+        padding-block: var(--spacing-xs);
+        font-weight: 400;
+    }
+
+    .board__zoom-level {
+        min-width: 3em;
+        padding: 2px 4px;
+        border: none;
+        border-radius: var(--border-radius-sm, 4px);
+        background: none;
+        font-size: var(--body-font-size-xs);
+        font-family: inherit;
+        color: var(--color-muted-fg);
+        text-align: center;
+        cursor: pointer;
+
+        &:hover {
+            background: var(--color-muted);
+            color: var(--color-fg);
+        }
     }
 
     .board__minimap-inner {
         position: relative;
         width: 100%;
-        height: 100%;
+        height: 120px;
         cursor: pointer;
         overflow: hidden;
     }

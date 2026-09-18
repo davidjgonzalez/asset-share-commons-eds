@@ -15,11 +15,11 @@
 
       Named-area grid (docs/GRID_LAYOUT.md), two rows:
 
-        areas:  collection-main collection-details
-                collection-main collection-actions
+        areas:  collection-header collection-meta
+                collection-header collection-actions
 
-      "collection-main" (title + description) repeats down both rows, so it
-      spans the full left column height. "collection-details" (the stat list)
+      "collection-header" (title + description) repeats down both rows, so it
+      spans the full left column height. "collection-meta" (the stat list)
       and "collection-actions" (the toolbar) are two *separate* blocks/areas —
       not one block stacking both internally — so each row is sized to its own
       content instead of one shared row height getting sized off whichever
@@ -33,15 +33,16 @@
         {{collection.title}}       — collection name (editable via ⋯ → Edit details)
         {{collection.description}} — optional description (editable via the same modal)
 
-      "content" block (area: collection-main): leading paragraph uses two links
-      (Home, Collections) instead of one, which gives a breadcrumb trail row
-      above the title instead of a single chevron — see "Breadcrumb trail
-      variant" under @kit back-heading in docs/UI_KIT.md. Use this shape here
-      because a collection sits under the Collections index (a real
-      intermediate list level); a page one level from Home (most sheets)
-      should keep the single "← Back to X" chevron instead.
+      "content" block (area: collection-header): leading paragraph uses two links
+      (Home, Collections), which gives a breadcrumb trail row above the title
+      — see "Breadcrumb trail variant" under @kit back-heading in
+      docs/UI_KIT.md. Use this shape here because a collection sits under the
+      Collections index (a real intermediate list level); a page one level
+      from Home (most sheets) doesn't need a breadcrumb at all — just the
+      title, description, and stats line (see "Page header" in
+      docs/UI_KIT.md).
 
-      "collection-meta" block (area: collection-details): the assets/last-
+      "collection-meta" block (area: collection-meta): the assets/last-
       updated stat list — a compact @kit metadata list (docs/UI_KIT.md,
       --compact variant). Takes no authored rows; it reads the same collection
       collection-controls does. Not authored as {{collection.count}}/
@@ -62,7 +63,7 @@
     -->
     <div>
 
-      <!-- content block: title + description (area: collection-main) -->
+      <!-- content block: title + description (area: collection-header) -->
       <div class="content">
         <div>
           <div>
@@ -71,12 +72,12 @@
             <p>{{collection.description}}</p>
           </div>
         </div>
-        <div><div>area</div><div>collection-main</div></div>
+        <div><div>area</div><div>collection-header</div></div>
       </div>
 
-      <!-- collection-meta block: stat list (area: collection-details) -->
+      <!-- collection-meta block: stat list (area: collection-meta) -->
       <div class="collection-meta">
-        <div><div>area</div><div>collection-details</div></div>
+        <div><div>area</div><div>collection-meta</div></div>
       </div>
 
       <div class="collection-controls">
@@ -92,8 +93,8 @@
         <div>
           <div>areas</div>
           <div>
-            <p>collection-main collection-details</p>
-            <p>collection-main collection-actions</p>
+            <p>collection-header collection-meta</p>
+            <p>collection-header collection-actions</p>
           </div>
         </div>
         <div><div>columns</div><div>1fr auto</div></div>

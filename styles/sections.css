@@ -139,6 +139,22 @@ main .section[data-layout="grid"] > div {
     }
 }
 
+/* Full-width page header: a lightweight title + action row (a dashboard toolbar, not
+ * editorial copy — e.g. the Collections index's "Collections" + New Collection button)
+ * authors both `_layout: grid` and `style: full-width` on the same section-metadata table.
+ * Generic opt-in (any page's header grid, not just one page) — combine the two rather than
+ * introducing a new layout keyword, since `full-width` already exists for exactly this
+ * "skip --section-max-width" escape hatch on plain sections. Inset matches the plain
+ * `main > div { margin: 2.5rem 1rem }` gutter every other section (and every other page's
+ * title) uses, instead of this rule's own wider --section-padding, so the title lines up
+ * with the standard page header placement rather than sitting further inset.
+ */
+main .section.full-width[data-layout="grid"] {
+    max-width: 100%;
+    margin-inline: 1rem;
+    padding-inline: 0;
+}
+
 /* Board pages (collection/board): the info+controls section above the board is
  * chrome, not a marketing hero — its default h1/p spacing (sized for long-form
  * editorial content) ate most of the vertical room the board canvas needs (see

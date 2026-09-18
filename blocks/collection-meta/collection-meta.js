@@ -29,9 +29,5 @@ async function render(block, collectionId) {
   const assetCount = items.filter((i) => i.type === 'asset').length;
   const updated = formatUpdated(collection.modifiedAt);
 
-  block.innerHTML = `
-    <dl class="asc-ui-metadata asc-ui-metadata--compact">
-      <div class="asc-ui-metadata__row"><dt class="asc-ui-metadata__term">Assets</dt><dd class="asc-ui-metadata__value">${assetCount}</dd></div>
-      <div class="asc-ui-metadata__row"><dt class="asc-ui-metadata__term">Last updated</dt><dd class="asc-ui-metadata__value">${escHtml(updated?.label || '—')}</dd></div>
-    </dl>`;
+  block.innerHTML = `<p class="asc-ui-copy">${assetCount} assets — Last updated ${escHtml(updated?.label || '—')}</p>`;
 }
