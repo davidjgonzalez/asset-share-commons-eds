@@ -669,12 +669,25 @@ const configurations = {
     // Ladder is aligned to card/masonry display sizes at 1× and 2× DPR:
     //   cards (300px): 1× → 320w, 2× → 640w
     //   masonry (~450px at 1440px viewport): 1× → 640w, 2× → 1280w
+    // Non-image assets (video, PDF, Office docs, etc.) can't go through
+    // web-optimized-delivery — that endpoint is Dynamic Media's Smart Imaging
+    // feature, which only resizes actual image assets (confirmed live: a raw
+    // video through it 500s regardless of params). AEM's standard DAM
+    // processing profile does generate a real square-thumbnail ladder for
+    // every asset type though — cq5dam.thumbnail.{48.48,140.100,319.319} —
+    // so non-image assets get that instead, wired up the same way images
+    // get their DM ladder above (previously only a single, wrong `name:
+    // 'preview'` entry existed here, which never matched a real rendition
+    // node and always fell through to the hardcoded 319.319 fallback in
+    // renditions.js's getThumbnailUrl()).
     thumbnails: [
       { type: 'web-optimized-delivery', size: { width: 100  }, params: 'width=100&preferwebp=true&quality=85',  accepts: (asset) => asset.mimeType?.startsWith('image/') },
       { type: 'web-optimized-delivery', size: { width: 320  }, params: 'width=320&preferwebp=true&quality=85',  accepts: (asset) => asset.mimeType?.startsWith('image/') },
       { type: 'web-optimized-delivery', size: { width: 640  }, params: 'width=640&preferwebp=true&quality=80',  accepts: (asset) => asset.mimeType?.startsWith('image/') },
       { type: 'web-optimized-delivery', size: { width: 1280 }, params: 'width=1280&preferwebp=true&quality=70', accepts: (asset) => asset.mimeType?.startsWith('image/') },
-      { type: 'static', name: 'preview',  size: { width: 320 },accepts: (asset) => asset.mimeType?.startsWith('video/') },
+      { type: 'static', name: 'cq5dam.thumbnail.48.48.png',   size: { width: 48  }, accepts: (asset) => !asset.mimeType?.startsWith('image/') },
+      { type: 'static', name: 'cq5dam.thumbnail.140.100.png', size: { width: 140 }, accepts: (asset) => !asset.mimeType?.startsWith('image/') },
+      { type: 'static', name: 'cq5dam.thumbnail.319.319.png', size: { width: 319 }, accepts: (asset) => !asset.mimeType?.startsWith('image/') },
     ],
     // Natural-aspect preview renditions — used for board cards (asc-ui-asset-card--natural),
     // which show the image unmasked at its own aspect ratio instead of a cropped square.
