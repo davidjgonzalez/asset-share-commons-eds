@@ -16,7 +16,7 @@ import { setupRoleButtonKeyboardSupport } from './asc/core/utils/keyboard.js';
 import { decorateASCSections } from './asc/section-grid.js';
 import { registerTokens } from './asc/tokens.js';
 import { registerSpeculationRules } from './asc/speculation-rules.js';
-import { isChromeless, renderChromeToggle } from './asc/chrome.js';
+import { isChromeless } from './asc/chrome.js';
 
 setupImageFallback();
 setupRoleButtonKeyboardSupport();
@@ -56,7 +56,6 @@ export function ascLazy() {
   // which always resolves before loadLazy() runs.
   services.seo.applyPage();
   registerSpeculationRules();
-  renderChromeToggle();
 }
 
 /**

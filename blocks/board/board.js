@@ -379,9 +379,7 @@ const PANEL_TAIL_SIZE = 12;
  * The panel is then centered along that side and a CSS tail (::after, driven by
  * data-side + --tail-pos) points back at the card's center, clamped to stay on the panel.
  */
-function positionPanel(panel, card, viewport, panZoom) {
-  panel.style.setProperty('--panel-zoom', panZoom.getState().zoom);
-
+function positionPanel(panel, card, viewport) {
   const cardRect = card.getBoundingClientRect();
   const vRect = viewport.getBoundingClientRect();
   const pw = panel.offsetWidth || 220;
@@ -434,14 +432,12 @@ function positionPanel(panel, card, viewport, panZoom) {
 
 function repositionOpenPanel() {
   if (!_openPanelState) return;
-  const {
-    panel, card, viewport, panZoom,
-  } = _openPanelState;
+  const { panel, card, viewport } = _openPanelState;
   if (!document.contains(panel)) { _openPanelState = null; return; }
-  positionPanel(panel, card, viewport, panZoom);
+  positionPanel(panel, card, viewport);
 }
 
-function openNotePanel(block, card, className, innerHtml, mode, panZoom) {
+function openNotePanel(block, card, className, innerHtml, mode) {
   block.querySelector('.board__notes-panel')?.remove();
   _openPanelState = null;
   const panel = document.createElement('div');
@@ -449,14 +445,14 @@ function openNotePanel(block, card, className, innerHtml, mode, panZoom) {
   panel.innerHTML = innerHtml;
   const viewport = block.querySelector('.board__viewport');
   viewport.appendChild(panel);
-  positionPanel(panel, card, viewport, panZoom);
+  positionPanel(panel, card, viewport);
   _openPanelState = {
-    panel, card, viewport, mode, panZoom,
+    panel, card, viewport, mode,
   };
   return { panel, viewport };
 }
 
-function openNotePreview(block, card, panZoom) {
+function openNotePreview(block, card) {
   const notes = card.dataset.ascNotes || '';
   if (!notes) return;
 
@@ -465,7 +461,6 @@ function openNotePreview(block, card, panZoom) {
     'asc-panel board__notes-panel board__notes-panel--preview',
     `<p class="board__notes-preview-text">${escHtml(notes)}</p>`,
     'preview',
-    panZoom,
   );
 
   panel.addEventListener('mouseenter', () => clearTimeout(_noteHoverTimer));
@@ -482,7 +477,7 @@ function openNotePreview(block, card, panZoom) {
   });
 }
 
-function openNoteEdit(block, collectionId, card, panZoom) {
+function openNoteEdit(block, collectionId, card) {
   const assetId = card.dataset.ascAsset;
   const currentNotes = card.dataset.ascNotes || '';
 
@@ -498,7 +493,6 @@ function openNoteEdit(block, collectionId, card, panZoom) {
       <button type="button" class="board__notes-done btn btn--secondary btn--sm">Done</button>
     </div>`,
     'edit',
-    panZoom,
   );
 
   const textarea = panel.querySelector('.board__notes-textarea');
@@ -908,7 +902,7 @@ function initItemDrag(block, collectionId, panZoom) {
 
 // Hovering anywhere on an item with a note shows the preview — the notes button itself
 // is only for opening the add/edit panel (click), not for triggering the hover preview.
-function initNotesHover(block, panZoom) {
+function initNotesHover(block) {
   const viewport = block.querySelector('.board__viewport');
   if (!viewport) return;
 
@@ -919,7 +913,7 @@ function initNotesHover(block, panZoom) {
     if (!card.classList.contains('board__item--has-note')) return;
     if (_openPanelState?.mode === 'edit') return;
     if (_openPanelState?.card === card) return;
-    openNotePreview(block, card, panZoom);
+    openNotePreview(block, card);
   });
 
   viewport.addEventListener('mouseout', (e) => {
@@ -941,7 +935,7 @@ function initNotesHover(block, panZoom) {
 
 // ─── Board click routing (interactive mode) ───────────────────────────────────
 
-function initBoardClicks(block, collectionId, config, panZoom) {
+function initBoardClicks(block, collectionId, config) {
   const viewport = block.querySelector('.board__viewport');
   if (!viewport) return;
 
@@ -967,7 +961,7 @@ function initBoardClicks(block, collectionId, config, panZoom) {
           _openPanelState.panel.remove();
           _openPanelState = null;
         }
-        openNoteEdit(block, collectionId, card, panZoom);
+        openNoteEdit(block, collectionId, card);
       }
       return;
     }
@@ -993,7 +987,7 @@ function initBoardClicks(block, collectionId, config, panZoom) {
     }
   });
 
-  initNotesHover(block, panZoom);
+  initNotesHover(block);
 }
 
 // ─── Align to grid ────────────────────────────────────────────────────────────
@@ -1212,7 +1206,7 @@ function initAddText(block, storeId, panZoom) {
 
 // ─── View-only click handler ──────────────────────────────────────────────────
 
-function initViewClicks(block, config, panZoom) {
+function initViewClicks(block, config) {
   const viewport = block.querySelector('.board__viewport');
   if (!viewport) return;
 
@@ -1223,7 +1217,7 @@ function initViewClicks(block, config, panZoom) {
     openDetails(card.dataset.ascAsset, null, config);
   });
 
-  initNotesHover(block, panZoom);
+  initNotesHover(block);
 }
 
 function flashActionIcon(button, success) {
@@ -1513,12 +1507,12 @@ async function initBoard(block, config, collectionId, { forceFit = false } = {})
   if (config.mode === 'interactive' && collectionId) {
     initRubberBand(block, panZoom);
     initItemDrag(block, collectionId, panZoom);
-    initBoardClicks(block, collectionId, config, panZoom);
+    initBoardClicks(block, collectionId, config);
     initTextElements(block, collectionId);
     initAddText(block, collectionId, panZoom);
     initAlignGrid(block, collectionId, panZoom);
   } else {
-    initViewClicks(block, config, panZoom);
+    initViewClicks(block, config);
   }
 
   // forceFit covers opening the page: a board should always greet you with everything in

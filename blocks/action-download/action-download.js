@@ -146,7 +146,8 @@ export default async function decorate(block) {
         ${renditionDefs.map((def) => `
           <label class="action-download__rendition-option">
             <input type="checkbox" name="rendition" value="${escAttr(def.id)}" ${def.id === 'original' ? 'checked' : ''} />
-            ${escHtml(def.label || def.id)}
+            <span>${escHtml(def.label || def.id)}</span>
+            ${def.usecase ? `<span class="asc-ui-copy action-download__rendition-usecase">${escHtml(def.usecase)}</span>` : ''}
           </label>`).join('')}
       </fieldset>` : ''}
     </div>

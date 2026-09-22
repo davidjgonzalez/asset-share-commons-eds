@@ -35,30 +35,3 @@ export function isChromeless(main = document.querySelector('main')) {
   const hasSheetParam = new URLSearchParams(window.location.search).has('sheet');
   return hasSheetParam || !!main?.querySelector('.sheet');
 }
-
-/** Share/sheet/board pages are the only ones the chrome toggle makes sense on. */
-export function isSharePage(main = document.querySelector('main')) {
-  return !!main?.querySelector('.sheet, .board')
-    || new URLSearchParams(window.location.search).has('sheet')
-    || getMetadata('chrome') === 'none';
-}
-
-function toggleUrl(makeChromeless) {
-  const url = new URL(window.location.href);
-  url.searchParams.set('chrome', makeChromeless ? 'none' : 'full');
-  return url.toString();
-}
-
-/**
- * Adds a small floating link to switch a branded share page to standalone.
- * Standalone pages never offer a link back — that's the point of chromeless
- * (no way back into the site via the UI); see CLAUDE.md's Chrome Duality note.
- */
-export function renderChromeToggle() {
-  if (!isSharePage() || isChromeless()) return;
-  const link = document.createElement('a');
-  link.className = 'asc-chrome-toggle';
-  link.href = toggleUrl(true);
-  link.textContent = 'View as standalone page';
-  document.body.append(link);
-}

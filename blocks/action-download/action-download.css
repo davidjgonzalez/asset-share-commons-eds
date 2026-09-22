@@ -36,6 +36,13 @@
         input[type="checkbox"] {
             cursor: pointer;
         }
+
+        /* Distinguish "what it's for" (usecase) from "what it is" (the rendition
+           label) — italic + muted, matching details-renditions__card-usecase. */
+        .action-download__rendition-usecase {
+            font-style: italic;
+            color: var(--color-muted-fg);
+        }
     }
 
     .action-download__error {
