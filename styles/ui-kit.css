@@ -2109,8 +2109,11 @@
 }
 
 /* asc-ui-asset-card --horizontal: a 42%-wide fixed thumb column gets cramped
-   on narrow viewports — collapse back to the vertical (default) layout. */
-@media (width < 480px) {
+   on narrow viewports — collapse back to the vertical (default) layout.
+   768px matches this project's standard mobile/desktop split (docs/CSS_CONVENTION.md)
+   rather than a phone-only cutoff — a 42%-wide column is cramped on any
+   viewport below that, not just phones. */
+@media (width < 768px) {
     .asc-ui-asset-card--horizontal {
         flex-direction: column;
     }
