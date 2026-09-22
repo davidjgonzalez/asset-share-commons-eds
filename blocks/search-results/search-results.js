@@ -221,14 +221,19 @@ function reflowMasonryColumns(container) {
 // shifts everything below it in the column (CLS). Setting width/height
 // attrs (not CSS) lets the browser compute the right aspect ratio up front
 // while still rendering at width:100%/height:auto.
+//
+// Falls back to a 4:3 guess (matching the no-preview fallback face's ratio
+// elsewhere in this file) when the asset has no dimensions metadata — an
+// asset missing that property got zero reservation at all (aspect-ratio:
+// auto), which is worse than an imperfect guess: the real image swapping in
+// at a different ratio still shifts things once, but a fully-unreserved box
+// guarantees a shift every time, and a bigger one (0 height to full height).
 function applyMasonryDimensions(col, asset) {
   const img = col.lastElementChild?.querySelector('.asc-asset-teaser__preview img');
   if (!img) return;
   const { width, height } = asset.getProperty('dimensions').data || {};
-  if (width && height) {
-    img.width = width;
-    img.height = height;
-  }
+  img.width = width || 4;
+  img.height = height || 3;
 }
 
 function appendMasonryItems(container, assets) {
