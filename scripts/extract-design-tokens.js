@@ -11,7 +11,6 @@
  * Options:
  *   --url      Target website URL to extract colors from
  *   --theme    Theme name (default: extracted from URL domain)
- *   --selector CSS selector for specific elements to analyze (optional)
  */
 
 import fs from 'fs';
@@ -25,7 +24,6 @@ const __dirname = path.dirname(__filename);
 const args = process.argv.slice(2);
 const urlIndex = args.indexOf('--url');
 const themeIndex = args.indexOf('--theme');
-const selectorIndex = args.indexOf('--selector');
 
 if (urlIndex === -1) {
   console.error('Error: --url is required');
@@ -35,7 +33,6 @@ if (urlIndex === -1) {
 
 const url = args[urlIndex + 1];
 const themeName = themeIndex !== -1 ? args[themeIndex + 1] : extractDomainName(url);
-const selector = selectorIndex !== -1 ? args[selectorIndex + 1] : 'header, nav, button, a, .card, .panel, main, section';
 
 console.log(`\n🎨 Extracting design tokens from ${url}\n`);
 

@@ -120,8 +120,7 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    column-gap: var(--spacing-sm);
-    row-gap: var(--spacing-sm);
+    gap: var(--spacing-sm) var(--spacing-sm);
 }
 
 /* Breadcrumb trail row — same "content.block:has()" plain-authoring mirror as the
@@ -133,6 +132,7 @@
 .content.block:has(> p:first-child a + a):has(> p:first-child + h1, > p:first-child + h2) > p:first-child {
     margin: 0;
     flex-basis: 100%;
+
     /* Sorts ahead of the title-menu trigger's `order: -1` (collection-controls.css)
        so the trail row still renders first even though that trigger is DOM-adjacent
        to h1, not to this paragraph — see the note there for why it can't move in

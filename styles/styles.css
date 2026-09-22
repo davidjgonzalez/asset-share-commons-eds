@@ -262,8 +262,16 @@ main img {
   height: auto;
 }
 
-.icon { display: inline-block; height: var(--icon-size-md); width: var(--icon-size-md); }
-.icon img { height: 100%; width: 100%; }
+.icon {
+  display: inline-block;
+  height: var(--icon-size-md);
+  width: var(--icon-size-md);
+}
+
+.icon img {
+  height: 100%;
+  width: 100%;
+}
 
 /* ─────────────────────────────────────────────────────────────────────────
    LINKS
@@ -308,7 +316,11 @@ a.button.secondary:any-link {
   background-color: transparent;
   border-color: var(--color-border);
   color: var(--color-fg);
-  &:hover { background-color: var(--color-muted); border-color: var(--color-muted-fg); }
+
+  &:hover {
+    background-color: var(--color-muted);
+    border-color: var(--color-muted-fg);
+  }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -328,7 +340,6 @@ a.button.secondary:any-link {
 
   /* medium pill: 36px tall with 15px font at line-height 1 */
   padding: 10px 20px;
-  appearance: none;
   appearance: none;
   box-sizing: border-box;
   border: 1px solid transparent;
@@ -575,7 +586,10 @@ textarea {
   font-size: var(--body-font-size-s);
   transition: var(--input-transition);
 
-  &::placeholder { color: var(--color-muted-fg); opacity: 0.7; }
+  &::placeholder {
+    color: var(--color-muted-fg);
+    opacity: 0.7;
+  }
 
   &:focus-visible {
     outline: none;
@@ -645,7 +659,10 @@ input[type="radio"] {
 
   input:not([type="checkbox"], [type="radio"]),
   textarea,
-  select { width: 100%; box-sizing: border-box; }
+  select {
+    width: 100%;
+    box-sizing: border-box;
+  }
 }
 
 .form-row {

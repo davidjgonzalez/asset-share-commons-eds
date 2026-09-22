@@ -7,6 +7,7 @@
 
     & .asc-ui-search {
         flex: 1;
+
         --asc-ui-search-width: 100%;
     }
 
