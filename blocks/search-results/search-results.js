@@ -696,6 +696,8 @@ async function addEventListeners(block, _config) {
           .map((asset) => assetTeaser(asset, { mode: 'card', view: display })).join('') || '';
       }
       promoteAboveFoldImages(resultsEl);
+      attachImageHandlers(resultsEl);
+      injectQuickActionButtons(resultsEl, display);
     };
 
     if (event.detail.type === 'load-more') {
@@ -708,12 +710,18 @@ async function addEventListeners(block, _config) {
         resultsEl.insertAdjacentHTML('beforeend',
           results.assets?.map((asset) => assetTeaser(asset, { mode: 'card', view: display })).join('') || '');
       }
+      attachImageHandlers(resultsEl);
+      injectQuickActionButtons(resultsEl, display);
     } else {
+      // withViewTransition's update callback does not run synchronously (confirmed:
+      // document.startViewTransition(cb) returns before cb executes) — attaching
+      // image handlers / injecting quick actions here, inside applyFreshRender,
+      // guarantees the new cards actually exist in the DOM first. Calling them
+      // right after this if/else (as before) raced the transition and silently
+      // found nothing to inject into on a fresh render.
       withViewTransition(applyFreshRender);
     }
 
-    attachImageHandlers(resultsEl);
-    injectQuickActionButtons(resultsEl, display);
     isLoadingMore = false;
     setupSentinel(); // no-op after first call; observer handles further scroll-driven loads
 
