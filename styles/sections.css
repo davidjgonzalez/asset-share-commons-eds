@@ -226,3 +226,29 @@ main .section.fixed-width {
 main .section.fixed-width > div {
     max-width: 100%;
 }
+
+/* Defensive backstop for the Teaser (Hero): `fixed-width`/`hero-intro` above
+ * are assigned at runtime from section-metadata (decorateSections /
+ * ascDecorateMain in scripts/scripts.js), not present in the raw authored
+ * markup — an editing-canvas context that renders styled CSS without running
+ * (or before finishing) that decoration pass would leave the section with no
+ * width cap at all, letting a Hero teaser's large cover image balloon the
+ * whole section out to the page's raw, unconstrained width. Scoped to
+ * sections containing a Teaser (Hero) specifically, not a blanket cap on
+ * every plain section — plain (unstyled) sections are intentionally
+ * full-bleed elsewhere on this site, and @kit asset-card --hero's own note
+ * (ui-kit.css) is that spanning full width is a deliberate option decided by
+ * the section it's authored in; this only guarantees a sane default for the
+ * *specific* "headline card at the top of a directory" layout, as a backup
+ * to the class-driven cap rather than a replacement for it. */
+main .section:has(.teaser.hero) {
+    max-width: var(--section-max-width);
+    padding-inline: var(--section-padding);
+    margin-inline: auto;
+}
+
+@media (width >= 900px) {
+    main .section:has(.teaser.hero) {
+        padding-inline: var(--section-padding-wide);
+    }
+}
