@@ -241,7 +241,7 @@ Because the scan covers the whole document, {% raw %}`{{collection.title}}`{% en
 
 ### Asset & namespaced tokens {#tokens-asset}
 
-`resolveTokens(template, context)` / `resolveTokensInElement(el, context)` resolve a template against **one** context object — an `Asset` instance, a namespace map (`{ asset, rendition }`), or any plain object. Used by the asset details template and `details-renditions`.
+`resolveTokens(template, context)` / `resolveTokensInElement(el, context)` resolve a template against **one** context object: an `Asset` instance, a namespace map (`{ asset, rendition }`), or any plain object. Used by the asset details template and `details-renditions`.
 
 Accessor resolution order: computed getters (`url`, `uuid`, `id`, `filename`, `file-extension`) → `context.getProperty(key)` → `context[key]`.
 
