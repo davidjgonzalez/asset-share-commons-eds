@@ -1672,24 +1672,29 @@ fieldset.asc-ui-field > legend {
    for type/status. Pair the thumb with <img> or .asc-ui-filetype.
 ───────────────────────────────────────────────────────────────────────── */
 
+/* Theming hooks (all optional; a theme or a part sets them, the card never has to
+   be restyled): --asc-ui-asset-card-radius / -shadow / -hover-border-color /
+   -hover-shadow / -hover-transform / -hover-bg / -thumb-ratio / -thumb-bg /
+   -body-bg / -body-padding / -title-size / -title-weight */
 .asc-ui-asset-card {
     display: flex;
     flex-direction: column;
     border: 1px solid var(--color-border);
-    border-radius: var(--border-radius-lg);
+    border-radius: var(--asc-ui-asset-card-radius, var(--border-radius-lg));
     background: var(--color-card);
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--asc-ui-asset-card-shadow, var(--shadow-sm));
     overflow: hidden;
 }
 
 .asc-ui-asset-card--interactive {
-    transition: box-shadow var(--transition-fast), transform var(--transition-fast), border-color var(--transition-fast);
+    transition: box-shadow var(--transition-fast), transform var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
 }
 
 .asc-ui-asset-card--interactive:hover {
-    border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border));
-    box-shadow: var(--shadow-md);
-    transform: var(--lift-sm);
+    border-color: var(--asc-ui-asset-card-hover-border-color, color-mix(in srgb, var(--color-primary) 35%, var(--color-border)));
+    box-shadow: var(--asc-ui-asset-card-hover-shadow, var(--shadow-md));
+    transform: var(--asc-ui-asset-card-hover-transform, var(--lift-sm));
+    background: var(--asc-ui-asset-card-hover-bg, var(--color-card));
 }
 
 .asc-ui-asset-card--interactive:focus-visible {
@@ -1699,12 +1704,12 @@ fieldset.asc-ui-field > legend {
 
 .asc-ui-asset-card__thumb {
     position: relative;
-    aspect-ratio: 4 / 3;
+    aspect-ratio: var(--asc-ui-asset-card-thumb-ratio, 4 / 3);
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    background: linear-gradient(130deg, color-mix(in srgb, var(--color-primary) 16%, var(--color-card)), color-mix(in srgb, var(--color-accent) 55%, var(--color-card)));
+    background: var(--asc-ui-asset-card-thumb-bg, linear-gradient(130deg, color-mix(in srgb, var(--color-primary) 16%, var(--color-card)), color-mix(in srgb, var(--color-accent) 55%, var(--color-card))));
 }
 
 .asc-ui-asset-card__thumb img {
@@ -1766,6 +1771,13 @@ fieldset.asc-ui-field > legend {
     gap: var(--spacing-xs);
 }
 
+/* --start: top-left instead of top-right (e.g. favorite / collection toggles on the
+   left, one-off actions on the right). */
+.asc-ui-asset-card__overlay--start {
+    right: auto;
+    left: var(--spacing-sm);
+}
+
 /* --bottom: a second overlay slot, bottom-right instead of top-right — e.g. pairing a
    top-right remove action with a bottom-right secondary action (notes, etc.). */
 .asc-ui-asset-card__overlay--bottom {
@@ -1791,17 +1803,25 @@ fieldset.asc-ui-field > legend {
     opacity: 1;
 }
 
+/* Touch devices have no hover, so a hidden overlay would stay hidden for good. */
+@media (hover: none) {
+    .asc-ui-asset-card--overlay-on-hover .asc-ui-asset-card__overlay {
+        opacity: 1;
+    }
+}
+
 .asc-ui-asset-card__body {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-2xs);
-    padding: var(--spacing-md);
+    padding: var(--asc-ui-asset-card-body-padding, var(--spacing-md));
+    background: var(--asc-ui-asset-card-body-bg, transparent);
 }
 
 .asc-ui-asset-card__title {
     margin: 0;
-    font-size: var(--body-font-size-s);
-    font-weight: 600;
+    font-size: var(--asc-ui-asset-card-title-size, var(--body-font-size-s));
+    font-weight: var(--asc-ui-asset-card-title-weight, 600);
     color: var(--color-fg);
     overflow-wrap: break-word;
 }
@@ -2514,6 +2534,58 @@ fieldset.asc-ui-field > legend {
 
 .asc-ui-asset-card--hero .asc-ui-asset-card__meta {
     font-size: var(--body-font-size-m);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit asset-card --bare: strips the card chrome (border, radius, background,
+   shadow, hover lift) so only the thumbnail shows — an image tile in a masonry
+   wall. Pair with --natural.
+   @kit asset-card --meta-overlay: the body sits over the bottom edge of the
+   thumb and only appears on hover/focus; the title is dropped, leaving the
+   metadata lines. Pair with --bare.
+   @kit asset-card --clamp-title: title limited to two lines.
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-asset-card--bare,
+.asc-ui-asset-card--bare:hover {
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    transform: none;
+}
+
+.asc-ui-asset-card--meta-overlay {
+    position: relative;
+}
+
+.asc-ui-asset-card--meta-overlay .asc-ui-asset-card__body {
+    position: absolute;
+    inset: auto 0 0;
+    padding: var(--spacing-xs) var(--spacing-md);
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+}
+
+.asc-ui-asset-card--meta-overlay:hover .asc-ui-asset-card__body,
+.asc-ui-asset-card--meta-overlay:focus-within .asc-ui-asset-card__body {
+    opacity: 1;
+}
+
+.asc-ui-asset-card--meta-overlay .asc-ui-asset-card__title {
+    display: none;
+}
+
+.asc-ui-asset-card--meta-overlay .asc-ui-asset-card__meta {
+    color: color-mix(in srgb, white 85%, transparent);
+}
+
+.asc-ui-asset-card--clamp-title .asc-ui-asset-card__title {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    /* stylelint-disable-next-line property-no-deprecated -- still required for -webkit-line-clamp */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────

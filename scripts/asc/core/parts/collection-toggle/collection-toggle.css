@@ -35,9 +35,9 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: var(--collection-toggle-btn-width, 32px);
-        min-width: var(--collection-toggle-btn-min-width, 32px);
-        height: var(--collection-toggle-btn-height, 32px);
+        width: var(--collection-toggle-btn-width, 2rem);
+        min-width: var(--collection-toggle-btn-min-width, 2rem);
+        height: var(--collection-toggle-btn-height, 2rem);
         padding: var(--collection-toggle-btn-padding, 0);
         border-radius: var(--collection-toggle-btn-radius, 50%);
         font-family: inherit;

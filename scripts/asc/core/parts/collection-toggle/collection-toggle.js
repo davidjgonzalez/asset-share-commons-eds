@@ -128,6 +128,8 @@ const ICONS = {
  * @param {string} [options.addLabel='Add to {name}']       Label for the add button
  * @param {string} [options.removeLabel='Remove from {name}'] Label for the remove button
  * @param {string} [options.collectionId]                   Target a specific collection; omit for active
+ * @param {{ add?: string, remove?: string }} [options.icons]  Icon markup overriding the default
+ *   add (+) / remove (−) glyphs; ignored for the favorite toggle (always a star)
  * @param {boolean} [options.favorite=false]  Renders a star icon instead of +/− and always
  *   targets the default (Favorites) collection — `collectionId` is ignored when set. Pair with
  *   a plain (non-favorite, no explicit collectionId) toggle elsewhere on the page: the plain one
@@ -141,13 +143,14 @@ export default function collectionToggle(asset, options = {}) {
     removeLabel = 'Remove from {name}',
     collectionId = '',
     favorite = false,
+    icons = {},
   } = options;
 
   const targetId = favorite ? services.collections.getDefaultId() : collectionId;
   const collectionAttr = targetId ? ` data-asc-collection="${escAttr(targetId)}"` : '';
   const modifierClass = favorite ? ' asc-collection-toggle--favorite' : (!collectionId ? ' asc-collection-toggle--generic' : '');
-  const addIcon = favorite ? ICONS.star : ICONS.add;
-  const removeIcon = favorite ? ICONS.starFilled : ICONS.remove;
+  const addIcon = favorite ? ICONS.star : (icons.add ?? ICONS.add);
+  const removeIcon = favorite ? ICONS.starFilled : (icons.remove ?? ICONS.remove);
   const addDefaultLabel = favorite ? 'Add to {name}' : addLabel;
   const removeDefaultLabel = favorite ? 'Remove from {name}' : removeLabel;
 

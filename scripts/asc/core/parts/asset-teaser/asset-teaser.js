@@ -5,6 +5,7 @@ import collectionToggle from '../collection-toggle/collection-toggle.js';
 import serviceConfigurations from '../../../configurations.js';
 import services from '../../services/services.js';
 import { escAttr, pictureHtml } from '../../../html.js';
+import { icon } from '../../utils/icons.js';
 
 loadCSS('/scripts/asc/core/parts/asset-teaser/asset-teaser.css');
 
@@ -120,15 +121,21 @@ document.body.addEventListener('focusout', (e) => {
 });
 
 /**
- * assetTeaser(asset, options) — renders an asset card HTML string.
+ * assetTeaser(asset, options) — renders an asset card HTML string, built from the UI Kit
+ * asset-card primitive (.asc-ui-asset-card). The .asc-asset-teaser* classes are kept as
+ * hooks for themes, scripts and the video preview.
  *
  * Which properties are shown is controlled by configurations.searchResults.views.
  * 'thumbnail' always renders as the preview image; all other properties render
  * in the meta section in the order they appear in the view config.
  *
+ * The favorite and "add to collection" toggles sit in the card's top-left overlay slot
+ * and a second, empty top-right slot (.asc-asset-teaser__actions) is left for callers
+ * that add one-off actions (e.g. search-results' download / copy buttons).
+ *
  * @param {Asset}  asset
  * @param {object} [options]
- * @param {string} [options.mode='card']    'card' | 'list'
+ * @param {string} [options.mode='card']    'card' | 'list' (horizontal card)
  * @param {string} [options.view='cards']   View key: 'cards' | 'masonry' (maps to searchResults.views)
  * @returns {string} HTML string
  */
@@ -136,26 +143,47 @@ export default function assetTeaser(asset, { mode = 'card', view = 'cards' } = {
   const props = getViewProps(view);
   const hasThumbnail = props.includes('thumbnail');
   const metaProps = props.filter((p) => p !== 'thumbnail');
+  const masonry = view === 'masonry';
+
+  const classes = [
+    'asc-ui-asset-card',
+    'asc-ui-asset-card--interactive',
+    'asc-ui-asset-card--overlay-on-hover',
+    masonry ? '' : 'asc-ui-asset-card--clamp-title',
+    mode === 'list' ? 'asc-ui-asset-card--horizontal' : '',
+    masonry ? 'asc-ui-asset-card--natural asc-ui-asset-card--bare asc-ui-asset-card--meta-overlay' : '',
+    'asc-asset-teaser',
+    `asc-asset-teaser--${mode}`,
+  ].filter(Boolean).join(' ');
+
+  const overlays = `
+        <div class="asc-ui-asset-card__overlay asc-ui-asset-card__overlay--start">
+          ${collectionToggle(asset, { favorite: true })}
+          ${collectionToggle(asset, { icons: { remove: icon('check', { size: 14, strokeWidth: 2.5 }) } })}
+        </div>
+        <div class="asc-ui-asset-card__overlay asc-asset-teaser__actions"></div>`;
 
   const previewHtml = hasThumbnail ? `
-      <div class="asc-asset-teaser__preview">
-        ${thumbnailHtml(asset)}
+      <div class="asc-ui-asset-card__thumb asc-asset-teaser__preview">
+        ${thumbnailHtml(asset)}${overlays}
       </div>` : '';
+  // Without a thumbnail the overlay slots anchor to the card itself instead.
+  const looseOverlays = hasThumbnail ? '' : overlays;
 
   const metaHtml = metaProps.length ? `
-      <div class="asc-asset-teaser__meta">
+      <div class="asc-ui-asset-card__body asc-asset-teaser__meta">
         ${metaProps.map((prop) => {
           if (prop === 'title') {
-            return `<h3 class="asc-asset-teaser__title">${asset.title}</h3>`;
+            return `<h3 class="asc-ui-asset-card__title asc-asset-teaser__title">${asset.title}</h3>`;
           }
           const val = asset.getProperty(prop).text;
           if (!val) return '';
-          return `<div class="asc-asset-teaser__prop asc-asset-teaser__${prop}">${val}</div>`;
+          return `<div class="asc-ui-asset-card__meta asc-asset-teaser__prop asc-asset-teaser__${prop}">${val}</div>`;
         }).join('')}
       </div>` : '';
 
   return `
-    <article class="asc-asset-teaser asc-asset-teaser--${mode}"
+    <article class="${classes}"
              role="button"
              tabindex="0"
              draggable="true"
@@ -165,8 +193,6 @@ export default function assetTeaser(asset, { mode = 'card', view = 'cards' } = {
              data-asc-mime-type="${asset.mimeType || ''}"
              data-asc-file-type="${asset.getProperty('file-type').data || ''}">
       ${previewHtml}
-      ${metaHtml}
-      ${collectionToggle(asset, { favorite: true })}
-      ${collectionToggle(asset)}
+      ${metaHtml}${looseOverlays}
     </article>`;
 }

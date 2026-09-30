@@ -27,9 +27,6 @@ const MAX_AUTO_FILL_ROUNDS = 50; // safety cap on consecutive auto-triggered loa
 const SKELETON_COUNT = 6;
 
 const ICONS = {
-  download: icon('download', { size: 12, strokeWidth: 2.5 }),
-  copyUrl: icon('upload', { size: 12, strokeWidth: 2.5 }),
-  copyImage: icon('image', { size: 12, strokeWidth: 2.5 }),
   check: icon('check', { size: 12, strokeWidth: 2.5 }),
   star: icon('star'),
   plus: icon('plus', { strokeWidth: 2.5 }),
@@ -96,24 +93,25 @@ function renderListCell(col, asset) {
   return text ? esc(text) : EMPTY_CELL_HTML;
 }
 
-function quickActionButtonsHtml(assetId) {
+function quickActionButtonsHtml(assetId, size = 12) {
+  const glyph = (name) => icon(name, { size, strokeWidth: 2.5 });
   return `
     <div class="search-results__quick-actions">
       <button type="button"
               class="search-results__quick-action search-results__quick-download asc-ui-icon-btn"
               data-asc-asset="${esc(assetId)}"
               aria-haspopup="true" aria-expanded="false"
-              aria-label="Download asset" title="Download asset">${ICONS.download}</button>
+              aria-label="Download asset" title="Download asset">${glyph('download')}</button>
       <button type="button"
               class="search-results__quick-action search-results__quick-copy-url asc-ui-icon-btn"
               data-asc-asset="${esc(assetId)}"
               aria-haspopup="true" aria-expanded="false"
-              aria-label="Copy rendition URL" title="Copy rendition URL">${ICONS.copyUrl}</button>
+              aria-label="Copy rendition URL" title="Copy rendition URL">${glyph('upload')}</button>
       <button type="button"
               class="search-results__quick-action search-results__quick-copy-image asc-ui-icon-btn"
               data-asc-asset="${esc(assetId)}"
               aria-haspopup="true" aria-expanded="false"
-              aria-label="Copy image" title="Copy image">${ICONS.copyImage}</button>
+              aria-label="Copy image" title="Copy image">${glyph('image')}</button>
     </div>`;
 }
 
@@ -327,22 +325,17 @@ function attachImageHandlers(resultsEl) {
   });
 }
 
+// Fills each card's top-right overlay slot (.asc-asset-teaser__actions, left empty by the
+// asset-teaser part) with the one-off download / copy-url / copy-image buttons.
 function injectQuickActionButtons(resultsEl, display) {
   if (display === 'list') return;
 
-  // Only the generic +/− toggle, not the favorite star toggle — each card renders
-  // both (asset-teaser.js), and injecting into both would duplicate the download/
-  // copy-url/copy-image buttons and overlap them behind the favorite toggle.
-  // Inserted as a sibling of the toggle (not a child) so the toggle's own width
-  // stays fixed at one button — the favorite toggle's left offset is computed
-  // from that fixed width and would otherwise land on top of these buttons.
-  resultsEl.querySelectorAll('.asc-asset-teaser .asc-collection-toggle--generic').forEach((toggle) => {
-    const teaser = toggle.closest('.asc-asset-teaser');
-    if (!teaser || teaser.querySelector('.search-results__quick-actions')) return;
+  resultsEl.querySelectorAll('.asc-asset-teaser').forEach((teaser) => {
+    const slot = teaser.querySelector('.asc-asset-teaser__actions');
     const assetId = teaser.dataset?.ascAsset;
-    if (!assetId) return;
+    if (!slot || !assetId || slot.querySelector('.search-results__quick-actions')) return;
 
-    toggle.insertAdjacentHTML('afterend', quickActionButtonsHtml(assetId));
+    slot.insertAdjacentHTML('beforeend', quickActionButtonsHtml(assetId, 14));
   });
 }
 
