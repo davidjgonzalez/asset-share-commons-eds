@@ -17,6 +17,7 @@
 import { decorateBlock, loadBlock } from '../../../../aem.js';
 import serviceConfigurations from '../configurations.js';
 import { loadFragment } from '../../utils/fragments.js';
+import { resolveTokensInContent } from '../../../tokens.js';
 
 // URL parameter used for deep-linking to a specific asset's details
 const ASSET_URL_PARAM = 'asset';
@@ -142,6 +143,12 @@ class AssetDetails {
       console.warn(`[AssetDetails] Could not load fragment: ${templatePath}`);
       return;
     }
+
+    // Default content in the template can use {{asset.*}} tokens, e.g. a heading of
+    // {{asset.title}}. Blocks resolve their own templates.
+    resolveTokensInContent(fragment, { asset });
+    const heading = fragment.querySelector('h1, h2')?.textContent.trim();
+    if (heading) document.title = `${heading} - Asset Details`;
 
     const dialog = this.modal.querySelector('dialog');
     dialog.querySelector('.content').replaceChildren(fragment);

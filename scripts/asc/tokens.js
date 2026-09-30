@@ -100,6 +100,31 @@ export function resolveTokensInElement(el, context) {
 }
 
 /**
+ * Like resolveTokensInElement, but skips text inside blocks. A block owns its own authored
+ * templates and resolves them itself (e.g. details-renditions against each rendition), so only
+ * default content (headings, paragraphs, links) is resolved here.
+ *
+ * @param {Element} root
+ * @param {object} context
+ */
+export function resolveTokensInContent(root, context) {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode: (n) => (n.parentElement.closest('.block') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT),
+  });
+  const nodes = [];
+  let node = walker.nextNode();
+  while (node) {
+    nodes.push(node);
+    node = walker.nextNode();
+  }
+  nodes.forEach((textNode) => {
+    if (!textNode.nodeValue.includes('{{')) return;
+    // eslint-disable-next-line no-param-reassign
+    textNode.nodeValue = resolveTokens(textNode.nodeValue, context);
+  });
+}
+
+/**
  * Page-wide token registry. Any block can merge values into it via registerTokens()
  * — every {{...}} occurrence recorded anywhere in the document (title, meta content,
  * headings, paragraphs, links — head or body, any section) is re-resolved against the

@@ -171,9 +171,8 @@ import { resolveTokens, resolveTokensInElement } from '../../scripts/asc/tokens.
 ```
 
 Use this when your block renders **many** independent contexts that shouldn't share one global
-registry — most notably, one `Asset` instance per card/row. `details-header` and
-`details-renditions` both use this: each resolves its own authored template against the one
-asset (or rendition) it currently owns.
+registry — most notably, one `Asset` instance per card/row. `details-renditions`
+uses this: it resolves its own authored template against the one rendition it currently owns.
 
 - `resolveTokens(template, context)` — resolves a single string, returns the resolved string.
 - `resolveTokensInElement(el, context)` — walks all text nodes inside `el` and resolves each
@@ -267,23 +266,19 @@ properties: {
 
 Then in a template: `{{ brand }}` or `{{ brand | Unknown }}`.
 
-### `details-header`
+### Asset details templates
 
-Authored as a da.live block table. Row 1 becomes the `<h2>` title template; row 2 becomes the
-`<p>` meta subtitle template. Both rows are optional — defaults apply when omitted.
+Default content in a details template (`/details/*`) resolves `{{asset.*}}` tokens against the
+open asset. Text inside blocks is skipped, since each block resolves its own templates. Authored
+as plain content, no block:
 
 ```
-| details-header                                          |
-| {{ title }}                                             |
-| {{ file-type }} · {{ file-size }} · {{ dimensions }}    |
+## {{ asset.title }}
+{{ asset.file-type }} · {{ asset.file-size }} · {{ asset.dimensions }}
 ```
 
-**Defaults:**
-
-- Title row omitted → `{{ title }}`
-- Meta row omitted → `{{ file-type }} · {{ file-size }} · {{ dimensions }}`
-
-The resolved title is also applied to `document.title` as `"{title} - Asset Details"`.
+A leading section holding only a heading and paragraph renders as the header bar, and the heading
+is applied to `document.title` as `"{title} - Asset Details"`.
 
 ### `details-renditions`
 
@@ -293,35 +288,25 @@ See `AGENTS.md` → "Renditions Table Templates" for the full rendition accessor
 
 ### Authoring examples
 
-**Minimal — title only:**
-
-```
-| details-header |
-| {{ title }}    |
-```
-
 **Full header with fallback:**
 
 ```
-| details-header                                                           |
-| {{ title | Untitled Asset }}                                             |
-| {{ file-type }} · {{ file-size }} · {{ modified | date unknown }}        |
+## {{ asset.title | Untitled Asset }}
+{{ asset.file-type }} · {{ asset.file-size }} · {{ asset.modified | date unknown }}
 ```
 
 **UUID in subtitle (for debugging / asset ID display):**
 
 ```
-| details-header        |
-| {{ title }}           |
-| ID: {{ uuid }}        |
+## {{ asset.title }}
+ID: {{ asset.uuid }}
 ```
 
 **Custom property:**
 
 ```
-| details-header                                        |
-| {{ title }}                                           |
-| {{ brand | Unbranded }} · {{ file-type }} · {{ file-size }} |
+## {{ asset.title }}
+{{ asset.brand | Unbranded }} · {{ asset.file-type }} · {{ asset.file-size }}
 ```
 
 ---
@@ -344,11 +329,11 @@ Both systems share the same coercion step before a value is inserted into the te
 
 | File | Purpose |
 |---|---|
-| `scripts/asc/tokens.js` | Shared implementation — `resolveTokens`, `resolveTokensInElement`, `registerTokens` |
+| `scripts/asc/tokens.js` | Shared implementation — `resolveTokens`, `resolveTokensInElement`, `resolveTokensInContent`, `registerTokens` |
 | `scripts/asc.js` | Calls `registerTokens()` with URL params in `ascDecorateMain()` |
 | `blocks/collection-controls/collection-controls.js` | Page-registry example — `collection.*` |
 | `blocks/sheet-controls/sheet-controls.js` | Page-registry example — `sheet.*` |
-| `blocks/details-header/details-header.js` | Direct-resolution example — asset context |
+| `scripts/asc/core/services/asset-details/asset-details.js` | Direct-resolution example — `resolveTokensInContent(fragment, { asset })` |
 | `blocks/details-renditions/details-renditions.js` | Namespace-map example — `asset.*` via `assetResolver()`'s `getProperty` wrapper |
 | `scripts/asc/core/models/asset.js` | `Asset.getProperty()` and computed getters |
 | `scripts/asc/core/services/properties/` | Custom property handler registration |

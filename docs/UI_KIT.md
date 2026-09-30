@@ -143,7 +143,8 @@ named-area grid:
 ```
 - `collection-header` (spans both rows): `@kit back-heading` — breadcrumb trail + h1 +
   description.
-- `collection-meta` (row 1, right): a plain `asc-ui-copy` stats line (e.g. "11 assets —
+- `collection-meta` (row 1, right): a plain stats line, authored as a `content` block paragraph
+  of `{{collection.count}} assets — Last updated {{collection.lastUpdated}}` (e.g. "11 assets —
   Last updated Sep 16, 2026") — *not* the `@kit metadata` `<dl>` component, which mixes an
   uppercase term style with the value style; a stat sentence in one font reads as the quiet
   trailing note it's meant to be.

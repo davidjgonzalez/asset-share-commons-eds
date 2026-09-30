@@ -4,8 +4,9 @@
  * in its large .asc-dialog--wide variant (styles.css). The service opens it
  * with dialog.showModal() and injects the details fragment into .content.
  *
- * The fragment supplies its own header bar (details-header block), so the modal
- * only floats a close button over the top-right corner.
+ * The fragment supplies its own header bar (a leading section of plain content,
+ * e.g. an h2 of {{asset.title}}), so the modal only floats a close button over
+ * the top-right corner.
  */
 
 .block.details-modal {
@@ -48,6 +49,28 @@
 
     .details-modal__nav--next {
         inset-inline-end: var(--spacing-sm);
+    }
+
+    /* Header bar: a leading section holding only default content (heading + subtitle).
+       Leaves room on the inline end for the floating close button. */
+    .content main > div:first-child:not(:has(.block)) {
+        margin: 0;
+        padding: var(--spacing-md) var(--spacing-xl);
+        padding-inline-end: 3.5rem;
+        border-bottom: var(--border-width) var(--border-style) var(--color-border);
+
+        :is(h1, h2) {
+            margin: 0;
+            font-size: var(--heading-font-size-m);
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        p {
+            margin: var(--spacing-2xs, 0.25rem) 0 0;
+            color: var(--color-muted-fg);
+            font-size: var(--body-font-size-s);
+        }
     }
 
     .content {

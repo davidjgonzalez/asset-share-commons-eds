@@ -40,7 +40,6 @@ the full ownership-zone breakdown.
 | Block | Purpose |
 |-------|---------|
 | `details-modal` | Modal dialog shell; auto-injected by `AssetDetails` service. Close button floats top-right; the loaded fragment supplies its own header |
-| `details-header` | Title + meta-subtitle bar. Authored content is a **token template** — `{{ accessor }}` / `{{ accessor \| fallback }}` resolved against the asset (see Token Placeholders below) |
 | `details-preview` | Unified media previewer for **all rendition types**. Detects the selected rendition's MIME type (and filename extension as fallback) and routes to the matching sub-renderer: `image.js` (image/*), `video.js` (video/*), `pdf.js` (application/pdf), `office.js` (Office formats). Enables cross-type rendition switching — e.g. a video asset can display its JPEG poster rendition, or a PPT can display its generated PDF rendition. Config rows: `renditions` (comma-delimited priority list, default `original` — walked in order to pick the initial display rendition), `height` (viewer height for video/PDF/Office, default `600px`), `client-id` (Adobe PDF Embed API key, optional). Image viewer: square aspect-ratio container with `object-fit: contain` letterboxing, `failedUrls` tracking prevents flashing broken images. Video viewer: `canPlayType` probe → native `<video>` or unsupported overlay; MIME inferred from filename extension when `mimeType` absent. PDF viewer: Adobe PDF Embed API when `client-id` provided, native `<iframe>` fallback. Office viewer: Microsoft Office Online `<iframe>`. All viewers show an unsupported/error overlay with a download link. Responds to `asc:rendition:activate` (sticky — may swap renderer type) and `asc:rendition:preview` (hover — same-type only, cross-type hover is no-op). |
 | `details-property` | Displays a single metadata property (label + value; `pill` variant → badge) |
 | `details-metadata` | A panel of property rows (`asc-ui-metadata`). Rows are `Label \| property-key`; `display: list\|grid`; array values (e.g. `tags`) render as `asc-ui-chip` pills |
@@ -466,15 +465,17 @@ Home / Collections       [links to / and /collections/]
 
 ---
 
-#### 2 — Asset (details-header, asset cards)
+#### 2 — Asset (asset details template, asset cards)
 
-**Resolver**: `resolveTokens(template, context)` / `resolveTokensInElement(el, context)` in
-`scripts/asc/tokens.js`  
-**Called from**: `blocks/details-header/details-header.js` — runs when asset data is loaded  
+**Resolver**: `resolveTokens(template, context)` / `resolveTokensInElement(el, context)` /
+`resolveTokensInContent(root, context)` in `scripts/asc/tokens.js`  
+**Called from**: the `assetDetails` service (`resolveTokensInContent(fragment, { asset })`) once the
+details template is loaded  
 **Context**: an `Asset` model instance, or a **namespace map** (`{ asset, rendition, ... }`)
 
-`details-header` rows are authored as template strings; any `{{ }}` token is resolved against
-the loaded asset. Accessor resolution order: computed getters → `asset.getProperty(key)` →
+Default content in a details template (headings, paragraphs, links outside any block) is authored
+as template strings; any `{{asset.* }}` token is resolved against the loaded asset. Text inside
+blocks is left alone, since blocks resolve their own templates. Accessor resolution order: computed getters → `asset.getProperty(key)` →
 `asset[key]`.
 
 **Namespaced accessors**: pass a namespace map instead of a single object when a template needs
@@ -528,13 +529,15 @@ Table Templates below for the full accessor list.
 
 Any raw JCR metadata key (e.g. `dc:format`, `xmp:Rating`) is also accessible directly.
 
-**Authoring example** (`details-header` da.live table):
+**Authoring example** (first section of a details template, plain content):
 
 ```
-| details-header                                         |
-| {{title}}                                              |
-| {{file-type}} · {{file-size}} · {{dimensions}}         |
+## {{asset.title}}
+{{asset.file-type}} · {{asset.file-size}} · {{asset.dimensions}}
 ```
+
+A leading section with only a heading and paragraph renders as the header bar. The heading is also
+used as the page title (`"{title} - Asset Details"`).
 
 ---
 

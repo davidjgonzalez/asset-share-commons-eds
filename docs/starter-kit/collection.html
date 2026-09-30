@@ -19,8 +19,8 @@
                 collection-header collection-actions
 
       "collection-header" (title + description) repeats down both rows, so it
-      spans the full left column height. "collection-meta" (the stat list)
-      and "collection-actions" (the toolbar) are two *separate* blocks/areas —
+      spans the full left column height. "collection-meta" (the stat line)
+      and "collection-actions" (the toolbar) are two *separate* areas —
       not one block stacking both internally — so each row is sized to its own
       content instead of one shared row height getting sized off whichever
       side is taller. Below 768px the grid drops out and everything stacks in
@@ -42,17 +42,11 @@
       title, description, and stats line (see "Page header" in
       docs/UI_KIT.md).
 
-      "collection-meta" block (area: collection-meta): the assets/last-
-      updated stat list — a compact @kit metadata list (docs/UI_KIT.md,
-      --compact variant). Takes no authored rows; it reads the same collection
-      collection-controls does. Not authored as {{collection.count}}/
-      {{collection.lastUpdated}} tokens the way title/description are — DA's
-      authoring + preview pipeline only carries plain rich text
-      (p/h1-h6/ul-ol-li/a/img/table) through; a `<dl class="asc-ui-metadata">`
-      typed directly into a page comes back out the other side flattened to a
-      bare `<ul>`, classes gone. So the block renders it in JS instead
-      (collection-meta.js), the same way collection-controls renders its own
-      toolbar buttons below.
+      "content" block (area: collection-meta): the assets/last-updated stat
+      line, plain text with {{collection.count}} / {{collection.lastUpdated}}
+      tokens, the same way title/description are authored. DA only carries
+      plain rich text through, so this stays a sentence rather than a
+      `<dl class="asc-ui-metadata">` list.
 
       "collection-controls" block (area: collection-actions): rows declare
       which controls to show (in order). Left col = control ID, right col =
@@ -75,8 +69,13 @@
         <div><div>area</div><div>collection-header</div></div>
       </div>
 
-      <!-- collection-meta block: stat list (area: collection-meta) -->
-      <div class="collection-meta">
+      <!-- content block: stat line (area: collection-meta) -->
+      <div class="content">
+        <div>
+          <div>
+            <p>{{collection.count}} assets — Last updated {{collection.lastUpdated}}</p>
+          </div>
+        </div>
         <div><div>area</div><div>collection-meta</div></div>
       </div>
 

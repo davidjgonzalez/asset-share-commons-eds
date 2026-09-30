@@ -394,10 +394,9 @@ function initDownload(block, collection) {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-// Exported for the sibling collection-meta block (blocks/collection-meta), which
-// needs to resolve the same "which collection is this page about" id — a plain
-// ?id= UUID override, falling back to the active collection.
-export function resolveCollectionId() {
+// Which collection this page is about: a plain ?id= UUID override, falling back
+// to the active collection.
+function resolveCollectionId() {
   const id = new URLSearchParams(window.location.search).get('id') || '';
   if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(id)) {
     return id;
