@@ -272,6 +272,7 @@ the library needs to know about it regardless of where it's ultimately placed.
 | `scripts/asc.js` | ASC entry point — lifecycle hooks + action-page utilities |
 | `scripts/asc/core/services/services.js` | All service singletons exported together |
 | `scripts/asc/core/utils/events.js` | `delegateEvent()` — use for all event binding |
+| `scripts/asc/core/utils/icons.js` | `icon(name, { size, strokeWidth, filled })` — the only place inline SVG icons live; never paste `<svg>` into a block |
 | `AGENTS.md` | Full event/attribute/parts/provider reference for AI assistants |
 | `docs/PROJECT_STRUCTURE.md` | Ownership zones — EDS boilerplate vs ASC Core vs user-owned |
 | `docs/CSS_CONVENTION.md` | Full CSS coding standards |
