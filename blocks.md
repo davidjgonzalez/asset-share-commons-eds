@@ -25,8 +25,6 @@ sidebar:
     items:
       - title: details-modal
         url: "#details-modal"
-      - title: details-header
-        url: "#details-header"
       - title: details-preview
         url: "#details-preview"
       - title: details-property
@@ -55,8 +53,6 @@ sidebar:
         url: "#collections-actions"
       - title: collection-controls
         url: "#collection-controls"
-      - title: collection-meta
-        url: "#collection-meta"
       - title: sheet-controls
         url: "#sheet-controls"
       - title: board
@@ -324,29 +320,18 @@ Merged directly into the active provider's `basePredicates` rather than emitted 
 
 *details-modal — the dialog shell that assembles the details-* blocks below for the open asset*
 
-The template to render is determined by `configurations.assetDetails.templates`, a function that receives the `Asset` and returns a fragment path (default `/details`).
-
-**Browser history navigation:** every asset open pushes a history entry so the URL stays shareable and back/forward navigation works naturally.
-
----
-
-## details-header {#details-header}
-
-**Asset Details** · Title + meta-subtitle bar for the open asset. Authored content is a **token template**: any {% raw %}`{{ accessor }}` / `{{ accessor | fallback }}`{% endraw %} in the block's rows is resolved against the asset.
-
-![details-header — title and meta-subtitle bar]({{ '/assets/images/blocks/details-header.jpg' | relative_url }})
-
-*details-header — title and file-type/size/dimensions subtitle, resolved from the open asset*
+**Header bar.** The template needs no header block. Start it with a section holding only a heading and a paragraph, using {% raw %}`{{asset.*}}`{% endraw %} tokens (see [Content Variables](/developer#tokens-asset)):
 
 {% raw %}
 ```
-| details-header                                  |
-| {{title}}                                        |
-| {{file-type}} · {{file-size}} · {{dimensions}}   |
+## {{asset.title}}
+{{asset.file-type}} · {{asset.file-size}} · {{asset.dimensions}}
 ```
 {% endraw %}
 
-See [Content Variables](/developer#tokens) for the full accessor list.
+The template to render is determined by `configurations.assetDetails.templates`, a function that receives the `Asset` and returns a fragment path (default `/details`).
+
+**Browser history navigation:** every asset open pushes a history entry so the URL stays shareable and back/forward navigation works naturally.
 
 ---
 
@@ -654,22 +639,9 @@ No configuration required. Place it in the same header row as the page title usi
 
 Each row is `action | label | variant`. Pair `collection-controls` (header) with [`board`](#board) (`source: collection`, `mode: interactive`) in the same page — see [Board page patterns](#board) below.
 
+For a stats line in its own spot (for example its own grid area under the title), author a plain `content` block paragraph with the same tokens: {% raw %}`{{collection.count}} assets, last updated {{collection.lastUpdated}}`{% endraw %}. No dedicated block is needed.
+
 Reads the `?id=` URL parameter. Reacts to `asc:collection:change`, re-registering its {% raw %}`{{collection.*}}`{% endraw %} tokens on rename or item add/remove.
-
----
-
-## collection-meta {#collection-meta}
-
-**Collections** · One line of summary stats for a single collection: the asset count and when it was last updated ("12 assets, Last updated 3 days ago").
-
-```
-| collection-meta  |   |
-|------------------|---|
-```
-
-No configuration required. Reads the `?id=` URL parameter (falling back to the active collection) and re-renders on `asc:collection:change`. Renders nothing if the collection can't be found.
-
-It is a sibling of [`collection-controls`](#collection-controls), not part of it, so you can place and size it independently of the action buttons, for example in its own grid area under the title. If you'd rather keep everything in the header text, `collection-controls` can show the same information with the {% raw %}`{{collection.count}}`{% endraw %} and {% raw %}`{{collection.lastUpdated}}`{% endraw %} tokens.
 
 ---
 

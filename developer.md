@@ -241,7 +241,7 @@ Because the scan covers the whole document, {% raw %}`{{collection.title}}`{% en
 
 ### Asset & namespaced tokens {#tokens-asset}
 
-`resolveTokens(template, context)` / `resolveTokensInElement(el, context)` resolve a template against **one** context object — an `Asset` instance, a namespace map (`{ asset, rendition }`), or any plain object. Used by `details-header` and `details-renditions`.
+`resolveTokens(template, context)` / `resolveTokensInElement(el, context)` resolve a template against **one** context object — an `Asset` instance, a namespace map (`{ asset, rendition }`), or any plain object. Used by the asset details template and `details-renditions`.
 
 Accessor resolution order: computed getters (`url`, `uuid`, `id`, `filename`, `file-extension`) → `context.getProperty(key)` → `context[key]`.
 
@@ -258,13 +258,16 @@ resolveTokensInElement(cardEl, { asset });
 
 **Property handler accessors** (registered by ASC core; add or override via `configurations.js → properties.custom`): `title`, `description`, `mime-type`, `file-type`, `file-size`, `dimensions`, `width`, `height`, `author`, `keywords`, `tags`, `smart-tags`, `uploaded-date`, `uploaded-by`, `last-modified-date`, `last-modified-by`, `colors`, `history` — plus any raw JCR metadata key and any name registered in `properties.custom`.
 
+The asset details service resolves `{{asset.*}}` tokens in the **default content** of a details template (headings, paragraphs and links outside any block). Text inside blocks is left alone, since each block resolves its own templates. No block is needed for the header:
+
 {% raw %}
 ```
-| details-header                                          |
-| {{title}}                                                |
-| {{file-type}} · {{file-size}} · {{dimensions}}          |
+## {{asset.title}}
+{{asset.file-type}} · {{asset.file-size}} · {{asset.dimensions}}
 ```
 {% endraw %}
+
+A leading section holding only a heading and paragraph renders as the header bar, and the heading is used as the page title (`{title} - Asset Details`).
 
 `details-renditions` uses the same engine against the **current rendition**, with `asset.*` reaching the owning asset — see the [renditions table templates](/blocks#details-renditions) for the full accessor list, including the {% raw %}`{{ accessor | fallback }}`{% endraw %} fallback syntax.
 
