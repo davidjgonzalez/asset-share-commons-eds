@@ -148,12 +148,79 @@ export default configurations;
 
 ASC runs entirely in the browser, so search, thumbnails, renditions, and downloads are `fetch()` calls from the page straight to `aem.host`. If that host is an AEM Publish tier behind a Dispatcher, the Dispatcher must allow those requests through. A hardened default configuration blocks them.
 
-Ask whoever owns your Dispatcher (Cloud Manager or AMS repository) to add two things. Both have copy-paste samples on the Dispatcher page:
+Ask whoever owns your Dispatcher (Cloud Manager or AMS repository) to add the two samples below. Adjust them to your environment.
 
-- **Filter rules** for the QueryBuilder, rendition, and download paths you use: [sample filter rules](/dispatcher#sample-filters)
-- **CORS headers** in the Apache vhost, allowing your site's origin (and `http://localhost:3000` for local development): [sample vhost config](/dispatcher#cors-httpd)
+**1. Allow filter rules.** Add to your farm's filter file (`dispatcher.any`, or `conf.dispatcher.d/filters/filters.any` on AEM as a Cloud Service), alongside your baseline security filters. Delete the rules for features you don't use.
 
-The [AEM Publish Dispatcher](/dispatcher) page also has the full endpoint inventory, caching notes, and security notes. You can skip this step if `aem.host` points at an author instance or a Publish tier without a restrictive Dispatcher.
+```
+# Asset Share Commons: Dispatcher filter rules.
+#
+# Paste into your farm's filter file (AEMaaCS: dispatcher/src/conf.dispatcher.d/filters/filters.any),
+# alongside your baseline security filters, not in place of them. Rule names only need to be unique.
+# Delete the rules for features you don't use (for example, the OpenAPI block if search.provider
+# is 'querybuilder').
+
+# QueryBuilder search
+/asc-001 { /type "allow" /method "GET" /url "/bin/querybuilder.json" }
+
+# DM OpenAPI search, only if search.provider: 'openapi'
+/asc-002 { /type "allow" /method "GET" /url "/adobe/assets/search" }
+/asc-003 { /type "allow" /method "GET" /url "/adobe/assets/*" }
+
+# Static renditions and thumbnails
+/asc-004 { /type "allow" /method "GET" /url "/content/dam/*/_jcr_content/renditions/*" }
+
+# Web-optimized / DM OpenAPI delivery
+/asc-005 { /type "allow" /method "GET" /url "/adobe/dynamicmedia/deliver/*" }
+
+# Bulk download initiate and poll
+/asc-006 { /type "allow" /method "POST" /url "/content/dam.downloads.initiateDownload.json" }
+/asc-007 { /type "allow" /method "GET"  /url "/content/dam.downloads.initiateDownload.json" }
+
+# CORS preflight for the authenticated calls above (only needed if preflights reach Publish;
+# asc-cors.vhost answers them at Apache first)
+/asc-008 { /type "allow" /method "OPTIONS" /url "/bin/querybuilder.json" }
+/asc-009 { /type "allow" /method "OPTIONS" /url "/content/dam.downloads.initiateDownload.json" }
+```
+
+**2. CORS headers.** Add to the Apache virtual host that fronts AEM Publish. Replace `YOUR-REPO` and `YOUR-OWNER` with your values, and remove the localhost line in production.
+
+```apache
+# Asset Share Commons: CORS response headers.
+#
+# Paste into your Dispatcher virtual host (AEMaaCS: dispatcher/src/conf.d/available_vhosts/<name>.vhost),
+# inside or after the <VirtualHost> block that fronts AEM Publish. Requires mod_headers and mod_rewrite.
+#
+# 1. Edit the origin allowlist below (EDS hostnames, custom domain, localhost).
+# 2. Remove the localhost line on production environments.
+# 3. Do NOT also emit CORS headers from AEM Publish's CORS policy (duplicate headers are rejected).
+
+# Origins allowed to call this host from the browser.
+SetEnvIfExpr "req_novary('Origin') =~ m#^https://(main--YOUR-REPO--YOUR-OWNER\.aem\.(page|live)|assets\.example\.com)$#" ASC_CORS_ORIGIN=%{HTTP:Origin}
+SetEnvIfExpr "req_novary('Origin') == 'http://localhost:3000'" ASC_CORS_ORIGIN=%{HTTP:Origin}
+
+<IfModule mod_headers.c>
+    # Echo the matching origin, never '*', so credentialed requests (bulk downloads) work.
+    Header always set Access-Control-Allow-Origin "%{ASC_CORS_ORIGIN}e" env=ASC_CORS_ORIGIN
+    Header always set Access-Control-Allow-Credentials "true" env=ASC_CORS_ORIGIN
+    Header always set Access-Control-Allow-Methods "GET, POST, HEAD, OPTIONS" env=ASC_CORS_ORIGIN
+    Header always set Access-Control-Allow-Headers "Authorization, Content-Type" env=ASC_CORS_ORIGIN
+    Header always set Access-Control-Max-Age "86400" env=ASC_CORS_ORIGIN
+
+    # The response differs by Origin, so shared caches must key on it.
+    Header always merge Vary "Origin"
+</IfModule>
+
+# Answer preflight requests at the web tier so they never reach Publish.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{REQUEST_METHOD} =OPTIONS
+    RewriteCond %{ENV:ASC_CORS_ORIGIN} !=""
+    RewriteRule ^ - [R=204,L]
+</IfModule>
+```
+
+The [AEM Publish Dispatcher](/dispatcher) page explains each rule and has the full endpoint inventory, caching notes, and security notes. You can skip this step if `aem.host` points at an author instance or a Publish tier without a restrictive Dispatcher.
 
 ## Step 6 — Run Locally {#step-6}
 
