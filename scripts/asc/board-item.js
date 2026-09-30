@@ -126,7 +126,34 @@ function resolvePreviewImage(asset) {
   return { url: services.renditions.getDisplayUrl(asset), srcset: null, width, height };
 }
 
+/** Width of a board card in canvas px (kept in sync with .board__item in board.css). */
+export const BOARD_CARD_WIDTH = 240;
+
+// Aspect ratio (w:h) to reserve for a preview with no dimension metadata, so the card
+// has a definite height before its image loads: 4:3 for images, square for the
+// thumbnail renditions AEM generates for everything else.
+function previewDimensions(asset, preview) {
+  if (preview.width && preview.height) return { width: preview.width, height: preview.height, known: true };
+  return asset.mimeType?.startsWith('image/')
+    ? { width: 4, height: 3, known: false }
+    : { width: 1, height: 1, known: false };
+}
+
+/**
+ * Rendered height, in canvas px, of an asset item's card. Callers laying out
+ * items that don't have a saved position yet use this to keep them from overlapping,
+ * since items don't share an aspect ratio (a portrait card is much taller than a
+ * landscape one).
+ */
+export function boardItemHeight(item) {
+  if (item.forbidden || !item.asset) return Math.round(BOARD_CARD_WIDTH * 0.75);
+  const { width, height } = previewDimensions(item.asset, resolvePreviewImage(item.asset));
+  return Math.round((BOARD_CARD_WIDTH * height) / width);
+}
+
 export default function boardItemHtml(item, index, config) {
+  // Items with no saved position are placed by the board (see placeNewItems in board.js),
+  // which sets x/y before rendering. This fallback only covers a caller that doesn't.
   const x = item.x !== undefined ? item.x : 80 + (index % 8) * 260;
   const y = item.y !== undefined ? item.y : 80 + Math.floor(index / 8) * 220;
 
@@ -136,6 +163,7 @@ export default function boardItemHtml(item, index, config) {
 
   const { asset, notes: itemNotes } = item;
   const preview = resolvePreviewImage(asset);
+  const dims = previewDimensions(asset, preview);
   const searchStr = buildSearchStr(asset, config);
   const interactive = config.mode === 'interactive';
   const showNotes = config.notes;
@@ -182,7 +210,7 @@ export default function boardItemHtml(item, index, config) {
         <div class="asc-ui-asset-card__overlay asc-ui-asset-card__overlay--bottom board__notes-overlay" aria-hidden="true">
           <span class="asc-ui-icon-btn board__notes-btn">${ICONS.notes}</span>
         </div>` : ''}
-        <img src="${escAttr(preview.url)}"${preview.srcset ? ` srcset="${escAttr(preview.srcset)}" sizes="240px"` : ''}${preview.width && preview.height ? ` width="${preview.width}" height="${preview.height}"` : ''} alt="${escHtml(asset.description || asset.title || asset.name || '')}" loading="lazy" draggable="false">
+        <img src="${escAttr(preview.url)}"${preview.srcset ? ` srcset="${escAttr(preview.srcset)}" sizes="240px"` : ''} width="${dims.width}" height="${dims.height}"${dims.known ? '' : ' data-asc-dims-estimated loading="eager"'} alt="${escHtml(asset.description || asset.title || asset.name || '')}"${dims.known ? ' loading="lazy"' : ''} draggable="false">
       </div>
     </article>`;
 }

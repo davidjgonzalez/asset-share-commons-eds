@@ -3,7 +3,7 @@ import services from '../../scripts/asc/core/services/services.js';
 import { Events as CollectionEvents } from '../../scripts/asc/core/services/collections/collections.js';
 import AssetAccessError from '../../scripts/asc/core/models/asset-access-error.js';
 import { escHtml, escAttr } from '../../scripts/asc/html.js';
-import defaultBoardItemHtml from '../../scripts/asc/board-item.js';
+import defaultBoardItemHtml, { BOARD_CARD_WIDTH, boardItemHeight } from '../../scripts/asc/board-item.js';
 import { toggleRenditionMenu, prefetchRenditionSizes } from '../../scripts/asc/rendition-download-menu.js';
 import { canCopyImage, copyImageToClipboard } from '../../scripts/asc/core/utils/clipboard-image.js';
 
@@ -192,8 +192,127 @@ function textElementHtml(t, interactive) {
     </div>`;
 }
 
+// ─── Initial placement ────────────────────────────────────────────────────────
+
+const PLACE_ORIGIN = 80;
+const PLACE_GAP = 20;
+const PLACE_COLUMNS = 8;
+
+/**
+ * Pack cards into columns, dropping each one at the bottom of whichever column is
+ * currently shortest, where "bottom" accounts for every rect overlapping that column.
+ * Items don't share an aspect ratio, so a fixed-size grid cell would let a portrait
+ * card run into the one below it. `occupied` is extended with each placed card.
+ * @param {{x:number,y:number,w:number,h:number}[]} occupied  rects already on the canvas
+ * @param {number[]} heights  card heights to place, in order
+ * @returns {{x:number,y:number}[]}
+ */
+function packIntoColumns(occupied, heights) {
+  const colWidth = BOARD_CARD_WIDTH + PLACE_GAP;
+  const columnBottom = (col) => {
+    const left = PLACE_ORIGIN + col * colWidth;
+    const right = left + BOARD_CARD_WIDTH;
+    return occupied
+      .filter((r) => r.x < right + PLACE_GAP && r.x + r.w + PLACE_GAP > left)
+      .reduce((bottom, r) => Math.max(bottom, r.y + r.h + PLACE_GAP), PLACE_ORIGIN);
+  };
+
+  return heights.map((h) => {
+    let best = 0;
+    let bestBottom = Infinity;
+    for (let col = 0; col < PLACE_COLUMNS; col += 1) {
+      const bottom = columnBottom(col);
+      if (bottom < bestBottom) {
+        best = col;
+        bestBottom = bottom;
+      }
+    }
+    const pos = { x: PLACE_ORIGIN + best * colWidth, y: bestBottom };
+    occupied.push({ ...pos, w: BOARD_CARD_WIDTH, h });
+    return pos;
+  });
+}
+
+/**
+ * Give every asset item with no saved position an x/y that doesn't overlap anything
+ * already on the canvas (positioned assets, text elements) or each other, using each
+ * card's estimated height. Mutates the items and returns the ones it placed, so a
+ * caller can persist them and later re-check them against real rendered heights.
+ */
+function placeNewItems(assetItems, textItems) {
+  const pending = assetItems.filter((i) => i.x === undefined || i.y === undefined);
+  if (!pending.length) return [];
+
+  const occupied = [
+    ...assetItems
+      .filter((i) => i.x !== undefined && i.y !== undefined)
+      .map((i) => ({ x: i.x, y: i.y, w: BOARD_CARD_WIDTH, h: boardItemHeight(i) })),
+    ...textItems.map((t) => ({ x: t.x, y: t.y, w: t.w || 200, h: t.h || 80 })),
+  ];
+  const heights = pending.map((i) => boardItemHeight(i));
+  packIntoColumns(occupied, heights).forEach((pos, n) => {
+    pending[n].x = pos.x;
+    pending[n].y = pos.y;
+  });
+  return pending;
+}
+
+const itemKey = (item) => item.asset?.uuid || item.id;
+
+/**
+ * Some previews carry no dimension metadata (documents, PDFs), so placeNewItems can only
+ * guess their height. Once those images have loaded, re-pack the just-placed cards using
+ * their real rendered heights so a taller-than-expected card doesn't sit on top of the
+ * one below it. Cards with known dimensions never move. Returns true if anything moved.
+ * @param {HTMLElement} block
+ * @param {object[]} placed  items returned by placeNewItems
+ * @param {string|null} persistId  collection to save the corrected positions to, if any
+ */
+async function repackMeasuredItems(block, placed, persistId) {
+  const canvas = block.querySelector('.board__canvas');
+  if (!canvas || !placed.length) return false;
+  const cardFor = (item) => canvas.querySelector(`.board__item[data-asc-asset="${CSS.escape(itemKey(item))}"]`);
+
+  const pending = [...canvas.querySelectorAll('.board__item img[data-asc-dims-estimated]')]
+    .filter((img) => !img.complete);
+  if (!pending.length && !placed.some((i) => cardFor(i)?.querySelector('img[data-asc-dims-estimated]'))) return false;
+  await Promise.all(pending.map((img) => new Promise((resolve) => {
+    img.addEventListener('load', resolve, { once: true });
+    img.addEventListener('error', resolve, { once: true });
+    setTimeout(resolve, 8000);
+  })));
+
+  const placedCards = new Set(placed.map(cardFor).filter(Boolean));
+  const occupied = [...canvas.querySelectorAll('.board__item, .board__text-element')]
+    .filter((el) => !placedCards.has(el))
+    .map((el) => ({
+      x: parseFloat(el.style.left) || 0,
+      y: parseFloat(el.style.top) || 0,
+      w: el.offsetWidth,
+      h: el.offsetHeight,
+    }));
+  const cards = placed.map(cardFor);
+  const positions = packIntoColumns(occupied, cards.map((el) => el?.offsetHeight || 0));
+
+  let moved = false;
+  positions.forEach((pos, n) => {
+    const el = cards[n];
+    if (!el || (parseFloat(el.style.left) === pos.x && parseFloat(el.style.top) === pos.y)) return;
+    el.style.left = `${pos.x}px`;
+    el.style.top = `${pos.y}px`;
+    placed[n].x = pos.x;
+    placed[n].y = pos.y;
+    if (persistId) services.collections.updateItem(persistId, itemKey(placed[n]), pos);
+    moved = true;
+  });
+  return moved;
+}
+
 function viewportHtml(assetItems, textItems, config) {
   const interactive = config.mode === 'interactive';
+  // No-op for anything already placed; covers authored and shared (sheet) boards,
+  // whose items never have saved positions.
+  placeNewItems(assetItems, textItems);
   const cards = assetItems.map((item, i) => boardItemHtml(item, i, config)).join('');
   const texts = textItems.map((t) => textElementHtml(t, interactive)).join('');
 
@@ -1590,11 +1709,32 @@ export default async function decorate(block) {
     clearTimeout(settleTimer);
     settleTimer = setTimeout(() => { settled = true; }, RESIZE_SETTLE_GRACE_MS);
   }
-  new ResizeObserver(() => {
+  // After the just-placed cards' real heights are known, fix any overlap the estimates
+  // missed and, if the visitor hasn't moved the view themselves, re-fit it to the result.
+  function refitAfterRepack(placed, persistId) {
+    repackMeasuredItems(block, placed, persistId).then((moved) => {
+      if (moved && currentPanZoom && !currentPanZoom.isManuallyPositioned()) currentPanZoom.fitView(false);
+    });
+  }
+  // The viewport's own width/height also count as a layout change. A board in a later
+  // section is decorated while EDS still has that section hidden (display: none), so its
+  // first fit measures a 0x0 viewport and bails out; when the section is revealed, or the
+  // board's container is narrower than the page, nothing above changed the *height*
+  // sizeViewport() tracks (a fixed `height` row never changes at all), so without this the
+  // board would stay stuck at its unfitted pan/zoom until the visitor pressed "Fit to view".
+  let lastViewportSize = '';
+  const viewportSize = () => {
+    const viewport = block.querySelector('.board__viewport');
+    return viewport ? `${viewport.clientWidth}x${viewport.clientHeight}` : '';
+  };
+  const layoutObserver = new ResizeObserver(() => {
     cancelAnimationFrame(resizeRaf);
     resizeRaf = requestAnimationFrame(() => {
-      const changed = sizeViewport(block, config);
-      if (!changed || !currentPanZoom || currentPanZoom.isManuallyPositioned()) return;
+      const heightChanged = sizeViewport(block, config);
+      const size = viewportSize();
+      const resized = size !== lastViewportSize;
+      lastViewportSize = size;
+      if (!(heightChanged || resized) || !currentPanZoom || currentPanZoom.isManuallyPositioned()) return;
       if (settled) {
         currentPanZoom.fitView(false);
       } else {
@@ -1602,7 +1742,9 @@ export default async function decorate(block) {
         if (canvas) settleFit(canvas, currentPanZoom);
       }
     });
-  }).observe(document.body);
+  });
+  layoutObserver.observe(document.body);
+  layoutObserver.observe(block);
 
   if (config.source === 'collection' && config.mode !== 'sheet-url') {
     const id = params.get('id');
@@ -1618,9 +1760,16 @@ export default async function decorate(block) {
         return;
       }
       const { assetItems, textItems } = result;
+      // Persist first-time placements so a card stays put once it has a spot, instead of
+      // being re-packed around whatever the visitor drags next (updateItem is silent).
+      const placed = placeNewItems(assetItems, textItems);
+      if (config.mode === 'interactive') {
+        placed.forEach((i) => services.collections.updateItem(id, itemKey(i), { x: i.x, y: i.y }));
+      }
       block.innerHTML = viewportHtml(assetItems, textItems, config);
       currentPanZoom = await initBoard(block, config, id, { forceFit });
       scheduleSettle();
+      refitAfterRepack(placed, config.mode === 'interactive' ? id : null);
     }
 
     await renderCollection(true);
@@ -1636,9 +1785,11 @@ export default async function decorate(block) {
   } else if (config.source === 'authored') {
     const { assetItems, textItems } = await loadFromAuthoredList(config.items);
     const boardConfig = { ...config, mode: 'view' };
+    const placed = placeNewItems(assetItems, textItems);
     block.innerHTML = viewportHtml(assetItems, textItems, boardConfig);
     currentPanZoom = await initBoard(block, boardConfig, null, { forceFit: true });
     scheduleSettle();
+    refitAfterRepack(placed, null);
   } else {
     const sheetParam = config.mode === 'sheet-url'
       ? sheetParamFromUrl(config.sheetUrl)
@@ -1661,9 +1812,11 @@ export default async function decorate(block) {
     }
 
     const boardConfig = config.mode === 'sheet-url' ? { ...config, mode: 'view' } : config;
+    const placed = placeNewItems(assetItems, textItems);
     block.innerHTML = viewportHtml(assetItems, textItems, boardConfig);
 
     currentPanZoom = await initBoard(block, boardConfig, null, { forceFit: true });
     scheduleSettle();
+    refitAfterRepack(placed, null);
   }
 }
