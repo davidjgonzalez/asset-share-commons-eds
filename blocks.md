@@ -813,7 +813,31 @@ No configuration required. Re-renders on `asc:collection:change`.
 
 Bundles the selected renditions into a zip in the browser and triggers the download, with per-file progress and a list of any files that failed.
 
-See [Action Pages](/developer#actions) for the full DA document structure and context-passing convention.
+**Authoring the dialog.** Create a page at `/actions/download` in DA, with sections separated by `---`. The position of each section decides its role:
+
+```
+# Download assets                     <- first section: the h1 is the dialog title
+Zip the {{asset-count}} assets you selected. Pick the sizes you need below.   <- other content here is the description
+
+---
+
+## Choose renditions                  <- middle section (optional): label for the checkbox group
+- original                            <- optional list of rendition ids to offer
+- web
+
+---
+
+[Cancel](#close)                      <- last section: #hash links become buttons
+[Download](#download)
+```
+
+- **Title:** the first `h1` of the first section. Without it the dialog says "Download".
+- **Description:** any other content in the first section appears under the title. `{{asset-count}}` inserts how many assets were selected.
+- **Renditions:** without a middle section the dialog lists every visible rendition from `renditions.definitions`. A heading plus a list of rendition ids limits the choices and sets the group label.
+- **Buttons:** the last section is required, so a page with one section has no buttons. A `#close` link is the cancel button and any other `#hash` link is the download button.
+- **Publishing:** preview and publish the page after editing. The dialog reads the published `/actions/download.plain.html`.
+
+See [Action Pages](/developer#actions) for the general convention and context passing.
 
 ---
 
