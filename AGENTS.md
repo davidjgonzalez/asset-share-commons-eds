@@ -49,7 +49,6 @@ the full ownership-zone breakdown.
 ### Collections / cart blocks
 | Block | Purpose |
 |-------|---------|
-| `stub` | Cart bar — shows active collection count and link to download sheet |
 | `collections` | Collections index/management page — list, create, delete, activate. Content config: `display` (`grid`, default, or `rail` — a compact horizontal strip with no create/manage actions, e.g. for a homepage placement) and `limit` (max collections shown, 0/omitted = no limit) |
 | `collection-controls` | Collection header — Share / Download as the toolbar's primary buttons; Edit details (name + description modal), Past shares (modal), and Delete live in a "⋯" menu injected next to the `<h1>` instead, since those are collection-settings actions rather than primary tasks. Header text (h1/p) is a **token template** — `{{collection.title}}` / `{{collection.description}}` / `{{collection.count}}` / `{{collection.lastUpdated}}` resolved against the hydrated collection. Pair with `board` (source: collection, mode: interactive) on the same page |
 | `sheet-controls` | Shared-sheet header — Download / Copy Link buttons. Header text (h1/p) is a **token template** — `{{sheet.title}}` / `{{sheet.description}}` / `{{sheet.count}}` / `{{sheet.expiresAt}}` resolved against the decoded `?sheet=` payload. Pair with `board` (source: sheet, mode: view) on the same page |
@@ -599,7 +598,7 @@ All ASC custom events follow `asc:{noun}:{verb}`. Dispatched on `document` unles
 | `asc:asset:share` | Actions service | (custom handler) | `{ data: { ascAsset } }` |
 | `asc:collection:add` | Actions service | Collections service | `{ data: { ascAsset, ascCollection } }` |
 | `asc:collection:remove` | Actions service | Collections service | `{ data: { ascAsset, ascCollection } }` |
-| `asc:collection:change` | Collections service | collections, stub, collection-switcher blocks | `{ action, id?, collectionId?, assetId?, userId?, source? }` |
+| `asc:collection:change` | Collections service | collections, collection-switcher blocks | `{ action, id?, collectionId?, assetId?, userId?, source? }` |
 | `asc:collection:created` | Collections service | (UI handlers) | `{ collection }` |
 | `asc:collection:deleted` | Collections service | (UI handlers) | `{ id }` |
 | `asc:collection:activated` | Collections service | (UI handlers) | `{ id, previous }` |

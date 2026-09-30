@@ -314,7 +314,6 @@ export default function decorate(block) {
 | `details-renditions` | Buttons + events | Declarative `data-asc-action`, conditional rendering per rendition |
 | `details-similar` | Asset grid | Part usage (`collectionToggle` via `assetTeaser`) |
 | `collection` | Form + state | Collections service integration, localStorage, reactive updates |
-| `stub` | Simple display | Asset count, link, minimal JS |
 
 Read the implementations in `blocks/` to see these patterns in context.
 

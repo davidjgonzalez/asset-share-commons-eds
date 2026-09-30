@@ -50,7 +50,7 @@ export default {
 
 **Asset Details:** `details-modal` `details-preview` `details-property` `details-renditions`
 
-**Collections:** `stub` `sheet` `collections` `collection`
+**Collections:** `sheet` `collections` `collection`
 
 ## Theming
 

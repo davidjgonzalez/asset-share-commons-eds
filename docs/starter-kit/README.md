@@ -33,7 +33,7 @@ Use the HTML comments in each file as a guide to the table structure.
 |------|----------|-------------|
 | `nav.html` | `/nav` | Semantic `<nav>` (no blocks) |
 | `footer.html` | `/footer` | Semantic `<footer>` (no blocks) |
-| `search.html` | `/search` | `stub`, `search-bar`, `search-property` (x2), `search-path`, `search-date-range`, `search-tags`, `search-results` |
+| `search.html` | `/search` | `search-bar`, `search-property` (x2), `search-path`, `search-date-range`, `search-tags`, `search-results` |
 | `details/index.html` | `/details` | `details-preview`, `details-property` (x6), `details-renditions` |
 | `details/image.html` | `/details/image` | Same as default |
 | `sheet.html` | `/sheet` | `sheet` |
