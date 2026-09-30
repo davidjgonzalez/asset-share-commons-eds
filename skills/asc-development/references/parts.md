@@ -127,7 +127,13 @@ assetTeaser(asset, {
 })
 ```
 
-**Returns**: HTML string with `.asc-asset-teaser` root element
+**Returns**: HTML string with a `.asc-asset-teaser` root element. The markup is the UI Kit
+asset card (`.asc-ui-asset-card` with `__thumb`, `__body`, `__title`, `__meta`); the
+`.asc-asset-teaser*` classes are kept as hooks for themes and scripts. The favorite and
+"add to collection" toggles sit in the card's top-left overlay slot, and an empty top-right
+slot (`.asc-asset-teaser__actions`) is left for callers that add one-off actions. To restyle
+the card, set `--asset-teaser-*` (or the kit's `--asc-ui-asset-card-*`) variables instead of
+overriding its CSS. `mode: 'list'` renders the kit's horizontal card.
 
 ---
 

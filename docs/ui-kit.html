@@ -907,6 +907,27 @@
           <p class="kit-demo__usage"><code>--overlay-on-hover</code>: hover or tab-focus the card to reveal the remove button — hidden otherwise. Reveals on <code>:focus-within</code> as well as <code>:hover</code> so a keyboard-focused button is actually visible, not just reachable. Used by the <code>board</code> canvas, where always-visible actions on every card would be too busy.</p>
         </div>
 
+        <div class="kit-demo">
+          <div class="kit-demo__bar"><span class="kit-demo__name">Asset card · start overlay, bare tile</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-layout="block" data-snippet>
+            <article class="asc-ui-asset-card asc-ui-asset-card--interactive asc-ui-asset-card--natural asc-ui-asset-card--bare asc-ui-asset-card--meta-overlay" style="max-width:14rem;">
+              <div class="asc-ui-asset-card__thumb">
+                <div class="asc-ui-asset-card__overlay asc-ui-asset-card__overlay--start">
+                  <button class="asc-ui-icon-btn" type="button" aria-label="Favorite">★</button>
+                </div>
+                <div class="asc-ui-asset-card__overlay">
+                  <button class="asc-ui-icon-btn" type="button" aria-label="Download">↓</button>
+                </div>
+                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200'%3E%3Crect width='300' height='200' fill='%2390c2e7'/%3E%3C/svg%3E" alt="">
+              </div>
+              <div class="asc-ui-asset-card__body">
+                <p class="asc-ui-asset-card__meta">JPEG · 1920 × 1280</p>
+              </div>
+            </article>
+          </div>
+          <p class="kit-demo__usage"><code>--bare</code> drops the card chrome, <code>--meta-overlay</code> shows the metadata over the bottom edge on hover, and <code>__overlay--start</code> is a second action slot at the top-left. This is the search results masonry tile.</p>
+        </div>
+
         <div class="kit-demo" data-span>
           <div class="kit-demo__bar"><span class="kit-demo__name">Masonry · share teasers</span><button class="kit-demo__toggle" type="button">Code</button></div>
           <div class="kit-demo__preview" data-layout="block" data-snippet>
@@ -992,6 +1013,35 @@
         <p class="kit-section__sub">Table and masonry layouts for results.</p>
       </div>
       <div class="kit-grid">
+        <div class="kit-demo" data-span>
+          <div class="kit-demo__bar"><span class="kit-demo__name">List view</span><button class="kit-demo__toggle" type="button">Code</button></div>
+          <div class="kit-demo__preview" data-layout="block" data-snippet>
+            <div class="asc-ui-list-view" style="--asc-list-cols: 3rem 1fr 6rem 8rem" role="table">
+              <div class="asc-ui-list-view__header" role="row">
+                <div class="asc-ui-list-view__cell asc-ui-list-view__cell--header" role="columnheader"></div>
+                <div class="asc-ui-list-view__cell asc-ui-list-view__cell--header" role="columnheader">Name</div>
+                <div class="asc-ui-list-view__cell asc-ui-list-view__cell--header" role="columnheader">Type</div>
+                <div class="asc-ui-list-view__cell asc-ui-list-view__cell--header asc-ui-list-view__cell--actions-header" role="columnheader">Actions</div>
+              </div>
+              <div class="asc-ui-list-view__rows" role="rowgroup">
+                <div class="asc-ui-list-view__row" role="row" tabindex="0">
+                  <div class="asc-ui-list-view__cell" role="cell"><span class="asc-ui-list-view__thumb"></span></div>
+                  <div class="asc-ui-list-view__cell" role="cell">Mountain sunrise</div>
+                  <div class="asc-ui-list-view__cell" role="cell">JPEG</div>
+                  <div class="asc-ui-list-view__cell asc-ui-list-view__cell--actions" role="cell"><div class="asc-ui-list-view__actions"><button class="asc-ui-icon-btn" type="button" aria-label="Favorite">★</button></div></div>
+                </div>
+                <div class="asc-ui-list-view__row asc-ui-selected" role="row" tabindex="0">
+                  <div class="asc-ui-list-view__cell" role="cell"><span class="asc-ui-list-view__thumb"></span></div>
+                  <div class="asc-ui-list-view__cell" role="cell">Brand guidelines (selected)</div>
+                  <div class="asc-ui-list-view__cell" role="cell">PDF</div>
+                  <div class="asc-ui-list-view__cell asc-ui-list-view__cell--actions" role="cell"><div class="asc-ui-list-view__actions"><button class="asc-ui-icon-btn" type="button" aria-label="Favorite">★</button></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="kit-demo__usage">Columns are one track list in <code>--asc-list-cols</code> shared by header and rows; selected rows get a merged ring. This is the search results list view.</p>
+        </div>
+
         <div class="kit-demo">
           <div class="kit-demo__bar"><span class="kit-demo__name">Table</span><button class="kit-demo__toggle" type="button">Code</button></div>
           <div class="kit-demo__preview" data-layout="block" data-snippet>

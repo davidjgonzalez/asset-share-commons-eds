@@ -132,7 +132,8 @@ reflects whichever rule you last edited, not the real load order). Prefixing
 with `.theme-my-theme` adds a class of specificity the part's bare selector
 can't match, so your override always wins regardless of load order. For
 `:hover` states specifically, prefer setting the part's exposed
-`--asset-teaser-hover-*` custom properties (see `scripts/asc/core/parts/
+`--asset-teaser-hover-*` custom properties (mapped by the part onto the UI Kit asset card's
+`--asc-ui-asset-card-*` hooks) (see `scripts/asc/core/parts/
 asset-teaser/asset-teaser.css`) over a literal `:hover` rule — a custom
 property's cascaded value applies wherever it's consumed via `var()`
 regardless of which stylesheet declared it, so it's immune to this ordering

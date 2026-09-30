@@ -621,7 +621,23 @@ cards where always-visible action buttons would be too busy (the `board` block's
 the only current consumer). Most contexts (search results, collections) should keep actions
 plainly visible instead of reaching for this. A consuming block can layer its own extra
 reveal states on top — e.g. `board` also reveals on its own `.board__item--selected` class —
-by adding `opacity: 1` for that state in the block's own CSS.
+by adding `opacity: 1` for that state in the block's own CSS. On devices without hover
+(`@media (hover: none)`) the overlay is simply always visible.
+
+`__overlay--start` puts an overlay slot top-left instead of top-right, so e.g. favorite and
+collection toggles can sit on the left and one-off actions on the right. The search results
+cards (the `asset-teaser` part) use both.
+
+`--bare` strips the chrome (border, radius, background, shadow, hover lift) so only the
+thumbnail shows; `--meta-overlay` moves the body over the bottom edge of the thumb, shown on
+hover/focus, with the title dropped; `--clamp-title` limits the title to two lines. Together with
+`--natural`, `--bare` + `--meta-overlay` make the image tiles of the search results masonry.
+
+**Theming hooks** (all optional; set them on the card or an ancestor rather than restyling it):
+`--asc-ui-asset-card-radius`, `-shadow`, `-hover-border-color`, `-hover-shadow`,
+`-hover-transform`, `-hover-bg`, `-thumb-ratio`, `-thumb-bg`, `-body-bg`, `-body-padding`,
+`-title-size`, `-title-weight`. The `asset-teaser` part maps its older `--asset-teaser-*`
+theme variables onto these, so existing themes keep working.
 
 **Alt text rules for `<img>` inside cards:**
 - Meaningful image (asset thumbnail shown to user): `alt="<asset title or description>"` — use `asset.description || asset.title || asset.name`
@@ -869,6 +885,32 @@ stacked `__section` blocks (with `__section-title`) below for renditions, simila
   <table class="asc-ui-table"><thead><tr><th>Name</th></tr></thead><tbody><tr><td>…</td></tr></tbody></table>
 </div>
 ```
+
+### List view — `@kit list-view` · `styles/ui-kit.css`
+Data grid of clickable rows with a sticky header. Columns are one `grid-template-columns` track
+list in `--asc-list-cols`, set inline on `.asc-ui-list-view` and shared by header and rows.
+Selected rows (`.asc-ui-selected`) draw a ring that merges across consecutive selected rows.
+```html
+<div class="asc-ui-list-view" style="--asc-list-cols: 4rem 1fr 7rem 9rem" role="table">
+  <div class="asc-ui-list-view__header" role="row">
+    <div class="asc-ui-list-view__cell asc-ui-list-view__cell--header" role="columnheader"></div>
+    <div class="asc-ui-list-view__cell asc-ui-list-view__cell--header" role="columnheader">Name</div>
+    <div class="asc-ui-list-view__cell asc-ui-list-view__cell--header" role="columnheader">Type</div>
+    <div class="asc-ui-list-view__cell asc-ui-list-view__cell--header asc-ui-list-view__cell--actions-header" role="columnheader">Actions</div>
+  </div>
+  <div class="asc-ui-list-view__rows" role="rowgroup">
+    <div class="asc-ui-list-view__row" role="row" tabindex="0">
+      <div class="asc-ui-list-view__cell" role="cell"><img class="asc-ui-list-view__thumb" src="…" alt=""></div>
+      <div class="asc-ui-list-view__cell" role="cell">Mountain sunrise</div>
+      <div class="asc-ui-list-view__cell" role="cell">JPEG</div>
+      <div class="asc-ui-list-view__cell asc-ui-list-view__cell--actions" role="cell">
+        <div class="asc-ui-list-view__actions"><!-- asc-ui-icon-btn buttons --></div>
+      </div>
+    </div>
+  </div>
+</div>
+```
+Empty cells use `<span class="asc-ui-list-view__empty">—</span>`.
 
 ### Masonry — `@kit masonry` · `styles/ui-kit.css`
 Column-flow gallery. `__item` > `__photo` (`--tall` / `--wide` / `--square`) + `__actions` (`asc-ui-icon-btn`).
