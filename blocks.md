@@ -51,8 +51,12 @@ sidebar:
         url: "#collection-switcher"
       - title: collections
         url: "#collections"
+      - title: collections-actions
+        url: "#collections-actions"
       - title: collection-controls
         url: "#collection-controls"
+      - title: collection-meta
+        url: "#collection-meta"
       - title: sheet-controls
         url: "#sheet-controls"
       - title: board
@@ -617,6 +621,19 @@ The **Open** action navigates to `configurations.collections.collectionPath?id=<
 
 ---
 
+## collections-actions {#collections-actions}
+
+**Collections** · The primary action for the collections index page: a single **New Collection** button that opens the same creation dialog as the [`collections`](#collections) block.
+
+```
+| collections-actions  |   |
+|----------------------|---|
+```
+
+No configuration required. Place it in the same header row as the page title using the named-area section grid (`_area: collections-actions`), so the button sits beside the heading and above the `collections` grid. See [Layouts](/layouts).
+
+---
+
 ## collection-controls {#collection-controls}
 
 **Collections** · Header for a single collection's page — editable name, asset count, and action buttons (Share / Download / past-shares / edit). Header text (`h1`/`p`) is a **token template**, resolved against the hydrated collection:
@@ -638,6 +655,21 @@ The **Open** action navigates to `configurations.collections.collectionPath?id=<
 Each row is `action | label | variant`. Pair `collection-controls` (header) with [`board`](#board) (`source: collection`, `mode: interactive`) in the same page — see [Board page patterns](#board) below.
 
 Reads the `?id=` URL parameter. Reacts to `asc:collection:change`, re-registering its {% raw %}`{{collection.*}}`{% endraw %} tokens on rename or item add/remove.
+
+---
+
+## collection-meta {#collection-meta}
+
+**Collections** · One line of summary stats for a single collection: the asset count and when it was last updated ("12 assets, Last updated 3 days ago").
+
+```
+| collection-meta  |   |
+|------------------|---|
+```
+
+No configuration required. Reads the `?id=` URL parameter (falling back to the active collection) and re-renders on `asc:collection:change`. Renders nothing if the collection can't be found.
+
+It is a sibling of [`collection-controls`](#collection-controls), not part of it, so you can place and size it independently of the action buttons, for example in its own grid area under the title. If you'd rather keep everything in the header text, `collection-controls` can show the same information with the {% raw %}`{{collection.count}}`{% endraw %} and {% raw %}`{{collection.lastUpdated}}`{% endraw %} tokens.
 
 ---
 
