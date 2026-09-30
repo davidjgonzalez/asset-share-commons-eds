@@ -16,6 +16,7 @@
  */
 import { readBlockConfig, addSearchEventListeners, enhanceSearchFilterDropdown } from '../../scripts/asc/core/utils/search.js';
 import { mountToHeader } from '../../scripts/asc/core/utils/header-mount.js';
+import { escAttr } from '../../scripts/asc/html.js';
 
 export default function decorate(block) {
   const config = readBlockConfig(block, {}, {
@@ -65,7 +66,7 @@ function html(config) {
     <!-- QB: daterange.property — which JCR date field to filter on -->
     <input type="hidden"
            name="${config.parameter('property')}"
-           value="${config.property}"
+           value="${escAttr(config.property)}"
            form="${config.form}"
            for="${config.fieldset}"/>
     <!-- QB: operations — always >= for lower, <= for upper -->

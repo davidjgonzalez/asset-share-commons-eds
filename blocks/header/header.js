@@ -1,5 +1,7 @@
+/** @owner user */
 import { getMetadata, loadBlock } from '../../scripts/aem.js';
 import { loadFragment } from '../fragment/fragment.js';
+import { escHtml } from '../../scripts/asc/html.js';
 
 export default async function decorate(block) {
   // Load nav fragment
@@ -24,7 +26,7 @@ export default async function decorate(block) {
     brandSection.append(...sections[0].children);
   } else {
     const title = getMetadata('og:title') || 'Asset Library';
-    brandSection.innerHTML = `<a href="/">${title}</a>`;
+    brandSection.innerHTML = `<a href="/">${escHtml(title)}</a>`;
   }
   nav.append(brandSection);
 

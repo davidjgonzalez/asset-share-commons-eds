@@ -1,3 +1,4 @@
+/** @owner user */
 import services from '../../scripts/asc/core/services/services.js';
 import storage from '../../scripts/asc/core/services/storage/storage.js';
 import configurations from '../../scripts/asc/configurations.js';

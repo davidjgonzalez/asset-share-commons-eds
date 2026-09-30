@@ -6,7 +6,7 @@
 .block.hero {
   position: relative;
   isolation: isolate; /* scopes z-index: -1 background picture within the block */
-  padding: 40px 24px;
+  padding: 2.5rem 1.5rem;
   min-height: 300px;
 
   h1 {
@@ -31,6 +31,6 @@
   }
 
   @media (width >= 900px) {
-    padding: 40px 32px;
+    padding: 2.5rem 2rem;
   }
 }

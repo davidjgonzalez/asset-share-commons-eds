@@ -41,7 +41,7 @@
 
 .asc-history-entry {
     padding-inline-start: var(--spacing-sm);
-    padding-block: 2px;
+    padding-block: 0.125rem;
     border-inline-start: 2px solid var(--color-border);
 }
 
@@ -50,13 +50,13 @@
     align-items: center;
     gap: var(--spacing-xs);
     flex-wrap: wrap;
-    margin-bottom: 2px;
+    margin-bottom: 0.125rem;
 }
 
 .asc-history-list .asc-history-entry__action {
     text-transform: capitalize;
     font-size: var(--body-font-size-xs);
-    padding: 1px 6px;
+    padding: 0.0625rem 0.375rem;
 }
 
 .asc-history-list .asc-history-entry__when {

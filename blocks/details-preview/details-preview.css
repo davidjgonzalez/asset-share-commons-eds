@@ -40,7 +40,7 @@
     .details-preview__viewer[data-type="video"] {
         aspect-ratio: var(--video-ar, 16 / 9);
         border: 1px solid var(--color-border);
-        background: #000;
+        background: var(--color-media-bg);
     }
 
     .details-preview__video {

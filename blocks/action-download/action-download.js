@@ -1,3 +1,4 @@
+/** @owner user */
 import services from '../../scripts/asc/core/services/services.js';
 import { escHtml, escAttr } from '../../scripts/asc/html.js';
 import { parseActionFragment, wireDialogClose } from '../../scripts/asc.js';

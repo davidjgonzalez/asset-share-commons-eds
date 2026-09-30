@@ -65,11 +65,11 @@ function html(active, all, activeId) {
         </ul>
 
         <div class="collection-switcher__create-wrap">
-          <button class="collection-switcher__create-btn">+ New collection</button>
+          <button type="button" class="asc-ui-menu__item collection-switcher__create-btn">+ New collection</button>
         </div>
 
         <div class="collection-switcher__footer">
-          <a href="${MANAGE_PATH}" class="collection-switcher__manage-link">Manage collections</a>
+          <a href="${MANAGE_PATH}" class="asc-ui-menu__item collection-switcher__manage-link">Manage collections</a>
         </div>
       </div>
     </div>`;
@@ -84,7 +84,7 @@ function collectionOption(collection, activeId) {
               type="button"
               role="option"
               aria-selected="${isActive}"
-              data-collection-id="${collection.id}">
+              data-collection-id="${escAttr(collection.id)}">
         <span class="asc-ui-menu__item-label">${escHtml(collection.name)}</span>
         <span class="asc-ui-menu__item-meta">${count}</span>
         ${isActive ? '<span class="asc-ui-menu__item-check" aria-hidden="true">✓</span>' : ''}

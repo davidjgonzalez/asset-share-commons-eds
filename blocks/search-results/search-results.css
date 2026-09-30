@@ -150,7 +150,7 @@
             align-items: center;
             gap: 0;
             padding: var(--spacing-md) var(--spacing-lg) var(--spacing-md);
-            background: #f7f7f7;
+            background: var(--color-muted);
         }
 
         .asc-asset-teaser__title {

@@ -47,6 +47,9 @@
   --overlay-md: rgb(0 0 0 / 55%);
   --overlay-lg: rgb(0 0 0 / 75%);
 
+  /* ── Media letterbox (behind video/player) ──────────────────────── */
+  --color-media-bg: #000;
+
   /* ── Composed focus ring ────────────────────────────────────────── */
   --focus-ring: 0 0 0 var(--input-focus-ring-width) color-mix(in srgb, var(--color-ring) 25%, transparent);
 

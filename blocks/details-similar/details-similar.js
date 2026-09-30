@@ -16,6 +16,7 @@
 import { readBlockConfig } from '../../scripts/aem.js';
 import assetTeaser from '../../scripts/asc/core/parts/asset-teaser/asset-teaser.js';
 import services from '../../scripts/asc/core/services/services.js';
+import { escHtml } from '../../scripts/asc/html.js';
 
 const SVG_ADD = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
 const SVG_REMOVE = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>`;
@@ -80,7 +81,7 @@ function injectCollectionToggleIcons(block) {
 function buildHtml(config, resultsHtml) {
   const header = config.description ? `
     <div class="details-similar__header">
-      <p class="details-similar__description">${config.description}</p>
+      <p class="details-similar__description">${escHtml(config.description)}</p>
     </div>` : '';
 
   return `${header}${resultsHtml}`;
