@@ -805,7 +805,7 @@ No configuration required. Re-renders on `asc:collection:change`.
 
 **Actions** · The download dialog triggered by `<a href="/actions/download">` links (e.g. `collection-controls`' Download button). Not authored directly on a page — instead, author its dialog content as a DA fragment at `/actions/download` (title, description, rendition list, footer buttons).
 
-Submits an async AEM bulk-download job via `configurations.downloads.binariesUrl`; auto-triggers the browser download when the job resolves quickly, otherwise surfaces a resumable pending state.
+Bundles the selected renditions into a zip in the browser and triggers the download, with per-file progress and a list of any files that failed.
 
 See [Action Pages](/developer#actions) for the full DA document structure and context-passing convention.
 

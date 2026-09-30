@@ -31,10 +31,10 @@ sidebar:
         url: "#web-optimized-delivery"
       - title: dm-openapi
         url: "#dm-openapi"
-  - label: Thumbnails
+  - label: Display
     items:
-      - title: Search result srcset
-        url: "#thumbnails"
+      - title: Display renditions
+        url: "#display"
 ---
 
 # Renditions
@@ -300,8 +300,8 @@ import services from '../../scripts/asc/core/services/services.js';
 services.renditions.getRenditions(asset);            // definitions + auto-detected node renditions
 services.renditions.getRendition(asset, 'web');       // single rendition by id
 services.renditions.resolveAllNodes(asset);           // every JCR node through all resolvers
-services.renditions.getThumbnailUrl(asset);           // best thumbnail URL (with fallback)
-services.renditions.getThumbnailSrcset(asset);        // Rendition[] sorted by size.width, for <img srcset>
+services.renditions.getDisplayUrl(asset);             // best single display URL (with fallback)
+services.renditions.getDisplaySrcset(asset);          // Rendition[] sorted by size.width, for <img srcset>
 services.renditions.getRenditionDefinition('web');    // raw definition object (no asset needed)
 ```
 
@@ -338,25 +338,26 @@ Static renditions get `fileSize` from JCR metadata for free. Dynamically generat
 
 ---
 
-## Thumbnails — search result srcset {#thumbnails}
+## Display renditions {#display}
 
-Put thumbnail renditions in a **separate `thumbnails` array** (not `definitions`). Entries here are never shown in the download list — they exist solely to generate the `<img srcset>` on asset teasers (cards, masonry, list, board cards, collection mosaics). Each entry needs `size.width` so the browser gets a correct `Nw` descriptor.
+`renditions.display` is the one ladder ASC uses to show an asset anywhere on the site: cards, masonry, list, board cards, teasers, and collection mosaics. Entries are never shown in the download list. They exist solely to generate the `<img srcset>`, so each needs `size.width` for a correct `Nw` descriptor.
+
+ASC ships a default: a 100 to 1920px `web-optimized-delivery` ladder for images, and AEM's standard `cq5dam.thumbnail.*` renditions for non-images (video, PDF, Office). You only set `display` to override it.
 
 ```js
 renditions: {
-  thumbnails: [
-    { type: 'web-optimized-delivery', size: { width: 100  }, params: 'width=100&preferwebp=true&quality=85',  accepts: (asset) => asset.mimeType?.startsWith('image/') },
+  display: [
     { type: 'web-optimized-delivery', size: { width: 320  }, params: 'width=320&preferwebp=true&quality=85',  accepts: (asset) => asset.mimeType?.startsWith('image/') },
-    { type: 'web-optimized-delivery', size: { width: 640  }, params: 'width=640&preferwebp=true&quality=80',  accepts: (asset) => asset.mimeType?.startsWith('image/') },
     { type: 'web-optimized-delivery', size: { width: 1280 }, params: 'width=1280&preferwebp=true&quality=70', accepts: (asset) => asset.mimeType?.startsWith('image/') },
+    { type: 'static', name: 'cq5dam.thumbnail.319.319.png', size: { width: 319 }, accepts: (asset) => !asset.mimeType?.startsWith('image/') },
   ],
-  definitions: [ /* downloadable renditions — see above */ ],
+  definitions: [ /* downloadable renditions, see above */ ],
 },
 ```
 
-Use `web-optimized-delivery` for thumbnails — it works on any AEMaaCS publish instance without requiring DM OpenAPI. Reserve `dm-openapi` for `definitions` (downloadable renditions).
+Use `web-optimized-delivery` for display renditions. It works on any AEMaaCS publish instance without requiring DM OpenAPI. Reserve `dm-openapi` for `definitions` (downloadable renditions).
 
-`services.renditions.getThumbnailSrcset(asset)` resolves URLs for the asset and returns them sorted smallest to largest. `getThumbnailUrl(asset)` picks the mid-size entry as the `src` fallback. Non-image assets, or when every `thumbnails` entry has an image-only `accepts`, fall back to the static `cq5dam.thumbnail` node URL.
+`services.renditions.getDisplaySrcset(asset)` resolves URLs for the asset and returns them sorted smallest to largest. `getDisplayUrl(asset)` (also available as `asset.displayUrl`) picks the mid-size entry as the `src` fallback, or the static `cq5dam.thumbnail` node URL if nothing resolves.
 
 ### Asset Model — computed rendition properties
 

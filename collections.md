@@ -310,10 +310,8 @@ All dispatched on `document`.
 ```js
 // configurations.js
 downloads: {
-  binariesUrl: '/content/dam.downloadbinaries.json',  // AEM Assets download framework endpoint
-  actionPath: '/actions/download',                     // DA fragment providing the dialog's intro content
-
-  // Legacy async-polling variant (still available as services.downloads):
+  // Optional. The bulk-download dialog needs no configuration. Uncomment to tune the
+  // legacy async-polling service (services.downloads):
   // initiateUrl: '/content/dam.downloads.initiateDownload.json',
   // quickPollTimeout: 15000,
   // pollInterval: 2000,
