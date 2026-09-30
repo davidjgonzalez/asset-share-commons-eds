@@ -7,7 +7,7 @@ import { readBlockConfig } from '../../scripts/asc/core/utils/blocks.js';
 import {
   MAX_MOSAIC_THUMBS, mosaicRowCounts, mosaicHeight, mosaicPattern,
 } from '../../scripts/asc/core/utils/mosaic.js';
-import { wireDialogClose } from '../../scripts/asc.js';
+import { wireDialogClose, confirmDialog, promptDialog } from '../../scripts/asc.js';
 import { icon } from '../../scripts/asc/core/utils/icons.js';
 
 const configurations = (await import('../../scripts/asc/configurations.js')).default;
@@ -236,10 +236,14 @@ function initInteractions(block, isRail) {
 
   // Duplicate
   block.querySelectorAll('.collections__card-duplicate').forEach((btn) => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       const { collectionId, collectionName } = btn.dataset;
-      const suggested = `${collectionName} copy`;
-      const name = window.prompt('Name for the new collection:', suggested)?.trim();
+      const name = await promptDialog({
+        title: 'Duplicate collection',
+        label: 'Name for the new collection',
+        value: `${collectionName} copy`,
+        confirmLabel: 'Duplicate',
+      });
       if (!name) return;
       services.collections.duplicate(collectionId, name);
     });
@@ -247,10 +251,16 @@ function initInteractions(block, isRail) {
 
   // Delete
   block.querySelectorAll('.collections__card-delete').forEach((btn) => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       const card = btn.closest('.collections__card');
       const name = card?.querySelector('.collections__card-name')?.textContent?.trim() || 'this collection';
-      if (!window.confirm(`Delete "${name}"? This cannot be undone.`)) return;
+      const ok = await confirmDialog({
+        title: 'Delete collection?',
+        message: `"${name}" will be deleted. It cannot be undone.`,
+        confirmLabel: 'Delete',
+        destructive: true,
+      });
+      if (!ok) return;
       services.collections.delete(btn.dataset.collectionId);
     });
   });

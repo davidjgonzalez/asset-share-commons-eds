@@ -23,6 +23,7 @@ setupRoleButtonKeyboardSupport();
 
 // Re-export action-page utilities so blocks can import from a single stable path.
 export { triggerAction, parseActionFragment, wireDialogClose } from './asc/core/services/action-pages/action-pages.js';
+export { confirmDialog, promptDialog } from './asc/core/utils/dialogs.js';
 
 /** Called once in loadEager — applies theme and any other eager-phase ASC setup. */
 export function ascEager(doc) {

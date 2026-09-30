@@ -3,7 +3,9 @@ import services from '../../scripts/asc/core/services/services.js';
 import storage from '../../scripts/asc/core/services/storage/storage.js';
 import { Events as CollectionEvents } from '../../scripts/asc/core/services/collections/collections.js';
 import { escHtml, escAttr, formatUpdated } from '../../scripts/asc/html.js';
-import { triggerAction, wireDialogClose } from '../../scripts/asc.js';
+import {
+  triggerAction, wireDialogClose, confirmDialog,
+} from '../../scripts/asc.js';
 import { registerTokens } from '../../scripts/asc/tokens.js';
 import { icon } from '../../scripts/asc/core/utils/icons.js';
 
@@ -286,7 +288,13 @@ async function openEditDetailsDialog(collectionId) {
 async function confirmClear(collectionId) {
   const collection = await services.collections.get(collectionId);
   if (!collection || !(collection.items || []).length) return;
-  if (!window.confirm(`Remove everything from "${collection.name}"? This cannot be undone.`)) return;
+  const ok = await confirmDialog({
+    title: 'Remove everything?',
+    message: `This removes every item from "${collection.name}". It cannot be undone.`,
+    confirmLabel: 'Remove all',
+    destructive: true,
+  });
+  if (!ok) return;
   services.collections.clear(collectionId);
 }
 
@@ -295,7 +303,13 @@ async function confirmClear(collectionId) {
 async function confirmDelete(collectionId) {
   const collection = await services.collections.get(collectionId);
   if (!collection) return;
-  if (!window.confirm(`Delete "${collection.name}"? This cannot be undone.`)) return;
+  const ok = await confirmDialog({
+    title: 'Delete collection?',
+    message: `"${collection.name}" will be deleted. It cannot be undone.`,
+    confirmLabel: 'Delete',
+    destructive: true,
+  });
+  if (!ok) return;
   services.collections.delete(collectionId);
   const managePath = configurations.collections?.managePath || '/collections/';
   window.location.href = managePath;

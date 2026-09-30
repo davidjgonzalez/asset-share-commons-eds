@@ -155,6 +155,19 @@ async function downloadAsZip(items, archiveName, onProgress) {
   return failures;
 }
 
+function clearError(dialog) {
+  dialog.querySelector('.asc-ui-field__error')?.remove();
+}
+
+function showError(dialog, message) {
+  clearError(dialog);
+  const errEl = Object.assign(document.createElement('p'), {
+    className: 'asc-ui-field__error',
+    textContent: message,
+  });
+  dialog.querySelector('.asc-dialog__footer').prepend(errEl);
+}
+
 export default async function decorate(block) {
   const ctx = window.asc?.pendingAction || {};
   const collection = ctx.collectionId ? await services.collections.get(ctx.collectionId, true) : null;
@@ -222,27 +235,27 @@ export default async function decorate(block) {
     btn.addEventListener('click', async () => {
       const resolvedAssets = assets.filter((a) => a.path);
       if (!resolvedAssets.length) {
-        alert('Asset paths could not be resolved. Ensure assets have a JCR path.');
+        showError(dialog, 'Asset paths could not be resolved. Ensure assets have a JCR path.');
         return;
       }
 
       const checked = [...dialog.querySelectorAll('input[name="rendition"]:checked')];
       const selectedRenditionIds = checked.map((cb) => cb.value);
       if (renditionDefs.length && !selectedRenditionIds.length) {
-        alert('Please select at least one rendition.');
+        showError(dialog, 'Please select at least one rendition.');
         return;
       }
 
       const archiveName = `${collection?.name || ctx.title || 'assets'}.zip`;
       const items = buildDownloadItems(resolvedAssets, selectedRenditionIds);
       if (!items.length) {
-        alert('No downloadable renditions were found for the selected assets.');
+        showError(dialog, 'No downloadable renditions were found for the selected assets.');
         return;
       }
 
       btn.disabled = true;
       btn.textContent = 'Preparing zip…';
-      dialog.querySelector('.asc-ui-field__error')?.remove();
+      clearError(dialog);
 
       try {
         const failures = await downloadAsZip(items, archiveName, (done, total) => {
@@ -253,11 +266,7 @@ export default async function decorate(block) {
       } catch (err) {
         btn.disabled = false;
         btn.textContent = origLabel;
-        const errEl = Object.assign(document.createElement('p'), {
-          className: 'asc-ui-field__error',
-          textContent: `Download failed: ${err.message}`,
-        });
-        dialog.querySelector('.asc-dialog__footer').prepend(errEl);
+        showError(dialog, `Download failed: ${err.message}`);
       }
     });
   });
