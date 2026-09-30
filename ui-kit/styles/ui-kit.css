@@ -1312,7 +1312,7 @@ fieldset.asc-ui-field > legend {
 /*
  * Adaptive mosaic — rows/cols are computed per-instance (asset count varies per
  * collection) and passed in as inline custom properties, same idiom as
- * asc-list-view's --asc-list-cols. Each row is its own mini-grid sized to
+ * the list-view's --asc-list-cols. Each row is its own mini-grid sized to
  * exactly the number of thumbnails it holds (never more), so a trailing
  * partial row never leaves empty cells — its thumbnails just render wider
  * instead. Bounded to 5 columns × 3 rows (max 15 visible thumbnails); a
@@ -1454,6 +1454,146 @@ fieldset.asc-ui-field > legend {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
+   @kit list-view — sortable-looking data grid of clickable rows with a sticky
+   header. Columns come from the inline custom property --asc-list-cols (a
+   grid-template-columns track list), so header and rows share one definition.
+   Selected rows (.asc-ui-selected) draw an inset ring that merges across
+   consecutive selected rows.
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-list-view__actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--spacing-xs);
+}
+
+.asc-ui-list-view {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-md);
+    overflow: hidden;
+}
+
+.asc-ui-list-view__header {
+    display: grid;
+    grid-template-columns: var(--asc-list-cols, 1fr);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--color-muted);
+    border-bottom: 2px solid var(--color-border);
+}
+
+.asc-ui-list-view__rows {
+    display: contents;
+}
+
+.asc-ui-list-view__row {
+    display: grid;
+    grid-template-columns: var(--asc-list-cols, 1fr);
+    cursor: pointer;
+    transition: background var(--transition-fast);
+
+    &:hover { background: var(--color-accent); }
+    &:not(:last-child) { border-bottom: 1px solid var(--color-border); }
+}
+
+/* Selected rows: the kit's generic .asc-ui-selected outline (with its
+   2px offset) is meant for items with gaps between them (cards, masonry).
+   List rows sit flush against each other, so per-row outlines would
+   overlap into neighboring rows — instead draw the ring as an inset
+   box-shadow and drop the shared edge between consecutive selected rows,
+   so a run of selected rows reads as one bordered group. */
+.asc-ui-list-view__row.asc-ui-selected {
+    position: relative;
+    z-index: 1;
+    outline: none;
+
+    --asc-list-row-selected-top: 2px;
+    --asc-list-row-selected-bottom: 2px;
+
+    box-shadow:
+        inset 2px 0 0 var(--color-primary),
+        inset -2px 0 0 var(--color-primary),
+        inset 0 var(--asc-list-row-selected-top) 0 var(--color-primary),
+        inset 0 calc(-1 * var(--asc-list-row-selected-bottom)) 0 var(--color-primary);
+}
+
+.asc-ui-list-view__row.asc-ui-selected + .asc-ui-list-view__row.asc-ui-selected {
+    --asc-list-row-selected-top: 0px;
+}
+
+/* border-bottom-color: transparent alone would leave a 1px gap the inset
+   box-shadow can't reach (it paints inside the border box) — a visible
+   hole at each seam. Dropping the border width entirely closes it. */
+.asc-ui-list-view__row.asc-ui-selected:has(+ .asc-ui-list-view__row.asc-ui-selected) {
+    --asc-list-row-selected-bottom: 0px;
+
+    border-bottom: none;
+}
+
+.asc-ui-list-view__cell {
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: var(--body-font-size-s);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    align-content: center;
+
+    img {
+        display: block;
+        max-width: 100%;
+        height: auto;
+    }
+}
+
+.asc-ui-list-view__row .asc-ui-list-view__cell:first-child {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-block: var(--spacing-xs);
+    padding-inline: var(--spacing-sm);
+}
+
+.asc-ui-list-view__empty {
+    display: block;
+    text-align: center;
+    color: var(--color-muted-fg);
+}
+
+.asc-ui-list-view__cell .asc-ui-list-view__thumb {
+    flex: 0 0 2.875rem;
+    width: 2.875rem;
+    height: 2.875rem;
+    min-width: 2.875rem;
+    min-height: 2.875rem;
+    max-width: 2.875rem;
+    max-height: 2.875rem;
+    display: block;
+    margin-block: 0.3125rem;
+    border-radius: var(--border-radius-full);
+    overflow: hidden;
+    object-fit: cover;
+    background: var(--color-muted);
+}
+
+.asc-ui-list-view__cell--header {
+    font-size: var(--body-font-size-xs);
+    font-weight: 600;
+    color: var(--color-muted-fg);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding-block: var(--spacing-xs);
+}
+
+.asc-ui-list-view__cell--actions,
+.asc-ui-list-view__cell--actions-header {
+    justify-self: end;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
    @kit masonry — column-flow gallery of asset tiles
 ───────────────────────────────────────────────────────────────────────── */
 
@@ -1532,24 +1672,29 @@ fieldset.asc-ui-field > legend {
    for type/status. Pair the thumb with <img> or .asc-ui-filetype.
 ───────────────────────────────────────────────────────────────────────── */
 
+/* Theming hooks (all optional; a theme or a part sets them, the card never has to
+   be restyled): --asc-ui-asset-card-radius / -shadow / -hover-border-color /
+   -hover-shadow / -hover-transform / -hover-bg / -thumb-ratio / -thumb-bg /
+   -body-bg / -body-padding / -title-size / -title-weight */
 .asc-ui-asset-card {
     display: flex;
     flex-direction: column;
     border: 1px solid var(--color-border);
-    border-radius: var(--border-radius-lg);
+    border-radius: var(--asc-ui-asset-card-radius, var(--border-radius-lg));
     background: var(--color-card);
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--asc-ui-asset-card-shadow, var(--shadow-sm));
     overflow: hidden;
 }
 
 .asc-ui-asset-card--interactive {
-    transition: box-shadow var(--transition-fast), transform var(--transition-fast), border-color var(--transition-fast);
+    transition: box-shadow var(--transition-fast), transform var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
 }
 
 .asc-ui-asset-card--interactive:hover {
-    border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border));
-    box-shadow: var(--shadow-md);
-    transform: var(--lift-sm);
+    border-color: var(--asc-ui-asset-card-hover-border-color, color-mix(in srgb, var(--color-primary) 35%, var(--color-border)));
+    box-shadow: var(--asc-ui-asset-card-hover-shadow, var(--shadow-md));
+    transform: var(--asc-ui-asset-card-hover-transform, var(--lift-sm));
+    background: var(--asc-ui-asset-card-hover-bg, var(--color-card));
 }
 
 .asc-ui-asset-card--interactive:focus-visible {
@@ -1559,12 +1704,12 @@ fieldset.asc-ui-field > legend {
 
 .asc-ui-asset-card__thumb {
     position: relative;
-    aspect-ratio: 4 / 3;
+    aspect-ratio: var(--asc-ui-asset-card-thumb-ratio, 4 / 3);
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    background: linear-gradient(130deg, color-mix(in srgb, var(--color-primary) 16%, var(--color-card)), color-mix(in srgb, var(--color-accent) 55%, var(--color-card)));
+    background: var(--asc-ui-asset-card-thumb-bg, linear-gradient(130deg, color-mix(in srgb, var(--color-primary) 16%, var(--color-card)), color-mix(in srgb, var(--color-accent) 55%, var(--color-card))));
 }
 
 .asc-ui-asset-card__thumb img {
@@ -1626,6 +1771,13 @@ fieldset.asc-ui-field > legend {
     gap: var(--spacing-xs);
 }
 
+/* --start: top-left instead of top-right (e.g. favorite / collection toggles on the
+   left, one-off actions on the right). */
+.asc-ui-asset-card__overlay--start {
+    right: auto;
+    left: var(--spacing-sm);
+}
+
 /* --bottom: a second overlay slot, bottom-right instead of top-right — e.g. pairing a
    top-right remove action with a bottom-right secondary action (notes, etc.). */
 .asc-ui-asset-card__overlay--bottom {
@@ -1651,17 +1803,25 @@ fieldset.asc-ui-field > legend {
     opacity: 1;
 }
 
+/* Touch devices have no hover, so a hidden overlay would stay hidden for good. */
+@media (hover: none) {
+    .asc-ui-asset-card--overlay-on-hover .asc-ui-asset-card__overlay {
+        opacity: 1;
+    }
+}
+
 .asc-ui-asset-card__body {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-2xs);
-    padding: var(--spacing-md);
+    padding: var(--asc-ui-asset-card-body-padding, var(--spacing-md));
+    background: var(--asc-ui-asset-card-body-bg, transparent);
 }
 
 .asc-ui-asset-card__title {
     margin: 0;
-    font-size: var(--body-font-size-s);
-    font-weight: 600;
+    font-size: var(--asc-ui-asset-card-title-size, var(--body-font-size-s));
+    font-weight: var(--asc-ui-asset-card-title-weight, 600);
     color: var(--color-fg);
     overflow-wrap: break-word;
 }
@@ -2374,6 +2534,58 @@ fieldset.asc-ui-field > legend {
 
 .asc-ui-asset-card--hero .asc-ui-asset-card__meta {
     font-size: var(--body-font-size-m);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit asset-card --bare: strips the card chrome (border, radius, background,
+   shadow, hover lift) so only the thumbnail shows — an image tile in a masonry
+   wall. Pair with --natural.
+   @kit asset-card --meta-overlay: the body sits over the bottom edge of the
+   thumb and only appears on hover/focus; the title is dropped, leaving the
+   metadata lines. Pair with --bare.
+   @kit asset-card --clamp-title: title limited to two lines.
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-asset-card--bare,
+.asc-ui-asset-card--bare:hover {
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    transform: none;
+}
+
+.asc-ui-asset-card--meta-overlay {
+    position: relative;
+}
+
+.asc-ui-asset-card--meta-overlay .asc-ui-asset-card__body {
+    position: absolute;
+    inset: auto 0 0;
+    padding: var(--spacing-xs) var(--spacing-md);
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+}
+
+.asc-ui-asset-card--meta-overlay:hover .asc-ui-asset-card__body,
+.asc-ui-asset-card--meta-overlay:focus-within .asc-ui-asset-card__body {
+    opacity: 1;
+}
+
+.asc-ui-asset-card--meta-overlay .asc-ui-asset-card__title {
+    display: none;
+}
+
+.asc-ui-asset-card--meta-overlay .asc-ui-asset-card__meta {
+    color: color-mix(in srgb, white 85%, transparent);
+}
+
+.asc-ui-asset-card--clamp-title .asc-ui-asset-card__title {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    /* stylelint-disable-next-line property-no-deprecated -- still required for -webkit-line-clamp */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
