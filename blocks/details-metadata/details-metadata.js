@@ -13,13 +13,15 @@
  *   | Tags       | tags       |
  *
  * - Values resolve via Asset.getProperty(key).
- * - Array values (e.g. `tags`) render as .asc-ui-chip pills.
+ * - Array values (e.g. `tags`) render as .asc-ui-chip pills; past 10 a "View more (N)" toggle
+ *   reveals the rest.
  * - Rows whose value resolves empty are skipped.
  * - `display: grid` switches to the responsive cell layout (term over value).
  */
 import Asset from '../../scripts/asc/core/models/asset.js';
-import { escHtml as esc } from '../../scripts/asc/html.js';
+import { escHtml as esc, renderPropertyValue } from '../../scripts/asc/html.js';
 
+const MULTI_VALUE_LIMIT = 10;
 const RESERVED = new Set(['display', 'layout']);
 
 export default async function decorate(block) {
@@ -51,7 +53,7 @@ export default async function decorate(block) {
       if (!pv.html) return '';
       return `<div class="asc-ui-metadata__row">
       <dt class="asc-ui-metadata__term">${esc(label)}</dt>
-      <dd class="asc-ui-metadata__value">${pv.html}</dd>
+      <dd class="asc-ui-metadata__value">${renderPropertyValue(pv, { limit: MULTI_VALUE_LIMIT })}</dd>
     </div>`;
     })
     .filter(Boolean)
@@ -64,5 +66,16 @@ export default async function decorate(block) {
 
   const variant = display === 'grid' ? ' asc-ui-metadata--grid' : '';
   block.innerHTML = `<dl class="asc-ui-metadata${variant}">${rows}</dl>`;
+
+  block.addEventListener('click', (e) => {
+    const btn = e.target.closest('.asc-view-more-btn');
+    if (!btn) return;
+    const extras = btn.closest('.asc-ui-metadata__value')?.querySelector('.asc-ui-chip-extras');
+    if (!extras) return;
+    const expanded = btn.getAttribute('aria-expanded') === 'true';
+    extras.classList.toggle('is-hidden', expanded);
+    btn.setAttribute('aria-expanded', String(!expanded));
+    btn.textContent = expanded ? `View more (${btn.dataset.extrasCount})` : 'View less';
+  });
 }
 
