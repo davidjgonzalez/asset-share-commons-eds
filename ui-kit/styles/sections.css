@@ -1,0 +1,254 @@
+/* ── Section layout variants ──────────────────────────────────────────────
+ * This is the single source of truth for all section layout variants
+ * (inline, grid, aside, grid-layout, full-width, fixed-width) — edit here
+ * directly. There is no separate styles/sections/ directory; a prior version
+ * kept per-layout files there as "reference" copies alongside this
+ * consolidated file, but that let them drift out of sync with what's
+ * actually loaded (styles.css only @imports this file) — do not recreate
+ * that split.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+/* ── inline — side-by-side blocks in one row ────────────────────────────── */
+
+main .section.inline {
+    display: flex;
+    flex-wrap: wrap;
+    row-gap: var(--spacing-sm, 0.5rem);
+}
+
+/* ── grid — each block wrapper becomes a grid cell ───────────────────────
+ * style: grid        activates grid layout
+ * columns: N         1–6 equal-width columns (default: 2)
+ * direction: row     fills left-to-right then wraps (default)
+ * direction: column  fills top-to-bottom then right
+ *
+ * align-items: stretch (the grid default) so every cell in a row matches the
+ * tallest one — a block that wants to fill that height (e.g. teaser's own
+ * `.block.teaser { height: 100% }`) can; one that doesn't just keeps sizing
+ * to its own content as usual, since stretch only affects a block that
+ * actually asks for 100% height.
+ */
+
+main .section.grid {
+    display: grid;
+    gap: var(--grid-gap, var(--spacing-md, 1rem));
+    grid-template-columns: repeat(2, 1fr); /* default */
+
+    > * {
+        margin: 0;
+        padding: 0;
+        max-width: 100%;
+    }
+}
+
+main .section.grid[data-columns="1"] { grid-template-columns: repeat(1, 1fr); }
+main .section.grid[data-columns="2"] { grid-template-columns: repeat(2, 1fr); }
+main .section.grid[data-columns="3"] { grid-template-columns: repeat(3, 1fr); }
+main .section.grid[data-columns="4"] { grid-template-columns: repeat(4, 1fr); }
+main .section.grid[data-columns="5"] { grid-template-columns: repeat(5, 1fr); }
+main .section.grid[data-columns="6"] { grid-template-columns: repeat(6, 1fr); }
+
+main .section.grid[data-direction="column"] { grid-auto-flow: column; }
+
+/* colspan / rowspan helpers — add 'colspan-N' or 'rowspan-N' to a block's style */
+main .section.grid > .colspan-2 { grid-column: span 2; }
+main .section.grid > .colspan-3 { grid-column: span 3; }
+main .section.grid > .colspan-4 { grid-column: span 4; }
+main .section.grid > .rowspan-2 { grid-row: span 2; }
+main .section.grid > .rowspan-3 { grid-row: span 3; }
+
+/* ── aside — wide main content + narrow sidebar ──────────────────────────
+ * style: aside, right   →  content left  | sidebar right  (default)
+ * style: aside, left    →  sidebar left  | content right
+ * Override sidebar width: --aside-sidebar-width: 320px
+ */
+
+main .section.aside {
+    display: grid;
+    gap: var(--aside-gap, var(--spacing-md, 1rem));
+    align-items: start;
+}
+
+main .section.aside:not(.left) {
+    grid-template-columns: 1fr var(--aside-sidebar-width, 300px);
+}
+
+main .section.aside.left {
+    grid-template-columns: var(--aside-sidebar-width, 300px) 1fr;
+}
+
+main .section.aside > div {
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+@media (width < 768px) {
+    main .section.aside {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ── grid-layout — named-area section grid ───────────────────────────────
+ * Driven by section metadata; see scripts/section-grid.js.
+ *   layout: grid
+ *   areas:  preview actions / preview metadata
+ *   columns: 1.5fr 1fr   (optional)
+ * Blocks claim a cell with `area`, and may add `align` (e.g. `top left`, `bottom right`,
+ * `center`) to position themselves within that cell instead of stretching to fill it.
+ */
+
+main .section[data-layout="grid"] {
+    display: grid;
+    gap: var(--grid-gap, var(--spacing-xl, 2rem));
+    align-items: start;
+    align-content: start;
+    max-width: var(--section-max-width);
+    margin-inline: auto;
+    padding-inline: var(--section-padding);
+
+    /* stylelint-disable declaration-block-no-redundant-longhand-properties */
+    grid-template-areas: var(--grid-areas, none);
+    grid-template-columns: var(--grid-columns, repeat(var(--grid-cols, 1), minmax(0, 1fr)));
+    grid-template-rows: var(--grid-rows, auto);
+    /* stylelint-enable declaration-block-no-redundant-longhand-properties */
+}
+
+main .section[data-layout="grid"] > .grid-area-stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+    min-width: 0;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+main .section[data-layout="grid"] > div {
+    min-width: 0;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+    grid-area: var(--grid-area, auto);
+    place-self: var(--grid-align-self, auto) var(--grid-justify-self, auto);
+}
+
+@media (width >= 900px) {
+    main .section[data-layout="grid"] {
+        padding-inline: var(--section-padding-wide);
+    }
+}
+
+/* Full-width page header: a lightweight title + action row (a dashboard toolbar, not
+ * editorial copy — e.g. the Collections index's "Collections" + New Collection button)
+ * authors both `_layout: grid` and `style: full-width` on the same section-metadata table.
+ * Generic opt-in (any page's header grid, not just one page) — combine the two rather than
+ * introducing a new layout keyword, since `full-width` already exists for exactly this
+ * "skip --section-max-width" escape hatch on plain sections. Inset matches the plain
+ * `main > div { margin: 2.5rem 1rem }` gutter every other section (and every other page's
+ * title) uses, instead of this rule's own wider --section-padding, so the title lines up
+ * with the standard page header placement rather than sitting further inset.
+ */
+main .section.full-width[data-layout="grid"] {
+    max-width: 100%;
+    margin-inline: 1rem;
+    padding-inline: 0;
+}
+
+/* Board pages (collection/board): the info+controls section above the board is
+ * chrome, not a marketing hero — its default h1/p spacing (sized for long-form
+ * editorial content) ate most of the vertical room the board canvas needs (see
+ * sizeViewport() in blocks/board/board.js, which sizes the board to whatever
+ * space is left below it). Tighten just this section's own headings/paragraphs
+ * rather than the global h1/p rules used everywhere else.
+ */
+.page-board main .section[data-layout="grid"] {
+    padding-top: var(--spacing-md, 1rem);
+}
+
+.page-board main .section[data-layout="grid"] h1 {
+    margin-top: 0;
+    margin-bottom: var(--spacing-xs, 0.25rem);
+    font-size: var(--heading-font-size-l);
+}
+
+.page-board main .section[data-layout="grid"] p {
+    margin-top: 0;
+    margin-bottom: var(--spacing-xs, 0.25rem);
+}
+
+@media (width < 768px) {
+    main .section[data-layout="grid"] {
+        grid-template-columns: 1fr;
+        grid-template-areas: none;
+    }
+
+    main .section[data-layout="grid"] > div {
+        grid-area: auto;
+    }
+}
+
+/* ── full-width — breaks out of the max-width constraint ─────────────────
+ * style: full-width
+ * Spans the full viewport instead of the standard max-width, but keeps the
+ * same edge gutter as a regular section (--section-padding) so content
+ * doesn't touch the viewport edge. For true edge-to-edge bleed, zero out
+ * padding on the specific block/element that needs it instead.
+ */
+
+main .section.full-width {
+    max-width: 100%;
+}
+
+main .section.full-width > div {
+    max-width: 100%;
+    padding-inline: var(--section-padding);
+}
+
+@media (width >= 900px) {
+    main .section.full-width > div {
+        padding-inline: var(--section-padding-wide);
+    }
+}
+
+/* ── fixed-width — explicit max-width constraint ─────────────────────────────
+ * style: fixed-width
+ * Constrains a section to the standard max-width. Useful inside pages that
+ * are otherwise full-width (e.g., an editorial strip on a search results page).
+ */
+
+main .section.fixed-width {
+    max-width: var(--section-max-width);
+    padding-inline: var(--section-padding);
+    margin-inline: auto;
+}
+
+main .section.fixed-width > div {
+    max-width: 100%;
+}
+
+/* Defensive backstop for the Teaser (Hero): `fixed-width`/`hero-intro` above
+ * are assigned at runtime from section-metadata (decorateSections /
+ * ascDecorateMain in scripts/scripts.js), not present in the raw authored
+ * markup — an editing-canvas context that renders styled CSS without running
+ * (or before finishing) that decoration pass would leave the section with no
+ * width cap at all, letting a Hero teaser's large cover image balloon the
+ * whole section out to the page's raw, unconstrained width. Scoped to
+ * sections containing a Teaser (Hero) specifically, not a blanket cap on
+ * every plain section — plain (unstyled) sections are intentionally
+ * full-bleed elsewhere on this site, and @kit asset-card --hero's own note
+ * (ui-kit.css) is that spanning full width is a deliberate option decided by
+ * the section it's authored in; this only guarantees a sane default for the
+ * *specific* "headline card at the top of a directory" layout, as a backup
+ * to the class-driven cap rather than a replacement for it. */
+main .section:has(.teaser.hero) {
+    max-width: var(--section-max-width);
+    padding-inline: var(--section-padding);
+    margin-inline: auto;
+}
+
+@media (width >= 900px) {
+    main .section:has(.teaser.hero) {
+        padding-inline: var(--section-padding-wide);
+    }
+}

@@ -1,0 +1,239 @@
+/*
+ * Pro Theme — SlothUI Pro (v2.2) aligned
+ *
+ * The shipped .fig archive stores a proprietary binary canvas (fig-kiwi); hex values
+ * are not extractable here without Figma Desktop. This theme follows SlothUI’s public
+ * positioning: WCAG-first minimal UI, neutral zinc scale, black primary actions, calm
+ * form chrome. Replace the semantic token block with values from Figma Variables if
+ * you need a 1:1 match.
+ *
+ * Design principles:
+ *   — Zinc neutrals (canvas, borders, secondary text) — not blue-grey slate
+ *   — Primary actions: near-black on white (matches Sloth “logo black” kit tone)
+ *   — Inputs: white fields, hairline borders, 40px min height, shared focus ring token
+ *   — Buttons: filled secondary on muted surface; primary hover via color-mix (no wash-out filter)
+ *   — Flat cards: border + background shift on hover, no lift
+ *   — Inter, slightly compact headings; compact control radius (--border-radius-sm)
+ *
+ * Activate: set `theme: { default: 'pro' }` in scripts/configurations.js
+ */
+
+:root {
+    /* ── Semantic color tokens — zinc monochrome + black primary ───── */
+    --color-bg:             #fafafa;
+    --color-fg:             #09090b;
+    --color-card:           #fff;
+    --color-card-fg:        #09090b;
+    --color-popover:        #fff;
+    --color-popover-fg:     #09090b;
+    --color-primary:        #18181b;
+    --color-primary-fg:     #fafafa;
+    --color-secondary:      #f4f4f5;
+    --color-secondary-fg:   #18181b;
+    --color-muted:          #f4f4f5;
+    --color-muted-fg:       #71717a;
+    --color-accent:         #e4e4e7;
+    --color-accent-fg:      #18181b;
+    --color-destructive:    #b91c1c;
+    --color-destructive-fg: #fff;
+    --color-border:         #e4e4e7;
+    --color-input:          #fff;
+    --color-ring:           #27272a;
+
+    /* ── Typography — Inter ─────────────────────────────────────────── */
+    --body-font-family:    'Inter', system-ui, -apple-system, sans-serif;
+    --heading-font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    --heading-font-size-xxl: 40px;
+    --heading-font-size-xl:  30px;
+    --heading-font-size-l:   22px;
+    --heading-font-size-m:   18px;
+
+    /* ── Flat UI — no card lift ───────────────────────────────────── */
+    --lift-sm: none;
+    --lift-md: none;
+    --lift-lg: none;
+
+    /* ── Controls — compact radius (Sloth-style dense controls) ───── */
+    --button-border-radius: var(--border-radius-sm);
+    --input-border-radius:  var(--border-radius-sm);
+    --modal-border-radius:  var(--border-radius-lg);
+
+    /* ── Sidebar layout width ─────────────────────────────────────── */
+    --search-filters-width: 240px;
+    --section-max-width: 1600px;
+
+    /* ── Asset teaser + quick actions (theme sets vars; part/block owns selectors) */
+    --asset-teaser-border-radius: var(--border-radius-md);
+    --asset-teaser-title-weight: 400;
+    --asset-teaser-hover-transform: none;
+    --asset-teaser-hover-shadow: none;
+    --asset-teaser-hover-border-color: var(--color-primary);
+    --asset-teaser-hover-bg: color-mix(in srgb, var(--color-primary) 5%, var(--color-card));
+    --asset-teaser-vignette-gradient:
+        radial-gradient(
+            circle at center,
+            rgb(39 39 42 / 0%) 34%,
+            rgb(39 39 42 / 18%) 64%,
+            rgb(39 39 42 / 34%) 100%
+        );
+    --asset-teaser-vignette-opacity: 0;
+    --asset-teaser-vignette-hover-opacity: 1;
+    --asset-teaser-actions-opacity: 0;
+    --asset-teaser-actions-pointer-events: none;
+    --asset-teaser-actions-hover-opacity: 1;
+    --asset-teaser-actions-hover-pointer-events: auto;
+    --collection-toggle-btn-width: auto;
+    --collection-toggle-btn-min-width: 36px;
+    --collection-toggle-btn-height: 30px;
+    --collection-toggle-btn-padding: 0 var(--spacing-sm);
+    --collection-toggle-btn-radius: var(--border-radius-sm);
+    --collection-toggle-btn-shadow: 0 2px 10px rgb(0 0 0 / 35%);
+    --collection-toggle-btn-backdrop: blur(6px);
+    --collection-toggle-btn-hover-transform: none;
+    --collection-toggle-add-bg: rgb(24 24 27 / 72%);
+    --collection-toggle-add-border: rgb(255 255 255 / 26%);
+    --collection-toggle-add-fg: #fff;
+    --collection-toggle-add-hover-bg: rgb(24 24 27 / 86%);
+    --collection-toggle-add-hover-border: rgb(255 255 255 / 34%);
+    --collection-toggle-remove-bg: rgb(24 24 27 / 72%);
+    --collection-toggle-remove-border: rgb(255 255 255 / 26%);
+    --collection-toggle-remove-fg: #fff;
+    --collection-toggle-remove-hover-bg: color-mix(in srgb, var(--color-destructive) 75%, rgb(0 0 0 / 24%));
+    --collection-toggle-remove-hover-border: var(--color-destructive);
+    --collection-toggle-remove-hover-fg: #fff;
+    --search-results-quick-download-min-width: 36px;
+    --search-results-quick-download-height: 30px;
+    --search-results-quick-download-padding-x: var(--spacing-sm);
+    --search-results-quick-download-radius: var(--border-radius-sm);
+    --search-results-quick-download-bg: rgb(24 24 27 / 72%);
+    --search-results-quick-download-border: rgb(255 255 255 / 26%);
+    --search-results-quick-download-fg: #fff;
+    --search-results-quick-download-shadow: 0 2px 10px rgb(0 0 0 / 35%);
+    --search-results-quick-download-backdrop: blur(6px);
+    --search-results-quick-download-hover-bg: rgb(24 24 27 / 86%);
+    --search-results-quick-download-hover-border: rgb(255 255 255 / 34%);
+    --search-results-quick-download-hover-fg: #fff;
+    --search-bar-shell-radius: var(--input-border-radius);
+    --search-bar-shell-overflow: hidden;
+    --search-bar-button-hover-filter: none;
+    --search-bar-button-hover-bg: color-mix(in srgb, var(--color-primary-fg) 12%, var(--color-primary));
+
+    /* ── Shadows — neutral tint ───────────────────────────────────── */
+    --shadow-sm: 0 1px 2px 0 rgb(9 9 11 / 5%);
+    --shadow-md: 0 4px 12px -2px rgb(9 9 11 / 8%);
+    --shadow-lg: 0 12px 32px -6px rgb(9 9 11 / 10%);
+
+    /* ── Select chevron — zinc-500 ────────────────────────────────── */
+    --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2371717a'/%3E%3C/svg%3E");
+}
+
+/* ── Buttons — predictable hover on dark primary / danger ─────────── */
+/* stylelint-disable selector-class-pattern -- matches global .btn utilities */
+.theme-pro .btn--primary:hover,
+.theme-pro .btn--danger:hover {
+    filter: none;
+}
+
+.theme-pro .btn--primary:hover {
+    background: color-mix(in srgb, var(--color-primary-fg) 12%, var(--color-primary));
+}
+
+.theme-pro .btn--danger:hover {
+    background: color-mix(in srgb, var(--color-destructive-fg) 14%, var(--color-destructive));
+}
+
+/* Filled “secondary” surface — common minimal kit pattern ──────────── */
+.theme-pro .btn--secondary {
+    background: var(--color-muted);
+    border-color: var(--color-border);
+}
+
+.theme-pro .btn--secondary:hover {
+    background: var(--color-accent);
+    border-color: var(--color-muted-fg);
+}
+
+/* stylelint-enable selector-class-pattern */
+
+/* ── Form controls — consistent height, subtle placeholder ───────── */
+.theme-pro input:not(:is([type="checkbox"], [type="radio"], [type="hidden"], [type="range"])),
+.theme-pro select {
+    min-height: var(--input-height-md);
+    box-sizing: border-box;
+}
+
+.theme-pro input:not(:is([type="checkbox"], [type="radio"], [type="hidden"], [type="range"]))::placeholder,
+.theme-pro textarea::placeholder {
+    opacity: 1;
+    color: color-mix(in srgb, var(--color-muted-fg) 85%, var(--color-input));
+}
+
+/* ── Nav: white app bar + hairline border ─────────────────────────── */
+.theme-pro header .nav-wrapper {
+    background-color: var(--color-card);
+    border-bottom: 1px solid var(--color-border);
+    box-shadow: var(--shadow-sm);
+}
+
+.theme-pro header nav {
+    margin: 0 auto;
+}
+
+.theme-pro header .nav-brand {
+    flex-basis: auto;
+    white-space: nowrap;
+    font-size: var(--body-font-size-m);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--color-fg);
+}
+
+.theme-pro header nav .nav-sections a:any-link {
+    text-decoration: none;
+    color: var(--color-muted-fg);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--border-radius-md);
+    transition: color var(--transition-fast), background var(--transition-fast);
+
+    &:hover {
+        color: var(--color-fg);
+        background: var(--color-muted);
+        text-decoration: none;
+    }
+}
+
+@media (width >= 900px) {
+    .theme-pro header nav .nav-sections ul {
+        gap: var(--spacing-2xs);
+    }
+}
+
+/* Match desktop nav/rail wrapper width to 1600px content + 32px side padding. */
+@media (width >= 900px) {
+    .theme-pro header nav {
+        max-width: 1664px;
+    }
+
+    .theme-pro main:has(.section.right.search-filters),
+    .theme-pro main:has(.section.left.search-filters) {
+        max-width: 1664px;
+    }
+}
+
+/* Search-results cards: no vignette, use subtle outer glow/shadow on hover. */
+.theme-pro .block.search-results [data-asc-results][data-display="cards"] .asc-asset-teaser {
+    --asset-teaser-vignette-opacity: 0;
+    --asset-teaser-vignette-hover-opacity: 0;
+    --asset-teaser-hover-bg: var(--color-card);
+    --asset-teaser-hover-border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
+    --asset-teaser-hover-shadow:
+        0 0 0 1px color-mix(in srgb, var(--color-primary) 18%, transparent),
+        0 10px 24px -8px rgb(9 9 11 / 28%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    :root {
+        --asset-teaser-actions-opacity: 1;
+        --asset-teaser-actions-pointer-events: auto;
+    }
+}

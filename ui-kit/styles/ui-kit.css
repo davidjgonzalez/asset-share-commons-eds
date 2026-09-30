@@ -1,0 +1,2395 @@
+/*
+ * ASC UI KIT — reusable, theme-driven UI primitives
+ * ────────────────────────────────────────────────────────────────────────────
+ * These `.asc-ui-*` classes are the shared building blocks for blocks, parts,
+ * and templates. They consume ONLY semantic tokens (--color-*, --spacing-*,
+ * --border-radius-*, --shadow-*, --transition-*) so every primitive themes for
+ * free. Never hard-code colors/spacing here.
+ *
+ * Workflow:
+ *   1. Workshop / preview every primitive in  /ui-kit.html  (themed gallery).
+ *   2. Copy canonical markup + class names from  docs/UI_KIT.md  (agent catalog).
+ *   3. Reuse these classes in blocks instead of redefining buttons, cards,
+ *      badges, inputs, empty states, etc.
+ *
+ * Foundational primitives (.btn, form fields, .asc-panel, .asc-dialog) live in
+ * styles.css. This file holds the higher-level component primitives.
+ *
+ * Each primitive below is tagged with  @kit <name>  so it can be grepped and
+ * cross-referenced against docs/UI_KIT.md.
+ */
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit typography — headings, eyebrow, copy, label
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-heading-eyebrow {
+    margin: 0;
+    font-size: var(--body-font-size-xs);
+    color: var(--color-muted-fg);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+}
+
+.asc-ui-heading-xl,
+.asc-ui-heading-l,
+.asc-ui-heading-m {
+    margin: 0;
+    color: var(--color-fg);
+    line-height: 1.2;
+}
+
+.asc-ui-heading-xl {
+    font-size: var(--heading-font-size-xl);
+}
+
+.asc-ui-heading-l {
+    font-size: var(--heading-font-size-l);
+}
+
+.asc-ui-heading-m {
+    font-size: var(--heading-font-size-m);
+}
+
+.asc-ui-copy {
+    margin: 0;
+    color: var(--color-muted-fg);
+    font-size: var(--body-font-size-s);
+    line-height: 1.5;
+}
+
+.asc-ui-label {
+    margin: 0;
+    color: var(--color-muted-fg);
+    font-size: var(--body-font-size-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+}
+
+/* Plain-authoring equivalent of .asc-ui-heading-l for a utility index page's
+   title (e.g. Collections, Search — see "Page header" → "Simple" variant,
+   docs/UI_KIT.md): a "content" block whose *only* content is one h1, nothing
+   else. DA's rich-text authoring can't carry a class attribute through to the
+   rendered page (same constraint as @kit back-heading's note on data-* being
+   stripped from plain authored links), so a real author could never actually
+   produce `<h1 class="asc-ui-heading-l">` — this selector gets the same
+   compact size with no class needed. Scoped to :only-child so it never
+   touches an h1 that's part of a back-heading shape (which always has a
+   sibling link/paragraph). */
+.content.block > h1:only-child {
+    margin: 0;
+    font-size: var(--heading-font-size-l);
+    line-height: 1.2;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit back-heading — page/section heading: an h1, an optional description
+   line, and an optional stats line, plus (for a page with a real
+   intermediate list level between it and Home) a breadcrumb trail row above
+   it. Does NOT include a "back to X" link/button — that single-chevron
+   variant was removed; a page one level from Home (most `sheets/*`) just
+   shows the title with no back-nav element in the header at all.
+
+   Authoring: like @kit landing below, this also keys off a plain-authoring
+   shape with no explicit class needed — a "content" block (see
+   scripts/asc/section-grid.js, used to attach _area grid metadata to plain
+   text) whose `h1`/`h2` is immediately followed by one or two paragraphs
+   gets the description/stats-line typography automatically, no link or
+   explicit class required. Use the explicit .asc-ui-back-heading markup
+   when composing a block/template directly instead.
+
+   Breadcrumb trail variant: a first-child paragraph with *two or more*
+   links (`<p><a>Home</a> <a>Collections</a></p><h1>Title</h1>`) gets a
+   full-width trail row above the heading — decorateButtons()
+   (scripts/aem.js) only auto-buttonizes a paragraph whose only child is one
+   `<a>`, so a multi-link paragraph is never touched by it and stays exactly
+   as authored, letting `a + a` below detect it reliably. Use for any page
+   with a real intermediate list level (e.g. collection detail: Home /
+   Collections).
+
+   row-gap gives the wrapped rows (trail, title, description, stats line)
+   breathing room between them — column-gap alone only spaces items sharing
+   a row, so without it those wrapped rows sat flush against each other.
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-back-heading,
+.content.block:has(> h1 + p, > h2 + p),
+.content.block:has(> p:first-child a + a):has(> p:first-child + h1, > p:first-child + h2) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--spacing-sm) var(--spacing-sm);
+}
+
+/* Breadcrumb trail row — same "content.block:has()" plain-authoring mirror as the
+   chevron above, but :has() can't nest another :has() in its own argument, so
+   "first-child p contains 2+ links" (`> p:first-child a + a`, no nested :has) and
+   "first-child p precedes h1/h2" are two separate chained :has() clauses on the
+   same selector rather than one combined clause. */
+.asc-ui-back-heading__trail,
+.content.block:has(> p:first-child a + a):has(> p:first-child + h1, > p:first-child + h2) > p:first-child {
+    margin: 0;
+    flex-basis: 100%;
+
+    /* Sorts ahead of the title-menu trigger's `order: -1` (collection-controls.css)
+       so the trail row still renders first even though that trigger is DOM-adjacent
+       to h1, not to this paragraph — see the note there for why it can't move in
+       the DOM instead. */
+    order: -2;
+    font-size: var(--body-font-size-s);
+    color: var(--color-muted-fg);
+}
+
+.asc-ui-back-heading__trail a,
+.content.block:has(> p:first-child a + a):has(> p:first-child + h1, > p:first-child + h2) > p:first-child a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.asc-ui-back-heading__trail a:hover,
+.content.block:has(> p:first-child a + a):has(> p:first-child + h1, > p:first-child + h2) > p:first-child a:hover {
+    color: var(--color-fg);
+    text-decoration: underline;
+}
+
+.asc-ui-back-heading__trail a:not(:last-of-type)::after,
+.content.block:has(> p:first-child a + a):has(> p:first-child + h1, > p:first-child + h2) > p:first-child a:not(:last-of-type)::after {
+    content: '/';
+    margin-inline: var(--spacing-xs);
+    color: var(--color-muted-fg);
+}
+
+.asc-ui-back-heading > h1,
+.asc-ui-back-heading > h2 {
+    margin: 0;
+
+    /* The global h1/h2 line-height (styles.css) reserves descender space most
+       headings don't use, so its line-box sits lower than the glyphs — flex's
+       align-items: center centers that whole box against the back button's
+       fixed circle, landing the circle visibly above the text's optical
+       center. Tightening to 1 shrinks the box down to the glyphs themselves. */
+    line-height: 1;
+}
+
+/* Optional description subtitle — the paragraph immediately after the
+   heading (h1 + p) — reads larger/less-muted than the stats line that
+   follows it (h1 + p + p), and collapses entirely when unset (registerTokens
+   resolves an empty {{collection.description}} to '', leaving the <p> with
+   no child nodes at all, which :empty matches below). Ordered by ascending
+   specificity: the plain adjacency selectors, then the generic :not() rule
+   (an extra class outweighs their extra type), then :empty (most specific
+   of all — same class count as :not() plus an extra type). */
+.asc-ui-back-heading > h1 + p,
+.asc-ui-back-heading > h2 + p {
+    font-size: var(--body-font-size-m);
+    color: var(--color-muted-fg);
+}
+
+.asc-ui-back-heading > h1 + p + p,
+.asc-ui-back-heading > h2 + p + p {
+    font-size: var(--body-font-size-s);
+    color: var(--color-muted-fg);
+}
+
+.asc-ui-back-heading > p {
+    flex-basis: 100%;
+    margin: 0;
+}
+
+.asc-ui-back-heading > h1 + p:empty,
+.asc-ui-back-heading > h2 + p:empty {
+    display: none;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit landing — page-intro lede + CTA banner for marketing/landing sections
+   Authoring: rather than requiring block markup, these also key off a
+   section's `style` metadata (e.g. `style: fixed-width, hero-intro`) —
+   decorateSections() (scripts/aem.js) puts that value directly as a class on
+   the section element, so `.section.hero-intro` / `.section.cta-banner`
+   below let a DA author invoke the same look on a plain content section with
+   no block authoring at all.
+───────────────────────────────────────────────────────────────────────── */
+
+/* decorateSections() (scripts/aem.js) wraps a section's plain (non-block)
+   content in an extra `.default-content-wrapper` div — the section-scoped
+   selectors below account for that one extra level. */
+
+.asc-ui-lede,
+.section.hero-intro > .default-content-wrapper > p {
+    margin: 0;
+    max-width: 60ch;
+    font-size: var(--heading-font-size-m);
+    font-weight: 400;
+    line-height: 1.5;
+    color: var(--color-muted-fg);
+}
+
+.asc-ui-cta-banner,
+.section.cta-banner {
+    padding: var(--spacing-2xl) var(--spacing-xl);
+    text-align: center;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-xl);
+    background: linear-gradient(135deg,
+        color-mix(in srgb, var(--color-primary) 6%, var(--color-bg)),
+        color-mix(in srgb, var(--color-accent) 45%, var(--color-bg)));
+}
+
+.asc-ui-cta-banner,
+.section.cta-banner > .default-content-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.asc-ui-cta-banner__title,
+.section.cta-banner h2 {
+    margin: 0;
+    font-size: var(--heading-font-size-l);
+}
+
+.asc-ui-cta-banner__description,
+.section.cta-banner > .default-content-wrapper > p:not(.button-container) {
+    margin: 0;
+    max-width: 48ch;
+    color: var(--color-muted-fg);
+}
+
+.asc-ui-cta-banner__actions,
+.section.cta-banner > .default-content-wrapper > .button-container {
+    margin-top: var(--spacing-xs);
+}
+
+/* @kit back-heading's plain-authoring equivalents (see above) — split out
+   from the .asc-ui-back-heading rules and placed after @kit landing purely
+   to satisfy ascending selector specificity (the :has() argument outweighs
+   landing's simple .section.* selectors); same declarations either way.
+   Gated on "h1/h2 immediately followed by a p" (no leading link required,
+   now that the single-chevron back-link variant is gone) so a plain
+   heading + description/stats content block gets this for free; the
+   breadcrumb-trail shape keeps its own separate clause below. */
+.content.block:has(> h1 + p) > h1,
+.content.block:has(> h2 + p) > h2,
+.content.block:has(> p:first-child a + a):has(> p:first-child + h1, > p:first-child + h2) > h1,
+.content.block:has(> p:first-child a + a):has(> p:first-child + h1, > p:first-child + h2) > h2 {
+    margin: 0;
+    line-height: 1; /* see .asc-ui-back-heading > h1/h2 above — same fix, same reason */
+}
+
+/* Description subtitle plain-authoring equivalent — see the .asc-ui-back-heading
+   > h1 + p rules above for the same reasoning. Plain adjacency selectors need no
+   :has() gate here (they only ever match the specific sibling p right after the
+   heading); the breadcrumb-trail shape still needs its own :has()-scoped clause
+   since it's the same "h1 + p" shape one level further from the block root. */
+.content.block > h1 + p,
+.content.block > h2 + p,
+.content.block:has(> p:first-child a + a):has(> p:first-child + h1) > h1 + p,
+.content.block:has(> p:first-child a + a):has(> p:first-child + h2) > h2 + p {
+    font-size: var(--body-font-size-m);
+    color: var(--color-muted-fg);
+}
+
+.content.block > h1 + p + p,
+.content.block > h2 + p + p,
+.content.block:has(> p:first-child a + a):has(> p:first-child + h1) > h1 + p + p,
+.content.block:has(> p:first-child a + a):has(> p:first-child + h2) > h2 + p + p {
+    font-size: var(--body-font-size-s);
+    color: var(--color-muted-fg);
+}
+
+.content.block:has(> h1 + p) > p,
+.content.block:has(> h2 + p) > p,
+.content.block:has(> p:first-child a + a):has(> p:first-child + h1, > p:first-child + h2)
+    > p:not(.button-container) {
+    flex-basis: 100%;
+    margin: 0;
+}
+
+.content.block > h1 + p:empty,
+.content.block > h2 + p:empty {
+    display: none;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit field — form field group (label + control + hint/error)
+   Controls inherit the global input/select/textarea baseline from styles.css.
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-field {
+    display: grid;
+    gap: var(--spacing-xs);
+}
+
+.asc-ui-field__label {
+    font-size: var(--body-font-size-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-muted-fg);
+}
+
+.asc-ui-field__hint {
+    margin: 0;
+    font-size: var(--body-font-size-xs);
+    color: var(--color-muted-fg);
+}
+
+.asc-ui-field__error {
+    margin: 0;
+    font-size: var(--body-font-size-xs);
+    color: var(--validation-error-color);
+}
+
+.asc-ui-field input,
+.asc-ui-field select,
+.asc-ui-field textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: var(--input-padding-y) var(--input-padding-x);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit search — pill search input that grows on focus
+   Width is configurable via --asc-ui-search-width.
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-search {
+    --asc-ui-search-width: 20rem;
+
+    position: relative;
+    display: inline-flex;
+    width: 100%;
+}
+
+/* Specificity matches the global input baseline (styles.css) so the pill
+   radius wins — the baseline's :not() chain would otherwise override it.
+   Scoped to a direct child so it targets only the actual search field —
+   never a control nested deeper inside (e.g. the color-picker's own
+   input, several levels down in .asc-ui-search__action). */
+.asc-ui-search > input:not([type="checkbox"], [type="radio"], [type="hidden"], [type="range"]) {
+    width: var(--asc-ui-search-width);
+    max-width: 100%;
+    height: 2.75rem;
+    border-radius: var(--border-radius-full);
+    padding-inline: 1.25rem;
+    border: 1px solid var(--color-border);
+    background: var(--color-input);
+    color: var(--color-fg);
+    font-size: var(--body-font-size-s);
+    transition: width var(--transition-normal), border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+/* Reserve room for an in-field action button (e.g. color search) — only
+   applies when .asc-ui-search__action is actually present, so plain search
+   inputs elsewhere are unaffected. Specificity intentionally beats the
+   baseline rule above (:has() adds a class-level selector). */
+.asc-ui-search:has(.asc-ui-search__action) > input:not([type="checkbox"], [type="radio"], [type="hidden"], [type="range"]) {
+    padding-inline-end: 2.75rem;
+}
+
+/* In-field action button slot — vertically centered, right-aligned inside
+   the pill. Wrap the actual trigger (e.g. an .asc-ui-dropdown) inside it;
+   position:relative lives on the inner wrapper, not here, so it doesn't
+   fight this element's own absolute positioning. */
+.asc-ui-search__action {
+    position: absolute;
+    inset-inline-end: var(--spacing-xs);
+    top: 50%;
+    translate: 0 -50%;
+    z-index: 1;
+}
+
+.asc-ui-search > input:not([type="checkbox"], [type="radio"], [type="hidden"], [type="range"]):focus {
+    width: calc(var(--asc-ui-search-width) * 1.66);
+    outline: 2px solid var(--color-ring);
+    outline-offset: -2px;
+    border-color: var(--color-ring);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-ring) 20%, transparent);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit control / dropdown — filter control button + popover panel
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-control-set {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+}
+
+.asc-ui-control {
+    min-width: 8.5rem;
+}
+
+.asc-ui-control-btn {
+    justify-content: flex-start;
+    gap: var(--spacing-xs);
+    min-width: 100%;
+}
+
+.asc-ui-chevron {
+    margin-left: auto;
+    color: var(--color-muted-fg);
+}
+
+.asc-ui-dropdown {
+    position: relative;
+}
+
+.asc-ui-dropdown__panel {
+    position: absolute;
+    top: calc(100% + var(--spacing-xs));
+    left: 0;
+    min-width: 16rem;
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-md);
+    box-shadow: var(--shadow-lg);
+    padding: var(--spacing-sm);
+    z-index: var(--z-dropdown);
+}
+
+.asc-ui-dropdown__panel[hidden] {
+    display: none;
+}
+
+/* Popovers promote to the top layer, breaking the position:relative anchoring from
+   .asc-ui-dropdown above — top/left are set inline by JS from the trigger's rect instead. */
+.asc-ui-dropdown__panel[popover] {
+    position: fixed;
+    inset: auto;
+    margin: 0;
+}
+
+/* Author-set `display` (e.g. .asc-ui-color-picker's flex) beats the UA popover
+   stylesheet's default closed-state display:none regardless of specificity — both are
+   normal-priority author-vs-UA rules, and author always wins on that axis. Restate it
+   explicitly so the panel doesn't render open by default. */
+.asc-ui-dropdown__panel[popover]:not(:popover-open) {
+    display: none;
+}
+
+.asc-ui-dropdown__list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: var(--spacing-xs);
+}
+
+.asc-ui-dropdown__item {
+    display: flex;
+    gap: var(--spacing-xs);
+    align-items: center;
+    color: var(--color-fg);
+    font-size: var(--body-font-size-s);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit menu — popover menu of selectable rows / actions. Drop inside an
+   .asc-panel (use --no-pad) or .asc-ui-dropdown__panel. Items can be
+   <button>, <a>, or <li>. Mark the current row with --active.
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-menu {
+    list-style: none;
+    margin: 0;
+    padding: var(--spacing-xs);
+}
+
+.asc-ui-menu__header {
+    padding: var(--spacing-xs) var(--spacing-md);
+    color: var(--color-muted-fg);
+    font-size: var(--body-font-size-xs);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.asc-ui-menu__item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    width: 100%;
+    box-sizing: border-box;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border: 0;
+    border-radius: var(--border-radius-sm);
+    background: transparent;
+    color: var(--color-fg);
+    font-size: var(--body-font-size-s);
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+
+.asc-ui-menu__item:hover {
+    background: var(--color-accent);
+}
+
+.asc-ui-menu__item:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: -2px;
+}
+
+.asc-ui-menu__item--active {
+    background: var(--color-accent);
+    font-weight: 500;
+}
+
+.asc-ui-menu__item-label {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.asc-ui-menu__item-meta {
+    font-size: var(--body-font-size-xs);
+    color: var(--color-muted-fg);
+}
+
+.asc-ui-menu__item-check {
+    color: var(--color-primary);
+    font-size: var(--body-font-size-xs);
+}
+
+.asc-ui-menu__separator {
+    height: 1px;
+    margin: var(--spacing-xs) 0;
+    border: 0;
+    background: var(--color-border);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit card — generic surface. Use --interactive for hover, --active for
+   selected state. Slots: __header / __title / __body / __footer.
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-lg);
+    background: var(--color-card);
+    color: var(--color-card-fg);
+    box-shadow: var(--shadow-sm);
+}
+
+.asc-ui-card--interactive {
+    transition:
+        border-color var(--transition-fast),
+        background var(--transition-fast),
+        box-shadow var(--transition-fast),
+        transform var(--transition-fast);
+}
+
+.asc-ui-card--interactive:hover {
+    border-color: color-mix(in srgb, var(--color-fg) 18%, var(--color-border));
+    background: color-mix(in srgb, var(--color-fg) 2.5%, var(--color-card));
+    box-shadow: var(--shadow-md);
+}
+
+.asc-ui-card--interactive:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}
+
+.asc-ui-card--active {
+    border-color: var(--color-primary);
+    background: color-mix(in srgb, var(--color-primary) 5%, var(--color-card));
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-primary) 35%, transparent);
+}
+
+/* --compact: tighter padding for dense card grids (e.g. details-renditions'
+   format-picker cards) where the default --spacing-md reads as too roomy. */
+.asc-ui-card--compact {
+    padding: var(--spacing-sm);
+}
+
+/* Size scale (--xs … --xxl): caps card width for grids of small, uniformly-sized
+   cards (e.g. details-renditions' format-picker cards) that need an author-facing
+   size knob. Unmodified default is unconstrained. Pair with a block-level grid
+   (`grid-template-columns: repeat(auto-fit, minmax(…, 1fr))`) whose minimum scales
+   alongside — that minmax floor is layout, not look, so it stays block-level CSS. */
+.asc-ui-card--xs {
+    max-width: 140px;
+}
+
+.asc-ui-card--s {
+    max-width: 180px;
+}
+
+.asc-ui-card--m {
+    max-width: 220px;
+}
+
+.asc-ui-card--l {
+    max-width: 280px;
+}
+
+.asc-ui-card--xl {
+    max-width: 340px;
+}
+
+.asc-ui-card--xxl {
+    max-width: 420px;
+}
+
+.asc-ui-card__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--spacing-sm);
+}
+
+.asc-ui-card__title {
+    margin: 0;
+    font-size: var(--body-font-size-m);
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--color-fg);
+    overflow-wrap: break-word;
+}
+
+.asc-ui-card__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    flex: 1;
+    min-height: 0;
+}
+
+.asc-ui-card__footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-block-start: auto;
+    padding-block-start: var(--spacing-md);
+    border-top: 1px solid var(--color-border);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit badge — small status label. Default is muted; semantic modifiers tint.
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-2xs);
+    padding: var(--spacing-2xs) var(--spacing-xs);
+    border-radius: var(--border-radius-sm);
+    font-size: var(--body-font-size-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+    background: var(--color-muted);
+    color: var(--color-muted-fg);
+}
+
+.asc-ui-badge--primary {
+    background: var(--color-accent);
+    color: var(--color-accent-fg);
+}
+
+.asc-ui-badge--success {
+    background: color-mix(in srgb, var(--validation-success-color) 16%, var(--color-card));
+    color: color-mix(in srgb, var(--validation-success-color) 70%, var(--color-fg));
+}
+
+.asc-ui-badge--warning {
+    background: color-mix(in srgb, var(--validation-warning-color) 18%, var(--color-card));
+    color: color-mix(in srgb, var(--validation-warning-color) 70%, var(--color-fg));
+}
+
+.asc-ui-badge--danger {
+    background: color-mix(in srgb, var(--color-destructive) 14%, var(--color-card));
+    color: color-mix(in srgb, var(--color-destructive) 75%, var(--color-fg));
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit corner-ribbon — diagonal banner across a container's top-left corner
+   (e.g. "flag" a card with a one-word status). Host element needs
+   `position: relative` (or `absolute`, already true of most cards) and
+   `overflow: hidden` to clip the ribbon's overhang. Keep the label to one
+   short word — it's rotated into a fixed-width strip.
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-corner-ribbon {
+    position: absolute;
+    top: 14px;
+    left: -32px;
+    width: 120px;
+    padding: var(--spacing-2xs) 0;
+    background: var(--color-primary);
+    color: var(--color-primary-fg);
+    font-size: var(--body-font-size-2xs);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-align: center;
+    text-transform: uppercase;
+    transform: rotate(-45deg);
+    transform-origin: center;
+    pointer-events: none;
+    z-index: 5;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit toast — notification feedback (scripts/asc/notifications.js). The
+   region is a fixed corner anchor; individual toasts stack inside it.
+
+   The region is a `popover="manual"` element (set in notifications.js),
+   promoting it into the browser's top layer — the same layer every <dialog>
+   in this app uses via showModal(). A z-index can never out-rank the top
+   layer, no matter how high (see --z-toast below), so this is what actually
+   keeps a toast above an open modal; z-index is kept only as the fallback
+   for a browser without Popover API support, where the region is just a
+   plain fixed div. The border/background/padding/overflow resets below
+   undo the UA's default [popover] stylesheet (a bordered, opaque box) —
+   this region has never had its own visible chrome, only the toasts inside it.
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-toast-region {
+    position: fixed;
+    z-index: var(--z-toast);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md);
+    margin: 0;
+    border: none;
+    background: none;
+    overflow: visible;
+    pointer-events: none;
+    max-width: min(24rem, calc(100vw - 2 * var(--spacing-md)));
+}
+
+.asc-ui-toast-region--top-left {
+    top: 0;
+    left: 0;
+}
+
+.asc-ui-toast-region--top-center {
+    top: 0;
+    left: 50%;
+    translate: -50% 0;
+    align-items: center;
+}
+
+.asc-ui-toast-region--top-right {
+    top: 0;
+    right: 0;
+}
+
+.asc-ui-toast-region--bottom-left {
+    bottom: 0;
+    left: 0;
+    flex-direction: column-reverse;
+}
+
+.asc-ui-toast-region--bottom-center {
+    bottom: 0;
+    left: 50%;
+    translate: -50% 0;
+    align-items: center;
+    flex-direction: column-reverse;
+}
+
+.asc-ui-toast-region--bottom-right {
+    bottom: 0;
+    right: 0;
+    flex-direction: column-reverse;
+}
+
+.asc-ui-toast {
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    min-width: 16rem;
+    max-width: 100%;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-md);
+    background: var(--color-card);
+    color: var(--color-card-fg);
+    box-shadow: var(--shadow-lg);
+    opacity: 1;
+    translate: 0 0;
+    transition: opacity var(--transition-fast), translate var(--transition-fast);
+}
+
+.asc-ui-toast--leaving {
+    opacity: 0;
+    translate: 0 8px;
+}
+
+.asc-ui-toast__icon {
+    display: flex;
+    flex-shrink: 0;
+    color: var(--color-muted-fg);
+}
+
+.asc-ui-toast__message {
+    flex: 1;
+    font-size: var(--body-font-size-s);
+}
+
+.asc-ui-toast__dismiss {
+    flex-shrink: 0;
+}
+
+.asc-ui-toast--success .asc-ui-toast__icon {
+    color: var(--validation-success-color);
+}
+
+.asc-ui-toast--warning .asc-ui-toast__icon {
+    color: var(--validation-warning-color);
+}
+
+.asc-ui-toast--danger .asc-ui-toast__icon {
+    color: var(--color-destructive);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit chip — static tag / token (e.g. an active search facet)
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-chip-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+}
+
+.asc-ui-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-2xs) var(--spacing-sm);
+    border-radius: var(--border-radius-full);
+    border: 1px solid var(--color-border);
+    background: var(--color-accent);
+    color: var(--color-accent-fg);
+    font-size: var(--body-font-size-xs);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+/* Muted variant — same pill shape, neutral background instead of accent. For a
+   secondary fact pill (e.g. format/size/dimensions) sitting next to a default
+   (accent) chip that carries the primary identity — see details-preview's
+   rendition info overlay (blocks/details-preview/rendition-tags.js). */
+.asc-ui-chip--muted {
+    background: var(--color-muted);
+    color: var(--color-muted-fg);
+    border-color: var(--color-border);
+}
+
+/* Removable variant — use a <button> element; aria-label should describe the remove action */
+.asc-ui-chip--removable {
+    cursor: pointer;
+    font-family: inherit;
+
+    &:hover {
+        background: var(--color-secondary);
+        border-color: var(--color-primary);
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--color-ring);
+        outline-offset: 2px;
+    }
+}
+
+/* The × icon inside a removable chip */
+.asc-ui-chip__remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.1em;
+    height: 1.1em;
+    border-radius: 50%;
+    background: color-mix(in srgb, currentcolor 15%, transparent);
+    font-size: 0.85em;
+    line-height: 1;
+
+    .asc-ui-chip--removable:hover & {
+        background: color-mix(in srgb, currentcolor 28%, transparent);
+    }
+}
+
+/* asc-ui-chip-extras / asc-view-more-btn: the "View more (N)" disclosure pattern for a
+   long chip list, generated by renderPropertyValue() (scripts/asc/html.js) and consumed
+   by details-asset-metadata and details-rendition-metadata. display: contents keeps the
+   extra chips participating in the parent's own flex-wrap layout (asc-ui-chip-list)
+   rather than boxed in a sub-container. */
+.asc-ui-chip-extras {
+    display: contents;
+
+    &.is-hidden {
+        display: none;
+    }
+}
+
+.asc-view-more-btn {
+    display: block;
+    margin-top: var(--spacing-2xs);
+    padding: 0;
+    background: none;
+    border: none;
+    color: var(--link-color, var(--color-primary));
+    font-size: var(--body-font-size-xs);
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.asc-view-more-btn:hover {
+    opacity: 0.75;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit count — small numeric pill (e.g. active-collection count on a trigger)
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-count {
+    display: inline-block;
+    min-width: 1.25rem;
+    height: 1.25rem;
+    padding: 0 var(--spacing-sm);
+    line-height: 1.25rem;
+    text-align: center;
+    border-radius: var(--border-radius-full);
+    background: var(--color-primary);
+    color: var(--color-primary-fg);
+    font-size: var(--body-font-size-xs);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.asc-ui-count--muted {
+    background: var(--color-muted);
+    color: var(--color-muted-fg);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit empty-state — placeholder for empty lists / no results
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-empty-state {
+    display: grid;
+    gap: var(--spacing-sm);
+    justify-items: center;
+    text-align: center;
+    padding: var(--spacing-3xl) var(--spacing-md);
+    border: 1px dashed var(--color-border);
+    border-radius: var(--border-radius-lg);
+    background: color-mix(in srgb, var(--color-muted) 50%, var(--color-bg));
+}
+
+/* Borderless variant — for empty states that ARE the whole content area
+   (e.g. a full results grid), where a dashed inset card reads as a small
+   placeholder rather than the page's primary message. */
+.asc-ui-empty-state--plain {
+    border: 0;
+    border-radius: 0;
+    background: none;
+}
+
+.asc-ui-empty-state__icon {
+    font-size: 2rem;
+    line-height: 1;
+    color: var(--color-muted-fg);
+}
+
+.asc-ui-empty-state__title {
+    margin: 0;
+    font-size: var(--heading-font-size-s);
+    font-weight: 600;
+    color: var(--color-fg);
+}
+
+.asc-ui-empty-state__hint {
+    margin: 0;
+    max-width: 40ch;
+    font-size: var(--body-font-size-s);
+    color: var(--color-muted-fg);
+    line-height: 1.5;
+}
+
+.asc-ui-empty-state__actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    margin-block-start: var(--spacing-sm);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit segmented — option-pill / segmented control (single choice).
+   Toggle the active option with [aria-pressed="true"] or .is-active.
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-segmented {
+    display: inline-flex;
+    gap: var(--spacing-2xs);
+    padding: var(--spacing-2xs);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-full);
+    background: var(--color-muted);
+}
+
+.asc-ui-segmented__option {
+    appearance: none;
+    border: 0;
+    border-radius: var(--border-radius-full);
+    padding: var(--spacing-xs) var(--spacing-md);
+    background: transparent;
+    color: var(--color-muted-fg);
+    font-size: var(--body-font-size-s);
+    font-weight: 500;
+    line-height: 1;
+    cursor: pointer;
+    transition: background var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.asc-ui-segmented__option:hover {
+    color: var(--color-fg);
+    background: color-mix(in srgb, var(--color-fg) 8%, transparent);
+}
+
+.asc-ui-segmented__option.is-active,
+.asc-ui-segmented__option[aria-pressed="true"] {
+    background: var(--color-card);
+    color: var(--color-fg);
+    box-shadow: var(--shadow-sm);
+}
+
+.asc-ui-segmented__option:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}
+
+/* Sizes — default is medium */
+.asc-ui-segmented--sm .asc-ui-segmented__option {
+    padding: var(--spacing-2xs) var(--spacing-sm);
+    font-size: var(--body-font-size-xs);
+}
+
+.asc-ui-segmented--lg .asc-ui-segmented__option {
+    padding: var(--spacing-sm) var(--spacing-lg);
+    font-size: var(--body-font-size-m);
+}
+
+.asc-ui-segmented--xl .asc-ui-segmented__option {
+    padding: var(--spacing-md) var(--spacing-xl);
+    font-size: var(--body-font-size-m);
+}
+
+/* Icon variant — each option is a bordered circle; inactive = white card, active = muted grey */
+.asc-ui-segmented--icon {
+    background: var(--color-card);
+    padding: var(--spacing-xs);
+    gap: var(--spacing-xs);
+}
+
+.asc-ui-segmented--icon .asc-ui-segmented__option {
+    border: 1px solid var(--color-border);
+    background: var(--color-card);
+}
+
+.asc-ui-segmented--icon .asc-ui-segmented__option.is-active,
+.asc-ui-segmented--icon .asc-ui-segmented__option[aria-pressed="true"] {
+    background: var(--color-muted);
+    color: var(--color-fg);
+    box-shadow: none;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit switch — accessible on/off toggle built on a native checkbox
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    cursor: pointer;
+    font-size: var(--body-font-size-s);
+    color: var(--color-fg);
+}
+
+.asc-ui-switch input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+}
+
+.asc-ui-switch__track {
+    position: relative;
+    flex-shrink: 0;
+    width: 2.5rem;
+    height: 1.5rem;
+    border-radius: var(--border-radius-full);
+    background: color-mix(in srgb, var(--color-muted-fg) 45%, var(--color-muted));
+    transition: background var(--transition-fast);
+}
+
+.asc-ui-switch__thumb {
+    position: absolute;
+    top: 0.1875rem;
+    left: 0.1875rem;
+    width: 1.125rem;
+    height: 1.125rem;
+    border-radius: var(--border-radius-full);
+    background: var(--color-card);
+    box-shadow: var(--shadow-sm);
+    transition: transform var(--transition-fast);
+}
+
+.asc-ui-switch input:checked + .asc-ui-switch__track {
+    background: var(--color-primary);
+}
+
+.asc-ui-switch input:checked + .asc-ui-switch__track .asc-ui-switch__thumb {
+    transform: translateX(1rem);
+}
+
+.asc-ui-switch input:focus-visible + .asc-ui-switch__track {
+    outline: var(--input-focus-ring-width) solid var(--color-ring);
+    outline-offset: 2px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit spinner — indeterminate loading indicator. Size via --asc-ui-spinner-size.
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-spinner {
+    --asc-ui-spinner-size: 1.5rem;
+
+    display: inline-block;
+    width: var(--asc-ui-spinner-size);
+    height: var(--asc-ui-spinner-size);
+    border: 2px solid color-mix(in srgb, var(--color-fg) 15%, transparent);
+    border-top-color: var(--color-primary);
+    border-radius: var(--border-radius-full);
+    animation: asc-ui-spin 0.7s linear infinite;
+}
+
+@keyframes asc-ui-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit skeleton — shimmer placeholder while content loads
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-skeleton {
+    position: relative;
+    display: block;
+    overflow: hidden;
+    background: var(--color-muted);
+    border-radius: var(--border-radius-sm);
+}
+
+.asc-ui-skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+        90deg,
+        transparent,
+        color-mix(in srgb, var(--color-fg) 6%, transparent),
+        transparent
+    );
+    animation: asc-ui-shimmer 1.4s ease-in-out infinite;
+}
+
+.asc-ui-skeleton--text {
+    height: 0.75em;
+    margin-block: 0.25em;
+}
+
+.asc-ui-skeleton--title {
+    height: 1.25em;
+    width: 60%;
+}
+
+.asc-ui-skeleton--thumb {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: var(--border-radius-md);
+}
+
+.asc-ui-skeleton--circle {
+    aspect-ratio: 1;
+    border-radius: var(--border-radius-full);
+}
+
+/* asc-ui-asset-card__thumb's own decorative gradient background (defined later
+   in this file) would otherwise win the tie against .asc-ui-skeleton's flat
+   background at equal specificity — pin it back to the plain skeleton look
+   when the two are combined on the same element (loading-state asset cards). */
+.asc-ui-asset-card__thumb.asc-ui-skeleton {
+    background: var(--color-muted);
+}
+
+@keyframes asc-ui-shimmer {
+    100% { transform: translateX(100%); }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit collection-card — preview tile for a collection (name + thumb grid)
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-collection-card {
+    display: grid;
+    gap: var(--spacing-sm);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-lg);
+    background: var(--color-card);
+    box-shadow: var(--shadow-sm);
+    padding: var(--spacing-md);
+}
+
+.asc-ui-collection-card__row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.asc-ui-collection-card__meta {
+    color: var(--color-muted-fg);
+    font-size: var(--body-font-size-xs);
+}
+
+/*
+ * Adaptive mosaic — rows/cols are computed per-instance (asset count varies per
+ * collection) and passed in as inline custom properties, same idiom as
+ * asc-list-view's --asc-list-cols. Each row is its own mini-grid sized to
+ * exactly the number of thumbnails it holds (never more), so a trailing
+ * partial row never leaves empty cells — its thumbnails just render wider
+ * instead. Bounded to 5 columns × 3 rows (max 15 visible thumbnails); a
+ * collection with more assets shows a "+N" badge on the last thumbnail.
+ *
+ * `--collection-card-mosaic-height` (computed by mosaicHeight() — fewer rows
+ * means a taller box, i.e. bigger thumbnails) is what actually gives this box
+ * its height: a standalone `asc-ui-collection-card` has no other definite
+ * height to fill (the card is just as tall as its own content), so this has
+ * to be an explicit pixel value rather than a percentage. Nested inside an
+ * asset-card `__thumb` instead (the `teaser` block's usage), `__thumb` itself
+ * already establishes a real box via its own `aspect-ratio`/flex sizing —
+ * see the `__thumb .asc-ui-collection-card__thumbs` override below, which
+ * fills that exactly instead of using this fixed height, so the mosaic always
+ * fills the thumb's actual shape (cropping via object-fit: cover) rather than
+ * this fixed height mismatching it and exposing this grey background above/
+ * below, or (if capped shorter instead) not filling a narrow thumb at all.
+ */
+.asc-ui-collection-card__thumbs {
+    display: flex;
+    flex-direction: column;
+    height: var(--collection-card-mosaic-height, 200px);
+    gap: 2px;
+    background: var(--color-muted);
+    overflow: hidden;
+}
+
+.asc-ui-collection-card__thumb-row {
+    display: grid;
+    grid-template-columns: repeat(var(--collection-card-row-cols, 1), 1fr);
+    gap: 2px;
+    flex: 1;
+    min-height: 0;
+}
+
+/* Curated photo-collage layouts (mosaicPattern() in mosaic.js) — a single grid
+   with per-cell grid-column/row spans (set inline per cell) instead of the
+   __thumb-row stack above, so a handful of thumbnails render as one bigger
+   tile plus several smaller ones rather than N equal strips. */
+.asc-ui-collection-card__thumbs--pattern {
+    display: grid;
+    grid-template-columns: repeat(var(--collection-card-pattern-cols, 1), 1fr);
+    grid-template-rows: repeat(var(--collection-card-pattern-rows, 1), 1fr);
+    gap: 2px;
+}
+
+.asc-ui-collection-card__thumb {
+    position: relative;
+    overflow: hidden;
+    background: var(--color-muted);
+}
+
+.asc-ui-collection-card__thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.asc-ui-collection-card__thumb-more {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-primary-fg);
+    background: color-mix(in srgb, var(--color-fg) 55%, transparent);
+    font-weight: 600;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit asset-row — compact horizontal asset row (list view)
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-asset-row {
+    display: grid;
+    grid-template-columns: 3rem 1fr auto;
+    gap: var(--spacing-sm);
+    align-items: center;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-md);
+    background: var(--color-card);
+    padding: var(--spacing-sm);
+}
+
+.asc-ui-asset-row__thumb {
+    width: 3rem;
+    height: 3rem;
+    border-radius: var(--border-radius-full);
+    background: linear-gradient(130deg, color-mix(in srgb, var(--color-primary) 28%, white), color-mix(in srgb, var(--color-accent) 68%, white));
+}
+
+.asc-ui-asset-row__title {
+    margin: 0;
+    color: var(--color-fg);
+    font-size: var(--body-font-size-s);
+    font-weight: 600;
+}
+
+.asc-ui-asset-row__meta {
+    margin: 0;
+    color: var(--color-muted-fg);
+    font-size: var(--body-font-size-xs);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit table — data table with header + zebra-ready rows
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-table-wrap {
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-md);
+    overflow: hidden;
+}
+
+.asc-ui-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--body-font-size-s);
+}
+
+.asc-ui-table th,
+.asc-ui-table td {
+    padding: 0.625rem 0.75rem;
+    border-bottom: 1px solid var(--color-border);
+    text-align: left;
+}
+
+.asc-ui-table th {
+    font-size: var(--body-font-size-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-muted-fg);
+    background: var(--color-muted);
+}
+
+.asc-ui-table tr:last-child td {
+    border-bottom: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit masonry — column-flow gallery of asset tiles
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-masonry {
+    columns: 3;
+    column-gap: 0.75rem;
+}
+
+.asc-ui-masonry__item {
+    break-inside: avoid;
+    margin-bottom: 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-md);
+    overflow: hidden;
+    position: relative;
+    background: var(--color-card);
+}
+
+.asc-ui-masonry__photo {
+    width: 100%;
+    background: linear-gradient(130deg, color-mix(in srgb, var(--color-primary) 22%, white), color-mix(in srgb, var(--color-accent) 65%, white));
+}
+
+.asc-ui-masonry__photo--tall { aspect-ratio: 3 / 4; }
+.asc-ui-masonry__photo--wide { aspect-ratio: 3 / 2; }
+.asc-ui-masonry__photo--square { aspect-ratio: 1; }
+
+.asc-ui-masonry__actions {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    display: flex;
+    gap: 0.375rem;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit icon-btn — circular icon-only button for card/photo overlays
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-icon-btn {
+    width: 2rem;
+    height: 2rem;
+    min-width: 2rem;
+    border-radius: 50%;
+    border: 1px solid color-mix(in srgb, var(--color-border) 85%, var(--color-fg));
+    background: color-mix(in srgb, var(--color-card) 90%, white);
+    color: var(--color-fg);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    line-height: 1;
+    transition: transform var(--transition-fast), background var(--transition-fast), color var(--transition-fast);
+}
+
+.asc-ui-icon-btn:hover {
+    transform: scale(1.1);
+    background: var(--color-card);
+}
+
+.asc-ui-icon-btn:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}
+
+.asc-ui-icon-btn--sm {
+    width: 1.5rem;
+    height: 1.5rem;
+    min-width: 1.5rem;
+    font-size: var(--body-font-size-xs);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit asset-card — vertical asset tile: thumbnail + title + metadata.
+   Use --interactive for hover. Overlay slot for hover actions, badge slot
+   for type/status. Pair the thumb with <img> or .asc-ui-filetype.
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-asset-card {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-lg);
+    background: var(--color-card);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+}
+
+.asc-ui-asset-card--interactive {
+    transition: box-shadow var(--transition-fast), transform var(--transition-fast), border-color var(--transition-fast);
+}
+
+.asc-ui-asset-card--interactive:hover {
+    border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border));
+    box-shadow: var(--shadow-md);
+    transform: var(--lift-sm);
+}
+
+.asc-ui-asset-card--interactive:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}
+
+.asc-ui-asset-card__thumb {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: linear-gradient(130deg, color-mix(in srgb, var(--color-primary) 16%, var(--color-card)), color-mix(in srgb, var(--color-accent) 55%, var(--color-card)));
+}
+
+.asc-ui-asset-card__thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* __thumb's content is sometimes wrapped in a link (e.g. a teaser's CTA
+   preview) — without this, that <a> is just another flex item with
+   flex-basis: auto, so it shrinks to its content's natural size instead of
+   filling __thumb, leaving the surrounding gradient background exposed
+   around the image/mosaic. Force it to fill the box so its own 100%-sized
+   children (img, or the mosaic below) have something definite to fill, and
+   repeat __thumb's own center/center so content that *isn't* 100%-sized
+   (.asc-ui-filetype's fallback glyph, which stays its natural small size)
+   still lands in the middle of the box instead of pinned to flex-start. */
+.asc-ui-asset-card__thumb > a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    color: inherit;
+    text-decoration: none;
+}
+
+/* A collection-card mosaic in __thumb fills it completely in both dimensions,
+   regardless of orientation — __thumb centers its content (row-direction
+   flex, align-items/justify-content: center) rather than stretching it, so
+   without this the mosaic would just size to its own content instead. Unlike
+   the standalone collection-card usage (styles/ui-kit.css, collection-card
+   section), __thumb already establishes a real, definite box of its own —
+   `aspect-ratio: 4 / 3` by default, or a flex-stretched height to match
+   --horizontal's body — so 100%/100% here fills *that* exactly instead of
+   the mosaic's own fixed --collection-card-mosaic-height. That means a teaser
+   mosaic always fills its actual thumb shape (each row still flex: 1, so
+   every row/thumbnail gets an even share of it, cropped via object-fit:
+   cover) rather than a fixed height mismatching that shape — showing the
+   mosaic's grey background above/below it, or, for a narrow --horizontal
+   thumb column, stretching a couple of columns into tall vertical strips. */
+.asc-ui-asset-card__thumb .asc-ui-collection-card__thumbs {
+    width: 100%;
+    height: 100%;
+}
+
+.asc-ui-asset-card__badge {
+    position: absolute;
+    top: var(--spacing-sm);
+    left: var(--spacing-sm);
+}
+
+.asc-ui-asset-card__overlay {
+    position: absolute;
+    top: var(--spacing-sm);
+    right: var(--spacing-sm);
+    display: flex;
+    gap: var(--spacing-xs);
+}
+
+/* --bottom: a second overlay slot, bottom-right instead of top-right — e.g. pairing a
+   top-right remove action with a bottom-right secondary action (notes, etc.). */
+.asc-ui-asset-card__overlay--bottom {
+    top: auto;
+    bottom: var(--spacing-sm);
+}
+
+/* --overlay-on-hover: hide __overlay slots until hover/focus — for a canvas of many
+   cards (e.g. the board) where always-visible action buttons would be too busy. Opt-in
+   since most asset-card contexts (search results, collections) show their actions
+   plainly instead. Reveals on :focus-within too, not just :hover, so a keyboard-focused
+   button is actually visible before it's activated — not just technically reachable.
+   A consuming block may reveal it under its own extra states too (e.g. board's
+   .board__item--selected) by adding its own opacity: 1 rule alongside this one. */
+.asc-ui-asset-card--overlay-on-hover .asc-ui-asset-card__overlay {
+    gap: var(--spacing-sm);
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+}
+
+.asc-ui-asset-card--overlay-on-hover:hover .asc-ui-asset-card__overlay,
+.asc-ui-asset-card--overlay-on-hover:focus-within .asc-ui-asset-card__overlay {
+    opacity: 1;
+}
+
+.asc-ui-asset-card__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-2xs);
+    padding: var(--spacing-md);
+}
+
+.asc-ui-asset-card__title {
+    margin: 0;
+    font-size: var(--body-font-size-s);
+    font-weight: 600;
+    color: var(--color-fg);
+    overflow-wrap: break-word;
+}
+
+.asc-ui-asset-card__meta {
+    margin: 0;
+    font-size: var(--body-font-size-xs);
+    color: var(--color-muted-fg);
+}
+
+.asc-ui-asset-card__footer {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit selected — generic selection ring for a list/grid item (an asset
+   card, a list row, or a custom view's own item root). Toggled by
+   scripts/asc/core/utils/selection.js — not tied to any one item shape, so
+   any results view gets a consistent selected look for free.
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-selected {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit thumb — small fixed-size asset thumbnail for dense contexts
+   (table cells, list rows, menus). Size via --asc-ui-thumb-size.
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-thumb {
+    --asc-ui-thumb-size: 2.5rem;
+
+    flex-shrink: 0;
+    width: var(--asc-ui-thumb-size);
+    height: var(--asc-ui-thumb-size);
+    border-radius: var(--border-radius-sm);
+    overflow: hidden;
+    background: linear-gradient(130deg, color-mix(in srgb, var(--color-primary) 22%, var(--color-card)), color-mix(in srgb, var(--color-accent) 60%, var(--color-card)));
+}
+
+.asc-ui-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit filetype — placeholder for non-visual assets (PDF, video, doc).
+   Drop inside an asset-card / detail thumb when there is no image preview.
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-filetype {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xs);
+    color: var(--color-muted-fg);
+}
+
+.asc-ui-filetype__glyph {
+    font-size: var(--icon-size-lg);
+    line-height: 1;
+}
+
+/* Glyph as an inline SVG icon (e.g. a lock, for a "no access" placeholder) instead of
+   an emoji — size it explicitly since font-size doesn't apply to SVG dimensions. */
+.asc-ui-filetype__glyph svg {
+    width: var(--icon-size-lg);
+    height: var(--icon-size-lg);
+}
+
+.asc-ui-filetype__ext {
+    font-size: var(--body-font-size-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit actions — labeled action bar: stacked icon + text so each option is
+   self-explanatory (e.g. asset details: Download / Add / Share).
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+}
+
+.asc-ui-action {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-xs);
+    min-width: 4.5rem;
+    padding: var(--spacing-sm);
+    border: 0;
+    border-radius: var(--border-radius-md);
+    background: transparent;
+    color: var(--color-fg);
+    font-size: var(--body-font-size-xs);
+    font-weight: 500;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+
+.asc-ui-action:hover {
+    background: var(--color-muted);
+}
+
+.asc-ui-action:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}
+
+/* Author-stylesheet `display: flex` above would otherwise beat the UA stylesheet's
+   [hidden] rule at equal specificity (origin order, not just specificity) — callers
+   toggling `hidden` on an .asc-ui-action (e.g. gating an action by rendition type)
+   need this to actually take effect. */
+.asc-ui-action[hidden] {
+    display: none;
+}
+
+.asc-ui-action__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: var(--border-radius-full);
+    background: var(--color-secondary);
+    color: var(--color-secondary-fg);
+    border: 1px solid var(--color-border);
+}
+
+.asc-ui-action--primary .asc-ui-action__icon {
+    background: var(--color-primary);
+    color: var(--color-primary-fg);
+    border-color: transparent;
+}
+
+.asc-ui-action--danger .asc-ui-action__icon {
+    background: color-mix(in srgb, var(--color-destructive) 14%, var(--color-card));
+    color: var(--color-destructive);
+    border-color: transparent;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit selection-bar — compact inline bar for bulk actions on a multi-select
+   (count + inline icon+label pills + clear), unlike @kit actions' stacked
+   icon-over-label buttons which need more vertical room. Sized to fit a
+   single toolbar row — e.g. a sticky bar that appears once a selection is
+   non-empty (see search-results' selection bar, which teleports into the
+   page header the same way search-active-filters does).
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-selection-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--spacing-md);
+    min-height: 2.75rem;
+}
+
+.asc-ui-selection-bar[hidden] {
+    display: none;
+}
+
+.asc-ui-selection-bar__count {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    color: var(--color-fg);
+    font-size: var(--body-font-size-s);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.asc-ui-selection-bar__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-2xs);
+}
+
+.asc-ui-selection-bar__action {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-2xs);
+    border: 0;
+    border-radius: var(--border-radius-full);
+    padding: var(--spacing-xs) var(--spacing-md);
+    background: transparent;
+    color: var(--color-fg);
+    font-size: var(--body-font-size-s);
+    font-weight: 500;
+    line-height: 1;
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+
+.asc-ui-selection-bar__action:hover {
+    background: color-mix(in srgb, var(--color-fg) 8%, transparent);
+}
+
+.asc-ui-selection-bar__action:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}
+
+.asc-ui-selection-bar__icon {
+    display: inline-flex;
+    width: 1rem;
+    height: 1rem;
+    transform: translateY(-0.03em); /* optical nudge vs. adjacent label text, matches .asc-collection-toggle__icon */
+}
+
+.asc-ui-selection-bar__icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+.asc-ui-selection-bar__group {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-inline-start: auto;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit metadata — asset property pairs. Default = stacked rows (sidebars);
+   --grid = responsive cells (wide panels). Markup: <dl> > __row(div) > dt/dd.
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-metadata {
+    margin: 0;
+    display: grid;
+    gap: 0;
+}
+
+.asc-ui-metadata__row {
+    display: grid;
+    grid-template-columns: 9rem 1fr;
+    gap: var(--spacing-md);
+    padding: var(--spacing-sm) 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.asc-ui-metadata__row:last-child {
+    border-bottom: 0;
+}
+
+.asc-ui-metadata__term {
+    margin: 0;
+    font-size: var(--body-font-size-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-muted-fg);
+}
+
+.asc-ui-metadata__value {
+    margin: 0;
+    font-size: var(--body-font-size-s);
+    color: var(--color-fg);
+    overflow-wrap: break-word;
+    min-width: 0;
+}
+
+.asc-ui-metadata--grid {
+    grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+    gap: var(--spacing-md);
+}
+
+.asc-ui-metadata--grid .asc-ui-metadata__row {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-2xs);
+    padding: 0;
+    border-bottom: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit filmstrip — horizontal scroll strip of related assets (e.g. similar
+   assets on the details page). Children are fixed-width asset tiles/cards.
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-filmstrip {
+    display: flex;
+    gap: var(--spacing-md);
+    overflow-x: auto;
+
+    /* overflow-x:auto makes overflow-y:auto too — pad so the cards' hover
+       lift + shadow aren't clipped at the top/bottom edges */
+    padding-block: var(--spacing-sm);
+    scroll-snap-type: x mandatory;
+}
+
+.asc-ui-filmstrip__item {
+    flex: 0 0 auto;
+    width: 10rem;
+    scroll-snap-align: start;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit detail — two-pane asset layout: large preview + metadata aside.
+   Drop inside .asc-dialog__body (asset overlay) or a details page section.
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-detail {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--spacing-xl);
+}
+
+.asc-ui-detail__preview {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 16rem;
+    overflow: hidden;
+    border-radius: var(--border-radius-md);
+    background: linear-gradient(130deg, color-mix(in srgb, var(--color-primary) 14%, var(--color-card)), color-mix(in srgb, var(--color-accent) 50%, var(--color-card)));
+}
+
+.asc-ui-detail__preview img {
+    max-width: 100%;
+    max-height: 70vh;
+    object-fit: contain;
+}
+
+.asc-ui-detail__aside {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+    min-width: 0;
+}
+
+/* Stacked content blocks below the preview/aside (renditions, similar, etc.) */
+.asc-ui-detail__section {
+    margin-block-start: var(--spacing-2xl);
+}
+
+.asc-ui-detail__section-title {
+    margin: 0 0 var(--spacing-md);
+    font-size: var(--heading-font-size-s);
+    font-weight: 600;
+    color: var(--color-fg);
+}
+
+@media (width >= 768px) {
+    .asc-ui-detail {
+        grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+    }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit toolbar — a plain row of `.btn`s (primary/secondary/ghost), wrapping
+   and gapped. Distinct from @kit actions (stacked icon-over-label options,
+   e.g. the asset-details modal) and @kit selection-bar (bulk-select toolbar
+   with a leading count) — this is just "a few text buttons together," the
+   shape a page header's primary-action row needs (see "Page header" under
+   @kit back-heading, docs/UI_KIT.md).
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit swatch — color swatch strip: dot + label. Displays dam:colorDistribution
+   dominant colors. Set --asc-ui-swatch-color inline on each .asc-ui-swatch.
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-swatch-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+}
+
+.asc-ui-swatch {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-2xs) var(--spacing-sm) var(--spacing-2xs) var(--spacing-2xs);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-full);
+    background: var(--color-muted);
+}
+
+.asc-ui-swatch__dot {
+    flex-shrink: 0;
+    width: 1.25rem;
+    height: 1.25rem;
+    border-radius: var(--border-radius-full);
+    background: var(--asc-ui-swatch-color, var(--color-muted));
+    box-shadow: inset 0 0 0 1px rgb(0 0 0 / 12%);
+}
+
+.asc-ui-swatch__label {
+    font-size: var(--body-font-size-xs);
+    font-weight: 500;
+    color: var(--color-fg);
+    line-height: 1;
+    white-space: nowrap;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit color-picker — freehand color input + preset swatch grid, for use
+   inside an .asc-ui-dropdown__panel popover (search-bar color search).
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-color-picker {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+
+    /* Fixed (not min/auto) width — this popover can be anchored inside an
+       .asc-ui-search__action slot, where a shrink-to-fit width combined with
+       a 100%-width child (the color input below) resolves against the
+       search input's own — growing/shrinking — width instead of staying
+       independent. A definite width sidesteps that entirely. */
+    width: 14rem;
+}
+
+.asc-ui-color-picker__input {
+    appearance: none;
+    width: 100%;
+    height: 2.5rem;
+    padding: var(--spacing-2xs);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-md);
+    background: var(--color-card);
+    cursor: pointer;
+
+    &::-webkit-color-swatch-wrapper {
+        padding: 0;
+    }
+
+    &::-webkit-color-swatch {
+        border: none;
+        border-radius: var(--border-radius-sm);
+    }
+
+    &::-moz-color-swatch {
+        border: none;
+        border-radius: var(--border-radius-sm);
+    }
+}
+
+.asc-ui-color-picker__presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+}
+
+.asc-ui-color-picker__preset {
+    width: 1.5rem;
+    height: 1.5rem;
+    padding: 0;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-full);
+    background: var(--asc-ui-swatch-color, var(--color-muted));
+    box-shadow: inset 0 0 0 1px rgb(0 0 0 / 12%);
+    cursor: pointer;
+
+    &:hover,
+    &:focus-visible {
+        outline: 2px solid var(--color-primary);
+        outline-offset: 2px;
+    }
+}
+
+/* Right-aligned, unstretched — reads as a footer action (see .asc-panel__footer)
+   rather than a full-width pill. */
+.asc-ui-color-picker__clear {
+    align-self: flex-end;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Responsive
+───────────────────────────────────────────────────────────────────────── */
+
+@media (width < 900px) {
+    .asc-ui-masonry {
+        columns: 2;
+    }
+}
+
+@media (width < 600px) {
+    .asc-ui-masonry {
+        columns: 1;
+    }
+}
+
+/* asc-ui-asset-card --horizontal: a 42%-wide fixed thumb column gets cramped
+   on narrow viewports — collapse back to the vertical (default) layout.
+   768px matches this project's standard mobile/desktop split (docs/CSS_CONVENTION.md)
+   rather than a phone-only cutoff — a 42%-wide column is cramped on any
+   viewport below that, not just phones. */
+@media (width < 768px) {
+    .asc-ui-asset-card--horizontal {
+        flex-direction: column;
+    }
+
+    /* Same specificity as the --hero override below (two classes vs.
+       three) would otherwise lose to it — repeat the --hero compound
+       selector here so the mobile collapse always wins on narrow screens. */
+    .asc-ui-asset-card--horizontal .asc-ui-asset-card__thumb,
+    .asc-ui-asset-card--hero.asc-ui-asset-card--horizontal .asc-ui-asset-card__thumb {
+        aspect-ratio: 4 / 3;
+        flex: none;
+        min-height: 0;
+    }
+
+    .asc-ui-asset-card--horizontal .asc-ui-asset-card__thumb img {
+        width: 100%;
+        height: 100%;
+    }
+
+    /* --reverse only mirrors left/right in a row layout — on a stacked
+       column there's no "side" left to swap, and row-reverse's higher
+       specificity (two classes) would otherwise win over the plain
+       column rule above and keep it in row layout on narrow screens. */
+    .asc-ui-asset-card--horizontal.asc-ui-asset-card--reverse {
+        flex-direction: column;
+    }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit bubble — speech / message bubble with rounded corners and a
+   directional tail. Default tail: bottom-left.
+   Variants: --bl (default) --br --tl --tr
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-bubble {
+    position: relative;
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-sm) var(--spacing-md);
+    box-shadow: var(--shadow-sm);
+    color: var(--color-fg);
+    font-size: var(--body-font-size-s);
+    line-height: 1.5;
+    width: fit-content;
+    max-width: 28rem;
+}
+
+/* Tail: rotated square — two visible border sides form the triangle tip */
+.asc-ui-bubble::before {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: var(--color-card);
+    transform: rotate(45deg);
+    bottom: -7px;
+    left: 20px;
+    border-right: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+}
+
+/* Bottom-right: shift tail to right edge */
+.asc-ui-bubble--br::before {
+    left: auto;
+    right: 20px;
+}
+
+/* Top-left: flip tail to top edge */
+.asc-ui-bubble--tl::before {
+    top: -7px;
+    bottom: auto;
+    border: none;
+    border-top: 1px solid var(--color-border);
+    border-left: 1px solid var(--color-border);
+}
+
+/* Top-right: flip tail to top-right; all four inset longhands → shorthand */
+.asc-ui-bubble--tr::before {
+    inset: -7px 20px auto auto;
+    border: none;
+    border-top: 1px solid var(--color-border);
+    border-left: 1px solid var(--color-border);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit asset-card --natural: show the image at its own native aspect ratio,
+   never cropped — no fixed aspect-ratio on the thumb, no object-fit crop. Use for
+   preview-first contexts (e.g. the board canvas) where items don't share one shape.
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-asset-card--natural .asc-ui-asset-card__thumb {
+    aspect-ratio: auto;
+    background: none;
+}
+
+.asc-ui-asset-card--natural .asc-ui-asset-card__thumb img {
+    height: auto;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit asset-card --horizontal: thumb becomes a fixed-width column on the
+   left, body fills the rest — for a wide teaser where the title/description
+   matter as much as the image (e.g. a curated directory of links). Put a
+   collection-card mosaic (below) in __thumb instead of a single <img> to
+   preview several assets at once rather than just one.
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-asset-card--horizontal {
+    flex-direction: row;
+}
+
+.asc-ui-asset-card--horizontal .asc-ui-asset-card__thumb {
+    aspect-ratio: unset;
+    flex: 0 0 42%;
+    min-height: 150px;
+}
+
+.asc-ui-asset-card--horizontal .asc-ui-asset-card__body {
+    flex: 1 1 auto;
+    min-width: 0;
+    justify-content: center;
+}
+
+/* Fill the thumb edge-to-edge in horizontal mode — center/contain (the base
+   rule's flex-centering) is right for a single natural-size image, but wrong
+   once the box is a wide fixed column: a single image should fill the whole
+   column rather than float centered with visible empty space. (The mosaic's
+   width is already handled generally, above, regardless of orientation.) */
+.asc-ui-asset-card--horizontal .asc-ui-asset-card__thumb img {
+    width: 100%;
+    height: 100%;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit asset-card --reverse: swaps --horizontal's thumb/body order — thumb
+   on the right, body on the left. No effect without --horizontal (see the
+   mobile collapse below, which forces both back to a stacked column).
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-asset-card--horizontal.asc-ui-asset-card--reverse {
+    flex-direction: row-reverse;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit asset-card --lg: a bigger, more prominent tile — larger title and
+   body padding. Combine with --horizontal for a wide featured teaser.
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-asset-card--lg .asc-ui-asset-card__title {
+    font-size: var(--heading-font-size-s);
+}
+
+.asc-ui-asset-card--lg .asc-ui-asset-card__body {
+    padding: var(--spacing-lg);
+    gap: var(--spacing-xs);
+}
+
+.asc-ui-asset-card--lg .asc-ui-asset-card__meta {
+    font-size: var(--body-font-size-s);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit asset-card --hero: the one oversized, full-width "here's the headline
+   share" tile at the top of a directory/grid — bigger still than --lg.
+   Combine with --horizontal (the thumb/body split); --hero only tunes
+   proportions and typography further, it doesn't redefine the layout.
+   Spanning the full grid/row width is a layout decision for whatever
+   container it sits in, not this card — a Teaser (Hero) is authored in its
+   own section, before a following section of regular cards laid out with
+   style: grid (see AGENTS.md → "DA.live Block Library").
+
+   No min-height override here beyond --horizontal's own 150px floor — the
+   thumb (mosaic or single image) fills whatever height the body ends up
+   needing, so there's no separate box to force taller. max-height caps the
+   other direction instead — a hero with a lot of authored copy, or a mosaic
+   with many rows, shouldn't be free to grow indefinitely; base .asc-ui-
+   asset-card's overflow: hidden clips whatever doesn't fit, and the thumb
+   (single image or mosaic, both height: 100%/object-fit: cover) still fills
+   the clamped box edge-to-edge rather than leaving empty space.
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-asset-card--hero {
+    max-height: 600px;
+}
+
+.asc-ui-asset-card--hero.asc-ui-asset-card--horizontal .asc-ui-asset-card__thumb {
+    flex-basis: 58%;
+}
+
+.asc-ui-asset-card--hero .asc-ui-asset-card__body {
+    padding: var(--spacing-xl);
+    gap: var(--spacing-sm);
+}
+
+.asc-ui-asset-card--hero .asc-ui-asset-card__title {
+    font-size: var(--heading-font-size-l);
+}
+
+.asc-ui-asset-card--hero .asc-ui-asset-card__meta {
+    font-size: var(--body-font-size-m);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   @kit asset-card --zoom-hover: opt-in editorial flourish — the thumb's
+   single cover image scales up slightly on card hover. Combine with
+   --interactive. Direct-child `img` only (a manually authored cover image),
+   deliberately excluding a collection-card mosaic nested in the same thumb —
+   zooming every individual mosaic cell at once on hover reads as busy/chaotic
+   rather than polished. Opt-in rather than folded into --interactive itself,
+   since that modifier is shared by every asset card site-wide (search
+   results, collections, board) and this flourish is only meant for
+   editorial/teaser contexts like teaser.
+───────────────────────────────────────────────────────────────────────── */
+
+.asc-ui-asset-card--zoom-hover .asc-ui-asset-card__thumb > img {
+    transition: transform var(--transition-slow);
+}
+
+.asc-ui-asset-card--zoom-hover:hover .asc-ui-asset-card__thumb > img {
+    transform: scale(1.05);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Reduced motion
+───────────────────────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+    .asc-ui-spinner,
+    .asc-ui-skeleton::after {
+        animation: none;
+    }
+
+    .asc-ui-card--interactive,
+    .asc-ui-asset-card--interactive {
+        transition: none;
+    }
+
+    .asc-ui-asset-card--zoom-hover .asc-ui-asset-card__thumb > img {
+        transition: none;
+    }
+
+    .asc-ui-asset-card--overlay-on-hover .asc-ui-asset-card__overlay {
+        transition: none;
+    }
+}

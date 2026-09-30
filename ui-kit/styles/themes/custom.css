@@ -1,0 +1,60 @@
+/*
+ * Custom Theme Skeleton — USER-OWNED
+ *
+ * Use this file to create your own ASC theme.
+ *
+ * Steps:
+ * 1. Add your theme class to <body> — set theme.default in scripts/configurations.js:
+ *       theme: { default: 'my-brand' }
+ *
+ * 2. Uncomment the variables you want to override below and update their values.
+ *
+ * 3. Link this file in scripts/scripts.js loadLazy() (it's loaded automatically
+ *    if you name it custom.css in styles/themes/).
+ *
+ * Tip: You only need to override the variables you want to change.
+ * All other variables will fall back to the defaults in styles/styles.css and styles/tokens.css.
+ *
+ * Tip: Use an LLM to generate a full color palette from a single brand color:
+ *   "Given my brand primary color #E84A0C, generate a complete CSS variables
+ *    theme overriding the ASC theme variables in styles/themes/custom.css"
+ */
+
+.theme-my-brand {
+
+  /* ── Base colors ────────────────────────────────────────────────── */
+  /* --background-color: #ffffff; */
+  /* --text-color: #1a1a1a; */
+  /* --link-color: #E84A0C; */
+  /* --light-color: #f9f9f9; */
+  /* --dark-color: #555; */
+  /* --border-color: #e0e0e0; */
+
+  /* ── Typography ─────────────────────────────────────────────────── */
+  /* --body-font-family: 'Your Font', sans-serif; */
+  /* --heading-font-family: 'Your Heading Font', sans-serif; */
+
+  /* ── Asset teaser card ──────────────────────────────────────────── */
+  /* --asset-teaser-bg: #fff; */
+  /* --asset-teaser-border: 1px solid #e0e0e0; */
+  /* --asset-teaser-border-radius: 8px; */
+  /* --asset-teaser-shadow: 0 2px 4px rgb(0 0 0 / 0.08); */
+  /* --asset-teaser-shadow-hover: 0 8px 16px rgb(0 0 0 / 0.12); */
+  /* --asset-teaser-title-color: #1a1a1a; */
+  /* --asset-teaser-meta-color: #666; */
+
+  /* ── Search bar ─────────────────────────────────────────────────── */
+  /* --search-input-border: 2px solid #e0e0e0; */
+  /* --search-input-border-radius: 9999px; */
+  /* --search-input-focus-border: #E84A0C; */
+  /* --search-input-focus-ring: 0 0 0 3px rgb(232 74 12 / 0.2); */
+
+  /* ── Buttons ────────────────────────────────────────────────────── */
+  /* --button-primary-bg: #E84A0C; */
+  /* --button-primary-color: #ffffff; */
+  /* --button-primary-hover-bg: #c03d0a; */
+
+  /* ── Modal ──────────────────────────────────────────────────────── */
+  /* --modal-border-radius: 12px; */
+  /* --modal-backdrop: rgb(0 0 0 / 0.6); */
+}

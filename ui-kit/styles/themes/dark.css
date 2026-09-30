@@ -1,0 +1,53 @@
+/*
+ * Dark Theme — "Deep Ocean"
+ *
+ * Inspired by the asset-share-commons-eds gh-pages site.
+ * Deep navy canvas, azure blue accents, sharp typographic contrast.
+ * Professional and refined — like a high-end creative tool.
+ *
+ * Palette:
+ *   Page background  #0f172a  (navy abyss)
+ *   Card surface     #1e293b  (lifted navy)
+ *   Primary text     #f1f5f9  (cool near-white)
+ *   Primary action   #60a5fa  (azure blue — crisp on dark)
+ *   Muted surface    #1e293b  (same as card — intentional)
+ *   Border           #334155  (slate divider)
+ *
+ * Activate: set `theme: { default: 'dark' }` in scripts/configurations.js
+ */
+
+:root {
+  /* ── Semantic color tokens ─────────────────────────────────────── */
+  --color-bg:          #0f172a;
+  --color-fg:          #f1f5f9;
+  --color-card:        #1e293b;
+  --color-card-fg:     #f1f5f9;
+  --color-popover:     #1e293b;
+  --color-popover-fg:  #f1f5f9;
+
+  --color-primary:     #60a5fa;
+  --color-primary-fg:  #0f172a;
+
+  --color-secondary:    #1e293b;
+  --color-secondary-fg: #94a3b8;
+
+  --color-muted:    #1e293b;
+  --color-muted-fg: #94a3b8;
+
+  --color-accent:    #1e3a5f;
+  --color-accent-fg: #93c5fd;
+
+  --color-destructive:    #f87171;
+  --color-destructive-fg: #0f172a;
+
+  --color-border: #334155;
+  --color-input:  #1e293b;
+  --color-ring:   #60a5fa;
+
+  /* ── Typography ─────────────────────────────────────────────────── */
+  --body-font-family:    'Inter', system-ui, -apple-system, sans-serif;
+  --heading-font-family: 'Inter', system-ui, -apple-system, sans-serif;
+
+  /* ── Light chevron for dark backgrounds ─────────────────────────── */
+  --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2394a3b8'/%3E%3C/svg%3E");
+}

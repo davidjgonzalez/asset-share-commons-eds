@@ -31,6 +31,8 @@ Asset Share Commons uses a semantic CSS custom property (variable) system for th
 
 Themes override a set of **semantic `--color-*` tokens** on a `.theme-{name}` class applied to `<body>`. Structural tokens (spacing, radius, shadow, typography scale) live in `styles/tokens.css` and are shared across every theme, so a theme file only ever needs to set color roles (and optionally the font family).
 
+To see every themed building block (buttons, chips, cards, dialogs, and more) in each built-in theme, open the [UI Kit gallery]({{ '/ui-kit/' | relative_url }}). Its theme switcher swaps themes live, and "Show code & usage" reveals the markup for each element.
+
 ```
 styles/
   styles.css        ← .btn, .asc-panel, .asc-dialog, and the semantic token :root defaults
