@@ -13,7 +13,7 @@ sidebar:
         url: "#step-2"
       - title: 3. Author Content
         url: "#step-3"
-      - title: 4. Configure AEM
+      - title: 4. Configure AEM connection
         url: "#step-4"
       - title: 5. Configure Dispatcher
         url: "#step-5"
@@ -105,7 +105,7 @@ The **[starter kit](https://github.com/davidjgonzalez/asset-share-commons-eds/tr
 | `collection.html` | Single collection page — `collection-controls` + `board` | `/collections/collection` |
 | `sheet.html` | Shared sheet page — `sheet-controls` + `board` | `/sheets/` |
 
-## Step 4 — Configure AEM Connection {#step-4}
+## Step 4 — Configure AEM connection {#step-4}
 
 Open `scripts/asc/configurations.js` — the only file you need to edit — and set your AEM host:
 
@@ -148,12 +148,12 @@ export default configurations;
 
 ASC runs entirely in the browser, so search, thumbnails, renditions, and downloads are `fetch()` calls from the page straight to `aem.host`. If that host is an AEM Publish tier behind a Dispatcher, the Dispatcher must allow those requests through. A hardened default configuration blocks them.
 
-Ask whoever owns your Dispatcher (Cloud Manager or AMS repository) to add:
+Ask whoever owns your Dispatcher (Cloud Manager or AMS repository) to add two things. Both have copy-paste samples on the Dispatcher page:
 
-- Filter rules for the QueryBuilder, asset metadata, rendition, and download paths you use
-- CORS headers allowing your site's origin (and `http://localhost:3000` for local development)
+- **Filter rules** for the QueryBuilder, rendition, and download paths you use: [sample filter rules](/dispatcher#sample-filters)
+- **CORS headers** in the Apache vhost, allowing your site's origin (and `http://localhost:3000` for local development): [sample vhost config](/dispatcher#cors-httpd)
 
-The [AEM Publish Dispatcher](/dispatcher) page lists every endpoint, a sample filter set, and caching and security notes. You can skip this step if `aem.host` points at an author instance or a Publish tier without a restrictive Dispatcher.
+The [AEM Publish Dispatcher](/dispatcher) page also has the full endpoint inventory, caching notes, and security notes. You can skip this step if `aem.host` points at an author instance or a Publish tier without a restrictive Dispatcher.
 
 ## Step 6 — Run Locally {#step-6}
 
