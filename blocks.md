@@ -17,8 +17,6 @@ sidebar:
         url: "#search-tags"
       - title: search-active-filters
         url: "#search-active-filters"
-      - title: search-statistics
-        url: "#search-statistics"
       - title: search-results
         url: "#search-results"
       - title: search-hidden
@@ -41,8 +39,6 @@ sidebar:
         url: "#details-renditions"
       - title: details-rendition-metadata
         url: "#details-rendition-metadata"
-      - title: details-actions
-        url: "#details-actions"
       - title: details-similar
         url: "#details-similar"
       - title: details-map
@@ -61,8 +57,8 @@ sidebar:
         url: "#sheet-controls"
       - title: board
         url: "#board"
-      - title: share-directory
-        url: "#share-directory"
+      - title: teaser
+        url: "#teaser"
       - title: stub
         url: "#stub"
   - label: Actions
@@ -259,19 +255,6 @@ Both "From" and "To" inputs are optional at query time — omitting either end l
 No configuration required — reads active state directly from every filter input on the page. On load, the block automatically **teleports itself into the sticky site header** (`header .nav-wrapper`) so pills stay visible while scrolling, waiting via `MutationObserver` if the header hasn't loaded yet.
 
 The full-text `search-bar` input is intentionally excluded from the pill list.
-
----
-
-## search-statistics {#search-statistics}
-
-**Search** · Displays result counts as a live region ("Showing 24 of 456 assets", "456 assets", or "No results").
-
-```
-| search-statistics  |   |
-|---------------------|---|
-```
-
-No configuration required. Purely read-only — listens to `asc:search:complete`.
 
 ---
 
@@ -511,37 +494,6 @@ Available fields: `label`/`id`/`name`, `file-type`, `format`, `file-size`, `widt
 
 ---
 
-## details-actions {#details-actions}
-
-**Asset Details** · Action buttons (circle-icon + label) for the open asset. Updates `href`/`data-copy-url` on `asc:rendition:activate` so **download** and **copy-url** always target the currently-selected rendition.
-
-![details-actions — download, copy link, share, and collection buttons]({{ '/assets/images/blocks/details-actions.jpg' | relative_url }})
-
-*details-actions — circle-icon action buttons, always targeting the currently-active rendition*
-
-```
-| details-actions  |              |
-|-------------------|-------------|
-| Download          | download    |
-| Copy image        | copy-image  |
-| Copy link         | copy-link   |
-| Add to collection | collection  |
-| Favorite          | favorite    |
-```
-
-| Action | Behavior |
-|--------|----------|
-| `download` | Downloads the active rendition. Filename: `asset-base + rendition.label + ext`. |
-| `copy-url` | Copies the active rendition's URL to the clipboard |
-| `copy-image` | Copies the active rendition's actual image bytes to the clipboard via the Async Clipboard API (`navigator.clipboard.write` with a `ClipboardItem`), converting to PNG first if needed. Falls back to `copy-url`'s behavior (copies the URL as text) if the browser or the delivery host's CORS policy won't allow reading the image bytes. |
-| `copy-link` | Copies a shareable asset link. `share` is kept as a deprecated alias so already-authored "Share" rows keep working. |
-| `collection` | Add/remove-from-collection toggle (same behavior as `collectionToggle`) |
-| `favorite` | Star toggle that always targets the Favorites (default) collection, regardless of which collection is currently active. This is distinct from `collection`, which targets whichever collection is active: `collection` auto-hides itself when the active collection already *is* Favorites, since the two would otherwise do the same thing. Add both rows to offer both. |
-
-All rendition-scoped actions (`download`, `copy-url`, `copy-image`) act on whichever rendition is currently active, the same "active rendition" concept `details-renditions` tracks (`asc:rendition:activate`), defaulting to `original` until the visitor picks something else there.
-
----
-
 ## details-similar {#details-similar}
 
 **Asset Details** · Horizontal strip of assets similar to the currently-open asset. Uses the QueryBuilder `similar` predicate to find related assets by shared tags and MIME type.
@@ -723,7 +675,6 @@ Pair `sheet-controls` (header) with [`board`](#board) (`source: sheet`, `mode: v
 | source | collection         |
 | mode   | interactive        |
 | search-properties  | title, file-type |
-| display-properties | title · file-type |
 | notes  | true               |
 ```
 
@@ -733,7 +684,6 @@ Pair `sheet-controls` (header) with [`board`](#board) (`source: sheet`, `mode: v
 | `mode` | `view` \| `interactive` \| `sheet-url` | `view` | `view` = pan/zoom + search only; `interactive` = drag, rubber-band select, text elements, notes, "Align to grid", + Text button; `sheet-url` = read a pre-encoded share URL authored on the page itself instead of the visited URL's own `?sheet=` param (see below), always read-only regardless of this setting |
 | `notes` | `true` \| `false` | `true` | When `false`, hides notes UI entirely |
 | `search-properties` | Comma-separated property names | — | Properties to make client-side searchable. Omit to hide the search input. |
-| `display-properties` | `·`-delimited property names | — | Properties shown in the card body. Omitted → shows the asset type label (Image, Video, PDF…). |
 | `details` | Path prefix | — | Override the default ASC details modal: clicking a card navigates to `{details}?asset={uuid}` instead |
 | `items` | Newline- or comma-separated asset IDs | — | Only used with `source: authored`, see below |
 | `sheet-url` | A full share URL | — | Only used with `mode: sheet-url`, see below |
@@ -760,37 +710,45 @@ Pair `sheet-controls` (header) with [`board`](#board) (`source: sheet`, `mode: v
 
 ---
 
-## share-directory {#share-directory}
+## teaser {#teaser}
 
-**Collections & Board** · A curated, browsable index of published shares: the "here's what we've put together" front door, distinct from search (assumes you already know what you're looking for) and from a visitor's own personal collections (nobody has built one yet on a first visit). Place on the homepage, or anywhere you want to link out to a set of published collections.
+**Collections & Board** · A single curated teaser linking to a published share: the "here's what we've put together" front door, distinct from search (assumes you already know what you're looking for) and from a visitor's own personal collections (nobody has built one yet on a first visit). One block per share — place several side by side in a section and arrange them with the section's own `style: grid` metadata to build a directory; the block itself only ever renders one card.
 
-![share-directory: curated grid of published shares](https://placehold.co/860x480/111111/22c55e?text=share-directory+%E2%80%94+Curated+Shares&font=inter)
+![teaser: a curated share, rendered as a card](https://placehold.co/860x480/111111/22c55e?text=teaser+%E2%80%94+Curated+Share&font=inter)
 
-*share-directory, the first row renders as a full-width featured tile, the rest as a responsive grid*
+*Teaser (Hero) full-width above a grid of regular Teaser (Horizontal Card) blocks*
 
-Authored as one row per share, plus optional 2-cell config rows. No marker column is needed: a row is config only if it has exactly two cells; anything with three or more is a share.
+Authoring is free-form rich text, not fixed fields — type it into one table cell exactly like any other rich-text block:
 
 ```
-| share-directory       |                                            |                      |
-| view                  | horizontal                                |                      |
-| hero                  | true                                       |                      |
-| Spring 2026 Campaign  | Curated hero shots for the spring launch  | /sheets/spring-2026  |
-| Press Kit             | Logos, product shots, and boilerplate     | /sheets/press-kit    |
+| Teaser (Hero)                                                |
+| ## ![](/media_spring-2026.jpg)Spring 2026 Campaign           |
+| Curated hero shots for the spring launch                     |
+| [View the collection](/search?tagid=campaigns:spring-2026)   |
 ```
 
-Each share row is `Label | Description | URL/path`, with an optional 4th cell for a cover image (drop one in, or paste an image URL). Omit it and the card tries to resolve a thumbnail automatically.
+Rows/cells aren't meaningful on their own — DA wraps a cell's content in a div either way, so spreading the same content across separate rows (image alone in its own row, one row per paragraph, CTA in its own row) authors identically.
 
-| Config key | Values | Default | Description |
-|------------|--------|---------|-------------|
-| `view` | `horizontal` \| `vertical` | `horizontal` | `horizontal` = mosaic on the left, title/description/count on the right (the default, wide-teaser layout); `vertical` = mosaic on top, the original stacked layout |
-| `hero` | `true` \| `false` | `true` | Whether the first share row renders as a full-width, larger featured tile instead of a regular grid card |
+- **Cover image** (optional) — a pasted image, or a link/bare path that looks like one, as long as it's in the very first paragraph/heading: either inline (pasted at the start of the opening heading, as above) or alone in its own leading paragraph. A DAM path resolves through the search index to a real asset's web-optimized thumbnail rather than being used as a raw `<img src>`.
+- **Body** — everything else renders as authored: whatever headings/paragraphs/formatting you type.
+- **CTA** — the last paragraph that's just a single link (the standard EDS "lone link becomes a button" convention) is the thing being teased. Its href drives everything below.
 
-**Automatic thumbnails.** With no cover image authored, the card tries to resolve one from the link itself:
+The visual layout comes from the block name itself, not a config row — the standard DA "Block (Variant)" convention:
+
+| Variant | Effect |
+|---------|--------|
+| `Teaser` | Plain vertical tile (default) |
+| `Teaser (Hero)` | The one "headline" tile: biggest thumb + title, capped at 600px tall |
+| `Teaser (Horizontal Card)` | Wide teaser, thumb-left/body-right |
+| `Teaser (Horizontal Card, Right Image)` / `Teaser (Hero, Right Image)` | Either horizontal format, mirrored — thumb-right/body-left |
+| `Teaser (Text Only)` | No thumbnail at all, just the rich text — skips image resolution entirely |
+
+**Automatic thumbnails.** With no cover image authored, the CTA link is resolved to figure out what it points to, and that also supplies the preview:
 - A `?sheet=` link: the compressed payload *is* the asset list, so up to 15 thumbnails are decoded straight out of the URL, no fetch needed.
 - A link to the search page with query params: a real (silent) search is run and the results' thumbnails are used.
-- Any other same-site link: fetches the target page's own `.plain.html` and reads its blocks directly. A `board` with `source: authored` (its authored ID list), a `board` with `mode: sheet-url` (its authored share URL, decoded the same way as a `?sheet=` link), or a `search-hidden` block (its predicates, run as a silent search) all work. Falls back to a plain link icon only if none of these apply and no cover image was authored.
+- Any other same-site link: fetches the target page's own `.plain.html` and reads its blocks directly. A `board` with `source: authored` (its authored ID list) or `mode: sheet-url` (its authored share URL, decoded the same way as a `?sheet=` link) both work. Falls back to a plain link icon if neither applies and no cover image was authored.
 
-**Card size follows asset count**, not just mosaic density. A 2-asset press kit and a 40-asset photo library don't read as the same size, since more assets mean more mosaic rows and a taller card. An **eyebrow label** ("Live Search" / "Curated Set") shows which kind of share it is: a search or saved-search link stays current on its own, a `?sheet=` or `source: authored` link is a fixed, hand-picked set.
+An **eyebrow label** ("Live Search" / "Curated Set") shows which kind of share it is: a search link stays current on its own, a `?sheet=` or `source: authored` link is a fixed, hand-picked set.
 
 ---
 

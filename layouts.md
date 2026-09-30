@@ -257,23 +257,23 @@ Below 768px, named placement is dropped and blocks stack in source order (single
 
 ### Worked examples {#named-area-examples}
 
-**Asset details: two-column with spanning preview**
+**Asset details: two-column with full-width renditions**
 
 ```
-| Section Metadata |                    |
-|------------------|--------------------|
-| _layout          | grid               |
-| _areas           | preview actions    |
-|                  | preview metadata   |
-| _columns         | 1.5fr 1fr          |
+| Section Metadata |                        |
+|------------------|------------------------|
+| _layout          | grid                   |
+| _areas           | preview metadata       |
+|                  | renditions renditions  |
+| _columns         | 1.5fr 1fr              |
 ```
 
 ```
-| details-preview |         |    | details-actions |         |    | details-metadata |          |
-| _area             | preview |    | _area              | actions |    | _area              | metadata |
+| details-preview |         |    | details-metadata |          |    | details-renditions |            |
+| _area             | preview |    | _area              | metadata |    | _area                | renditions |
 ```
 
-Result: `preview` spans both rows on the left (1.5fr), `actions` is top-right, `metadata` is bottom-right (both 1fr). On mobile all three stack in source order.
+Result: `preview` is top-left (1.5fr), `metadata` is top-right (1fr), and `renditions` spans the full width beneath both. On mobile all three stack in source order.
 
 **Three-column equal grid**
 

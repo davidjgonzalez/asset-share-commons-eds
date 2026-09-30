@@ -93,7 +93,6 @@ permalink: /
         <span class="badge badge--purple">details-modal</span>
         <span class="badge badge--purple">details-preview</span>
         <span class="badge badge--purple">details-renditions</span>
-        <span class="badge badge--purple">details-actions</span>
       </div>
     </div>
 

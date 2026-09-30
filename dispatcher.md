@@ -90,7 +90,7 @@ is `'querybuilder'` (the default).
 Two delivery paths are not Dispatcher concerns at all, because they never touch your Publish
 tier:
 
-- **Classic Dynamic Media (Scene7 / IS-IR)**: `dm-smartcrop`, and any `url-template`/`url`
+- **Classic Dynamic Media (Scene7 / IS-IR)**: `dm-scene7`, and any `url-template`/`url`
   rendition built from `${dm.domain}`, resolves to the Scene7 delivery CDN
   (`dam:scene7Domain`, e.g. `https://s7d1.scene7.com/`), served by Adobe directly.
 - **Action-page fragments** (`/actions/*.plain.html`) and the **search config sheet**

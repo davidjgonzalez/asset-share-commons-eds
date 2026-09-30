@@ -21,8 +21,8 @@ sidebar:
     items:
       - title: static (JCR)
         url: "#static"
-      - title: dm-smartcrop
-        url: "#dm-smartcrop"
+      - title: dm-scene7
+        url: "#dm-scene7"
       - title: url-template
         url: "#url-template"
       - title: url
@@ -65,7 +65,7 @@ Out of the box, Asset Share Commons ships definitions that work with any standar
 |----|------|---------|---------|
 | `original` | `static` | `original` (exact) | Yes — all types |
 | `web` | `static` | `cq5dam.web.1280.1280` | Yes — images only |
-| `smart-crop-small` / `smart-crop-medium` | `dm-smartcrop` | Auto-detected JCR smart crop nodes | Yes — images only |
+| `smart-crop-small` / `smart-crop-medium` | `dm-scene7` | Auto-detected JCR smart crop nodes | Yes — images only |
 
 ## Configuration {#configuration}
 
@@ -85,7 +85,7 @@ renditions: {
     {
       id: 'smart-crop-small',
       label: 'Smart Crop — Small',
-      type: 'dm-smartcrop',
+      type: 'dm-scene7',
       accepts: (asset) => asset.mimeType?.startsWith('image/'),
     },
   ],
@@ -98,7 +98,7 @@ renditions: {
 |----------|------|--------------|
 | `id` | `string` | Unique key within the array. Multiple definitions may share an id — first accepted match wins per asset. |
 | `label` | `string` | Display name shown in the download list |
-| `type` | `string` | `'static'` \| `'dm-smartcrop'` \| `'url-template'` \| `'url'` \| `'web-optimized-delivery'` \| `'dm-openapi'` |
+| `type` | `string` | `'static'` \| `'dm-scene7'` \| `'url-template'` \| `'url'` \| `'web-optimized-delivery'` \| `'dm-openapi'` |
 | `accepts` | `(asset) => boolean` | Whether this definition applies to the asset. Omit to match all assets. |
 | `visible` | `boolean` | Show in the download list (default: `true`). Set `false` for internal renditions like thumbnails. |
 | `description` | `string` | Optional sub-label or tooltip |
@@ -149,7 +149,7 @@ Six built-in resolver types cover the three distinct DM delivery patterns plus p
 | | Classic DM (Scene7 / IS-IR) | Web-optimized delivery | DM with OpenAPI |
 |---|---|---|---|
 | **AEM version** | AEM 6.5 or AEMaaCS + classic DM | AEMaaCS publish | AEMaaCS + DM OpenAPI enabled |
-| **Rendition type** | `dm-smartcrop`, `url-template`, or `url` | `web-optimized-delivery` | `dm-openapi` |
+| **Rendition type** | `dm-scene7`, `url-template`, or `url` | `web-optimized-delivery` | `dm-openapi` |
 | **URL prefix** | `{dam:scene7Domain}/is/image/` | `{host}/adobe/dynamicmedia/deliver/dm-aid--{uuid}/` | `{deliveryHost}/adobe/dynamicmedia/deliver/{uuid}/` |
 | **Asset identifier** | `dam:scene7File` metadata | UUID (with `dm-aid--` prefix) | UUID |
 | **Requires DM OpenAPI** | No | No | Yes |
@@ -171,20 +171,20 @@ Resolves a rendition node from the asset's `jcr:content/renditions/` tree by mat
 }
 ```
 
-### dm-smartcrop {#dm-smartcrop}
+### dm-scene7 {#dm-scene7}
 
-Classic Dynamic Media (Scene7) smart crop via the IS protocol: `{dam:scene7APIServer}is/image/{dam:scene7File}:{id}`. The definition's `id` must exactly match the smart-crop name registered in DM (case-sensitive, e.g. `"Small"`, `"Medium"`, `"Large"`).
+Classic Dynamic Media (Scene7) smart crop via the IS protocol: `{dam:scene7Domain}is/image/{dam:scene7File}:{id}`. An explicit definition never guesses the crop name from `id`. Set `smartCropId` to the exact, case-sensitive smart-crop name registered in DM (e.g. `"Small"`, `"Medium"`, `"Large"`); it falls back to `id` when omitted, and the resolved rendition's `id` defaults to the matched node's real name.
 
 ```js
-{ id: 'Large', label: 'Smart Crop — Large', type: 'dm-smartcrop', accepts: (asset) => asset.mimeType?.startsWith('image/') },
+{ id: 'Large', label: 'Smart Crop — Large', type: 'dm-scene7', accepts: (asset) => asset.mimeType?.startsWith('image/') },
 ```
 
 Smart crops present on the asset but **not listed here are auto-detected and appended automatically** (`autoDetect: true` behavior, built in). Add an explicit definition only when you need a custom label, an `accepts` guard on a specific crop, or a `usecase`. Smart crops are the most common place to reach for `usecase`, since the crop name (`Small`/`Medium`/`Large`) says nothing about where it's actually meant to go:
 
 ```js
-{ id: 'Small',  label: 'Square',     usecase: 'Instagram Post / Profile Image (1:1)',   type: 'dm-smartcrop', accepts: (asset) => asset.mimeType?.startsWith('image/') },
-{ id: 'Medium', label: 'Standard',   usecase: 'Email / Blog Inline (4:3)',              type: 'dm-smartcrop', accepts: (asset) => asset.mimeType?.startsWith('image/') },
-{ id: 'Large',  label: 'Widescreen', usecase: 'Web Banner / Twitter Post (16:9)',       type: 'dm-smartcrop', accepts: (asset) => asset.mimeType?.startsWith('image/') },
+{ id: 'Small',  label: 'Square',     usecase: 'Instagram Post / Profile Image (1:1)',   type: 'dm-scene7', accepts: (asset) => asset.mimeType?.startsWith('image/') },
+{ id: 'Medium', label: 'Standard',   usecase: 'Email / Blog Inline (4:3)',              type: 'dm-scene7', accepts: (asset) => asset.mimeType?.startsWith('image/') },
+{ id: 'Large',  label: 'Widescreen', usecase: 'Web Banner / Twitter Post (16:9)',       type: 'dm-scene7', accepts: (asset) => asset.mimeType?.startsWith('image/') },
 ```
 
 ### url-template {#url-template}
@@ -311,7 +311,7 @@ Each resolver sets a `filename` on the `Rendition` it constructs; `details-rendi
 
 | Type | Filename pattern | Example |
 |------|-------------------|---------|
-| `dm-smartcrop` | `{asset-stem}-smart-crop-{cropName}.jpg` | `hero-banner-smart-crop-Large.jpg` |
+| `dm-scene7` | `{asset-stem}-smart-crop-{cropName}.jpg` | `hero-banner-smart-crop-Large.jpg` |
 | `static` / `url` / `url-template` / `dm-openapi` | `{asset-stem}-{id}.{ext}` | `hero-banner-web.jpg` |
 | `static` with a JCR node name as id | Extension stripped: `{asset-stem}-{node-base}.{ext}` | `hero-banner-cq5dam.fpo.png` |
 | `original` | `{asset-stem}.{ext}` (no suffix) | `hero-banner.jpg` |
@@ -334,7 +334,7 @@ Each resolver sets a `filename` on the `Rendition` it constructs; `details-rendi
 
 ### File size — lazy HEAD fetch
 
-Static renditions get `fileSize` from JCR metadata for free. Dynamically generated renditions (`dm-smartcrop`, `url`, `url-template`, `web-optimized-delivery`, `dm-openapi`) don't have a known size until the URL is requested — `details-renditions` fires a `HEAD` request for any rendition missing `fileSize` after render, reads `Content-Length`, and updates the cell in place. If the server returns no `Content-Length` (chunked transfer, an un-generated Scene7 crop), the cell stays blank — no error thrown.
+Static renditions get `fileSize` from JCR metadata for free. Dynamically generated renditions (`dm-scene7`, `url`, `url-template`, `web-optimized-delivery`, `dm-openapi`) don't have a known size until the URL is requested — `details-renditions` fires a `HEAD` request for any rendition missing `fileSize` after render, reads `Content-Length`, and updates the cell in place. If the server returns no `Content-Length` (chunked transfer, an un-generated Scene7 crop), the cell stays blank — no error thrown.
 
 ---
 

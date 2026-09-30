@@ -44,7 +44,7 @@ supported — parameters are forwarded to the QueryBuilder API verbatim.
 
 ## Overview {#overview}
 
-The QueryBuilder provider (`scripts/asc/services/search/providers/querybuilder.js`)
+The QueryBuilder provider (`scripts/asc/core/services/search/providers/querybuilder.js`)
 translates search block form data directly into QueryBuilder URL parameters. Every
 `<input name="X">` in a search block becomes the predicate `X=value` in the API call.
 

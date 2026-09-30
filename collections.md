@@ -422,7 +422,7 @@ A **published** collection is different from either of the above: something cura
 - **Saved search**: a page built from [`search-hidden`](/blocks#search-hidden) predicates plus [`search-results`](/blocks#search-results), so it stays current on its own as matching assets are added or retagged. Best when "everything tagged X" really is what the collection means.
 - **Authored list**: a page built from [`board`](/blocks#board) with `source: authored`, defined by a fixed set of asset IDs typed directly onto the page. For when you want exactly these items and nothing else. Always read-only; edit the page's authored list to change what's in it. `mode: sheet-url` is a variant of this: instead of a hand-typed ID list, the page authors an already-generated share URL (from the normal Share flow on some collection), so the same board/sheet decoding logic in [Share URL Format](#share-url) applies.
 
-[`share-directory`](/blocks#share-directory) is a curated index of links to pages like these. Add a row per published collection you create. It resolves a preview thumbnail automatically for most link types; see the block reference for exactly which ones.
+[`teaser`](/blocks#teaser) links to pages like these — one block per published collection, arranged into a directory via the containing section's own `style: grid` metadata. It resolves a preview thumbnail automatically for most link types; see the block reference for exactly which ones.
 
 ---
 
