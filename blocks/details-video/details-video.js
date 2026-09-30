@@ -18,6 +18,7 @@
 import { readBlockConfig } from '../../scripts/asc/core/utils/blocks.js';
 import { escAttr } from '../../scripts/asc/html.js';
 import Asset from '../../scripts/asc/core/models/asset.js';
+import { listenWhileConnected } from '../../scripts/asc/core/utils/events.js';
 
 const DEFAULTS = {
   height: '600px',
@@ -208,11 +209,11 @@ export default async function decorate(block) {
       }
     };
 
-    document.body.addEventListener('asc:rendition:activate', (e) => {
+    listenWhileConnected(block, document.body, 'asc:rendition:activate', (e) => {
       applyRendition(e.detail?.rendition, true);
     });
 
-    document.body.addEventListener('asc:rendition:preview', (e) => {
+    listenWhileConnected(block, document.body, 'asc:rendition:preview', (e) => {
       if (e.detail?.rendition) {
         applyRendition(e.detail.rendition, false);
       } else {

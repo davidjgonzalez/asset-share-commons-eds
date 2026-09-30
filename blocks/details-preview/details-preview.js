@@ -2,6 +2,7 @@
 import { readBlockConfig } from '../../scripts/aem.js';
 import Asset from '../../scripts/asc/core/models/asset.js';
 import { escHtml } from '../../scripts/asc/html.js';
+import { listenWhileConnected } from '../../scripts/asc/core/utils/events.js';
 import { wireRenditionActions } from './rendition-actions.js';
 
 const OFFICE_EXTS = new Set(['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx']);
@@ -60,7 +61,7 @@ export default async function decorate(block) {
     const mod = await import(`./${currentType}.js`);
     let handler = mod.mount(viewer, asset, initialRendition, config);
 
-    document.body.addEventListener('asc:rendition:activate', async (e) => {
+    listenWhileConnected(block, document.body, 'asc:rendition:activate', async (e) => {
       const r = e.detail?.rendition;
       if (!r) return;
       const newType = detectType(r, asset.mimeType);
@@ -76,7 +77,7 @@ export default async function decorate(block) {
       activeRendition = r;
     });
 
-    document.body.addEventListener('asc:rendition:preview', (e) => {
+    listenWhileConnected(block, document.body, 'asc:rendition:preview', (e) => {
       const r = e.detail?.rendition;
       const target = r ?? activeRendition;
       if (!target) return;

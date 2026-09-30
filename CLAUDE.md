@@ -116,6 +116,12 @@ Each block lives in `blocks/<name>/<name>.js` + `<name>.css`. The JS exports a d
 Parts (`/scripts/asc/core/parts/`) are reusable UI components shared across blocks (e.g., `AssetTeaser`). Rules:
 - Constructor receives `{ block }` — the parent block element for event delegation
 - Never bind events directly; always use `delegateEvent(this.block, ...)` to prevent duplicates
+
+Blocks: bind to elements the block renders itself directly (they go away with the node). To listen on
+`document`/`document.body`/`window` from a block that can be decorated repeatedly (anything in the asset
+details modal), use `listenWhileConnected(block, target, type, handler)` from `core/utils/events.js` so the
+listener removes itself when the block leaves the DOM. `delegateEvent` de-dupes by handler source, so it
+is not a fix for stale closures.
 - `html()` method returns an HTML string; the block inserts it
 
 ### Services

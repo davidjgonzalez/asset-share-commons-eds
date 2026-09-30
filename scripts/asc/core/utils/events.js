@@ -118,3 +118,33 @@ export function delegateEvent(root, selector, eventType, handler, options = {}) 
 
     return cleanup;
 }
+
+/**
+ * Listens on a long-lived target (`document`, `document.body`, `window`) on behalf of a
+ * block, and removes itself once that block has left the DOM.
+ *
+ * Use this instead of a bare `target.addEventListener()` for blocks that are decorated
+ * again and again on the same page (e.g. everything inside the asset details modal, whose
+ * content is replaced on every open). A bare listener would outlive its block, so the
+ * handlers of every earlier instance would keep firing against detached nodes.
+ * `delegateEvent()` does not cover this case: it de-dupes by handler source text, so it
+ * would keep the first (stale) closure and drop the new one.
+ *
+ * @param {Element} block - The block the listener works for.
+ * @param {EventTarget} target - Where to listen.
+ * @param {string} type - Event type.
+ * @param {(event: Event) => void} handler
+ * @param {AddEventListenerOptions} [options]
+ * @returns {Function} Call to remove the listener early.
+ */
+export function listenWhileConnected(block, target, type, handler, options) {
+    const listener = (event) => {
+        if (!block.isConnected) {
+            target.removeEventListener(type, listener, options);
+            return;
+        }
+        handler(event);
+    };
+    target.addEventListener(type, listener, options);
+    return () => target.removeEventListener(type, listener, options);
+}

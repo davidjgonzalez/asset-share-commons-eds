@@ -30,6 +30,7 @@
 
 import Asset from '../../scripts/asc/core/models/asset.js';
 import { escHtml, renderPropertyValue } from '../../scripts/asc/html.js';
+import { listenWhileConnected } from '../../scripts/asc/core/utils/events.js';
 
 const MULTI_VALUE_LIMIT = 10;
 
@@ -87,12 +88,12 @@ export default async function decorate(block) {
 
   render(activeRendition);
 
-  document.body.addEventListener('asc:rendition:activate', (e) => {
+  listenWhileConnected(block, document.body, 'asc:rendition:activate', (e) => {
     activeRendition = e.detail.rendition;
     render(activeRendition);
   });
 
-  document.body.addEventListener('asc:rendition:preview', (e) => {
+  listenWhileConnected(block, document.body, 'asc:rendition:preview', (e) => {
     render(e.detail.rendition ?? activeRendition);
   });
 }
