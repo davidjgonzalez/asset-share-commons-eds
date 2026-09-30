@@ -15,12 +15,14 @@ sidebar:
         url: "#step-3"
       - title: 4. Configure AEM
         url: "#step-4"
-      - title: 5. Run Locally
+      - title: 5. Configure Dispatcher
         url: "#step-5"
-      - title: 6. Verify
+      - title: 6. Run Locally
         url: "#step-6"
-      - title: 7. Deploy
+      - title: 7. Verify
         url: "#step-7"
+      - title: 8. Deploy
+        url: "#step-8"
   - label: Next Steps
     items:
       - title: Staying in Sync with ASC Core
@@ -142,7 +144,18 @@ const configurations = {
 export default configurations;
 ```
 
-## Step 5 — Run Locally {#step-5}
+## Step 5 — Configure the AEM Publish Dispatcher {#step-5}
+
+ASC runs entirely in the browser, so search, thumbnails, renditions, and downloads are `fetch()` calls from the page straight to `aem.host`. If that host is an AEM Publish tier behind a Dispatcher, the Dispatcher must allow those requests through. A hardened default configuration blocks them.
+
+Ask whoever owns your Dispatcher (Cloud Manager or AMS repository) to add:
+
+- Filter rules for the QueryBuilder, asset metadata, rendition, and download paths you use
+- CORS headers allowing your site's origin (and `http://localhost:3000` for local development)
+
+The [AEM Publish Dispatcher](/dispatcher) page lists every endpoint, a sample filter set, and caching and security notes. You can skip this step if `aem.host` points at an author instance or a Publish tier without a restrictive Dispatcher.
+
+## Step 6 — Run Locally {#step-6}
 
 ```bash
 aem up    # starts the local dev proxy at http://localhost:3000
@@ -150,9 +163,9 @@ aem up    # starts the local dev proxy at http://localhost:3000
 
 The AEM CLI proxy fetches content from your da.live workspace and serves JS/CSS from your local filesystem — so code changes are instant, no rebuild or redeploy needed.
 
-> **CORS on localhost** — AEM may block requests from `localhost:3000`. Add it to the AEM Dispatcher or Publish CORS configuration, or use an AEM author instance which typically has more permissive CORS settings.
+> **CORS on localhost** — AEM may block requests from `localhost:3000`. Make sure `http://localhost:3000` is an allowed origin in the CORS configuration from the previous step, or use an AEM author instance, which typically has more permissive CORS settings.
 
-## Step 6 — Verify {#step-6}
+## Step 7 — Verify {#step-7}
 
 Open `http://localhost:3000` and check:
 
@@ -167,7 +180,7 @@ Open `http://localhost:3000` and check:
 
 *Asset Share Commons running at localhost:3000*
 
-## Step 7 — Deploy {#step-7}
+## Step 8 — Deploy {#step-8}
 
 ```bash
 git push origin main

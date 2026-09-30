@@ -13,6 +13,8 @@ sidebar:
         url: "#endpoints"
       - title: CORS
         url: "#cors"
+      - title: Apache vhost CORS Headers
+        url: "#cors-httpd"
       - title: Sample Filter Rules
         url: "#sample-filters"
       - title: Caching Notes
@@ -143,36 +145,101 @@ Scene7/CDN URLs that aren't yours to configure.
 > hardening mistake is allowing only `GET`/`POST`/`HEAD`, which silently breaks every
 > authenticated cross-origin call without any error visible outside the browser console.
 
+### Setting CORS headers in the Apache vhost {#cors-httpd}
+
+If you'd rather emit the CORS headers at the Dispatcher tier than configure them in AEM Publish,
+add them to the Apache virtual host. On AEM as a Cloud Service that is a file under
+`dispatcher/src/conf.d/available_vhosts/` (for example `asc.vhost`); on AMS or on-premise it is
+your existing `.vhost` or `conf.d` include. This requires `mod_headers` and `mod_rewrite`, both
+enabled in the standard Dispatcher image.
+
+The allowlist must contain exact origins. Because bulk downloads send credentials, the
+response has to echo the single matching origin rather than `*`.
+
+```apache
+# Asset Share Commons: CORS response headers.
+#
+# Paste into your Dispatcher virtual host (AEMaaCS: dispatcher/src/conf.d/available_vhosts/<name>.vhost),
+# inside or after the <VirtualHost> block that fronts AEM Publish. Requires mod_headers and mod_rewrite.
+#
+# 1. Edit the origin allowlist below (EDS hostnames, custom domain, localhost).
+# 2. Remove the localhost line on production environments.
+# 3. Do NOT also emit CORS headers from AEM Publish's CORS policy (duplicate headers are rejected).
+
+# Origins allowed to call this host from the browser.
+SetEnvIfExpr "req_novary('Origin') =~ m#^https://(main--YOUR-REPO--YOUR-OWNER\.aem\.(page|live)|assets\.example\.com)$#" ASC_CORS_ORIGIN=%{HTTP:Origin}
+SetEnvIfExpr "req_novary('Origin') == 'http://localhost:3000'" ASC_CORS_ORIGIN=%{HTTP:Origin}
+
+<IfModule mod_headers.c>
+    # Echo the matching origin, never '*', so credentialed requests (bulk downloads) work.
+    Header always set Access-Control-Allow-Origin "%{ASC_CORS_ORIGIN}e" env=ASC_CORS_ORIGIN
+    Header always set Access-Control-Allow-Credentials "true" env=ASC_CORS_ORIGIN
+    Header always set Access-Control-Allow-Methods "GET, POST, HEAD, OPTIONS" env=ASC_CORS_ORIGIN
+    Header always set Access-Control-Allow-Headers "Authorization, Content-Type" env=ASC_CORS_ORIGIN
+    Header always set Access-Control-Max-Age "86400" env=ASC_CORS_ORIGIN
+
+    # The response differs by Origin, so shared caches must key on it.
+    Header always merge Vary "Origin"
+</IfModule>
+
+# Answer preflight requests at the web tier so they never reach Publish.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{REQUEST_METHOD} =OPTIONS
+    RewriteCond %{ENV:ASC_CORS_ORIGIN} !=""
+    RewriteRule ^ - [R=204,L]
+</IfModule>
+```
+
+Notes:
+
+- `Authorization` and `Content-Type` are the only non-simple request headers ASC sends. Add to
+  `Access-Control-Allow-Headers` if you customize `users.getAuthHeaders()`.
+- Replace `YOUR-REPO` and `YOUR-OWNER` in the regex with your values, and swap
+  `assets.example.com` for your custom domain (or remove it).
+- Do not also emit these headers from AEM Publish's CORS policy. Duplicate
+  `Access-Control-Allow-Origin` headers make browsers reject the response.
+- The `OPTIONS` filter rules under [Sample Filter Rules](#sample-filters) are still needed if you
+  let preflights reach Publish. With the rewrite rule above they are answered by Apache first.
+- Verify with `curl -i -X OPTIONS -H "Origin: https://main--repo--owner.aem.page" -H
+  "Access-Control-Request-Method: POST" https://{aem.host}/content/dam.downloads.initiateDownload.json`
+  and confirm a `204` with the headers above.
+
 ## Sample Filter Rules {#sample-filters}
 
-Illustrative `/filters` additions for `dispatcher.any`. Adapt paths/globbing to your existing
-rule set and place them alongside (not in place of) your baseline security filters:
+Drop these `/filters` rules into your farm's filter file (`dispatcher.any`, or
+`conf.dispatcher.d/filters/filters.any` on AEM as a Cloud Service), alongside (not in place of)
+your baseline security filters. Delete the rules for features you don't use.
 
 ```
-/filters {
-    # ... your existing baseline rules ...
+# Asset Share Commons: Dispatcher filter rules.
+#
+# Paste into your farm's filter file (AEMaaCS: dispatcher/src/conf.dispatcher.d/filters/filters.any),
+# alongside your baseline security filters, not in place of them. Rule names only need to be unique.
+# Delete the rules for features you don't use (for example, the OpenAPI block if search.provider
+# is 'querybuilder').
 
-    # QueryBuilder search
-    /0011 { /type "allow" /method "GET" /url "/bin/querybuilder.json" }
+# QueryBuilder search
+/asc-001 { /type "allow" /method "GET" /url "/bin/querybuilder.json" }
 
-    # DM OpenAPI search, only if search.provider: 'openapi'
-    /0012 { /type "allow" /method "GET" /url "/adobe/assets/search" }
-    /0013 { /type "allow" /method "GET" /url "/adobe/assets/*" }
+# DM OpenAPI search, only if search.provider: 'openapi'
+/asc-002 { /type "allow" /method "GET" /url "/adobe/assets/search" }
+/asc-003 { /type "allow" /method "GET" /url "/adobe/assets/*" }
 
-    # Static renditions & thumbnails
-    /0014 { /type "allow" /method "GET" /url "/content/dam/*/_jcr_content/renditions/*" }
+# Static renditions and thumbnails
+/asc-004 { /type "allow" /method "GET" /url "/content/dam/*/_jcr_content/renditions/*" }
 
-    # Web-optimized / DM OpenAPI delivery
-    /0015 { /type "allow" /method "GET" /url "/adobe/dynamicmedia/deliver/*" }
+# Web-optimized / DM OpenAPI delivery
+/asc-005 { /type "allow" /method "GET" /url "/adobe/dynamicmedia/deliver/*" }
 
-    # Bulk download initiate + poll
-    /0016 { /type "allow" /method "POST" /url "/content/dam.downloads.initiateDownload.json" }
-    /0017 { /type "allow" /method "GET"  /url "/content/dam.downloads.initiateDownload.json" }
+# Bulk download initiate and poll
+/asc-006 { /type "allow" /method "POST" /url "/content/dam.downloads.initiateDownload.json" }
+/asc-007 { /type "allow" /method "GET"  /url "/content/dam.downloads.initiateDownload.json" }
 
-    # CORS preflight for the authenticated calls above
-    /0018 { /type "allow" /method "OPTIONS" /url "/bin/querybuilder.json" }
-    /0019 { /type "allow" /method "OPTIONS" /url "/content/dam.downloads.initiateDownload.json" }
-}
+# CORS preflight for the authenticated calls above (only needed if preflights reach Publish;
+# asc-cors.vhost answers them at Apache first)
+/asc-008 { /type "allow" /method "OPTIONS" /url "/bin/querybuilder.json" }
+/asc-009 { /type "allow" /method "OPTIONS" /url "/content/dam.downloads.initiateDownload.json" }
 ```
 
 Keep every rule as narrow as the exact path in the [endpoint inventory](#endpoints). Resist the
@@ -217,6 +284,6 @@ filters exist to prevent: arbitrary recursive JSON dumps, servlet enumeration.
 | DM OpenAPI renditions 403 or blank | `aem.deliveryHost` misconfigured, or DM OpenAPI isn't entitled/enabled on this AEMaaCS program |
 | Everything works signed-out, breaks after IMS login | `Authorization` header preflight is being denied; check `OPTIONS` allow rules and CORS `Access-Control-Allow-Headers` |
 
-See also [Quick Start, Verify](/quickstart#step-6) for the equivalent "reachable from the
+See also [Quick Start, Verify](/quickstart#step-7) for the equivalent "reachable from the
 browser" checklist during initial setup, and [Renditions](/renditions) for the full
 resolver-type reference these paths back to.
