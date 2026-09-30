@@ -261,6 +261,29 @@ function placeNewItems(assetItems, textItems) {
 const itemKey = (item) => item.asset?.uuid || item.id;
 
 /**
+ * Resolves once `el` has a rendered height (it is in a visible section), or after a
+ * timeout so a board that never becomes visible can't leave this pending forever.
+ */
+function whenLaidOut(el, timeoutMs = 15000) {
+  return new Promise((resolve) => {
+    if (el.offsetHeight > 0) {
+      resolve();
+      return;
+    }
+    const done = () => {
+      observer.disconnect();
+      clearTimeout(timer);
+      resolve();
+    };
+    const observer = new ResizeObserver(() => {
+      if (el.offsetHeight > 0) done();
+    });
+    const timer = setTimeout(done, timeoutMs);
+    observer.observe(el);
+  });
+}
+
+/**
  * Some previews carry no dimension metadata (documents, PDFs), so placeNewItems can only
  * guess their height. Once those images have loaded, re-pack the just-placed cards using
  * their real rendered heights so a taller-than-expected card doesn't sit on top of the
@@ -273,6 +296,11 @@ async function repackMeasuredItems(block, placed, persistId) {
   const canvas = block.querySelector('.board__canvas');
   if (!canvas || !placed.length) return false;
   const cardFor = (item) => canvas.querySelector(`.board__item[data-asc-asset="${CSS.escape(itemKey(item))}"]`);
+
+  // The board's section can still be hidden (display: none) while the page loads, and a
+  // hidden card measures 0px tall, which would pack every card flat on top of the next.
+  // Wait until the board actually has layout before measuring anything.
+  await whenLaidOut(block);
 
   const pending = [...canvas.querySelectorAll('.board__item img[data-asc-dims-estimated]')]
     .filter((img) => !img.complete);
@@ -293,7 +321,11 @@ async function repackMeasuredItems(block, placed, persistId) {
       h: el.offsetHeight,
     }));
   const cards = placed.map(cardFor);
-  const positions = packIntoColumns(occupied, cards.map((el) => el?.offsetHeight || 0));
+  // A card that still reads 0 (not laid out, or no longer in the DOM) keeps its estimate.
+  const positions = packIntoColumns(
+    occupied,
+    cards.map((el, n) => el?.offsetHeight || boardItemHeight(placed[n])),
+  );
 
   let moved = false;
   positions.forEach((pos, n) => {
