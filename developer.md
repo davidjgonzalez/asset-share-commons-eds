@@ -35,6 +35,8 @@ sidebar:
         url: "#tokens-asset"
   - label: Extension Points
     items:
+      - title: Configuration Defaults
+        url: "#defaults"
       - title: Search Provider
         url: "#search-provider"
       - title: Parts
@@ -67,7 +69,7 @@ Architecture, events, data attributes, and extension points for building on top 
 | `blocks/` | You | Copy and modify blocks freely |
 | `blocks/action-*/` | You | Action dialog blocks — one per `/actions/*` path |
 | `styles/` | You | Add themes, override CSS variables |
-| `component-definition.json` / `component-models.json` / `component-filters.json` | You | Universal Editor component library, fields, and containment rules |
+| `scripts/asc/html.js`, `tokens.js`, `section-grid.js` | You | Site-level helpers: HTML escaping helpers, `{{ }}` token resolver, and the section grid utility |
 
 > Every file inside `scripts/asc/core/` starts with `// ASC Core — do not edit.` as a signal. You customize exclusively via `scripts/asc/configurations.js` and `scripts/asc.js`.
 
@@ -254,7 +256,7 @@ resolveTokensInElement(cardEl, { asset });
 
 `ns.accessor` switches into `context[ns]` and resolves the rest against it — only when `context[ns]` is itself an object, so it never collides with the page-wide registry's flat `'collection.title'`-style keys.
 
-**Property handler accessors** (registered in `configurations.js → properties`): `title`, `description`, `mime-type`, `file-type`, `file-size`, `dimensions`, `width`, `height`, `author`, `keywords`, `tags`, `smart-tags`, `uploaded-date`, `uploaded-by`, `last-modified-date`, `last-modified-by`, `colors`, `history` — plus any raw JCR metadata key and any name registered in `properties.custom`.
+**Property handler accessors** (registered by ASC core; add or override via `configurations.js → properties.custom`): `title`, `description`, `mime-type`, `file-type`, `file-size`, `dimensions`, `width`, `height`, `author`, `keywords`, `tags`, `smart-tags`, `uploaded-date`, `uploaded-by`, `last-modified-date`, `last-modified-by`, `colors`, `history` — plus any raw JCR metadata key and any name registered in `properties.custom`.
 
 {% raw %}
 ```
@@ -265,6 +267,26 @@ resolveTokensInElement(cardEl, { asset });
 {% endraw %}
 
 `details-renditions` uses the same engine against the **current rendition**, with `asset.*` reaching the owning asset — see the [renditions table templates](/blocks#details-renditions) for the full accessor list, including the {% raw %}`{{ accessor | fallback }}`{% endraw %} fallback syntax.
+
+---
+
+## Configuration Defaults {#defaults}
+
+`scripts/asc/configurations.js` only needs the values that are specific to your site. ASC core supplies a default for everything below, and each one is overridden by setting the same key in your configuration.
+
+| Key | Default | Override to |
+|-----|---------|-------------|
+| `renditions.display` | 100 to 1920px `web-optimized-delivery` ladder for images; AEM `cq5dam.thumbnail.*` renditions for non-images | Change the widths or quality the site uses to show an asset (see [Display renditions](/renditions#display)) |
+| `renditions.exclude` | `cq5dam.thumbnail.*`, `cqdam.*.json`, `cqdam.metadata.xml`, `Swatch` | Hide other AEM rendition nodes |
+| `renditions.definitions` | `thumbnail`, `web`, `original` | Define the downloadable renditions and smart crops (this one is usually site-specific) |
+| `assetDetails.templates` | Routes by MIME type to `/details/image`, `/details/video`, `/details/pdf`, `/details/office`, else `/details` | Route to your own details fragments |
+| `properties.custom` | All built-in and standard-metadata property handlers | Add your own or replace a built-in by name |
+| `search.accepts` | Skip assets with no MIME type or no static renditions | Filter results by any asset attribute |
+| `searchResults.views` | Cards: `thumbnail`, `title`, `file-type`, `dimensions`, `file-size` | Choose the properties shown per view |
+| `copyImage` | `maxBytes: 20 MB`, `maxPixels: 40,000,000` | Change the limits on copying an image to the clipboard |
+| `authoredAssets.concurrency` | `4` | Change how many authored board and mosaic references resolve at once |
+| `activity` | `enabled: true`, `max: 200` | Turn the activity log off or change its length |
+| `webmcp` | `enabled: true` | Turn the in-browser agent tools off |
 
 ---
 
@@ -290,6 +312,24 @@ search: {
 *SearchService delegates to a provider — swap without touching blocks*
 
 > **QueryBuilder predicates reference** — see [QueryBuilder Predicates](/querybuilder) for the full predicate reference, `basePredicates` / search config sheet, and how search block inputs map to API parameters.
+
+### Query and result hooks
+
+Three optional hooks in `search` run for every provider:
+
+```js
+search: {
+  // Change the query parameters before they are sent (translate custom filter inputs into predicates).
+  preprocessQuery: (queryParams) => queryParams,
+
+  // Change the raw results array before assets are created from it.
+  // postprocessResults: (results) => results,
+
+  // Keep or drop individual assets. Return true to include. Applied after postprocessResults.
+  // The default drops assets with no MIME type or no static renditions.
+  accepts: (asset) => asset.mimeType?.startsWith('image/'),
+}
+```
 
 ### Custom Provider
 

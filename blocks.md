@@ -746,6 +746,12 @@ Pair `sheet-controls` (header) with [`board`](#board) (`source: sheet`, `mode: v
 
 **Mode: sheet-url**: for a `source: authored`-style page that should still be defined by a *query*, not a fixed ID list. Instead of reading `?sheet=` from the URL the visitor actually used to reach the page, `sheet-url` authors a specific share URL (generated the normal way, from the Share dialog on some collection) directly into the page. Decoded identically to a normal `?sheet=` link, same payload format, same expiry handling; the only difference is where the encoded value comes from. Always renders read-only.
 
+**Card placement:** a card with no saved position is placed automatically, in the shortest column of an eight-column grid, using its own height. Portrait and landscape cards are never placed on top of each other or on top of existing cards and text. Documents and other assets with no dimension metadata are measured once their preview loads and moved if they turned out taller than expected. Positions are saved for collections, so a card stays where it was placed. Shared and authored boards place the same way without saving.
+
+**Fit on load:** the board fits all of its cards in view when it opens, and again if its container changes size, for example when the section it is in is revealed or the page is narrower than the board. Once a visitor pans or zooms, their view is left alone; "Fit to view" brings everything back.
+
+**Custom card renderer:** set `board.itemRenderer` in `configurations.js` to replace the default card markup (`scripts/asc/board-item.js` documents the contract that keeps drag, select, remove, notes, and search working).
+
 **Client-side search:** appears as the last toolbar item when `search-properties` is set. Non-matching cards dim; matches get a highlight ring; the viewport auto-fits to matches on every keystroke.
 
 ### Page patterns

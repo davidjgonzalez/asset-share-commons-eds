@@ -107,7 +107,7 @@ The **[starter kit](https://github.com/davidjgonzalez/asset-share-commons-eds/tr
 
 ## Step 4 — Configure AEM connection {#step-4}
 
-Open `scripts/asc/configurations.js` — the only file you need to edit — and set your AEM host:
+Open `scripts/asc/configurations.js` — the only file you need to edit — and set your AEM host. ASC ships defaults for everything else (asset details routing, rendition ladders, property handlers, and so on), so this is all a working site needs:
 
 ```js
 // scripts/asc/configurations.js
@@ -124,16 +124,7 @@ const configurations = {
 
   search: {
     provider: 'querybuilder',   // 'querybuilder' (default) or 'openapi'
-  },
-
-  assetDetails: {
-    // Route to a details fragment by MIME type. Return null/undefined to fall
-    // back to '/details'.
-    templates: (asset) => {
-      if (asset.mimeType?.startsWith('image/')) return '/details/image';
-      if (asset.mimeType?.startsWith('video/')) return '/details/video';
-      return '/details';
-    },
+    page: '/search',            // where a search-bar on another page sends the query
   },
 
   theme: {
@@ -143,6 +134,8 @@ const configurations = {
 
 export default configurations;
 ```
+
+Every other option in the file is commented out with its default shown. Uncomment only what you want to change; see the [Developer Reference](/developer#defaults) for the full list of what ships by default.
 
 ## Step 5 — Configure the AEM Publish Dispatcher {#step-5}
 
@@ -274,7 +267,7 @@ git fetch asc-upstream
 git merge asc-upstream/main
 ```
 
-This stays low-conflict as long as your own changes are confined to the customization surface: `scripts/asc/configurations.js`, `scripts/asc.js`, `blocks/`, `styles/`, and the root `component-*.json` files. If you've edited anything under `scripts/asc/core/` directly, expect merge conflicts there; that's the tradeoff for stepping outside the boundary.
+This stays low-conflict as long as your own changes are confined to the customization surface: `scripts/asc/configurations.js`, `scripts/asc.js`, `blocks/`, and `styles/`. If you've edited anything under `scripts/asc/core/` directly, expect merge conflicts there; that's the tradeoff for stepping outside the boundary.
 
 Two things worth knowing:
 
@@ -321,11 +314,11 @@ searchResults: {
 },
 ```
 
-Built-in property names: `thumbnail`, `title`, `file-type`, `file-size`, `file-extension`, `dimensions`, `width`, `height`, `mime-type`, `modified`, `created`, `description`, `filename` — plus any name registered in `properties.custom`.
+Built-in property names: `thumbnail`, `title`, `file-type`, `file-size`, `file-extension`, `dimensions`, `width`, `height`, `mime-type`, `modified`, `created`, `description`, `filename`, `author`, `keywords`, `tags`, `smart-tags`, `colors`, `history`, `uploaded-by`, `uploaded-date`, `last-modified-by`, `last-modified-date` — plus any name registered in `properties.custom`. When `searchResults.views` is not set, cards show `thumbnail`, `title`, `file-type`, `dimensions`, and `file-size`.
 
 ## Custom Property Handlers {#custom-property-handlers}
 
-Add computed or remapped properties for use in `details-property`, `details-asset-metadata`, and `searchResults.views`:
+The built-in properties above are already registered. Add computed or remapped ones, or override a built-in by reusing its name, for use in `details-property`, `details-asset-metadata`, and `searchResults.views`:
 
 ```js
 // configurations.js

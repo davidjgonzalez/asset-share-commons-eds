@@ -101,7 +101,7 @@ The active collection ID is stored separately:
 localStorage["asc:{userId}"].activeCollectionId  // UUID | null (null → use defaultId)
 ```
 
-> **Board position (`x`/`y`) and `notes`** are per-item, set via drag/drop and the notes UI on the `board` block (`mode: interactive`) and persisted through `collections.updateItem()`.
+> **Board position (`x`/`y`) and `notes`** are per-item, set via drag/drop and the notes UI on the `board` block (`mode: interactive`) and persisted through `collections.updateItem()`. An item added without a position is placed automatically by the board so it does not overlap existing cards, whatever their aspect ratio, and that placement is saved (see [Card placement](/blocks#board)).
 
 ---
 
