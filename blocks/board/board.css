@@ -111,7 +111,7 @@
         background: transparent;
         color: var(--color-fg);
         font-size: var(--body-font-size-s);
-        padding-inline: var(--spacing-sm);
+        padding-inline: var(--spacing-md);
         min-width: 140px;
         height: auto;
         box-shadow: none;

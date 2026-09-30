@@ -102,7 +102,10 @@
     /* Token visualizers */
     .kit-tokens { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--spacing-lg); }
     /* Inline class/tag annotation shown next to a rendered example */
-    .kit-anno { display: inline-block; margin-left: 0.6rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.72rem; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--color-muted-fg); vertical-align: middle; }
+    /* Class/tag labels next to a sample: clutter in the rendered preview, useful next to the code. */
+    .kit-anno { display: none; margin-left: 0.6rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.72rem; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--color-muted-fg); vertical-align: middle; }
+    .kit-demo.is-open .kit-anno,
+    body.kit-show-code .kit-anno { display: inline-block; }
     .kit-token { display: grid; gap: 0.4rem; justify-items: center; font-size: 0.72rem; color: var(--color-muted-fg); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
     .kit-token__radius { width: 4rem; height: 4rem; background: var(--color-accent); border: 1px solid var(--color-border); }
     .kit-spacescale { display: grid; gap: 0.5rem; }
@@ -218,7 +221,7 @@
             <h2 class="asc-ui-heading-xl">Heading XL<code class="kit-anno" data-omit>&lt;h2&gt; .asc-ui-heading-xl</code></h2>
             <h3 class="asc-ui-heading-l">Heading L<code class="kit-anno" data-omit>&lt;h3&gt; .asc-ui-heading-l</code></h3>
             <h4 class="asc-ui-heading-m">Heading M<code class="kit-anno" data-omit>&lt;h4&gt; .asc-ui-heading-m</code></h4>
-            <p class="asc-ui-copy">Body copy uses asc-ui-copy for muted secondary text.<code class="kit-anno" data-omit>&lt;p&gt; .asc-ui-copy</code></p>
+            <p class="asc-ui-copy">Body copy for muted secondary text.<code class="kit-anno" data-omit>&lt;p&gt; .asc-ui-copy</code></p>
             <p class="asc-ui-label">Field label<code class="kit-anno" data-omit>&lt;p&gt; .asc-ui-label</code></p>
           </div>
         </div>

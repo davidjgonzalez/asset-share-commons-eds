@@ -63,8 +63,13 @@ header h1 {
        tablet widths — brand and tools were forced into equal 1fr shares
        regardless of their actual content width; equal 1fr flanks are safe
        here specifically because both sides shrink together in lockstep,
-       staying symmetric even when they hit their minimum). */
-    grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, 1fr);
+       staying symmetric even when they hit their minimum).
+       The tools track is the exception: its floor is its own content width
+       (max-content), not 0. The collection-switcher pill can't shrink, so at
+       tablet widths a 0 floor let it overflow leftward into the search column
+       and sit on top of the search-bar's view/sort buttons; with the floor,
+       the tools keep their room and brand/search give way instead. */
+    grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(max-content, 1fr);
     grid-template-areas: "brand search tools";
     align-items: center;
     gap: 1.5rem;
@@ -154,6 +159,14 @@ header .block.search-bar .asc-ui-search {
     justify-content: center;
   }
 
+  /* Tablet: the tools track can't shrink below its content (see the grid comment
+     above), so the search box gives up width before the brand has to. */
+  header .block.search-bar .asc-ui-search {
+    --asc-ui-search-width: 13rem;
+  }
+}
+
+@media (width >= 1024px) {
   header .block.search-bar .asc-ui-search {
     --asc-ui-search-width: 18rem;
   }
