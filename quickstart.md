@@ -220,7 +220,7 @@ SetEnvIfExpr "req_novary('Origin') == 'http://localhost:3000'" ASC_CORS_ORIGIN=%
 </IfModule>
 ```
 
-The [AEM Publish Dispatcher](/dispatcher) page explains each rule and has the full endpoint inventory, caching notes, and security notes. You can skip this step if `aem.host` points at an author instance or a Publish tier without a restrictive Dispatcher.
+You can skip this step if `aem.host` points at an author instance or a Publish tier without a restrictive Dispatcher.
 
 ## Step 6 — Run Locally {#step-6}
 
