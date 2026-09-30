@@ -17,9 +17,10 @@ import { readBlockConfig } from '../../scripts/aem.js';
 import assetTeaser from '../../scripts/asc/core/parts/asset-teaser/asset-teaser.js';
 import services from '../../scripts/asc/core/services/services.js';
 import { escHtml } from '../../scripts/asc/html.js';
+import { icon } from '../../scripts/asc/core/utils/icons.js';
 
-const SVG_ADD = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
-const SVG_REMOVE = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>`;
+const SVG_ADD = icon('plus', { size: 14, strokeWidth: 2.5 });
+const SVG_REMOVE = icon('check', { size: 14, strokeWidth: 2.5 });
 
 const DEFAULTS = {
   description: '',

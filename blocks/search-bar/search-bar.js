@@ -27,6 +27,7 @@ import { readBlockConfig, SEARCH_FORM } from '../../scripts/asc/core/utils/searc
 import { escAttr } from '../../scripts/asc/html.js';
 import { DEFAULT_PALETTE, nearestColor } from '../../scripts/asc/color-search.js';
 import services from '../../scripts/asc/core/services/services.js';
+import { icon } from '../../scripts/asc/core/utils/icons.js';
 
 const configurations = (await import('../../scripts/asc/configurations.js')).default;
 const SEARCH_PAGE = configurations.search?.page || '';
@@ -57,12 +58,12 @@ const DEFAULT_ORDER_OPTIONS = [
 
 // Display mode icons — keyed to the option value
 const ICONS = {
-  cards:    `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/></svg>`,
-  masonry:  `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="5" height="12" rx="1"/><rect x="3" y="17" width="5" height="4" rx="1"/><rect x="10" y="3" width="5" height="4" rx="1"/><rect x="10" y="9" width="5" height="12" rx="1"/><rect x="17" y="3" width="4" height="7" rx="1"/><rect x="17" y="12" width="4" height="9" rx="1"/></svg>`,
-  list:     `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="4" height="4" rx="0.5"/><line x1="9" y1="6" x2="21" y2="6"/><rect x="3" y="11" width="4" height="4" rx="0.5"/><line x1="9" y1="13" x2="21" y2="13"/><rect x="3" y="18" width="4" height="4" rx="0.5"/><line x1="9" y1="20" x2="21" y2="20"/></svg>`,
-  sortField:`<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="9" y2="18"/></svg>`,
-  asc:      `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>`,
-  desc:     `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>`,
+  cards:    icon('viewCards', { size: 15 }),
+  masonry:  icon('viewMasonry', { size: 15 }),
+  list:     icon('viewList', { size: 15 }),
+  sortField:icon('sortField', { size: 15 }),
+  asc:      icon('arrowUp', { size: 14, strokeWidth: 2.5 }),
+  desc:     icon('arrowDown', { size: 14, strokeWidth: 2.5 }),
 };
 
 /**

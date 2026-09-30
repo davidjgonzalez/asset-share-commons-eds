@@ -11,13 +11,14 @@
 import services from '../../scripts/asc/core/services/services.js';
 import { getVisibleAssetIds, getNeighborAssetId } from '../../scripts/asc/asset-navigation.js';
 import { withViewTransition } from '../../scripts/asc/core/utils/view-transition.js';
+import { icon } from '../../scripts/asc/core/utils/icons.js';
 
 const SIZE_CLASSES = { narrow: 'asc-dialog--narrow', wide: 'asc-dialog--wide' };
 const ASSET_URL_PARAM = 'asset';
 
 const ICONS = {
-  chevronLeft: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>',
-  chevronRight: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>',
+  chevronLeft: icon('chevronLeft', { size: 20 }),
+  chevronRight: icon('chevronRight', { size: 20 }),
 };
 
 export default async function decorate(block) {

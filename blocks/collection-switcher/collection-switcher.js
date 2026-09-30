@@ -3,6 +3,7 @@ import services from '../../scripts/asc/core/services/services.js';
 import { Events as CollectionEvents } from '../../scripts/asc/core/services/collections/collections.js';
 import { openNewCollectionDialog } from '../collections/collections.js';
 import { escHtml, escAttr } from '../../scripts/asc/html.js';
+import { icon } from '../../scripts/asc/core/utils/icons.js';
 
 const configurations = (await import('../../scripts/asc/configurations.js')).default;
 
@@ -93,7 +94,7 @@ function collectionOption(collection, activeId) {
          class="btn btn--ghost btn--circle btn--sm collection-switcher__option-open"
          aria-label="Open ${escAttr(collection.name)}"
          title="Open collection">
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        ${icon('externalLink', { size: 14 })}
       </a>
     </li>`;
 }
