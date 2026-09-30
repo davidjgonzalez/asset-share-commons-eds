@@ -580,7 +580,8 @@ Home | Products | About
 No configuration required. Page title and intro copy are authored above this block in da.live.
 
 **Features:**
-- Grid of collection cards — a mosaic of up to 4 lazy-loaded asset thumbnails, name, asset counts by type, total count, and last-updated date
+- Grid of collection cards: a mosaic of up to 4 lazy-loaded asset thumbnails, name, description (when set), total asset count, and last-updated date
+- The default collection is named **My Favorites**, always comes first, and is marked with a star
 - Inline "New collection" form — no page navigation required
 - Per-card **Open** and **Delete** actions; the default collection cannot be deleted
 - Re-renders on any `asc:collection:change` event

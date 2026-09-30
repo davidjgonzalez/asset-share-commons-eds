@@ -59,7 +59,7 @@ Asset Share Commons provides a client-side state management system for asset col
 
 ## Overview {#overview}
 
-A **collection** is a named, persistent board of items — asset references plus optional section headings — with positions, notes, and free text. Every user gets a **default collection** that cannot be deleted. Additional named collections can be created programmatically or from the `collections` / `collection-switcher` UI.
+A **collection** is a named, persistent board of items — asset references plus optional section headings — with positions, notes, and free text. Every user gets a **default collection**, named "My Favorites", that cannot be deleted and is always listed first. Additional named collections can be created programmatically or from the `collections` / `collection-switcher` UI.
 
 Key properties:
 - Collections are user-scoped (isolated by user ID in localStorage)
