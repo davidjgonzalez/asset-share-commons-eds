@@ -93,11 +93,24 @@
         flex: 1;
     }
 
-    /* Asset type breakdown: "5 images · 2 videos · 3 docs" */
-    .collections__card-types {
+    .collections__card-description {
         margin: 0;
-        font-size: var(--body-font-size-xs);
-        color: var(--color-muted-fg);
+        font-size: var(--body-font-size-s);
+        color: var(--color-fg);
+        line-height: 1.4;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        /* stylelint-disable-next-line property-no-deprecated -- still required for -webkit-line-clamp */
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    /* Star on the default (My Favorites) collection, before its name */
+    .collections__card-star {
+        display: inline-flex;
+        vertical-align: -0.15em;
+        margin-inline-end: var(--spacing-2xs);
+        color: var(--color-primary);
     }
 
     .collections__card-count {

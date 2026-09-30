@@ -70,7 +70,7 @@ class Collections {
         items: {
           [defaultId]: {
             id: defaultId,
-            name: "Favorites",
+            name: "My Favorites",
             createdAt: now,
             modifiedAt: now,
             items: seedAssetIds.map((id) => ({ type: "asset", id })),
@@ -162,8 +162,12 @@ class Collections {
    * @returns {Object} Decorated collection with assetIds computed
    */
   _decorate(collection) {
+    const isDefault = collection.id === this._getData().defaultId;
     return {
       ...collection,
+      isDefault,
+      // Default collections saved before the rename still say "Favorites"
+      name: isDefault && collection.name === "Favorites" ? "My Favorites" : collection.name,
       assetIds: (collection.items || [])
         .filter((i) => i.type === "asset")
         .map((i) => i.id),
@@ -342,7 +346,10 @@ class Collections {
    */
   async getAll(hydrateAssets = false) {
     const { items } = this._getData();
-    const collections = Object.values(items).map((c) => this._decorate({ ...c }));
+    // The default (My Favorites) collection always comes first
+    const collections = Object.values(items)
+      .map((c) => this._decorate({ ...c }))
+      .sort((a, b) => Number(b.isDefault) - Number(a.isDefault));
     if (!hydrateAssets) return collections;
     return Promise.all(collections.map((c) => this._hydrateAssets(c)));
   }
@@ -709,7 +716,7 @@ class Collections {
         items: {
           [defaultId]: {
             id: defaultId,
-            name: "Favorites",
+            name: "My Favorites",
             createdAt: now,
             modifiedAt: now,
             items: [],

@@ -11,6 +11,8 @@ import { wireDialogClose } from '../../scripts/asc.js';
 
 const configurations = (await import('../../scripts/asc/configurations.js')).default;
 
+const ICON_STAR = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
+
 const COLLECTION_PATH = configurations.collections?.collectionPath || '/collections/collection';
 
 /**
@@ -28,7 +30,8 @@ const COLLECTION_PATH = configurations.collections?.collectionPath || '/collecti
  *
  * Features:
  *   - Grid or rail of collection cards: mosaic of up to 4 asset thumbnails
- *     (lazy-loaded), name, asset type counts, total count, last updated
+ *     (lazy-loaded), name, description, total count, last updated. The default
+ *     collection (My Favorites) always comes first and carries a star.
  *   - Grid mode adds: Set active / Duplicate / Delete actions per card
  *     ("New Collection" itself lives in the sibling collections-actions block)
  *   - Re-renders on any collection change event
@@ -54,6 +57,7 @@ async function render(block, isRail, limit) {
   const data = services.collections._getData();
   const defaultId = data.defaultId;
   const sorted = [...collections].sort((a, b) => {
+    if (a.id === defaultId || b.id === defaultId) return (b.id === defaultId) - (a.id === defaultId);
     const tb = new Date(b.modifiedAt || 0).getTime();
     const ta = new Date(a.modifiedAt || 0).getTime();
     return tb - ta;
@@ -96,11 +100,10 @@ function collectionCard(collection, activeId, defaultId, isRail) {
         ${mosaicHtml(count, thumbIds, overflow)}
         <div class="collections__card-content">
           <div class="asc-ui-card__header">
-            <h2 class="collections__card-name asc-ui-card__title">${escHtml(collection.name)}</h2>
-            ${isDefault ? '<span class="asc-ui-badge" title="This is the default collection — it can’t be deleted">Default</span>' : ''}
+            <h2 class="collections__card-name asc-ui-card__title">${isDefault ? `<span class="collections__card-star" role="img" aria-label="Default collection" title="Your default collection. It can’t be deleted.">${ICON_STAR}</span>` : ''}${escHtml(collection.name)}</h2>
           </div>
           <div class="asc-ui-card__body">
-            ${typeCountsHtml(collection)}
+            ${collection.description ? `<p class="collections__card-description">${escHtml(collection.description)}</p>` : ''}
             <p class="collections__card-count"><span class="collections__card-count-num">${count}</span> asset${count !== 1 ? 's' : ''}</p>
             ${updated
     ? `<p class="collections__card-updated">Updated <time datetime="${escAttr(updated.iso)}">${escHtml(updated.label)}</time></p>`
@@ -166,32 +169,6 @@ function mosaicHtml(count, thumbIds, overflow) {
   return `<div class="collections__card-mosaic" aria-hidden="true">
     <div class="asc-ui-collection-card__thumbs" style="--collection-card-mosaic-height: ${height}px">${rowsHtml}</div>
   </div>`;
-}
-
-function typeCountsHtml(collection) {
-  const assetItems = (collection.items || []).filter((i) => i.type === 'asset');
-  if (!assetItems.length) return '';
-  // Only show breakdown when every asset has a known mimeType
-  if (assetItems.some((i) => !i.mimeType)) return '';
-
-  const counts = { image: 0, video: 0, document: 0, other: 0 };
-  assetItems.forEach(({ mimeType }) => {
-    if (mimeType.startsWith('image/')) counts.image++;
-    else if (mimeType.startsWith('video/')) counts.video++;
-    else if (mimeType.startsWith('application/')) counts.document++;
-    else counts.other++;
-  });
-
-  const parts = [
-    counts.image && `${counts.image} ${counts.image === 1 ? 'image' : 'images'}`,
-    counts.video && `${counts.video} ${counts.video === 1 ? 'video' : 'videos'}`,
-    counts.document && `${counts.document} ${counts.document === 1 ? 'doc' : 'docs'}`,
-    counts.other && `${counts.other} other`,
-  ].filter(Boolean);
-
-  return parts.length
-    ? `<p class="collections__card-types">${escHtml(parts.join(' · '))}</p>`
-    : '';
 }
 
 // ─── Mosaic lazy-loading ───────────────────────────────────────────────────────

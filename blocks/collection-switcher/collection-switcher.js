@@ -54,7 +54,7 @@ function html(active, all, activeId) {
   return `
     <div class="collection-switcher__wrapper">
       <button class="collection-switcher__trigger btn btn--secondary btn--lg" aria-expanded="false" aria-haspopup="listbox">
-        <span class="collection-switcher__trigger-name">${escHtml(active?.name || 'Favorites')}</span>
+        <span class="collection-switcher__trigger-name">${escHtml(active?.name || 'My Favorites')}</span>
         <span class="asc-ui-count" aria-label="${count} assets">${count}</span>
         <span class="collection-switcher__trigger-arrow" aria-hidden="true">▾</span>
       </button>

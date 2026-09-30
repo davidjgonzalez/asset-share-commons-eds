@@ -439,10 +439,10 @@ function pluralAssets(count) {
 // Which collection each bulk action targets, and the copy for its confirmation toast.
 const BULK_ACTIONS = {
   favorite: {
-    method: 'addAsset', verb: 'Added', preposition: 'to', collectionId: () => services.collections.getDefaultId(), destination: () => 'Favorites',
+    method: 'addAsset', verb: 'Added', preposition: 'to', collectionId: () => services.collections.getDefaultId(), destination: () => 'My Favorites',
   },
   unfavorite: {
-    method: 'removeAsset', verb: 'Removed', preposition: 'from', collectionId: () => services.collections.getDefaultId(), destination: () => 'Favorites',
+    method: 'removeAsset', verb: 'Removed', preposition: 'from', collectionId: () => services.collections.getDefaultId(), destination: () => 'My Favorites',
   },
   collection: {
     method: 'addAsset', verb: 'Added', preposition: 'to', collectionId: () => services.collections.getActiveId(), destination: (name) => name,
@@ -589,7 +589,7 @@ function html(config) {
         </button>
         <button type="button" class="asc-ui-selection-bar__action" data-bulk-action="unfavorite" hidden>
           <span class="asc-ui-selection-bar__icon" aria-hidden="true">${ICONS.minus}</span>
-          Remove from Favorites
+          Remove from My Favorites
         </button>
         <button type="button" class="asc-ui-selection-bar__action" data-bulk-action="collection">
           <span class="asc-ui-selection-bar__icon" aria-hidden="true">${ICONS.plus}</span>
