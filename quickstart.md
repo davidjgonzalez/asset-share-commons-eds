@@ -318,7 +318,7 @@ Built-in property names: `thumbnail`, `title`, `file-type`, `file-size`, `file-e
 
 ## Custom Property Handlers {#custom-property-handlers}
 
-The built-in properties above are already registered. Add computed or remapped ones, or override a built-in by reusing its name, for use in `details-property`, `details-asset-metadata`, and `searchResults.views`:
+The built-in properties above are already registered. Add computed or remapped ones, or override a built-in by reusing its name, for use in `details-property`, `details-metadata`, and `searchResults.views`:
 
 ```js
 // configurations.js

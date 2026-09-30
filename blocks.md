@@ -29,8 +29,6 @@ sidebar:
         url: "#details-preview"
       - title: details-property
         url: "#details-property"
-      - title: details-asset-metadata
-        url: "#details-asset-metadata"
       - title: details-metadata
         url: "#details-metadata"
       - title: details-renditions
@@ -380,50 +378,35 @@ Responds to `asc:rendition:activate` (sticky, click) and `asc:rendition:preview`
 
 ---
 
-## details-asset-metadata {#details-asset-metadata}
-
-**Asset Details** · A panel of asset property rows, rendered as a definition list (`asc-ui-metadata`). Each row is `Label | property`; multi-value properties (tags, keywords, smart-tags) render as `asc-ui-chip` pills with a "View more" expander past 10 items.
-
-![details-asset-metadata — asset property definition list]({{ '/assets/images/blocks/details-asset-metadata.jpg' | relative_url }})
-
-*details-asset-metadata — definition-list panel of asset properties, with multi-value chip pills*
-
-```
-| details-asset-metadata |                     |
-|-------------------------|--------------------|
-| Title                   | dc:title           |
-| Description             | dc:description     |
-| Format                  | file-type          |
-| File size               | file-size          |
-| Uploaded                | uploaded-date      |
-| Uploaded by             | uploaded-by        |
-| Modified                | last-modified-date |
-| Author                  | author             |
-| Keywords                | keywords           |
-| Tags                    | tags               |
-```
-
-Any property registered in `configurations.properties.custom` also works here. Rows whose value resolves empty are omitted automatically.
-
----
-
 ## details-metadata {#details-metadata}
 
-**Asset Details** · A panel of property rows in `list` or `grid` display. Functionally similar to `details-asset-metadata` but with a `display` option and no automatic multi-value chip expander.
+**Asset Details** · A panel of asset property rows, rendered as a definition list (`asc-ui-metadata`). Each row is `Label | property`. Multi-value properties (tags, keywords, smart-tags) render as `asc-ui-chip` pills with a "View more" expander past 10 items.
+
+![details-metadata: asset property definition list]({{ '/assets/images/blocks/details-asset-metadata.jpg' | relative_url }})
+
+*details-metadata: definition-list panel of asset properties, with multi-value chip pills*
 
 ```
-| details-metadata  |               |
-|--------------------|--------------|
-| display            | list         |
-| Title              | dc:title     |
-| Tags               | tags         |
+| details-metadata   |                     |
+|--------------------|---------------------|
+| display            | list                |
+| Title              | dc:title            |
+| Description        | dc:description      |
+| Format             | file-type           |
+| File size          | file-size           |
+| Uploaded           | uploaded-date       |
+| Uploaded by        | uploaded-by         |
+| Modified           | last-modified-date  |
+| Author             | author              |
+| Keywords           | keywords            |
+| Tags               | tags                |
 ```
 
 | Key | Default | Description |
 |-----|---------|-------------|
-| `display` | `list` | `list` \| `grid` |
+| `display` | `list` | `list` \| `grid`. Grid puts the label above the value in a responsive cell layout. |
 
-Array values (e.g. `tags`) render as `asc-ui-chip` pills.
+Any property registered in `configurations.properties.custom` also works here. Rows whose value resolves empty are omitted automatically.
 
 ---
 

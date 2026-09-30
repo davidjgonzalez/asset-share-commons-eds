@@ -430,7 +430,7 @@ properties: {
 },
 ```
 
-Use the custom property name in `details-property`, `details-asset-metadata`, and `searchResults.views`.
+Use the custom property name in `details-property`, `details-metadata`, and `searchResults.views`.
 
 ---
 
