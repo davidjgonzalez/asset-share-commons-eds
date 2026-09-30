@@ -76,7 +76,7 @@ function esc(str) {
   return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-const EMPTY_CELL_HTML = '<span class="asc-list-view__empty">—</span>';
+const EMPTY_CELL_HTML = '<span class="asc-ui-list-view__empty">—</span>';
 
 function renderListCell(col, asset) {
   // Escape-hatch: custom render function
@@ -88,9 +88,9 @@ function renderListCell(col, asset) {
     const srcset = services.renditions.getDisplaySrcset(asset);
     if (srcset.length) {
       const srcsetAttr = srcset.map((r) => `${r.url} ${r.size.width}w`).join(', ');
-      return `<img class="asc-list-view__thumb" src="${esc(srcset[0].url)}" srcset="${srcsetAttr}" sizes="88px" alt="${alt}" loading="lazy">`;
+      return `<img class="asc-ui-list-view__thumb" src="${esc(srcset[0].url)}" srcset="${srcsetAttr}" sizes="88px" alt="${alt}" loading="lazy">`;
     }
-    return `<img class="asc-list-view__thumb" src="${esc(asset.displayUrl)}" alt="${alt}" loading="lazy">`;
+    return `<img class="asc-ui-list-view__thumb" src="${esc(asset.displayUrl)}" alt="${alt}" loading="lazy">`;
   }
   const { text } = asset.getProperty(property);
   return text ? esc(text) : EMPTY_CELL_HTML;
@@ -143,7 +143,7 @@ function fileTypeFaceHtml(fileType) {
 
 function renderListActionsCell(asset) {
   return `
-    <div class="asc-list-view__actions">
+    <div class="asc-ui-list-view__actions">
       ${collectionToggle(asset, { favorite: true })}
       ${collectionToggle(asset, { addLabel: 'Add to collection', removeLabel: 'Remove from collection' })}
       ${quickActionButtonsHtml(asset.uuid)}
@@ -260,13 +260,13 @@ function appendMasonryItems(container, assets) {
 
 function renderListRows(assets, cols) {
   return assets.map((asset) => `
-    <div class="asc-list-view__row"
+    <div class="asc-ui-list-view__row"
          data-asc-asset="${esc(asset.uuid)}"
          data-asc-action="asset:details:open@click"
          role="row"
          tabindex="0">
-      ${cols.map((col) => `<div class="asc-list-view__cell" role="cell">${renderListCell(col, asset)}</div>`).join('')}
-      <div class="asc-list-view__cell asc-list-view__cell--actions" role="cell">${renderListActionsCell(asset)}</div>
+      ${cols.map((col) => `<div class="asc-ui-list-view__cell" role="cell">${renderListCell(col, asset)}</div>`).join('')}
+      <div class="asc-ui-list-view__cell asc-ui-list-view__cell--actions" role="cell">${renderListActionsCell(asset)}</div>
     </div>`).join('');
 }
 
@@ -275,13 +275,13 @@ function renderListView(assets) {
   const trackSizes = [...cols.map((c) => c.width || 'auto'), getActionsWidth()].join(' ');
   const headers = cols.map((col) => {
     const label = col.label ?? PROP_LABELS[col.property] ?? col.property ?? '';
-    return `<div class="asc-list-view__cell asc-list-view__cell--header" role="columnheader">${label}</div>`;
+    return `<div class="asc-ui-list-view__cell asc-ui-list-view__cell--header" role="columnheader">${label}</div>`;
   }).join('');
 
   return `
-    <div class="asc-list-view" style="--asc-list-cols: ${trackSizes}" role="table">
-      <div class="asc-list-view__header" role="row">${headers}<div class="asc-list-view__cell asc-list-view__cell--header asc-list-view__cell--actions-header" role="columnheader">Actions</div></div>
-      <div class="asc-list-view__rows" role="rowgroup">
+    <div class="asc-ui-list-view" style="--asc-list-cols: ${trackSizes}" role="table">
+      <div class="asc-ui-list-view__header" role="row">${headers}<div class="asc-ui-list-view__cell asc-ui-list-view__cell--header asc-ui-list-view__cell--actions-header" role="columnheader">Actions</div></div>
+      <div class="asc-ui-list-view__rows" role="rowgroup">
         ${renderListRows(assets, cols)}
       </div>
     </div>`;
@@ -405,14 +405,14 @@ function skeletonListHtml() {
   const cols = getListCols();
   const trackSizes = [...cols.map((c) => c.width || 'auto'), getActionsWidth()].join(' ');
   const rows = Array.from({ length: SKELETON_COUNT }, () => `
-    <div class="asc-list-view__row" aria-hidden="true">
-      ${cols.map((col) => `<div class="asc-list-view__cell">${col.property === 'thumbnail'
-    ? '<span class="asc-ui-skeleton asc-list-view__thumb"></span>'
+    <div class="asc-ui-list-view__row" aria-hidden="true">
+      ${cols.map((col) => `<div class="asc-ui-list-view__cell">${col.property === 'thumbnail'
+    ? '<span class="asc-ui-skeleton asc-ui-list-view__thumb"></span>'
     : '<span class="asc-ui-skeleton asc-ui-skeleton--text"></span>'}</div>`).join('')}
-      <div class="asc-list-view__cell"></div>
+      <div class="asc-ui-list-view__cell"></div>
     </div>`).join('');
 
-  return `<div class="asc-list-view" style="--asc-list-cols: ${trackSizes}">${rows}</div>`;
+  return `<div class="asc-ui-list-view" style="--asc-list-cols: ${trackSizes}">${rows}</div>`;
 }
 
 // Masonry mode lays results out as flex `.masonry-col` columns (see
@@ -717,7 +717,7 @@ async function addEventListeners(block, _config) {
 
     if (event.detail.type === 'load-more') {
       if (display === 'list') {
-        resultsEl.querySelector('.asc-list-view__rows')
+        resultsEl.querySelector('.asc-ui-list-view__rows')
           ?.insertAdjacentHTML('beforeend', renderListRows(results.assets || [], getListCols()));
       } else if (display === 'masonry') {
         appendMasonryItems(resultsEl, results.assets || []);
@@ -767,7 +767,7 @@ async function addEventListeners(block, _config) {
   }
 
   block.addEventListener('click', (event) => {
-    if (event.target.closest('.asc-list-view__actions')) {
+    if (event.target.closest('.asc-ui-list-view__actions')) {
       event.stopPropagation();
     }
 

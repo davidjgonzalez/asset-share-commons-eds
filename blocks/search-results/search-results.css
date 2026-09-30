@@ -174,24 +174,17 @@
         display: block;
     }
 
-    .asc-list-view__actions {
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        gap: var(--spacing-xs);
-    }
-
     /* In list mode the quick-action cluster sits inline in the actions cell
        (not absolutely positioned like the card/masonry overlay below) — give
        it its own flex + gap instead of relying on inline whitespace between
        the buttons. */
-    .asc-list-view__actions .search-results__quick-actions {
+    .asc-ui-list-view__actions .search-results__quick-actions {
         display: flex;
         align-items: center;
         gap: var(--spacing-xs);
     }
 
-    .asc-list-view__actions .asc-collection-toggle {
+    .asc-ui-list-view__actions .asc-collection-toggle {
         --collection-toggle-add-bg: var(--color-card);
         --collection-toggle-add-fg: var(--color-fg);
         --collection-toggle-add-border: var(--color-border);
@@ -314,133 +307,6 @@
     [data-asc-results]:not([data-display="list"]) .asc-asset-teaser:hover .search-results__quick-action {
         opacity: 1;
         pointer-events: auto;
-    }
-
-    /* ── List view data grid ────────────────────────────────────────── */
-
-    .asc-list-view {
-        display: flex;
-        flex-direction: column;
-        border: 1px solid var(--color-border);
-        border-radius: var(--border-radius-md);
-        overflow: hidden;
-    }
-
-    .asc-list-view__header {
-        display: grid;
-        grid-template-columns: var(--asc-list-cols, 1fr);
-        position: sticky;
-        top: 0;
-        z-index: 10;
-        background: var(--color-muted);
-        border-bottom: 2px solid var(--color-border);
-    }
-
-    .asc-list-view__rows {
-        display: contents;
-    }
-
-    .asc-list-view__row {
-        display: grid;
-        grid-template-columns: var(--asc-list-cols, 1fr);
-        cursor: pointer;
-        transition: background var(--transition-fast);
-
-        &:hover { background: var(--color-accent); }
-        &:not(:last-child) { border-bottom: 1px solid var(--color-border); }
-    }
-
-    /* Selected rows: the kit's generic .asc-ui-selected outline (with its
-       2px offset) is meant for items with gaps between them (cards, masonry).
-       List rows sit flush against each other, so per-row outlines would
-       overlap into neighboring rows — instead draw the ring as an inset
-       box-shadow and drop the shared edge between consecutive selected rows,
-       so a run of selected rows reads as one bordered group. */
-    .asc-list-view__row.asc-ui-selected {
-        position: relative;
-        z-index: 1;
-        outline: none;
-
-        --asc-list-row-selected-top: 2px;
-        --asc-list-row-selected-bottom: 2px;
-
-        box-shadow:
-            inset 2px 0 0 var(--color-primary),
-            inset -2px 0 0 var(--color-primary),
-            inset 0 var(--asc-list-row-selected-top) 0 var(--color-primary),
-            inset 0 calc(-1 * var(--asc-list-row-selected-bottom)) 0 var(--color-primary);
-    }
-
-    .asc-list-view__row.asc-ui-selected + .asc-list-view__row.asc-ui-selected {
-        --asc-list-row-selected-top: 0px;
-    }
-
-    /* border-bottom-color: transparent alone would leave a 1px gap the inset
-       box-shadow can't reach (it paints inside the border box) — a visible
-       hole at each seam. Dropping the border width entirely closes it. */
-    .asc-list-view__row.asc-ui-selected:has(+ .asc-list-view__row.asc-ui-selected) {
-        --asc-list-row-selected-bottom: 0px;
-
-        border-bottom: none;
-    }
-
-    .asc-list-view__cell {
-        padding: var(--spacing-sm) var(--spacing-md);
-        font-size: var(--body-font-size-s);
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        align-content: center;
-
-        img {
-            display: block;
-            max-width: 100%;
-            height: auto;
-        }
-    }
-
-    .asc-list-view__row .asc-list-view__cell:first-child {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding-block: var(--spacing-xs);
-        padding-inline: var(--spacing-sm);
-    }
-
-    .asc-list-view__empty {
-        display: block;
-        text-align: center;
-        color: var(--color-muted-fg);
-    }
-
-    .asc-list-view__cell .asc-list-view__thumb {
-        flex: 0 0 2.875rem;
-        width: 2.875rem;
-        height: 2.875rem;
-        min-width: 2.875rem;
-        min-height: 2.875rem;
-        max-width: 2.875rem;
-        max-height: 2.875rem;
-        display: block;
-        margin-block: 0.3125rem;
-        border-radius: var(--border-radius-full);
-        overflow: hidden;
-        object-fit: cover;
-        background: var(--color-muted);
-    }
-
-    .asc-list-view__cell--header {
-        font-size: var(--body-font-size-xs);
-        font-weight: 600;
-        color: var(--color-muted-fg);
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-        padding-block: var(--spacing-xs);
-    }
-
-    .asc-list-view__cell--actions,
-    .asc-list-view__cell--actions-header {
-        justify-self: end;
     }
 
     [data-asc-results][data-display="masonry"] {
