@@ -1439,15 +1439,41 @@ const BOARD_MIN_HEIGHT = 420;
 // (authored `height` row, e.g. "90vh") opts a specific page out of that calculation
 // in favor of an explicit size — the author's job to make sure it doesn't overlap
 // whatever sits above the board on that page.
+// Returns whether the height actually changed — callers use this to avoid re-triggering a
+// fit correction over a sizeViewport() call that was itself the *cause* of the body resize
+// notification that invoked them (see the ResizeObserver in decorate()): without this check,
+// setting the viewport's own height changes document.body's size, which re-notifies that
+// same observer, which measures again, finds nothing new, but had already re-run the fit
+// correction (hide/fit/fade) once before discovering that — a needless extra flash on every
+// load. Rounded to whole pixels so sub-pixel getBoundingClientRect() jitter between calls
+// can't register as a "change" on its own.
 function sizeViewport(block, config) {
   const viewport = block.querySelector('.board__viewport');
-  if (!viewport) return;
+  if (!viewport) return false;
+  const previous = viewport.style.height;
   if (config?.height) {
     viewport.style.height = config.height;
-    return;
+    return viewport.style.height !== previous;
   }
   const available = window.innerHeight - viewport.getBoundingClientRect().top - BOARD_BOTTOM_MARGIN;
-  viewport.style.height = `${Math.max(available, BOARD_MIN_HEIGHT)}px`;
+  const next = `${Math.round(Math.max(available, BOARD_MIN_HEIGHT))}px`;
+  viewport.style.height = next;
+  return next !== previous;
+}
+
+/**
+ * Same "hide → resize/fit → fade in" treatment as the very first load (see initBoard) —
+ * reused for a re-fit triggered while the board is already visible (see the ResizeObserver
+ * in decorate()), so a layout shift settling shortly after load reads as a clean fade
+ * rather than the items visibly panning to a new spot under the user.
+ */
+async function settleFit(canvas, panZoom) {
+  canvas.classList.add('board__canvas--hidden');
+  await new Promise((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(resolve));
+  });
+  panZoom.fitView(false, false);
+  canvas.classList.remove('board__canvas--hidden');
 }
 
 // EDS loads a block's CSS (board.css) in parallel with running its JS decorate() (see
@@ -1546,13 +1572,35 @@ export default async function decorate(block) {
   // because the very first fit is often computed before that async content above has
   // settled — without this, the board keeps a fit sized against a taller-than-actual
   // viewport and its lower items spill past the real, later-shrunk bottom edge.
+  //
+  // For a short window after each (re-)reveal, that correction uses settleFit's hide/
+  // fit/fade instead of an animated pan — a settling layout shift happening that soon
+  // after load reads as the board's contents visibly resizing/panning on their own,
+  // which is the very thing initBoard's initial hide-and-fit already avoids for the
+  // first paint. Once the window elapses, a resize is assumed to be the visitor actually
+  // dragging the browser window, so it tracks live via an animated pan instead of
+  // hiding/flashing on every frame while they drag.
+  const RESIZE_SETTLE_GRACE_MS = 1500;
   let resizeRaf;
   let currentPanZoom = null;
+  let settled = false;
+  let settleTimer;
+  function scheduleSettle() {
+    settled = false;
+    clearTimeout(settleTimer);
+    settleTimer = setTimeout(() => { settled = true; }, RESIZE_SETTLE_GRACE_MS);
+  }
   new ResizeObserver(() => {
     cancelAnimationFrame(resizeRaf);
     resizeRaf = requestAnimationFrame(() => {
-      sizeViewport(block, config);
-      if (currentPanZoom && !currentPanZoom.isManuallyPositioned()) currentPanZoom.fitView(false);
+      const changed = sizeViewport(block, config);
+      if (!changed || !currentPanZoom || currentPanZoom.isManuallyPositioned()) return;
+      if (settled) {
+        currentPanZoom.fitView(false);
+      } else {
+        const canvas = block.querySelector('.board__canvas');
+        if (canvas) settleFit(canvas, currentPanZoom);
+      }
     });
   }).observe(document.body);
 
@@ -1572,6 +1620,7 @@ export default async function decorate(block) {
       const { assetItems, textItems } = result;
       block.innerHTML = viewportHtml(assetItems, textItems, config);
       currentPanZoom = await initBoard(block, config, id, { forceFit });
+      scheduleSettle();
     }
 
     await renderCollection(true);
@@ -1589,6 +1638,7 @@ export default async function decorate(block) {
     const boardConfig = { ...config, mode: 'view' };
     block.innerHTML = viewportHtml(assetItems, textItems, boardConfig);
     currentPanZoom = await initBoard(block, boardConfig, null, { forceFit: true });
+    scheduleSettle();
   } else {
     const sheetParam = config.mode === 'sheet-url'
       ? sheetParamFromUrl(config.sheetUrl)
@@ -1614,5 +1664,6 @@ export default async function decorate(block) {
     block.innerHTML = viewportHtml(assetItems, textItems, boardConfig);
 
     currentPanZoom = await initBoard(block, boardConfig, null, { forceFit: true });
+    scheduleSettle();
   }
 }

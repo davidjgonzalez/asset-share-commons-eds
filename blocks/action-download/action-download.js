@@ -53,31 +53,52 @@ function buildDownloadItems(assets, selectedRenditionIds) {
   return items;
 }
 
+async function getAuthHeaders(url) {
+  const isAemHost = url.startsWith(services.aem.getHost());
+  return isAemHost ? services.aem.getHeaders() : {};
+}
+
 async function fetchBinary(url) {
   // AEM's CORS config allows credentialed cross-origin requests for API endpoints (e.g.
   // dam.downloadbinaries.json) but not for raw binary rendition paths — and auth here is a
   // Bearer token in a header anyway (see users.js), never a cookie, so credentials aren't
   // needed. Sending credentials: 'include' against a host that doesn't echo back
   // Access-Control-Allow-Credentials just makes the browser block the response outright.
-  const isAemHost = url.startsWith(services.aem.getHost());
-  const headers = isAemHost ? await services.aem.getHeaders() : {};
+  const headers = await getAuthHeaders(url);
   const res = await fetch(url, { headers });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.blob();
 }
 
-async function mapWithConcurrency(items, limit, fn) {
-  const results = new Array(items.length);
-  let next = 0;
-  async function worker() {
-    while (next < items.length) {
-      const i = next;
-      next += 1;
-      results[i] = await fn(items[i], i);
-    }
+async function urlExists(url) {
+  try {
+    const headers = await getAuthHeaders(url);
+    const res = await fetch(url, { method: 'HEAD', headers });
+    return res.ok;
+  } catch {
+    return false;
   }
-  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
-  return results;
+}
+
+// Bounds how many fetches run at once without forcing callers to wait for a whole
+// batch: the task doesn't start until a slot is free, but the caller gets a promise
+// immediately, so it can be handed straight to zip.file() below.
+function createLimiter(limit) {
+  let active = 0;
+  const queue = [];
+  function runNext() {
+    if (active >= limit || !queue.length) return;
+    active += 1;
+    const { task, resolve, reject } = queue.shift();
+    task().then(resolve, reject).finally(() => {
+      active -= 1;
+      runNext();
+    });
+  }
+  return (task) => new Promise((resolve, reject) => {
+    queue.push({ task, resolve, reject });
+    runNext();
+  });
 }
 
 async function downloadAsZip(items, archiveName, onProgress) {
@@ -85,24 +106,44 @@ async function downloadAsZip(items, archiveName, onProgress) {
   const zip = new JSZip();
   const failures = [];
   let done = 0;
+  const schedule = createLimiter(FETCH_CONCURRENCY);
 
-  await mapWithConcurrency(items, FETCH_CONCURRENCY, async (item) => {
-    try {
-      const blob = await fetchBinary(item.rendition.url);
-      zip.file(item.entryPath, blob);
-    } catch (err) {
-      failures.push({ item, message: err.message });
-    } finally {
-      done += 1;
-      onProgress?.(done, items.length);
-    }
+  // HEAD-check first — no response body, so this doesn't cost meaningful memory —
+  // so a 404/expired rendition is dropped before it ever becomes a zip entry,
+  // rather than surfacing later as a spurious 0-byte file once GET-ing it fails.
+  const liveItems = (await Promise.all(items.map(async (item) => {
+    const ok = await schedule(() => urlExists(item.rendition.url));
+    if (!ok) failures.push({ item, message: 'File not found' });
+    return ok ? item : null;
+  }))).filter(Boolean);
+
+  // Register every remaining entry as a scheduled (not yet started) fetch promise
+  // before generation begins, instead of awaiting all fetches into memory first.
+  // JSZip reads one entry's bytes at a time while writing the archive, so this
+  // pipelines fetching with zip-writing and lets each blob be released as soon as
+  // it's consumed — peak resident blobs stays near FETCH_CONCURRENCY instead of
+  // growing to the full asset count. The catch below is just a safety net for the
+  // rare case a GET fails after its HEAD check passed (e.g. a race with deletion).
+  liveItems.forEach((item) => {
+    zip.file(item.entryPath, schedule(() => fetchBinary(item.rendition.url))
+      .catch((err) => {
+        failures.push({ item, message: err.message });
+        return new Blob();
+      })
+      .finally(() => {
+        done += 1;
+        onProgress?.(done, liveItems.length);
+      }));
   });
 
-  if (failures.length === items.length) {
+  if (!liveItems.length) {
     throw new Error(failures[0]?.message || 'Could not retrieve any files');
   }
 
-  const zipBlob = await zip.generateAsync({ type: 'blob' });
+  // STORE, not DEFLATE — renditions here are already-compressed images/video, so
+  // deflating them buys nothing but costs CPU and an extra in-memory copy per file.
+  const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'STORE' });
+
   const url = URL.createObjectURL(zipBlob);
   const link = document.createElement('a');
   link.href = url;

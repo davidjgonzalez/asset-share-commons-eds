@@ -67,7 +67,7 @@ a hook.
 `assetDetails`, by contrast, has a fully-typed `Asset` model with `title`/`description`/
 `mimeType`/renditions already available with zero configuration, so it ships real defaults:
 `asset.title`, `asset.description`, and an image resolved from
-`services.renditions.getRendition(asset, 'web')?.url` → `asset.thumbnail` → `defaultImage`, in that
+`services.renditions.getRendition(asset, 'web')?.url` → `asset.displayUrl` → `defaultImage`, in that
 order. The `assetDetails` config hook only needs to return fields you want to *override*.
 
 JSON-LD for an asset defaults to:

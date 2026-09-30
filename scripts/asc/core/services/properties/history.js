@@ -24,7 +24,7 @@ export default function get(asset) {
     // CSS adds gap, border, and colour; layout works without it.
     return `<div class="asc-history-entry">`
       + `<div class="asc-history-entry__top">`
-      + (action ? `<span class="asc-ui-chip asc-history-entry__action">${escHtml(action)}</span> ` : '')
+      + (action ? `<span class="asc-ui-badge asc-history-entry__action">${escHtml(action)}</span> ` : '')
       + (date   ? `<small class="asc-history-entry__when">${escHtml(date)}</small>` : '')
       + `</div>`
       + (agent  ? `<small class="asc-history-entry__agent">${escHtml(agent)}</small>` : '')

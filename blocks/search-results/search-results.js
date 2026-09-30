@@ -84,12 +84,12 @@ function renderListCell(col, asset) {
   const { property } = col;
   if (property === 'thumbnail') {
     const alt = esc(asset.description || asset.title || asset.name || '');
-    const srcset = services.renditions.getThumbnailSrcset(asset);
+    const srcset = services.renditions.getDisplaySrcset(asset);
     if (srcset.length) {
       const srcsetAttr = srcset.map((r) => `${r.url} ${r.size.width}w`).join(', ');
       return `<img class="asc-list-view__thumb" src="${esc(srcset[0].url)}" srcset="${srcsetAttr}" sizes="88px" alt="${alt}" loading="lazy">`;
     }
-    return `<img class="asc-list-view__thumb" src="${esc(asset.thumbnail)}" alt="${alt}" loading="lazy">`;
+    return `<img class="asc-list-view__thumb" src="${esc(asset.displayUrl)}" alt="${alt}" loading="lazy">`;
   }
   const { text } = asset.getProperty(property);
   return text ? esc(text) : EMPTY_CELL_HTML;
@@ -184,6 +184,15 @@ function idealMasonryColCount(container) {
   return Math.min(8, Math.max(2, Math.floor((container.offsetWidth || window.innerWidth) / MASONRY_COL_WIDTH)));
 }
 
+// True masonry placement — always the currently shortest column, not round-robin —
+// so a tall item (e.g. a portrait photo) doesn't force the next few items into
+// whichever column comes next by index while a shorter column sits with visible
+// room. Columns must already be attached to the document: offsetHeight is 0 (and
+// every column ties) for detached nodes.
+function shortestColumn(cols) {
+  return cols.reduce((shortest, col) => (col.offsetHeight < shortest.offsetHeight ? col : shortest));
+}
+
 // Redistribute existing masonry items across a new column count on resize —
 // getMasonryState() only picks a count once (at first render), so without this
 // the columns just stretch/shrink instead of adding/removing as the viewport changes.
@@ -194,23 +203,22 @@ function reflowMasonryColumns(container) {
   const targetCount = idealMasonryColCount(container);
   if (targetCount === state.cols.length) return;
 
-  // Recover original round-robin insertion order by reading row-by-row across columns.
-  const maxRows = Math.max(0, ...state.cols.map((col) => col.children.length));
-  const items = [];
-  for (let row = 0; row < maxRows; row += 1) {
-    state.cols.forEach((col) => {
-      if (col.children[row]) items.push(col.children[row]);
-    });
-  }
+  // Shortest-column placement doesn't preserve insertion order positionally
+  // (unlike round-robin), so recover it from the index each item was tagged
+  // with on insert instead of reading row-by-row.
+  const items = state.cols
+    .flatMap((col) => Array.from(col.children))
+    .sort((a, b) => Number(a.dataset.ascMasonryIndex) - Number(b.dataset.ascMasonryIndex));
 
   const newCols = Array.from({ length: targetCount }, () => {
     const col = document.createElement('div');
     col.className = 'masonry-col';
     return col;
   });
-  items.forEach((item, i) => newCols[i % targetCount].appendChild(item));
-
+  // Attach before placing items — shortestColumn() needs real offsetHeights.
   container.replaceChildren(...newCols);
+  items.forEach((item) => shortestColumn(newCols).appendChild(item));
+
   state.cols = newCols;
   state.next = items.length;
 }
@@ -239,10 +247,11 @@ function applyMasonryDimensions(col, asset) {
 function appendMasonryItems(container, assets) {
   const state = getMasonryState(container);
   assets.forEach((asset) => {
-    const col = state.cols[state.next % state.cols.length];
+    const col = shortestColumn(state.cols);
     col.insertAdjacentHTML('beforeend',
       assetTeaser(asset, { mode: 'card', view: 'masonry' })
         .replace(/sizes="[^"]*"/, `sizes="${MASONRY_SIZES}"`));
+    col.lastElementChild.dataset.ascMasonryIndex = state.next;
     applyMasonryDimensions(col, asset);
     state.next += 1;
   });
@@ -669,7 +678,7 @@ async function addEventListeners(block, _config) {
     block.querySelector('[name="asc.search-results.total"]').value = results.total || 0;
 
     const endEl = block.querySelector('.search-results__end');
-    endEl.hidden = results.more || !(results.total > 0);
+    endEl.hidden = results.more || !(results.size > 0);
 
     // Derive next offset from the server-reported values so fresh searches
     // (offset=0) always reset correctly.

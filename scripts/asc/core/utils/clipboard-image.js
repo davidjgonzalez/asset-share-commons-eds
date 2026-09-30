@@ -2,7 +2,13 @@
 import configurations from '../../configurations.js';
 
 const IMAGE_EXTENSION_RE = /\.(?:avif|gif|jpe?g|png|tiff?|webp)(?:[?#]|$)/i;
-const limits = configurations.copyImage || {};
+// Caps that keep full-resolution originals from causing excessive network, decode,
+// and canvas memory usage. Override via configurations.copyImage.
+const limits = {
+  maxBytes: 20 * 1024 * 1024,
+  maxPixels: 40_000_000,
+  ...configurations.copyImage,
+};
 
 export function canCopyImage(rendition) {
   if (!rendition?.url) return false;

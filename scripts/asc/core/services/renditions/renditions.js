@@ -60,6 +60,41 @@ const DEFAULT_DEFINITIONS = [
 ];
 
 /**
+ * Default display ladder — the renditions that represent an asset across the site
+ * (cards, lists, masonry, boards, teasers). Used for <img srcset>; never shown in
+ * the download list. Each entry needs `size.width` for the srcset descriptor.
+ *
+ * Images go through web-optimized-delivery (Dynamic Media Smart Imaging), which
+ * resizes proportionally by width only, so the shape stays the asset's own and CSS
+ * decides any crop. Non-image assets (video, PDF, Office docs) can't use that
+ * endpoint, so they use AEM's standard square cq5dam.thumbnail.* renditions.
+ *
+ * Override entirely via configurations.renditions.display.
+ */
+const isImage = (asset) => asset.mimeType?.startsWith('image/');
+const DEFAULT_DISPLAY = [
+  { type: 'web-optimized-delivery', size: { width: 100 }, params: 'width=100&preferwebp=true&quality=85', accepts: isImage },
+  { type: 'web-optimized-delivery', size: { width: 320 }, params: 'width=320&preferwebp=true&quality=85', accepts: isImage },
+  { type: 'web-optimized-delivery', size: { width: 640 }, params: 'width=640&preferwebp=true&quality=80', accepts: isImage },
+  { type: 'web-optimized-delivery', size: { width: 1280 }, params: 'width=1280&preferwebp=true&quality=70', accepts: isImage },
+  { type: 'web-optimized-delivery', size: { width: 1920 }, params: 'width=1920&preferwebp=true&quality=70', accepts: isImage },
+  { type: 'static', name: 'cq5dam.thumbnail.48.48.png', size: { width: 48 }, accepts: (asset) => !isImage(asset) },
+  { type: 'static', name: 'cq5dam.thumbnail.140.100.png', size: { width: 140 }, accepts: (asset) => !isImage(asset) },
+  { type: 'static', name: 'cq5dam.thumbnail.319.319.png', size: { width: 319 }, accepts: (asset) => !isImage(asset) },
+];
+
+/**
+ * AEM rendition node names hidden from resolved renditions (thumbnail nodes,
+ * text/metadata sidecars, swatches). Override via configurations.renditions.exclude.
+ */
+const DEFAULT_EXCLUDE = [
+  /^cq5dam\.thumbnail\./,
+  /^cqdam\..+\.json$/,
+  'cqdam.metadata.xml',
+  'Swatch',
+];
+
+/**
  * Renditions service — resolves rendition URLs for an asset.
  *
  * Resolution is driven by a resolver registry. Each resolver handles one
@@ -125,9 +160,8 @@ const DEFAULT_DEFINITIONS = [
 class RenditionsService {
   constructor(config, aemConfig) {
     this.definitions = config.definitions || DEFAULT_DEFINITIONS;
-    this._thumbnailDefs = config.thumbnails || [];
-    this._previewDefs = config.previews || [];
-    this._excludePatterns = config.exclude || [];
+    this._displayDefs = config.display || DEFAULT_DISPLAY;
+    this._excludePatterns = config.exclude || DEFAULT_EXCLUDE;
     this._aemConfig = aemConfig || {};
 
     // Built-in resolvers, optionally overridden/extended by user-provided ones
@@ -182,15 +216,16 @@ class RenditionsService {
   }
 
   /**
-   * Get the best thumbnail URL for an asset.
+   * Get the best single URL for representing an asset on the site — the `src`
+   * fallback that goes with getDisplaySrcset().
    * @param {Asset} asset
    * @returns {string|null}
    */
-  getThumbnailUrl(asset) {
+  getDisplayUrl(asset) {
     const resolved = this.getRendition(asset, 'thumbnail');
     if (resolved?.url) return resolved.url;
 
-    const srcset = this.getThumbnailSrcset(asset);
+    const srcset = this.getDisplaySrcset(asset);
     if (srcset.length) {
       return srcset[Math.floor(srcset.length / 2)].url;
     }
@@ -200,23 +235,13 @@ class RenditionsService {
   }
 
   /**
-   * Get all sized thumbnail renditions sorted smallest to largest.
+   * Get all display renditions sorted smallest to largest, for <img srcset>.
+   * See configurations.renditions.display.
    * @param {Asset} asset
    * @returns {Rendition[]}
    */
-  getThumbnailSrcset(asset) {
-    return this._srcsetFromDefs(this._thumbnailDefs, asset);
-  }
-
-  /**
-   * Get natural-aspect preview renditions sorted smallest to largest — for
-   * uncropped, native-aspect-ratio display (e.g. board cards) rather than the
-   * square-cropped thumbnail ladder. See configurations.renditions.previews.
-   * @param {Asset} asset
-   * @returns {Rendition[]}
-   */
-  getPreviewSrcset(asset) {
-    return this._srcsetFromDefs(this._previewDefs, asset);
+  getDisplaySrcset(asset) {
+    return this._srcsetFromDefs(this._displayDefs, asset);
   }
 
   _srcsetFromDefs(defs, asset) {

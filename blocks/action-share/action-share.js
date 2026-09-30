@@ -62,7 +62,7 @@ export default async function decorate(block) {
   const actionButtons = parsed.actions.filter(({ hash }) => hash !== '#close');
 
   const fields = parsed.fields ?? [
-    { id: 'title', type: 'text', label: 'Sheet Title', placeholder: 'Sheet title' },
+    { id: 'title', type: 'text', label: 'Title', placeholder: 'Title' },
     { id: 'description', type: 'textarea', label: 'Description', placeholder: 'Optional context or usage guidance for recipients…' },
     { id: 'expires', type: 'number', label: 'Expires in', placeholder: 'No expiry', suffix: 'days' },
     // Standalone (no site nav) is the existing default for every ?sheet= link

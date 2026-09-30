@@ -499,7 +499,7 @@
 .asc-ui-menu {
     list-style: none;
     margin: 0;
-    padding: var(--spacing-xs) 0;
+    padding: var(--spacing-xs);
 }
 
 .asc-ui-menu__header {
@@ -522,6 +522,7 @@
     box-sizing: border-box;
     padding: var(--spacing-sm) var(--spacing-md);
     border: 0;
+    border-radius: var(--border-radius-sm);
     background: transparent;
     color: var(--color-fg);
     font-size: var(--body-font-size-s);
@@ -749,6 +750,16 @@
 /* ─────────────────────────────────────────────────────────────────────────
    @kit toast — notification feedback (scripts/asc/notifications.js). The
    region is a fixed corner anchor; individual toasts stack inside it.
+
+   The region is a `popover="manual"` element (set in notifications.js),
+   promoting it into the browser's top layer — the same layer every <dialog>
+   in this app uses via showModal(). A z-index can never out-rank the top
+   layer, no matter how high (see --z-toast below), so this is what actually
+   keeps a toast above an open modal; z-index is kept only as the fallback
+   for a browser without Popover API support, where the region is just a
+   plain fixed div. The border/background/padding/overflow resets below
+   undo the UA's default [popover] stylesheet (a bordered, opaque box) —
+   this region has never had its own visible chrome, only the toasts inside it.
 ───────────────────────────────────────────────────────────────────────── */
 
 .asc-ui-toast-region {
@@ -758,6 +769,10 @@
     flex-direction: column;
     gap: var(--spacing-sm);
     padding: var(--spacing-md);
+    margin: 0;
+    border: none;
+    background: none;
+    overflow: visible;
     pointer-events: none;
     max-width: min(24rem, calc(100vw - 2 * var(--spacing-md)));
 }
@@ -1276,6 +1291,19 @@
  * partial row never leaves empty cells — its thumbnails just render wider
  * instead. Bounded to 5 columns × 3 rows (max 15 visible thumbnails); a
  * collection with more assets shows a "+N" badge on the last thumbnail.
+ *
+ * `--collection-card-mosaic-height` (computed by mosaicHeight() — fewer rows
+ * means a taller box, i.e. bigger thumbnails) is what actually gives this box
+ * its height: a standalone `asc-ui-collection-card` has no other definite
+ * height to fill (the card is just as tall as its own content), so this has
+ * to be an explicit pixel value rather than a percentage. Nested inside an
+ * asset-card `__thumb` instead (the `teaser` block's usage), `__thumb` itself
+ * already establishes a real box via its own `aspect-ratio`/flex sizing —
+ * see the `__thumb .asc-ui-collection-card__thumbs` override below, which
+ * fills that exactly instead of using this fixed height, so the mosaic always
+ * fills the thumb's actual shape (cropping via object-fit: cover) rather than
+ * this fixed height mismatching it and exposing this grey background above/
+ * below, or (if capped shorter instead) not filling a narrow thumb at all.
  */
 .asc-ui-collection-card__thumbs {
     display: flex;
@@ -1292,6 +1320,17 @@
     gap: 2px;
     flex: 1;
     min-height: 0;
+}
+
+/* Curated photo-collage layouts (mosaicPattern() in mosaic.js) — a single grid
+   with per-cell grid-column/row spans (set inline per cell) instead of the
+   __thumb-row stack above, so a handful of thumbnails render as one bigger
+   tile plus several smaller ones rather than N equal strips. */
+.asc-ui-collection-card__thumbs--pattern {
+    display: grid;
+    grid-template-columns: repeat(var(--collection-card-pattern-cols, 1), 1fr);
+    grid-template-rows: repeat(var(--collection-card-pattern-rows, 1), 1fr);
+    gap: 2px;
 }
 
 .asc-ui-collection-card__thumb {
@@ -1528,28 +1567,22 @@
     text-decoration: none;
 }
 
-/* A collection-card mosaic in __thumb needs its width filled explicitly,
+/* A collection-card mosaic in __thumb fills it completely in both dimensions,
    regardless of orientation — __thumb centers its content (row-direction
-   flex, align-items/justify-content: center) rather than stretching it, and
-   the mosaic's own base rule (styles/ui-kit.css, collection-card section) has
-   no width of its own since it normally lives in a display:grid ancestor
-   (asc-ui-collection-card) that stretches grid items by default. Height is
-   deliberately left alone here: the mosaic's own inline
-   --collection-card-mosaic-height (see blocks/teaser/teaser.js)
-   should determine the box, so a bigger mosaic makes the whole card taller
-   instead of being squashed or letterboxed to match some other height. */
+   flex, align-items/justify-content: center) rather than stretching it, so
+   without this the mosaic would just size to its own content instead. Unlike
+   the standalone collection-card usage (styles/ui-kit.css, collection-card
+   section), __thumb already establishes a real, definite box of its own —
+   `aspect-ratio: 4 / 3` by default, or a flex-stretched height to match
+   --horizontal's body — so 100%/100% here fills *that* exactly instead of
+   the mosaic's own fixed --collection-card-mosaic-height. That means a teaser
+   mosaic always fills its actual thumb shape (each row still flex: 1, so
+   every row/thumbnail gets an even share of it, cropped via object-fit:
+   cover) rather than a fixed height mismatching that shape — showing the
+   mosaic's grey background above/below it, or, for a narrow --horizontal
+   thumb column, stretching a couple of columns into tall vertical strips. */
 .asc-ui-asset-card__thumb .asc-ui-collection-card__thumbs {
     width: 100%;
-}
-
-/* ...except in --horizontal, where __thumb's height is set by the flex row
-   stretching to match the body (title/description/CTA) rather than by the
-   mosaic — a fixed --collection-card-mosaic-height would then rarely match
-   that height exactly, showing as grey letterboxing above/below the mosaic.
-   Fill whatever height the row gives it instead; rows already flex: 1 to
-   share that height evenly, and each thumb img is object-fit: cover, so this
-   never squashes individual thumbnails, only how many pixels they get. */
-.asc-ui-asset-card--horizontal .asc-ui-asset-card__thumb .asc-ui-collection-card__thumbs {
     height: 100%;
 }
 

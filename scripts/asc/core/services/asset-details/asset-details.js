@@ -21,10 +21,31 @@ import { loadFragment } from '../../utils/fragments.js';
 // URL parameter used for deep-linking to a specific asset's details
 const ASSET_URL_PARAM = 'asset';
 
+const OFFICE_MIME_TYPES = [
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'application/vnd.ms-powerpoint',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-excel',
+];
+
+/**
+ * Default details-fragment routing by MIME type. Override via
+ * configurations.assetDetails.templates.
+ */
+const DEFAULT_TEMPLATES = (asset) => {
+  if (asset.mimeType?.startsWith('image/')) return '/details/image';
+  if (asset.mimeType?.startsWith('video/')) return '/details/video';
+  if (asset.mimeType === 'application/pdf') return '/details/pdf';
+  if (OFFICE_MIME_TYPES.includes(asset.mimeType)) return '/details/office';
+  return '/details';
+};
+
 class AssetDetails {
   constructor(config) {
     this.config = config || {};
-    this.templates = this.config.templates || (() => '/details');
+    this.templates = this.config.templates || DEFAULT_TEMPLATES;
     this.modal = null;
     this.init();
   }

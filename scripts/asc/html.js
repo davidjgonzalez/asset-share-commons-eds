@@ -138,6 +138,37 @@ export function renderPropertyValue(value, { limit } = {}) {
 }
 
 /**
+ * Build a `<picture>` element from an ascending-by-width srcset array (see
+ * services.renditions.getDisplaySrcset) — for markup with no native
+ * responsive-image equivalent, e.g. `<video poster>`, which only takes a single fixed
+ * URL and has no srcset/media-query support of its own.
+ *
+ * `sources` are breakpoints of the *target* render width at that viewport size — the
+ * closest available rendition is picked, not an exact match — and are emitted
+ * largest-`minWidth`-first so the browser's top-down `<source>` matching works.
+ *
+ * @param {{url: string, size: {width: number}}[]} srcset
+ * @param {string} alt
+ * @param {{ className?: string, sources: {minWidth: number, width: number}[] }} options
+ * @returns {string} Safe HTML string, or '' if srcset is empty
+ */
+export function pictureHtml(srcset, alt, { className = '', sources = [] } = {}) {
+    if (!srcset.length) return '';
+    const closest = (target) => srcset.reduce(
+        (best, r) => (Math.abs(r.size.width - target) < Math.abs(best.size.width - target) ? r : best),
+        srcset[0],
+    );
+    const sourceTags = sources
+        .slice()
+        .sort((a, b) => b.minWidth - a.minWidth)
+        .map(({ minWidth, width }) => `<source media="(min-width: ${minWidth}px)" srcset="${escAttr(closest(width).url)}">`)
+        .join('');
+    const fallbackWidth = sources[sources.length - 1]?.width ?? srcset[0].size.width;
+    const classAttr = className ? ` class="${escAttr(className)}"` : '';
+    return `<picture${classAttr}>${sourceTags}<img src="${escAttr(closest(fallbackWidth).url)}" alt="${escAttr(alt)}" loading="lazy" /></picture>`;
+}
+
+/**
  * Format an ISO timestamp as "Jan 15, 2025".
  * @returns {{ iso: string, label: string } | null}
  */

@@ -236,7 +236,7 @@ class Seo {
     const overrides = this.config.assetDetails?.(asset) || {};
     const image = overrides.image
       ?? renditions.getRendition(asset, 'web')?.url
-      ?? asset.thumbnail
+      ?? asset.displayUrl
       ?? this.config.defaultImage;
 
     const meta = {

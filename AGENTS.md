@@ -1095,19 +1095,18 @@ fromNode(name, node, asset) {
 
 Definition-level `filename` always wins over a resolver-set one (applied last by `_resolveFromDef`).
 
-### `thumbnails` array — responsive srcset for search result cards
+### `display` array — the renditions that represent an asset on the site
 
-Put thumbnail renditions in a **separate `thumbnails` array** (not `definitions`). Entries in `thumbnails` are never shown in the download list — they exist solely to generate the `<img srcset>` on asset teasers (cards, masonry, list thumbnail, collection mosaics). Each entry requires `size.width` so the browser gets a correct `Nw` descriptor. Board cards use a separate, wider `previews` ladder instead — see below — since board items show the image uncropped at its native aspect ratio rather than in a fixed-size card slot.
+`renditions.display` is the one ladder ASC uses to show an asset anywhere on the site: cards, masonry, list thumbnails, collection mosaics, teasers, and board cards. Entries are never shown in the download list; they exist solely to generate `<img srcset>`. Each entry requires `size.width` so the browser gets a correct `Nw` descriptor. It has a built-in default (100-1920px `web-optimized-delivery` for images, AEM's `cq5dam.thumbnail.*` renditions for non-images), so you only set it to override.
 
-Use `web-optimized-delivery` for thumbnails — it works on any AEMaaCS publish instance without requiring DM OpenAPI to be enabled. Use `dm-openapi` only in `definitions` (downloadable renditions).
+Use `web-optimized-delivery` for display renditions: it works on any AEMaaCS publish instance without requiring DM OpenAPI to be enabled. Use `dm-openapi` only in `definitions` (downloadable renditions).
 
 ```js
 renditions: {
-  thumbnails: [
-    { type: 'web-optimized-delivery', size: { width: 250  }, params: 'width=250&preferwebp=true&quality=85',  accepts: (asset) => asset.mimeType?.startsWith('image/') },
-    { type: 'web-optimized-delivery', size: { width: 500  }, params: 'width=500&preferwebp=true&quality=85',  accepts: (asset) => asset.mimeType?.startsWith('image/') },
-    { type: 'web-optimized-delivery', size: { width: 1000 }, params: 'width=1000&preferwebp=true&quality=60', accepts: (asset) => asset.mimeType?.startsWith('image/') },
-    { type: 'web-optimized-delivery', size: { width: 1600 }, params: 'width=1600&preferwebp=true&quality=60', accepts: (asset) => asset.mimeType?.startsWith('image/') },
+  display: [
+    { type: 'web-optimized-delivery', size: { width: 320  }, params: 'width=320&preferwebp=true&quality=85',  accepts: (asset) => asset.mimeType?.startsWith('image/') },
+    { type: 'web-optimized-delivery', size: { width: 1280 }, params: 'width=1280&preferwebp=true&quality=70', accepts: (asset) => asset.mimeType?.startsWith('image/') },
+    { type: 'static', name: 'cq5dam.thumbnail.319.319.png', size: { width: 319 }, accepts: (asset) => !asset.mimeType?.startsWith('image/') },
   ],
   definitions: [ /* downloadable renditions */ ],
 }
@@ -1115,22 +1114,9 @@ renditions: {
 
 URL shape: `{host}/adobe/dynamicmedia/deliver/dm-aid--{uuid}/{filename}?{params}` — the `dm-aid--` prefix distinguishes web-optimized from DM OpenAPI delivery. Uses `aem.deliveryHost` when set, falls back to `aem.host`.
 
-`services.renditions.getThumbnailSrcset(asset)` reads `thumbnails`, resolves URLs for the asset, and returns them sorted smallest to largest. `getThumbnailUrl(asset)` picks the mid-size entry as the `src` fallback. Non-image assets return `[]` if all entries have `accepts: (asset) => asset.mimeType?.startsWith('image/')`, falling back to the static `cq5dam.thumbnail` node URL.
+`services.renditions.getDisplaySrcset(asset)` reads `display`, resolves URLs for the asset, and returns them sorted smallest to largest. `getDisplayUrl(asset)` (also `asset.displayUrl`) picks the mid-size entry as the `src` fallback. If nothing resolves it falls back to the static `cq5dam.thumbnail.319.319` node URL.
 
-### `previews` array — responsive srcset for natural-aspect board cards
-
-Same shape and rules as `thumbnails` (separate array, `size.width` required, never shown in the download list), read by `services.renditions.getPreviewSrcset(asset)` and consumed by `scripts/asc/board-item.js`. Kept separate from `thumbnails` because board cards (`asc-ui-asset-card--natural`) show the image at its own aspect ratio in a canvas the user can zoom up to 3x (see `blocks/board/board.js`'s pan/zoom engine) — `web-optimized-delivery` with only `width` set resizes proportionally (no crop), so it's safe for that uncropped display, and the ladder's top end needs to cover the zoomed-in size, not just the resting ~240px card width.
-
-```js
-renditions: {
-  previews: [
-    { type: 'web-optimized-delivery', size: { width: 240  }, params: 'width=240&preferwebp=true&quality=85',  accepts: (asset) => asset.mimeType?.startsWith('image/') },
-    { type: 'web-optimized-delivery', size: { width: 480  }, params: 'width=480&preferwebp=true&quality=85',  accepts: (asset) => asset.mimeType?.startsWith('image/') },
-    { type: 'web-optimized-delivery', size: { width: 960  }, params: 'width=960&preferwebp=true&quality=80',  accepts: (asset) => asset.mimeType?.startsWith('image/') },
-    { type: 'web-optimized-delivery', size: { width: 1920 }, params: 'width=1920&preferwebp=true&quality=75', accepts: (asset) => asset.mimeType?.startsWith('image/') },
-  ],
-}
-```
+Board cards (`asc-ui-asset-card--natural`, see `scripts/asc/board-item.js`) use the same ladder. `web-optimized-delivery` with only `width` set resizes proportionally (no crop), so the image keeps its native aspect ratio; the ladder's top end covers the board's up-to-3x zoom.
 
 Board's CSS-transform-based zoom (`canvas.style.transform = ...scale(zoom)`) changes what's painted on screen without changing the `<img>`'s layout width — the dimension the browser's native srcset selection is based on — so a zoomed-in card would otherwise just upscale whatever low-res candidate it picked at rest. `board.js` compensates by re-pointing each visible image's `sizes` attribute at `offsetWidth * zoom` (debounced, on every pan/zoom change), which forces the browser to re-run its normal srcset selection against the zoomed-in effective size, picking a larger tier once it's actually needed on screen.
 
@@ -1139,14 +1125,6 @@ Board's CSS-transform-based zoom (`canvas.style.transform = ...scale(zoom)`) cha
 ```js
 // scripts/asc/configurations.js
 renditions: {
-  // Thumbnail srcset — never in download list, used by cards/masonry/list/collection mosaics.
-  thumbnails: [
-    { type: 'web-optimized-delivery', size: { width: 250  }, params: 'width=250&preferwebp=true&quality=85',  accepts: (asset) => asset.mimeType?.startsWith('image/') },
-    { type: 'web-optimized-delivery', size: { width: 500  }, params: 'width=500&preferwebp=true&quality=85',  accepts: (asset) => asset.mimeType?.startsWith('image/') },
-    { type: 'web-optimized-delivery', size: { width: 1000 }, params: 'width=1000&preferwebp=true&quality=60', accepts: (asset) => asset.mimeType?.startsWith('image/') },
-    { type: 'web-optimized-delivery', size: { width: 1600 }, params: 'width=1600&preferwebp=true&quality=60', accepts: (asset) => asset.mimeType?.startsWith('image/') },
-  ],
-
   definitions: [
     // ── Static (any AEM) ──────────────────────────────────────────────────
     { id: 'thumbnail', label: 'Thumbnail', type: 'static', name: /^cq5dam\.thumbnail\./, visible: false },
@@ -1210,9 +1188,8 @@ import services from '../../scripts/asc/core/services/services.js';
 services.renditions.getRenditions(asset);              // definitions + auto-detected node renditions (autoDetect: true)
 services.renditions.getRendition(asset, 'web');        // single rendition by id
 services.renditions.resolveAllNodes(asset);            // every JCR node through all resolvers — used by 'all' mode
-services.renditions.getThumbnailUrl(asset);            // best thumbnail URL (with fallback)
-services.renditions.getThumbnailSrcset(asset);         // Rendition[] sorted by size.width, for <img srcset>
-services.renditions.getPreviewSrcset(asset);           // Rendition[] sorted by size.width, natural-aspect (board cards)
+services.renditions.getDisplayUrl(asset);            // best single display URL (with fallback); same as asset.displayUrl
+services.renditions.getDisplaySrcset(asset);         // Rendition[] sorted by size.width, for <img srcset>
 services.renditions.getRenditionDefinition('web');     // raw definition object (no asset needed)
 ```
 

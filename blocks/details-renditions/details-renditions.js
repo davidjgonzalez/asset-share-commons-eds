@@ -256,7 +256,7 @@ function actionCell(asset, rendition, actions) {
 
 function renditionPreviewSrc(asset, rendition) {
   if (rendition?.mimeType?.startsWith('image/') && rendition.url) return rendition.url;
-  return services.renditions.getThumbnailUrl(asset) || '';
+  return services.renditions.getDisplayUrl(asset) || '';
 }
 
 function previewCell(asset, rendition) {

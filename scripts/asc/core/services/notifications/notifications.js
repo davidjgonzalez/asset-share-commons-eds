@@ -53,8 +53,26 @@ class Notifications {
     this.region.className = `asc-ui-toast-region asc-ui-toast-region--${location}`;
     this.region.setAttribute('role', 'status');
     this.region.setAttribute('aria-live', 'polite');
+    // Every modal in this app is a native <dialog> opened via showModal(),
+    // which promotes it into the browser's top layer — a z-index, no matter
+    // how high (see --z-toast in styles.css), can never out-rank that. Promote
+    // this region into the top layer too (same mechanism <dialog> uses) so a
+    // toast fired while a dialog is open still renders above it. `manual` (not
+    // `auto`) so outside clicks/Escape don't dismiss it like a real popover.
+    if (typeof this.region.showPopover === 'function') {
+      this.region.setAttribute('popover', 'manual');
+    }
     document.body.appendChild(this.region);
     return this.region;
+  }
+
+  // Bump the region back to the top of the top-layer stack for every toast —
+  // top-layer order is insertion order, so a dialog opened *after* the region
+  // was first shown would otherwise still end up above it.
+  showRegion(region) {
+    if (!region.hasAttribute('popover')) return;
+    if (region.matches(':popover-open')) region.hidePopover();
+    region.showPopover();
   }
 
   /**
@@ -87,7 +105,9 @@ class Notifications {
     };
     el.querySelector('.asc-ui-toast__dismiss').addEventListener('click', close);
 
-    this.getRegion().appendChild(el);
+    const region = this.getRegion();
+    region.appendChild(el);
+    this.showRegion(region);
 
     const ms = duration ?? this.config.duration ?? DEFAULT_DURATION;
     if (ms > 0) setTimeout(close, ms);

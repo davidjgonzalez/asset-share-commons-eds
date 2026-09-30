@@ -39,7 +39,6 @@
         cursor: default;
         touch-action: none;
         user-select: none;
-        transition: height 0.3s ease;
 
         &.board__viewport--panning {
             cursor: grabbing;

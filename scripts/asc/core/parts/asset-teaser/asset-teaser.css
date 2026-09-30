@@ -44,6 +44,7 @@
     .asc-asset-teaser__preview {
         width: 100%;
         overflow: hidden;
+        position: relative;
 
         /* Skeleton: visible placeholder while image loads */
         background: var(--color-muted);
@@ -57,6 +58,19 @@
         video {
             display: block;
             width: 100%;
+        }
+
+        /* Video poster overlay: sits on top of the (posterless) <video> at rest,
+           faded out once playback actually starts — see asset-teaser.js. */
+        .asc-asset-teaser__poster {
+            position: absolute;
+            inset: 0;
+            transition: opacity var(--transition-fast);
+        }
+
+        .asc-asset-teaser__poster--hidden {
+            opacity: 0;
+            pointer-events: none;
         }
     }
 

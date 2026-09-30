@@ -2,23 +2,12 @@
  * Asset Share Commons — User Configuration
  *
  * This is YOUR file. Edit it freely.
- * Do NOT edit files inside scripts/asc/ — those are ASC core and may be updated.
+ * Do NOT edit files inside scripts/asc/core/ — those are ASC core and may be updated.
  *
- * Every option is documented below. Most are commented out with their defaults shown.
- * Uncomment and change only what you need.
+ * ASC ships sensible defaults for everything below; this file only needs the values
+ * that are specific to your site. Commented-out options show their defaults —
+ * uncomment and change only what you need.
  */
-import uploadedDate from './core/services/properties/uploaded-date.js';
-import uploadedBy from './core/services/properties/uploaded-by.js';
-import lastModifiedBy from './core/services/properties/last-modified-by.js';
-import author from './core/services/properties/author.js';
-import keywords from './core/services/properties/keywords.js';
-import lastModifiedDate from './core/services/properties/last-modified-date.js';
-import tags from './core/services/properties/tags.js';
-import colors from './core/services/properties/colors.js';
-import smartTags from './core/services/properties/smart-tags.js';
-import history from './core/services/properties/history.js';
-import { DEFAULT_PALETTE, MAX_COLOR_RANK, nearestColors } from './color-search.js';
-
 const configurations = {
 
   // ─── AEM Connection ──────────────────────────────────────────────────────────
@@ -104,66 +93,19 @@ const configurations = {
     // ── OpenAPI options (used when provider = 'openapi') ──
     // url: '/adobe/assets/search',
 
-    // ── Color search ──────────────────────────────────────────────
-    // Palette shown in the search-bar color picker popover. Also the set of
-    // values `preprocessQuery` below snaps a freehand color pick to before
-    // searching, so results always target real, confirmed `name` tokens —
-    // see scripts/asc/color-search.js (pulled from this instance's real
-    // dam:colorDistribution metadata, not guessed).
-    colorSearch: {
-      // Disabled for now — there's no reliable way to know the full universe of
-      // `dam:colorDistribution` name tokens Smart Tags can produce (see
-      // scripts/asc/color-search.js), so the picker can offer colors that never
-      // match anything. Re-enable once that vocabulary is confirmed complete.
-      enabled: false,
-      palette: DEFAULT_PALETTE,
-      // "Looseness" of a color search — how many nearby palette colors (by
-      // RGB distance) to match in addition to the closest one. 1 = exact
-      // match only; higher values also catch visually similar colors (e.g.
-      // picking a blue-ish teal also matches "Cyan" and "Light blue").
-      matchCount: 3,
-    },
-
     // ── Hooks (called regardless of provider) ──────────────────────
-    // Modify the query object before it is sent to the search API.
-    preprocessQuery: (queryParams) => {
-      const color = queryParams.get('filter[color]');
-      if (!color) return queryParams;
-      queryParams.delete('filter[color]');
-      // No generic property filter in the Dynamic Media OpenAPI Search API —
-      // see providers/openapi.js's PROPERTY_MAP comment for the same limitation.
-      if (configurations.search.provider === 'openapi') return queryParams;
-      const { palette, matchCount } = configurations.search.colorSearch;
-      const matches = nearestColors(color, palette, matchCount);
-      // dam:colorDistribution's ranked sub-nodes are literally named color1, color2, …
-      // (not wildcardable via property.depth — verified against real asset metadata),
-      // and the dominant color isn't always color1, so OR an exact-path match across
-      // every observed rank, for every nearby color name. "50_group" is just a fixed,
-      // high group number to avoid colliding with other filter blocks' auto-numbered
-      // groups (see getGroup() in core/utils/search.js, which starts at 1 and
-      // increments per filter block).
-      queryParams.set('50_group.p.or', 'true');
-      let n = 0;
-      matches.forEach((match) => {
-        for (let rank = 1; rank <= MAX_COLOR_RANK; rank += 1) {
-          n += 1;
-          queryParams.set(`50_group.${n}_property`, `jcr:content/metadata/dam:colorDistribution/color${rank}/name`);
-          queryParams.set(`50_group.${n}_property.value`, match.name);
-        }
-      });
-      return queryParams;
-    },
+    // Modify the query object before it is sent to the search API. Use it to translate
+    // custom filter inputs into provider predicates.
+    preprocessQuery: (queryParams) => queryParams,
 
     // Modify the raw results array before assets are created from them.
     // postprocessResults: (results) => results,
 
     // Filter individual assets out of results. Return true to include, false to exclude.
     // Applied after postprocessResults, before results are dispatched to the page.
+    // Default: exclude skeleton / incomplete assets (no MIME type or no renditions).
     //
     // Examples:
-    //
-    // Exclude assets with no renditions and no MIME type (skeleton / incomplete assets):
-    accepts: (asset) => asset.mimeType && asset.staticRenditions.length > 0,
     //
     // Only show images:
     // accepts: (asset) => asset.mimeType?.startsWith('image/'),
@@ -179,14 +121,16 @@ const configurations = {
   //
   // Built-in properties:
   //   thumbnail, title, file-type, file-size, file-extension,
-  //   dimensions, width, height, modified, created, description, filename, mime-type
+  //   dimensions, width, height, modified, created, description, filename, mime-type,
+  //   author, keywords, tags, smart-tags, colors, history,
+  //   uploaded-by, uploaded-date, last-modified-by, last-modified-date
   //
   // Custom properties defined in configurations.properties.custom are also valid here.
   //
   // searchResults: {
   //   views: {
   //     // Cards view — ordered list of property names
-  //     cards: ['thumbnail', 'title', 'file-type', 'file-size'],
+  //     cards: ['thumbnail', 'title', 'file-type', 'dimensions', 'file-size'],
   //
   //     // Masonry view — keep it minimal; meta overlays on hover
   //     masonry: ['thumbnail', 'title'],
@@ -212,49 +156,21 @@ const configurations = {
   //     listActionsWidth: '220px',
   //   },
   // },
-  searchResults: {
-    views: {
-      // Show dimensions in card metadata when available.
-      cards: ['thumbnail', 'title', 'file-type', 'dimensions', 'file-size'],
-    },
-  },
 
   // ─── Asset Details Modal ─────────────────────────────────────────────────────
-  assetDetails: {
-    // A function that receives the Asset and returns the fragment page path to load.
-    // Return null or undefined to fall back to '/details'.
-    //
-    // Examples:
-    //
-    // Route by MIME type:
-    // templates: (asset) => {
-    //   if (asset.mimeType?.startsWith('image/'))       return '/details/image';
-    //   if (asset.mimeType?.startsWith('video/'))       return '/details/video';
-    //   if (asset.mimeType === 'application/pdf')        return '/details/pdf';
-    //   return '/details';
-    // },
-    //
-    // Route by metadata property:
-    // templates: (asset) => {
-    //   const brand = asset.getProperty('jcr:content/metadata/myco:brand').data;
-    //   return brand === 'acme' ? '/details/acme' : '/details';
-    // },
-    // Route by MIME type to a details-preview template page authored in da.live.
-    templates: (asset) => {
-      if (asset.mimeType?.startsWith('image/')) return '/details/image';
-      if (asset.mimeType?.startsWith('video/')) return '/details/video';
-      if (asset.mimeType === 'application/pdf') return '/details/pdf';
-      if ([
-        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-        'application/vnd.ms-powerpoint',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'application/vnd.ms-excel',
-      ].includes(asset.mimeType)) return '/details/office';
-      return '/details';
-    },
-  },
+  //
+  // assetDetails: {
+  //   // A function that receives the Asset and returns the fragment page path to load.
+  //   // Return null or undefined to fall back to '/details'.
+  //   // Default: routes by MIME type to /details/image, /details/video, /details/pdf,
+  //   // /details/office, else /details.
+  //   //
+  //   // Route by metadata property:
+  //   templates: (asset) => {
+  //     const brand = asset.getProperty('jcr:content/metadata/myco:brand').data;
+  //     return brand === 'acme' ? '/details/acme' : '/details';
+  //   },
+  // },
 
   // ─── SEO / Page Metadata ─────────────────────────────────────────────────────
   //
@@ -337,57 +253,12 @@ const configurations = {
   //   root: '/actions',   // DA path prefix for action pages (default: '/actions')
   // },
 
-  // ─── Share ───────────────────────────────────────────────────────────────────
-  //
-  // Controls the Share Collection dialog.
-  // Author the dialog content at the actionPath DA page.
-  //
-  share: {
-    actionPath: '/actions/share',
-  },
-
   // ─── Collections ─────────────────────────────────────────────────────────────
-  collections: {
-    // Path to the collections management index page (used by collection-switcher block)
-    managePath: '/collections/',
-
-    // Path to the single collection detail/edit page.
-    // The collection-controls block appends '?id=<uuid>' as a query param.
-    // collectionPath: '/collections/collection',
-    //
-    // Target sheet page for collection share links.
-    // The collection-controls block builds share URLs as:
-    //   {sheetPath}?assets=<compressed>&title=<encoded>&description=<encoded>
-    // sheetPath: '/sheets/',
-  },
-
-  // ─── Downloads ───────────────────────────────────────────────────────────────
   //
-  // Configures the async bulk-download service.
-  // Bulk downloads are submitted to the AEM download framework and polled
-  // until complete, then the browser download is triggered automatically.
-  //
-  downloads: {
-    // AEM Assets download framework endpoint — accepts a JSON targets payload and
-    // returns the zip as a binary stream or a JSON { downloadUrl } redirect.
-    binariesUrl: '/content/dam.downloadbinaries.json',
-
-    // DA page that provides the download dialog's intro content (title, description,
-    // usage terms, etc.). Fetched as a fragment and injected into the dialog body.
-    // Author the page in DA under /actions/download.
-    actionPath: '/actions/download',
-
-    // Default zip filename. Overridden at runtime by the collection name.
-    // archiveName: 'assets.zip',
-  },
-
-  // Legacy async-polling download service (ASC Core).
-  // Uncomment to customise the poll interval or job expiry for services.downloads.
-  // downloads_legacy: {
-  //   initiateUrl: '/content/dam.downloads.initiateDownload.json',
-  //   quickPollTimeout: 15000,
-  //   pollInterval: 2000,
-  //   jobExpiry: 7 * 24 * 60 * 60 * 1000,
+  // collections: {
+  //   managePath: '/collections/',                   // collections management index page
+  //   collectionPath: '/collections/collection',     // single collection page (?id=<uuid> appended)
+  //   sheetPath: '/sheets/',                         // target page for collection share links
   // },
 
   // ─── Analytics ───────────────────────────────────────────────────────────────
@@ -464,22 +335,20 @@ const configurations = {
 
   // ─── Activity History ────────────────────────────────────────────────────────
   //
-  // Configures the per-user activity log (scripts/asc/core/services/activity/
-  // activity.js) — listens to the same asc:{noun}:{verb} event bus as analytics
-  // and records a local timeline (searches, asset views, collection changes,
-  // shares, downloads, rendition copy/download) via
-  // storage.get('activity')/set(...), so it's scoped per-user the same way
-  // collections/recentlyViewed are. These are just the cross-cutting knobs —
-  // WHICH events get recorded is a plain array (LISTENERS) inside the service;
-  // add to customListeners below instead of editing that file. Full schema +
-  // extension recipe: docs/ACTIVITY.md
-  activity: {
-    // customListeners: [
-    //   [document, 'asc:my-feature:did-thing', (e) => services.activity.record('my_feature_thing', { ...e.detail })],
-    // ],
-    enabled: true,
-    max: 200, // capped list length; oldest entries drop off first
-  },
+  // Per-user activity log (scripts/asc/core/services/activity/activity.js) — listens
+  // to the same asc:{noun}:{verb} event bus as analytics and records a local timeline
+  // (searches, asset views, collection changes, shares, downloads, rendition
+  // copy/download), scoped per-user via storage. WHICH events get recorded is a plain
+  // array (LISTENERS) inside the service; add to customListeners instead of editing
+  // that file. Full schema + extension recipe: docs/ACTIVITY.md
+  //
+  // activity: {
+  //   enabled: true,
+  //   max: 200, // capped list length; oldest entries drop off first
+  //   customListeners: [
+  //     [document, 'asc:my-feature:did-thing', (e) => services.activity.record('my_feature_thing', { ...e.detail })],
+  //   ],
+  // },
 
   // ─── Theme ───────────────────────────────────────────────────────────────────
   theme: {
@@ -493,74 +362,21 @@ const configurations = {
   },
 
   // ─── Board ───────────────────────────────────────────────────────────────────
-  board: {
-    // Fully custom renderer for board/collection canvas items — see the markup
-    // contract documented at the top of scripts/asc/board-item.js (the default
-    // implementation) for what's required to keep drag/select/remove/notes/search
-    // working. Import your own module at the top of this file and assign it here,
-    // the same way custom property handlers are wired up below:
-    //
-    //   import myBoardItem from './my-board-item.js';
-    //   ...
-    //   board: { itemRenderer: myBoardItem },
-    //
-    // itemRenderer: myBoardItem,
-  },
+  //
+  // board: {
+  //   // Fully custom renderer for board/collection canvas items — see the markup
+  //   // contract documented at the top of scripts/asc/board-item.js (the default
+  //   // implementation) for what's required to keep drag/select/remove/notes/search
+  //   // working. Import your own module at the top of this file and assign it here.
+  //   itemRenderer: myBoardItem,
+  // },
 
   // ─── Asset Properties ────────────────────────────────────────────────────────
-  // Each property handler lives in scripts/asc/core/services/properties/<name>.js
-  properties: {
-    custom: {
-      'uploaded-date': uploadedDate,
-      'uploaded-by': uploadedBy,
-      'last-modified-by': lastModifiedBy,
-      author,
-      keywords,
-      'last-modified-date': lastModifiedDate,
-      tags,
-      colors,
-      'smart-tags': smartTags,
-      // Built-in modified/created format an always-present Date (missing metadata
-      // still yields a Date instance, just an invalid one) — without this check
-      // that renders as the string "Invalid Date" instead of falling back to '—'.
-      modified: (asset) => (Number.isNaN(asset.lastModified?.getTime()) ? null : asset.lastModified.toLocaleDateString()),
-      created: (asset) => (Number.isNaN(asset.created?.getTime()) ? null : asset.created.toLocaleDateString()),
-      // Swap the history entry's action label from the chip primitive to the
-      // badge primitive (chips are for tags/tokens; badges are for status labels).
-      history: (asset) => {
-        const result = history(asset);
-        if (result?.html) result.html = result.html.replaceAll('asc-ui-chip', 'asc-ui-badge');
-        return result;
-      },
-    },
-  },
-
-  // ─── Copy Image ─────────────────────────────────────────────────────────────
-  // Prevent full-resolution originals from causing excessive network, decode,
-  // and canvas memory usage when copied to the operating-system clipboard.
-  copyImage: {
-    maxBytes: 20 * 1024 * 1024,
-    maxPixels: 40_000_000,
-  },
-
-  // Authored boards and teaser mosaics resolve UUID/path references
-  // through a small request pool. Supply resolveReference to integrate a custom
-  // provider; it receives one reference and returns an Asset, AssetAccessError,
-  // or null.
-  authoredAssets: {
-    concurrency: 4,
-    // resolveReference: async (reference) => myProvider.getAsset(reference),
-  },
-
-  teaser: {
-    previewConcurrency: 2,
-  },
-
-  // ─── Asset Properties (reference) ──────────────────────────────────────────────
+  // Built-in and standard-metadata property handlers (see Search Results above) are
+  // registered by ASC. Add your own, or override a built-in by using its name.
+  //
   // properties: {
-  //   // Add custom property handlers or override built-in ones.
-  //   // The key is the property name used in details-property blocks.
-  //   // Built-in: 'file-type', 'file-size', 'dimensions', 'width', 'height', 'file-extension'
+  //   // The key is the property name used in views config and details-property blocks.
   //   custom: {
   //     'my-property': (asset, options) => asset.getProperty('jcr:content/metadata/myns:myField').data,
   //   },
@@ -568,14 +384,26 @@ const configurations = {
   //   // Configuration passed to built-in property handlers.
   //   configs: {
   //     'file-type': {
-  //       mimeTypeToLabel: {
-  //         // 'application/x-indesign': 'InDesign',
-  //       },
-  //       mediaTypeToLabel: {
-  //         // 'application': 'Document',
-  //       },
+  //       mimeTypeToLabel: { 'application/x-indesign': 'InDesign' },
+  //       mediaTypeToLabel: { 'application': 'Document' },
   //     },
   //   },
+  // },
+
+  // ─── Other tunables (defaults shown) ─────────────────────────────────────────
+  //
+  // copyImage: {                 // caps on copying an image to the OS clipboard
+  //   maxBytes: 20 * 1024 * 1024,
+  //   maxPixels: 40_000_000,
+  // },
+  //
+  // authoredAssets: {            // authored boards / teaser mosaics resolving UUID/path refs
+  //   concurrency: 4,
+  //   // resolveReference: async (reference) => myProvider.getAsset(reference),
+  // },
+  //
+  // teaser: {
+  //   previewConcurrency: 2,
   // },
 
   // ─── Renditions ──────────────────────────────────────────────────────────────
@@ -652,57 +480,20 @@ const configurations = {
   renditions: {
     // Exclude AEM rendition node names from all resolved renditions.
     // Accepts exact strings or RegExps matched against the JCR node name.
-    // Use case: suppress thumbnail/template nodes you never want in the download list.
-    //
-    // Examples:
-    //   exclude: ['cq5dam.thumbnail.48.48.png', 'cq5dam.thumbnail.140.100.png']
-    //   exclude: [/^cq5dam\.thumbnail\.(?:48|96|140)\./]
-    //
-    exclude: [
-      /^cq5dam\.thumbnail\./,  // cq5dam.thumbnail.48.48.png, cq5dam.thumbnail.319.319.png, etc.
-      /^cqdam\..+\.json$/,     // cqdam.text.json, cqdam.metadata.json, etc.
-      'cqdam.metadata.xml',
-      'Swatch'
-    ],
-    // Thumbnail renditions — used exclusively for <img srcset> in search result cards.
-    // Never shown in the download list. Each entry needs `size.width` for the srcset descriptor.
-    // Ladder is aligned to card/masonry display sizes at 1× and 2× DPR:
-    //   cards (300px): 1× → 320w, 2× → 640w
-    //   masonry (~450px at 1440px viewport): 1× → 640w, 2× → 1280w
-    // Non-image assets (video, PDF, Office docs, etc.) can't go through
-    // web-optimized-delivery — that endpoint is Dynamic Media's Smart Imaging
-    // feature, which only resizes actual image assets (confirmed live: a raw
-    // video through it 500s regardless of params). AEM's standard DAM
-    // processing profile does generate a real square-thumbnail ladder for
-    // every asset type though — cq5dam.thumbnail.{48.48,140.100,319.319} —
-    // so non-image assets get that instead, wired up the same way images
-    // get their DM ladder above (previously only a single, wrong `name:
-    // 'preview'` entry existed here, which never matched a real rendition
-    // node and always fell through to the hardcoded 319.319 fallback in
-    // renditions.js's getThumbnailUrl()).
-    thumbnails: [
-      { type: 'web-optimized-delivery', size: { width: 100  }, params: 'width=100&preferwebp=true&quality=85',  accepts: (asset) => asset.mimeType?.startsWith('image/') },
-      { type: 'web-optimized-delivery', size: { width: 320  }, params: 'width=320&preferwebp=true&quality=85',  accepts: (asset) => asset.mimeType?.startsWith('image/') },
-      { type: 'web-optimized-delivery', size: { width: 640  }, params: 'width=640&preferwebp=true&quality=80',  accepts: (asset) => asset.mimeType?.startsWith('image/') },
-      { type: 'web-optimized-delivery', size: { width: 1280 }, params: 'width=1280&preferwebp=true&quality=70', accepts: (asset) => asset.mimeType?.startsWith('image/') },
-      { type: 'static', name: 'cq5dam.thumbnail.48.48.png',   size: { width: 48  }, accepts: (asset) => !asset.mimeType?.startsWith('image/') },
-      { type: 'static', name: 'cq5dam.thumbnail.140.100.png', size: { width: 140 }, accepts: (asset) => !asset.mimeType?.startsWith('image/') },
-      { type: 'static', name: 'cq5dam.thumbnail.319.319.png', size: { width: 319 }, accepts: (asset) => !asset.mimeType?.startsWith('image/') },
-    ],
-    // Natural-aspect preview renditions — used for board cards (asc-ui-asset-card--natural),
-    // which show the image unmasked at its own aspect ratio instead of a cropped square.
-    // web-optimized-delivery with only `width` set resizes proportionally (no crop), so
-    // this ladder is safe for that use unlike a square-cropped thumbnail rendition would be.
-    // Wider top end than `thumbnails` because the board's pan/zoom canvas can scale a card
-    // up to 3x its base ~240px width — board.js re-requests a candidate from this ladder as
-    // the user zooms in, so the ceiling here should cover the zoomed-in size, not just the
-    // resting card size.
-    previews: [
-      { type: 'web-optimized-delivery', size: { width: 240  }, params: 'width=240&preferwebp=true&quality=85',  accepts: (asset) => asset.mimeType?.startsWith('image/') },
-      { type: 'web-optimized-delivery', size: { width: 480  }, params: 'width=480&preferwebp=true&quality=85',  accepts: (asset) => asset.mimeType?.startsWith('image/') },
-      { type: 'web-optimized-delivery', size: { width: 960  }, params: 'width=960&preferwebp=true&quality=80',  accepts: (asset) => asset.mimeType?.startsWith('image/') },
-      { type: 'web-optimized-delivery', size: { width: 1920 }, params: 'width=1920&preferwebp=true&quality=75', accepts: (asset) => asset.mimeType?.startsWith('image/') },
-    ],
+    // Default: cq5dam.thumbnail.* nodes, cqdam.*.json, cqdam.metadata.xml, Swatch.
+    // exclude: [/^cq5dam\.thumbnail\./, 'Swatch'],
+
+    // Display renditions — the set that represents an asset across the site (cards,
+    // lists, masonry, boards, teasers). Used for <img srcset>; never shown in the
+    // download list. Each entry needs `size.width` for the srcset descriptor.
+    // Default: a 100–1920px web-optimized-delivery ladder for images, and AEM's
+    // standard cq5dam.thumbnail.* renditions for non-image assets (video, PDF, Office).
+    // display: [
+    //   { type: 'web-optimized-delivery', size: { width: 320 }, params: 'width=320&preferwebp=true&quality=85', accepts: (asset) => asset.mimeType?.startsWith('image/') },
+    //   { type: 'static', name: 'cq5dam.thumbnail.319.319.png', size: { width: 319 }, accepts: (asset) => !asset.mimeType?.startsWith('image/') },
+    // ],
+
+    // Downloadable renditions offered in the details-renditions block and download dialog.
     definitions: [
       { id: 'original', label: 'Original', usecase: 'Full Resolution / Print', type: 'static', name: 'original' },
       { id: 'web', label: 'Web', usecase: 'Website (1280px)', type: 'static', name: /^cq5dam\.web\.1280\.1280\./, accepts: (asset) => asset.mimeType?.startsWith('image/') },
@@ -727,108 +518,6 @@ const configurations = {
       { id: 'smart-crop-large', label: 'Widescreen', usecase: 'Web Banner / Twitter Post (16:9)', type: 'dm-scene7', smartCropId: 'Large', accepts: (asset) => asset.mimeType?.startsWith('image/') },
       // dm-openapi equivalent, if your instance uses OpenAPI instead of classic Scene7:
       //   { id: 'smart-crop-small', label: 'Smart Crop — Small', type: 'dm-openapi', params: 'smartcrop=Small&fit=constrain', accepts: (asset) => asset.mimeType?.startsWith('image/') },
-
-  //
-  //     // ── Static renditions ─────────────────────────────────────────────────
-  //     // Works with any AEM instance that runs standard DAM processing profiles.
-  //     {
-  //       id: 'thumbnail',
-  //       label: 'Thumbnail',
-  //       type: 'static',
-  //       name: /^cq5dam\.thumbnail\./,
-  //       visible: false,   // used internally by teasers; hidden from download list
-  //     },
-  //     {
-  //       id: 'web',
-  //       label: 'Web',
-  //       type: 'static',
-  //       name: /^cq5dam\.web\./,
-  //       accepts: (asset) => asset.mimeType?.startsWith('image/'),
-  //     },
-  //     {
-  //       id: 'original',
-  //       label: 'Original',
-  //       type: 'static',
-  //       name: 'original',
-  //     },
-  //
-  //     // ── Dynamic Media / Scene7 (IS/IR protocol) ──────────────────────────
-  //     // For AEM 6.5 or AEMaaCS with classic DM enabled.
-  //     // Requires dam:scene7* metadata on assets (written by the DM sync process).
-  //     //
-  //     // type: 'url-template' — resolves ${variable} tokens against the asset.
-  //     // Supported tokens: ${asset.path}, ${asset.name}, ${asset.extension},
-  //     //   ${rendition.name}, ${dm.name}, ${dm.id}, ${dm.file}, ${dm.folder},
-  //     //   ${dm.domain}, ${dm.api-server}
-  //     // Returns null automatically if any token in the template has no value.
-  //     //
-  //     // Image preset:
-  //     {
-  //       id: 'dm-web',
-  //       label: 'Web',
-  //       type: 'url-template',
-  //       template: '${dm.api-server}is/image/${dm.file}?$web$',
-  //     },
-  //     //
-  //     // Smart crops — auto-detected from the asset's JCR renditions tree; no
-  //     // definitions needed. Add one only to customize a specific crop's label/
-  //     // order/accepts guard — `smartCropId` (not `id`!) picks which real
-  //     // DM-registered crop (case-sensitive) it applies to; `id` defaults to it.
-  //     {
-  //       label: 'Smart Crop — Large',
-  //       type: 'dm-scene7',
-  //       smartCropId: 'Large',
-  //       accepts: (asset) => asset.mimeType?.startsWith('image/'),
-  //     },
-  //     {
-  //       label: 'Smart Crop — Medium',
-  //       type: 'dm-scene7',
-  //       smartCropId: 'Medium',
-  //       accepts: (asset) => asset.mimeType?.startsWith('image/'),
-  //     },
-  //     {
-  //       label: 'Smart Crop — Small',
-  //       type: 'dm-scene7',
-  //       smartCropId: 'Small',
-  //       accepts: (asset) => asset.mimeType?.startsWith('image/'),
-  //     },
-  //     //
-  //     // type: 'url' — arbitrary JS function when template tokens aren't enough.
-  //     {
-  //       id: 'dm-grayscale',
-  //       label: 'Grayscale',
-  //       type: 'url',
-  //       url: (asset) => {
-  //         const server = asset.getProperty('dam:scene7APIServer').data;
-  //         const file = asset.getProperty('dam:scene7File').data;
-  //         return server && file ? `${server}is/image/${file}?$grayscale$` : null;
-  //       },
-  //     },
-  //
-  //     // ── DM with OpenAPI / AEM Asset Delivery (AEMaaCS only) ──────────────
-  //     // Requires: aem.deliveryHost set above.
-  //     // Smart crops and named presets require DM with OpenAPI to be enabled.
-  //     {
-  //       id: 'web-optimized',
-  //       label: 'Web Optimized',
-  //       type: 'dm-openapi',
-  //       params: 'format=webp&preferwebp=true&width=1200&quality=85',
-  //       accepts: (asset) => asset.mimeType?.startsWith('image/'),
-  //     },
-  //     {
-  //       id: 'smart-crop-small',
-  //       label: 'Smart Crop — Small',
-  //       type: 'dm-openapi',
-  //       params: 'smartcrop=Small',
-  //       accepts: (asset) => asset.mimeType?.startsWith('image/'),
-  //     },
-  //     {
-  //       id: 'dm-preset-web',
-  //       label: 'Web Preset',
-  //       type: 'dm-openapi',
-  //       params: 'imagePreset=web',
-  //       accepts: (asset) => asset.mimeType?.startsWith('image/'),
-  //     },
     ],
   },
 
@@ -869,9 +558,6 @@ const configurations = {
   //     },
   //   ],
   // },
-  webmcp: {
-    enabled: true,
-  },
 
   // ─── Init / Preloading ───────────────────────────────────────────────────────
   // init: {

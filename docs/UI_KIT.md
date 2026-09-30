@@ -378,6 +378,11 @@ Modifiers on `.asc-ui-toast`: `--success` `--warning` `--danger` (omit for the n
 The message is also mirrored onto `data-asc-message` on the toast root (in addition to the
 `.asc-ui-toast__message` text node) — for tests/automation or analytics hooks that want the
 message without walking into child nodes.
+
+The region is `popover="manual"` (set in notifications.js, not the markup below), promoting it
+into the browser's top layer — the same layer every `<dialog>` in this app uses via
+`showModal()`. That's what keeps a toast above an open modal; `--z-toast` in styles.css is only
+the fallback z-index for a browser without Popover API support.
 ```html
 <div class="asc-ui-toast-region asc-ui-toast-region--bottom-right" role="status" aria-live="polite">
   <div class="asc-ui-toast asc-ui-toast--success" data-asc-message="Download ready">
@@ -466,37 +471,60 @@ Slots: `__header` `__title` `__body` `__footer`.
 ```
 
 ### Collection card — `@kit collection-card` · `styles/ui-kit.css`
-Adaptive mosaic for collection preview, bounded to 5 columns × 3 rows (15 visible thumbnails
-max). Row/column counts are computed per-instance from the actual asset count (never a fixed
-bucket) and passed in as inline custom properties: `--collection-card-mosaic-height` on
-`__thumbs`, `--collection-card-row-cols` on each `__thumb-row`. Each row is its own mini-grid
-sized to exactly the thumbnails it holds, so a trailing partial row never leaves empty cells —
-those thumbnails just render wider instead. Fewer assets overall → taller mosaic → bigger
-thumbnails (1–5 assets render as a single row). Collections with more than 15 assets show a
+Adaptive mosaic for collection preview, bounded to 15 visible thumbnails. For 1–6 thumbnails,
+`mosaicPattern()` (`scripts/asc/core/utils/mosaic.js`) returns a curated photo-collage layout —
+one or two bigger tiles plus several smaller ones via CSS Grid spans, e.g. 3 assets is one big
+tile (full height) beside two stacked small ones, 5 is one big 2×2 tile beside a 2×2 grid of
+small ones — rendered as `__thumbs--pattern` (one grid, each `__thumb` given an inline
+`grid-column`/`grid-row` span). 7+ thumbnails fall back to `mosaicRowCounts()`'s uniform NxM
+grid (`__thumb-row`s stacked in `__thumbs`, `--collection-card-row-cols` per row) — a bigger
+count reads fine as a uniform grid already, and a bespoke layout for every count isn't worth
+it. Either way it's never a fixed bucket: row/column/pattern choice is computed from the actual
+asset count, a trailing partial row in the fallback grid never leaves empty cells (those
+thumbnails just render wider instead), and collections with more than 15 assets show a
 `__thumb-more` "+N" overlay on the last visible thumbnail.
 
+`--collection-card-mosaic-height` (fallback grid only) is what actually gives `__thumbs` its
+height in a standalone collection card — nothing else does (the card is just as tall as its own
+content) — with each row `flex: 1` to divide it evenly. Nested inside an asset-card `__thumb`
+instead (the `teaser` block's usage — see "Asset card" below), that fixed height is skipped in
+favor of filling `__thumb`'s own real box (its `aspect-ratio`, or its flex-stretched height in
+`--horizontal`) exactly, so the mosaic always fills the actual thumb shape — cropping via
+`object-fit: cover` as needed — in both the pattern and fallback-grid cases.
+
 Cells are `asc-ui-skeleton` while loading; remove the class and append an `<img>` once the thumbnail URL is available.
-Children: `__thumbs` → one or more `__thumb-row` → `__thumb` (last one optionally holding `__thumb-more`).
+Children: pattern layout is `__thumbs--pattern` → `__thumb`s directly (each with an inline span); fallback layout is
+`__thumbs` → one or more `__thumb-row` → `__thumb` (last one optionally holding `__thumb-more`).
 ```html
-<!-- 4 assets: single row, big thumbnails -->
-<div class="asc-ui-collection-card__thumbs" style="--collection-card-mosaic-height: 260px">
-  <div class="asc-ui-collection-card__thumb-row" style="--collection-card-row-cols: 4">
-    <div class="asc-ui-collection-card__thumb asc-ui-skeleton"></div>
-    <div class="asc-ui-collection-card__thumb asc-ui-skeleton"></div>
-    <div class="asc-ui-collection-card__thumb asc-ui-skeleton"></div>
-    <div class="asc-ui-collection-card__thumb asc-ui-skeleton"></div>
-  </div>
+<!-- 3 assets: pattern layout — one big tile (full height) + two stacked small ones -->
+<div class="asc-ui-collection-card__thumbs asc-ui-collection-card__thumbs--pattern"
+     style="--collection-card-pattern-cols: 2; --collection-card-pattern-rows: 2">
+  <div class="asc-ui-collection-card__thumb asc-ui-skeleton" style="grid-column: span 1; grid-row: span 2"></div>
+  <div class="asc-ui-collection-card__thumb asc-ui-skeleton" style="grid-column: span 1; grid-row: span 1"></div>
+  <div class="asc-ui-collection-card__thumb asc-ui-skeleton" style="grid-column: span 1; grid-row: span 1"></div>
 </div>
 
-<!-- 7 assets: 4 + 3, no empty cells — the 3-item row's thumbnails render wider -->
+<!-- 5 assets: pattern layout — one big 2x2 tile + a 2x2 grid of small ones -->
+<div class="asc-ui-collection-card__thumbs asc-ui-collection-card__thumbs--pattern"
+     style="--collection-card-pattern-cols: 4; --collection-card-pattern-rows: 2">
+  <div class="asc-ui-collection-card__thumb" style="grid-column: span 2; grid-row: span 2"><img src="…" alt=""></div>
+  <div class="asc-ui-collection-card__thumb" style="grid-column: span 1; grid-row: span 1"><img src="…" alt=""></div>
+  <div class="asc-ui-collection-card__thumb" style="grid-column: span 1; grid-row: span 1"><img src="…" alt=""></div>
+  <div class="asc-ui-collection-card__thumb" style="grid-column: span 1; grid-row: span 1"><img src="…" alt=""></div>
+  <div class="asc-ui-collection-card__thumb" style="grid-column: span 1; grid-row: span 1"><img src="…" alt=""></div>
+</div>
+
+<!-- 9 assets: fallback layout — 5 + 4, no empty cells — the 4-item row's thumbnails render wider -->
 <div class="asc-ui-collection-card__thumbs" style="--collection-card-mosaic-height: 220px">
-  <div class="asc-ui-collection-card__thumb-row" style="--collection-card-row-cols: 4">
+  <div class="asc-ui-collection-card__thumb-row" style="--collection-card-row-cols: 5">
+    <div class="asc-ui-collection-card__thumb"><img src="…" alt=""></div>
     <div class="asc-ui-collection-card__thumb"><img src="…" alt=""></div>
     <div class="asc-ui-collection-card__thumb"><img src="…" alt=""></div>
     <div class="asc-ui-collection-card__thumb"><img src="…" alt=""></div>
     <div class="asc-ui-collection-card__thumb"><img src="…" alt=""></div>
   </div>
-  <div class="asc-ui-collection-card__thumb-row" style="--collection-card-row-cols: 3">
+  <div class="asc-ui-collection-card__thumb-row" style="--collection-card-row-cols: 4">
+    <div class="asc-ui-collection-card__thumb"><img src="…" alt=""></div>
     <div class="asc-ui-collection-card__thumb"><img src="…" alt=""></div>
     <div class="asc-ui-collection-card__thumb"><img src="…" alt=""></div>
     <div class="asc-ui-collection-card__thumb"><img src="…" alt=""></div>
@@ -535,12 +563,13 @@ effect without `--horizontal`, and both collapse back to a plain stacked column 
 for a bigger, more prominent tile; combine with `--horizontal` for a wide featured teaser.
 Put a **collection-card mosaic** (below) in `__thumb` instead of a single `<img>` to preview
 several assets at once — this is the pattern used for `teaser` teasers. Either way the thumb
-fills completely: a single `<img>` is forced to width + height 100%, and inside
-`--horizontal` a mosaic is *also* forced to height: 100% (in addition to its own always-100%
-width) so it fills whatever height the row ends up being rather than being letterboxed to
-its own fixed `--collection-card-mosaic-height`. That height still comes from the shared
-`mosaicHeight()` row-count table (`scripts/asc/core/utils/mosaic.js`) — the same one
-`collections.js` uses — so a `teaser` mosaic sizes exactly like a collection card's.
+fills completely: a single `<img>` is forced to width + height 100%, and a mosaic is forced to
+width + height 100% too, in every orientation including `--horizontal` — filling `__thumb`'s own
+real box (its `aspect-ratio`, or its flex-stretched height in `--horizontal`) exactly rather than
+the mosaic's own fixed `--collection-card-mosaic-height`, so its rows/columns (still computed by
+the shared `mosaicHeight()`/`mosaicRowCounts()` tables in `scripts/asc/core/utils/mosaic.js` —
+the same ones `collections.js` uses) crop to fit that shape via `object-fit: cover` instead of
+leaving a gap or, in a narrow `--horizontal` thumb column, stretching into tall vertical strips.
 
 `--hero` goes further still than `--lg` — a bigger thumb proportion (58%), a larger title
 (`heading-font-size-l`), roomier body copy/padding, and a `max-height: 600px` clamp so a
@@ -611,11 +640,10 @@ by adding `opacity: 1` for that state in the block's own CSS.
 ```html
 <article class="asc-ui-asset-card asc-ui-asset-card--interactive asc-ui-asset-card--zoom-hover asc-ui-asset-card--horizontal asc-ui-asset-card--lg">
   <div class="asc-ui-asset-card__thumb">
-    <div class="asc-ui-collection-card__thumbs" style="--collection-card-mosaic-height: 180px">
-      <div class="asc-ui-collection-card__thumb-row" style="--collection-card-row-cols: 2">
-        <div class="asc-ui-collection-card__thumb"><img src="…" alt=""></div>
-        <div class="asc-ui-collection-card__thumb"><img src="…" alt=""></div>
-      </div>
+    <div class="asc-ui-collection-card__thumbs asc-ui-collection-card__thumbs--pattern"
+         style="--collection-card-pattern-cols: 2; --collection-card-pattern-rows: 1">
+      <div class="asc-ui-collection-card__thumb" style="grid-column: span 1; grid-row: span 1"><img src="…" alt=""></div>
+      <div class="asc-ui-collection-card__thumb" style="grid-column: span 1; grid-row: span 1"><img src="…" alt=""></div>
     </div>
   </div>
   <div class="asc-ui-asset-card__body">
@@ -631,14 +659,13 @@ a `grid-column: 1 / -1` item inside that grid — see the note above for why):
 ```html
 <article class="asc-ui-asset-card asc-ui-asset-card--interactive asc-ui-asset-card--zoom-hover asc-ui-asset-card--horizontal asc-ui-asset-card--hero">
   <div class="asc-ui-asset-card__thumb">
-    <div class="asc-ui-collection-card__thumbs" style="--collection-card-mosaic-height: 320px">
-      <div class="asc-ui-collection-card__thumb-row" style="--collection-card-row-cols: 5">
-        <div class="asc-ui-collection-card__thumb"><img src="…" alt=""></div>
-        <div class="asc-ui-collection-card__thumb"><img src="…" alt=""></div>
-        <div class="asc-ui-collection-card__thumb"><img src="…" alt=""></div>
-        <div class="asc-ui-collection-card__thumb"><img src="…" alt=""></div>
-        <div class="asc-ui-collection-card__thumb"><img src="…" alt=""></div>
-      </div>
+    <div class="asc-ui-collection-card__thumbs asc-ui-collection-card__thumbs--pattern"
+         style="--collection-card-pattern-cols: 4; --collection-card-pattern-rows: 2">
+      <div class="asc-ui-collection-card__thumb" style="grid-column: span 2; grid-row: span 2"><img src="…" alt=""></div>
+      <div class="asc-ui-collection-card__thumb" style="grid-column: span 1; grid-row: span 1"><img src="…" alt=""></div>
+      <div class="asc-ui-collection-card__thumb" style="grid-column: span 1; grid-row: span 1"><img src="…" alt=""></div>
+      <div class="asc-ui-collection-card__thumb" style="grid-column: span 1; grid-row: span 1"><img src="…" alt=""></div>
+      <div class="asc-ui-collection-card__thumb" style="grid-column: span 1; grid-row: span 1"><img src="…" alt=""></div>
     </div>
   </div>
   <div class="asc-ui-asset-card__body">

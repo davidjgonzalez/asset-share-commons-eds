@@ -35,7 +35,7 @@ export default function picture(asset, options = {}) {
     .filter((r) => !r.id?.startsWith('cq5dam.thumbnail.'))
     .sort((a, b) => (b.width || 0) - (a.width || 0));
 
-  const thumbnailUrl = services.renditions.getThumbnailUrl(asset);
+  const thumbnailUrl = services.renditions.getDisplayUrl(asset);
 
   if (!imageRenditions.length) {
     return `<img ${buildAttrString({ src: thumbnailUrl, alt: altText, loading, fetchpriority, ...imgAttributes })} />`;

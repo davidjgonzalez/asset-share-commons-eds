@@ -9,7 +9,7 @@ export function mount(container, asset, initialRendition, config = {}) {
   let loadingRendition = initialRendition;
   const fields = parseFields(config.info);
 
-  const srcFor = (r) => r?.url || asset.thumbnail;
+  const srcFor = (r) => r?.url || asset.displayUrl;
 
   container.innerHTML = `
     <img src="${escAttr(srcFor(initialRendition))}" alt="${escAttr(asset.title)}" loading="eager">

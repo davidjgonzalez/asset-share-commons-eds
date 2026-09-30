@@ -4,7 +4,9 @@ import services from '../../scripts/asc/core/services/services.js';
 import { Events as CollectionEvents } from '../../scripts/asc/core/services/collections/collections.js';
 import { escHtml, escAttr, formatUpdated } from '../../scripts/asc/html.js';
 import { readBlockConfig } from '../../scripts/asc/core/utils/blocks.js';
-import { MAX_MOSAIC_THUMBS, mosaicRowCounts, mosaicHeight } from '../../scripts/asc/core/utils/mosaic.js';
+import {
+  MAX_MOSAIC_THUMBS, mosaicRowCounts, mosaicHeight, mosaicPattern,
+} from '../../scripts/asc/core/utils/mosaic.js';
 import { wireDialogClose } from '../../scripts/asc.js';
 
 const configurations = (await import('../../scripts/asc/configurations.js')).default;
@@ -134,6 +136,19 @@ function mosaicHtml(count, thumbIds, overflow) {
     </div>`;
   }
 
+  const pattern = mosaicPattern(thumbIds.length);
+  if (pattern) {
+    const cells = pattern.cells.map(({ colSpan, rowSpan }, i) => {
+      const isLastCell = i === pattern.cells.length - 1;
+      const more = isLastCell && overflow > 0
+        ? `<span class="asc-ui-collection-card__thumb-more">+${overflow}</span>` : '';
+      return `<div class="asc-ui-collection-card__thumb asc-ui-skeleton" style="grid-column: span ${colSpan}; grid-row: span ${rowSpan}" aria-hidden="true">${more}</div>`;
+    }).join('');
+    return `<div class="collections__card-mosaic" aria-hidden="true">
+      <div class="asc-ui-collection-card__thumbs asc-ui-collection-card__thumbs--pattern" style="--collection-card-pattern-cols: ${pattern.cols}; --collection-card-pattern-rows: ${pattern.rows}">${cells}</div>
+    </div>`;
+  }
+
   const rowCounts = mosaicRowCounts(thumbIds.length);
   const height = mosaicHeight(rowCounts.length);
 
@@ -207,10 +222,10 @@ async function loadCardMosaic(card) {
     try {
       const asset = await Asset.create(assetId);
       if (!asset?.path) return;
-      const srcset = services.renditions.getThumbnailSrcset(asset);
+      const srcset = services.renditions.getDisplaySrcset(asset);
       const url = srcset.length
         ? srcset[Math.floor(srcset.length / 2)].url
-        : services.renditions.getThumbnailUrl(asset);
+        : services.renditions.getDisplayUrl(asset);
       const img = document.createElement('img');
       img.alt = asset.description || asset.title || asset.name || '';
       img.loading = 'lazy';

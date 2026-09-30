@@ -21,6 +21,7 @@ export default {
       fileSize: match.fileSize ?? null,
       width: match.width ?? null,
       height: match.height ?? null,
+      size: def.size ?? null,
       url: match.url,
       path: match.path,
     });

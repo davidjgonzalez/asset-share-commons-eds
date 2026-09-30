@@ -16,8 +16,8 @@
  *   | order        | Descending : desc                                  |  ← first option = default
  *   |              | Ascending : asc                                    |
  *   | color-search | false                                               |  ← optional: hide the color-search control
- *                                                                            (currently disabled site-wide via
- *                                                                            configurations.js search.colorSearch.enabled)
+ *                                                                            (off by default; enable with
+ *                                                                            configurations.js search.colorSearch.enabled: true)
  *
  *   Each option is authored as "Label : value" on its own paragraph within the cell.
  *   The first option listed becomes the default when nothing is stored in localStorage.
@@ -30,7 +30,7 @@ import services from '../../scripts/asc/core/services/services.js';
 
 const configurations = (await import('../../scripts/asc/configurations.js')).default;
 const SEARCH_PAGE = configurations.search?.page || '';
-const COLOR_SEARCH_ENABLED = configurations.search?.colorSearch?.enabled !== false;
+const COLOR_SEARCH_ENABLED = configurations.search?.colorSearch?.enabled === true;
 const COLOR_PALETTE = configurations.search?.colorSearch?.palette || DEFAULT_PALETTE;
 
 const LS_DISPLAY = 'asc.search-results.display';

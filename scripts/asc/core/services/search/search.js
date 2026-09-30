@@ -16,9 +16,14 @@ const PROVIDERS = {
   openapi: OpenApiProvider,
 };
 
+// Skip skeleton / incomplete assets (no MIME type or no static renditions).
+// Override via configurations.search.accepts.
+const DEFAULT_ACCEPTS = (asset) => asset.mimeType && asset.staticRenditions.length > 0;
+
 class SearchService {
   constructor(config) {
     this.config = config;
+    this.accepts = config.accepts || DEFAULT_ACCEPTS;
     this.form = config.form || 'asc-search-form';
     this.searchInProgress = false;
 
@@ -97,8 +102,8 @@ class SearchService {
     ]);
     try {
       const results = await this.provider.search(withSheet);
-      if (results?.assets && this.config.accepts) {
-        results.assets = results.assets.filter((a) => this.config.accepts(a));
+      if (results?.assets && this.accepts) {
+        results.assets = results.assets.filter((a) => this.accepts(a));
         results.size = results.assets.length;
       }
       return results ?? { assets: [], total: 0, size: 0 };
@@ -168,9 +173,9 @@ class SearchService {
 
       const results = await this.provider.search(withSheet);
 
-      if (results && this.config.accepts) {
+      if (results && this.accepts) {
         const before = results.assets.length;
-        results.assets = results.assets.filter((asset) => this.config.accepts(asset));
+        results.assets = results.assets.filter((asset) => this.accepts(asset));
         const removed = before - results.assets.length;
         results.size = results.assets.length;
         results.total = Math.max(0, (results.total || 0) - removed);

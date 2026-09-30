@@ -40,7 +40,7 @@
  * either inline (e.g. pasted at the start of the opening heading, as in the
  * example above) or alone in its own leading paragraph. A DAM path is
  * resolved through the search index to a real asset and rendered via its
- * web-optimized-delivery thumbnail (configurations.renditions.thumbnails)
+ * web-optimized-delivery thumbnail (configurations.renditions.display)
  * rather than used as a raw <img src>. An image anywhere else is left alone
  * as ordinary body content instead.
  *
@@ -68,7 +68,9 @@
  * of this runs for format: Text Only, since that never shows a thumbnail.
  */
 import { escHtml, escAttr } from '../../scripts/asc/html.js';
-import { MAX_MOSAIC_THUMBS, mosaicRowCounts, mosaicHeight } from '../../scripts/asc/core/utils/mosaic.js';
+import {
+  MAX_MOSAIC_THUMBS, mosaicRowCounts, mosaicHeight, mosaicPattern,
+} from '../../scripts/asc/core/utils/mosaic.js';
 import services from '../../scripts/asc/core/services/services.js';
 
 const configurations = (await import('../../scripts/asc/configurations.js')).default;
@@ -119,7 +121,7 @@ async function thumbnailsFromSheet(sheetParam) {
     const assets = await services.authoredAssets.resolveAssetReferences(
       ids.slice(0, MAX_MOSAIC_THUMBS),
     );
-    const thumbnails = assets.map((a) => a?.thumbnail).filter(Boolean);
+    const thumbnails = assets.filter(Boolean);
     return { thumbnails, total: ids.length, kind: 'sheet' };
   } catch {
     return null;
@@ -131,7 +133,7 @@ async function thumbnailsFromSearch(searchParams) {
     const formData = new Map(searchParams);
     formData.set('p.limit', String(MAX_MOSAIC_THUMBS));
     const { assets, total } = await services.search.searchSilent(formData);
-    const thumbnails = (assets || []).map((a) => a.thumbnail).filter(Boolean);
+    const thumbnails = (assets || []).filter(Boolean);
     return { thumbnails, total: total || thumbnails.length, kind: 'search' };
   } catch {
     return null;
@@ -157,7 +159,7 @@ async function thumbnailsFromBoard(boardEl) {
     const assets = await services.authoredAssets.resolveAssetReferences(
       ids.slice(0, MAX_MOSAIC_THUMBS),
     );
-    const thumbnails = assets.map((a) => a?.thumbnail).filter(Boolean);
+    const thumbnails = assets.filter(Boolean);
     return { thumbnails, total: ids.length, kind: 'authored' };
   }
 
@@ -226,12 +228,11 @@ function resolveThumbnails(link) {
 
 // A DAM path has no delivery URL of its own — resolve it to a real asset
 // through the search index, then reuse its normal web-optimized-delivery
-// thumbnail (Asset#thumbnail → configurations.renditions.thumbnails), the
+// thumbnail (Asset#displayUrl → configurations.renditions.display), the
 // same rendition ladder every other teaser in the app uses.
 async function resolveDamImageUncached(path) {
   try {
-    const asset = await services.authoredAssets.resolveAssetReference(path);
-    return asset?.thumbnail || null;
+    return (await services.authoredAssets.resolveAssetReference(path)) || null;
   } catch {
     return null;
   }
@@ -342,20 +343,46 @@ function extractCta(nodes) {
   return null;
 }
 
+// Full srcset (not just the single, historically mid-sized `asset.displayUrl`
+// URL) so a thumbnail that renders bigger than the smallest rung — a hero
+// teaser, a mosaic tile, a high-DPR screen — gets a sharper candidate instead
+// of always the same fixed-size image upscaled and fuzzy. `src` falls back to
+// the largest rung for the rare browser that ignores srcset entirely.
+function assetImgHtml(asset) {
+  const srcset = services.renditions.getDisplaySrcset(asset);
+  const src = srcset.length ? srcset[srcset.length - 1].url : asset.displayUrl;
+  const srcsetAttr = srcset.length
+    ? ` srcset="${escAttr(srcset.map((r) => `${r.url} ${r.size.width}w`).join(', '))}"`
+    : '';
+  return `<img src="${escAttr(src)}"${srcsetAttr} alt="" loading="lazy">`;
+}
+
 function mosaicThumbHtml(thumbnails, total) {
   const shown = thumbnails.slice(0, MAX_MOSAIC_THUMBS);
   const overflow = total - shown.length;
+  const pattern = mosaicPattern(shown.length);
+
+  if (pattern) {
+    const cells = pattern.cells.map(({ colSpan, rowSpan }, i) => {
+      const isLastCell = i === pattern.cells.length - 1;
+      const more = isLastCell && overflow > 0
+        ? `<span class="asc-ui-collection-card__thumb-more">+${overflow}</span>` : '';
+      return `<div class="asc-ui-collection-card__thumb" style="grid-column: span ${colSpan}; grid-row: span ${rowSpan}">${assetImgHtml(shown[i])}${more}</div>`;
+    }).join('');
+    return `<div class="asc-ui-collection-card__thumbs asc-ui-collection-card__thumbs--pattern" style="--collection-card-pattern-cols: ${pattern.cols}; --collection-card-pattern-rows: ${pattern.rows}">${cells}</div>`;
+  }
+
   const rowCounts = mosaicRowCounts(shown.length);
   let cursor = 0;
   const rowsHtml = rowCounts.map((rowCount, rowIndex) => {
     const isLastRow = rowIndex === rowCounts.length - 1;
     const cells = Array.from({ length: rowCount }, (_, i) => {
-      const url = shown[cursor];
+      const asset = shown[cursor];
       cursor += 1;
       const isLastCell = isLastRow && i === rowCount - 1;
       const more = isLastCell && overflow > 0
         ? `<span class="asc-ui-collection-card__thumb-more">+${overflow}</span>` : '';
-      return `<div class="asc-ui-collection-card__thumb"><img src="${escAttr(url)}" alt="" loading="lazy">${more}</div>`;
+      return `<div class="asc-ui-collection-card__thumb">${assetImgHtml(asset)}${more}</div>`;
     }).join('');
     return `<div class="asc-ui-collection-card__thumb-row" style="--collection-card-row-cols: ${rowCount}">${cells}</div>`;
   }).join('');
@@ -363,7 +390,14 @@ function mosaicThumbHtml(thumbnails, total) {
 }
 
 function thumbHtml(state) {
-  if (state.image) return `<img src="${escAttr(state.image)}" alt="" loading="lazy">`;
+  if (state.image) {
+    // A resolved DAM asset (see resolveDamImageUncached) gets the same
+    // srcset treatment as mosaic tiles; a plain authored image URL (an
+    // external/non-DAM cover image) has no rendition ladder to draw from.
+    return typeof state.image === 'string'
+      ? `<img src="${escAttr(state.image)}" alt="" loading="lazy">`
+      : assetImgHtml(state.image);
+  }
   if (state.thumbnails?.length) return mosaicThumbHtml(state.thumbnails, state.total);
   return '<div class="asc-ui-filetype" aria-hidden="true"><span class="asc-ui-filetype__glyph">🔗</span><span class="asc-ui-filetype__ext">Link</span></div>';
 }
@@ -373,7 +407,8 @@ const EYEBROW_LABEL = {
 };
 
 function cardHtml(format, reverse, state, link, bodyHtml, ctaLabel) {
-  const showThumb = format !== 'text-only';
+  const hasPreview = !!state.image || (state.thumbnails?.length > 0);
+  const showThumb = format !== 'text-only' && hasPreview;
   const eyebrow = EYEBROW_LABEL[state.kind];
   const count = state.total ? `${state.total} asset${state.total === 1 ? '' : 's'}` : '';
   const cardClasses = [

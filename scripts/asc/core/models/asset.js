@@ -100,8 +100,8 @@ export default class Asset {
     return match ? match[1].toLowerCase() : null;
   }
 
-  get thumbnail() {
-    return services.renditions.getThumbnailUrl(this);
+  get displayUrl() {
+    return services.renditions.getDisplayUrl(this);
   }
 
   get url() {
