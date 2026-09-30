@@ -234,7 +234,7 @@ Open `http://localhost:3000` and check:
 - Clicking an asset opens the details modal
 - URL updates to `?asset={uuid}`
 - `details-renditions` lists the asset's renditions
-- Adding an asset to a collection updates the `collection-switcher` / `stub` badge count
+- Adding an asset to a collection updates the `collection-switcher` badge count
 
 ![Asset Share Commons running locally](https://placehold.co/860x480/111111/9333ea?text=Asset+Share+Commons+Running+Locally&font=inter)
 

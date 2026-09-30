@@ -57,8 +57,6 @@ sidebar:
         url: "#board"
       - title: teaser
         url: "#teaser"
-      - title: stub
-        url: "#stub"
   - label: Actions
     items:
       - title: action-download
@@ -737,19 +735,6 @@ The visual layout comes from the block name itself, not a config row — the sta
 - Any other same-site link: fetches the target page's own `.plain.html` and reads its blocks directly. A `board` with `source: authored` (its authored ID list) or `mode: sheet-url` (its authored share URL, decoded the same way as a `?sheet=` link) both work. Falls back to a plain link icon if neither applies and no cover image was authored.
 
 An **eyebrow label** ("Live Search" / "Curated Set") shows which kind of share it is: a search link stays current on its own, a `?sheet=` or `source: authored` link is a fixed, hand-picked set.
-
----
-
-## stub {#stub}
-
-**Collections** · Compact summary bar — shows the active collection/cart state and a link to the download sheet. Suitable for sidebars or persistent footer areas.
-
-```
-| stub  |   |
-|-------|---|
-```
-
-No configuration required. Re-renders on `asc:collection:change`.
 
 ---
 
