@@ -352,6 +352,32 @@
     padding: var(--input-padding-y) var(--input-padding-x);
 }
 
+/* Group of related controls: <fieldset class="asc-ui-field"><legend class="asc-ui-field__label"> */
+fieldset.asc-ui-field {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+fieldset.asc-ui-field > legend {
+    padding: 0;
+    margin-block-end: var(--spacing-xs);
+}
+
+/* Control beside an adornment (unit text, icon button) inside a field */
+.asc-ui-field__row {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.asc-ui-field__row input {
+    flex: 1;
+    width: auto;
+    min-width: 0;
+}
+
 /* ─────────────────────────────────────────────────────────────────────────
    @kit search — pill search input that grows on focus
    Width is configurable via --asc-ui-search-width.

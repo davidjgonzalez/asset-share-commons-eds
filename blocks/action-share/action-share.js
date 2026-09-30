@@ -33,7 +33,7 @@ function renderFormField({
     // Authored fields (parseActionFragment) have no way to express a default
     // other than true — checked unless a field object explicitly says false.
     const checked = defaultChecked !== false;
-    return `<label class="asc-ui-switch action-share__switch">
+    return `<label class="asc-ui-switch">
         <input type="checkbox" role="switch" aria-checked="${checked}"
                data-field-id="${escAttr(id)}"${checked ? ' checked' : ''} />
         <span class="asc-ui-switch__track"><span class="asc-ui-switch__thumb"></span></span>
@@ -44,14 +44,14 @@ function renderFormField({
   if (type === 'textarea') {
     input = `<textarea data-field-id="${escAttr(id)}" rows="3"${ph}></textarea>`;
   } else if (suffix) {
-    input = `<div class="action-share__expires-wrap">
+    input = `<div class="asc-ui-field__row">
         <input type="${escAttr(type)}" data-field-id="${escAttr(id)}"${ph}${val} />
-        <span class="action-share__expires-unit">${escHtml(suffix)}</span>
+        <span class="asc-ui-copy">${escHtml(suffix)}</span>
       </div>`;
   } else {
     input = `<input type="${escAttr(type)}" data-field-id="${escAttr(id)}"${ph}${val} />`;
   }
-  return `<label class="action-share__label">${escHtml(label)}${input}</label>`;
+  return `<label class="asc-ui-field"><span class="asc-ui-field__label">${escHtml(label)}</span>${input}</label>`;
 }
 
 export default async function decorate(block) {
@@ -86,13 +86,13 @@ export default async function decorate(block) {
       </div>
       <button type="button" class="btn btn--ghost btn--icon asc-dialog__close" aria-label="Close" data-dialog-close>&#x2715;</button>
     </header>
-    <div class="asc-dialog__body">
+    <div class="asc-dialog__body action-share__body">
       ${fields.map((f) => renderFormField(f, f.id === 'title' ? (collection?.name || '') : '')).join('')}
       <div class="action-share__url-wrap" hidden>
-        <label class="action-share__label">
-          Share URL
-          <div class="action-share__url-row">
-            <input type="text" class="action-share__url-input" data-field-id="share-url" readonly />
+        <label class="asc-ui-field">
+          <span class="asc-ui-field__label">Share URL</span>
+          <div class="asc-ui-field__row">
+            <input type="text" data-field-id="share-url" readonly />
             ${SUPPORTS_SHARE ? `<button type="button" class="btn btn--secondary btn--icon action-share__native-share" aria-label="Share">${SHARE_ICON}</button>` : ''}
           </div>
         </label>
@@ -108,7 +108,10 @@ export default async function decorate(block) {
 
   if (parsed.bodyNodes.length) {
     const headerMain = dialog.querySelector('.asc-dialog__header-main');
-    parsed.bodyNodes.forEach((n) => headerMain.appendChild(n));
+    parsed.bodyNodes.forEach((n) => {
+      if (n.tagName === 'P') n.classList.add('asc-dialog__description');
+      headerMain.appendChild(n);
+    });
   }
 
   document.body.appendChild(dialog);

@@ -246,6 +246,21 @@ Wraps a label + control + optional hint/error. Controls inherit the global input
   <!-- or: <span class="asc-ui-field__error">Required.</span> -->
 </label>
 ```
+**Field group** — a `<fieldset class="asc-ui-field">` with a `<legend class="asc-ui-field__label">`
+holds related controls, e.g. a checkbox list (`asc-ui-dropdown__list` / `asc-ui-dropdown__item`).
+**Field row** — `.asc-ui-field__row` puts the control beside an adornment (unit text, icon button).
+```html
+<fieldset class="asc-ui-field">
+  <legend class="asc-ui-field__label">Renditions</legend>
+  <ul class="asc-ui-dropdown__list">
+    <li><label class="asc-ui-dropdown__item"><input type="checkbox" checked> Original <span class="asc-ui-copy">Full size</span></label></li>
+  </ul>
+</fieldset>
+<label class="asc-ui-field">
+  <span class="asc-ui-field__label">Expires in</span>
+  <div class="asc-ui-field__row"><input type="number" placeholder="No expiry"><span class="asc-ui-copy">days</span></div>
+</label>
+```
 
 ### Switch — `@kit switch` · `styles/ui-kit.css`
 Accessible on/off toggle built on a native checkbox. Always include `role="switch"` and `aria-checked` on the `<input>` so assistive technology announces on/off state correctly.

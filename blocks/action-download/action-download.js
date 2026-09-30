@@ -183,14 +183,16 @@ export default async function decorate(block) {
     </header>
     <div class="asc-dialog__body">
       ${renditionDefs.length ? `
-      <fieldset class="action-download__renditions">
-        <legend>${escHtml(parsed.renditionLabel || 'Select renditions to download')}</legend>
-        ${renditionDefs.map((def) => `
-          <label class="action-download__rendition-option">
+      <fieldset class="asc-ui-field">
+        <legend class="asc-ui-field__label">${escHtml(parsed.renditionLabel || 'Select renditions to download')}</legend>
+        <ul class="asc-ui-dropdown__list">
+          ${renditionDefs.map((def) => `
+          <li><label class="asc-ui-dropdown__item">
             <input type="checkbox" name="rendition" value="${escAttr(def.id)}" ${def.id === 'original' ? 'checked' : ''} />
             <span>${escHtml(def.label || def.id)}</span>
-            ${def.usecase ? `<span class="asc-ui-copy action-download__rendition-usecase">${escHtml(def.usecase)}</span>` : ''}
-          </label>`).join('')}
+            ${def.usecase ? `<span class="asc-ui-copy">${escHtml(def.usecase)}</span>` : ''}
+          </label></li>`).join('')}
+        </ul>
       </fieldset>` : ''}
     </div>
     <footer class="asc-dialog__footer">
@@ -204,7 +206,10 @@ export default async function decorate(block) {
 
   if (parsed.bodyNodes.length) {
     const headerMain = dialog.querySelector('.asc-dialog__header-main');
-    parsed.bodyNodes.forEach((n) => headerMain.appendChild(n));
+    parsed.bodyNodes.forEach((n) => {
+      if (n.tagName === 'P') n.classList.add('asc-dialog__description');
+      headerMain.appendChild(n);
+    });
   }
 
   document.body.appendChild(dialog);
@@ -237,7 +242,7 @@ export default async function decorate(block) {
 
       btn.disabled = true;
       btn.textContent = 'Preparing zip…';
-      dialog.querySelector('.action-download__error')?.remove();
+      dialog.querySelector('.asc-ui-field__error')?.remove();
 
       try {
         const failures = await downloadAsZip(items, archiveName, (done, total) => {
@@ -249,7 +254,7 @@ export default async function decorate(block) {
         btn.disabled = false;
         btn.textContent = origLabel;
         const errEl = Object.assign(document.createElement('p'), {
-          className: 'action-download__error',
+          className: 'asc-ui-field__error',
           textContent: `Download failed: ${err.message}`,
         });
         dialog.querySelector('.asc-dialog__footer').prepend(errEl);
