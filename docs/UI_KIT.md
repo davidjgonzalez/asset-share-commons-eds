@@ -234,7 +234,7 @@ All pure DA authoring, no new blocks. Combine with `fixed-width`, `grid`, `colum
   paragraph (`**[Primary](/x)**`, `*[Secondary](/y)*`). Add `compact` for a short centered closing banner.
 - `pull-up`: put on the section after a `home-hero` so its cards overlap the banner's bottom edge.
 - `centered`: centers a section's heading and lede.
-- `steps`: with `grid` + `columns: 3`, each `content` block (an H3 and a sentence) becomes a numbered card.
+- `steps`: with `grid` + `columns: 3`, each `content` block (an H3 and a sentence) becomes a card with an icon badge (search, star, share by position), joined by dashed arrows into a left-to-right flow at 900px and up.
 
 ### Button — `.btn` · `styles/styles.css`
 Variants: `--primary` `--secondary` `--ghost` `--danger`. Sizes: `--lg` / (default) / `--sm`.

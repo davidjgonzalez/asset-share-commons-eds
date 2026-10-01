@@ -397,36 +397,71 @@ main .section.pull-up {
     }
 }
 
-/* ── Steps — numbered how-it-works cards (style: grid, steps) ──────────────
+/* ── Steps — "flow" cards (style: grid, steps) ─────────────────────────────
    Each `content` block in the section (a heading + a sentence) becomes one
-   numbered card; pair with `grid` and `columns: 3`. */
+   card with an icon badge; a dashed connector ending in an arrowhead links
+   the cards into a left-to-right flow. Pair with `grid` and `columns: 3`
+   (connectors show at 900px and up; below that the cards simply stack).
+   Icons are chosen by position: search, star, share. */
 
 .section.steps {
-    counter-reset: asc-step;
+    --grid-gap: 3.5rem;
+    --asc-steps-badge: 3.5rem;
 
     > .content-wrapper {
+        position: relative;
         display: flex;
 
+        /* connector: dashed line level with the badge, ending in an arrowhead */
+        &:not(:last-child)::before {
+            content: "";
+            position: absolute;
+            top: calc(var(--spacing-xl) + var(--asc-steps-badge) / 2);
+            left: calc(100% + 0.4rem);
+            width: calc(var(--grid-gap) - 1.6rem);
+            border-top: 2px dashed var(--color-muted-fg);
+            opacity: 0.5;
+        }
+
+        &:not(:last-child)::after {
+            content: "";
+            position: absolute;
+            top: calc(var(--spacing-xl) + var(--asc-steps-badge) / 2 - 0.7rem);
+            left: calc(100% + var(--grid-gap) - 1.4rem);
+            width: 1.4rem;
+            height: 1.4rem;
+            background-color: var(--color-fg);
+            mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 5 7 7-7 7'/%3E%3C/svg%3E") center / contain no-repeat;
+        }
+
         .content.block {
+            position: relative;
             flex: 1;
             padding: var(--spacing-xl);
             background: var(--color-card);
             border: 1px solid var(--color-border);
             border-radius: var(--border-radius-xl);
 
+            /* icon badge */
             &::before {
-                counter-increment: asc-step;
-                content: counter(asc-step);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                width: 2.5rem;
-                height: 2.5rem;
+                content: "";
+                display: block;
+                width: var(--asc-steps-badge);
+                height: var(--asc-steps-badge);
                 margin-bottom: var(--spacing-md);
-                font-weight: 700;
-                color: var(--color-primary-fg);
                 background: var(--color-primary);
-                border-radius: var(--border-radius-full);
+                border-radius: var(--border-radius-lg);
+            }
+
+            &::after {
+                content: "";
+                position: absolute;
+                top: calc(var(--spacing-xl) + var(--asc-steps-badge) / 2 - 0.875rem);
+                left: calc(var(--spacing-xl) + var(--asc-steps-badge) / 2 - 0.875rem);
+                width: 1.75rem;
+                height: 1.75rem;
+                background-color: var(--color-primary-fg);
+                mask: var(--asc-steps-icon, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E")) center / contain no-repeat;
             }
 
             h3 {
@@ -438,6 +473,22 @@ main .section.pull-up {
                 margin: 0;
                 color: var(--color-muted-fg);
             }
+        }
+
+        &:nth-child(1) .content.block { --asc-steps-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E"); }
+        &:nth-child(2) .content.block { --asc-steps-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z'/%3E%3C/svg%3E"); }
+        &:nth-child(3) .content.block { --asc-steps-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='18' cy='5' r='3'/%3E%3Ccircle cx='6' cy='12' r='3'/%3E%3Ccircle cx='18' cy='19' r='3'/%3E%3Cpath d='m8.6 13.5 6.8 4M15.4 6.5l-6.8 4'/%3E%3C/svg%3E"); }
+    }
+}
+
+/* connectors only make sense when the cards sit side by side */
+@media (width < 900px) {
+    .section.steps {
+        --grid-gap: var(--spacing-md);
+
+        > .content-wrapper::before,
+        > .content-wrapper::after {
+            display: none;
         }
     }
 }
