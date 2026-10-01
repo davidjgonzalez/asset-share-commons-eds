@@ -182,6 +182,29 @@ permalink: /
   </div>
 </section>
 
+<section class="flow">
+  <div class="flow__eyebrow">How it works</div>
+  <h2 class="flow__title">From blank page to asset portal in three steps</h2>
+  <p class="flow__subtitle">No backend, no build pipeline. Everything is authored, configured and delivered at the edge.</p>
+  <div class="flow__steps">
+    <div class="flow__step">
+      <div class="flow__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg></div>
+      <h3 class="flow__step-title">Author</h3>
+      <p class="flow__step-text">Drop blocks onto pages in DA.live: search bars, filters, results, details and collections. Each block is a plain table.</p>
+    </div>
+    <div class="flow__step">
+      <div class="flow__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg></div>
+      <h3 class="flow__step-title">Configure</h3>
+      <p class="flow__step-text">Point <code>configurations.js</code> at your AEM host, pick a search provider and a theme. One file holds every setting.</p>
+    </div>
+    <div class="flow__step">
+      <div class="flow__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 15c-1.5 1.3-2 5-2 5s3.7-.5 5-2c.7-.8.7-2.1-.1-2.9s-2.1-.8-2.9-.1z"/><path d="m12 15-3-3a22 22 0 0 1 2-4 13 13 0 0 1 11-6c0 3-1 8-6 11a22 22 0 0 1-4 2z"/><path d="M9 12H4s.6-3 2-4c1.6-1.1 5 0 5 0M12 15v5s3-.6 4-2c1.1-1.6 0-5 0-5"/></svg></div>
+      <h3 class="flow__step-title">Publish</h3>
+      <p class="flow__step-text">Preview and publish from Sidekick. Edge Delivery serves it worldwide with no build step to run.</p>
+    </div>
+  </div>
+</section>
+
 <div class="screenshot-banner">
   <div class="screenshot-banner__grid">
     <div class="screenshot-banner__text">
