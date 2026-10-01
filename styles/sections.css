@@ -50,6 +50,19 @@ main .section.grid[data-columns="6"] { grid-template-columns: repeat(6, 1fr); }
 
 main .section.grid[data-direction="column"] { grid-auto-flow: column; }
 
+/* Narrow screens: 3+ column grids drop to 2, then everything to 1, so cards never
+   force the page wider than the viewport. */
+@media (width < 900px) {
+    main .section.grid[data-columns="3"],
+    main .section.grid[data-columns="4"],
+    main .section.grid[data-columns="5"],
+    main .section.grid[data-columns="6"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (width < 600px) {
+    main .section.grid[data-columns] { grid-template-columns: minmax(0, 1fr); }
+}
+
 /* colspan / rowspan helpers — add 'colspan-N' or 'rowspan-N' to a block's style */
 main .section.grid > .colspan-2 { grid-column: span 2; }
 main .section.grid > .colspan-3 { grid-column: span 3; }

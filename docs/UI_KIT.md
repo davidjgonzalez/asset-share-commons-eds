@@ -227,6 +227,15 @@ content would be):
 | style            | fixed-width, cta-banner |
 ```
 
+#### Home page sections (section `style` values)
+All pure DA authoring, no new blocks. Combine with `fixed-width`, `grid`, `columns`.
+- `home-hero`: full-bleed themed banner (theme `--color-primary` background, `--color-primary-fg` text). Content:
+  an optional eyebrow paragraph directly above the H1, the H1, a lede paragraph, then each button as its own
+  paragraph (`**[Primary](/x)**`, `*[Secondary](/y)*`). Add `compact` for a short centered closing banner.
+- `pull-up`: put on the section after a `home-hero` so its cards overlap the banner's bottom edge.
+- `centered`: centers a section's heading and lede.
+- `steps`: with `grid` + `columns: 3`, each `content` block (an H3 and a sentence) becomes a numbered card.
+
 ### Button — `.btn` · `styles/styles.css`
 Variants: `--primary` `--secondary` `--ghost` `--danger`. Sizes: `--lg` / (default) / `--sm`.
 Shapes: `--circle` / `--icon` (square, pair with a size). Use on `<button>` or `<a>`.

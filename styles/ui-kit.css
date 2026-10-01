@@ -264,6 +264,184 @@
     margin-top: var(--spacing-xs);
 }
 
+/* ── Home hero — full-bleed brand banner (style: home-hero) ──────────────────
+   A bold, themed banner for the top of a landing page. Colors come from the
+   theme's primary pair (background --color-primary, text --color-primary-fg),
+   so every theme restyles it for free. Authoring is plain content in one
+   section: an optional eyebrow paragraph directly above the H1, the H1, a lede
+   paragraph, then a paragraph of **bold** (primary) / *italic* (secondary)
+   links for the buttons. Add `compact` for a shorter, centered closing banner
+   and `pull-up` on the NEXT section to overlap its content onto the hero. */
+
+.section.home-hero {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    margin: 0;
+    padding: 4.5rem var(--section-padding) 8rem;
+    color: var(--color-primary-fg);
+    background:
+        radial-gradient(60% 90% at 90% -10%, color-mix(in srgb, var(--color-primary-fg) 24%, transparent), transparent 65%),
+        radial-gradient(45% 70% at 5% 115%, color-mix(in srgb, var(--color-primary-fg) 14%, transparent), transparent 70%),
+        var(--color-primary);
+
+    /* faint grid texture, fading out toward the bottom-left */
+    &::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        background:
+            linear-gradient(color-mix(in srgb, var(--color-primary-fg) 7%, transparent) 1px, transparent 1px) 0 0 / 56px 56px,
+            linear-gradient(90deg, color-mix(in srgb, var(--color-primary-fg) 7%, transparent) 1px, transparent 1px) 0 0 / 56px 56px;
+        mask-image: radial-gradient(70% 90% at 80% 0%, #000, transparent 75%);
+    }
+
+    > .default-content-wrapper {
+        max-width: var(--section-max-width);
+        margin-inline: auto;
+    }
+
+    h1,
+    h2 {
+        max-width: 14em;
+        margin: 0 0 var(--spacing-md);
+        font-size: clamp(2.5rem, 6vw, 4.75rem);
+        line-height: 1.04;
+        color: inherit;
+    }
+
+    > .default-content-wrapper > p {
+        max-width: 54ch;
+        margin: 0;
+        font-size: var(--heading-font-size-m);
+        line-height: 1.5;
+        color: color-mix(in srgb, var(--color-primary-fg) 78%, transparent);
+    }
+
+    /* eyebrow: a paragraph directly above the heading */
+    > .default-content-wrapper > p:first-child:has(+ h1, + h2) {
+        display: inline-flex;
+        margin-bottom: var(--spacing-md);
+        padding: 0.25rem 0.85rem;
+        font-size: var(--body-font-size-xs);
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: inherit;
+        border: 1px solid color-mix(in srgb, var(--color-primary-fg) 30%, transparent);
+        border-radius: var(--border-radius-full);
+    }
+
+    /* each link is its own paragraph (EDS only styles a lone link as a button) */
+    > .default-content-wrapper > .button-container {
+        display: inline-block;
+        max-width: none;
+        margin: var(--spacing-xl) var(--spacing-md) 0 0;
+    }
+
+    /* buttons invert against the banner */
+    a.button:any-link {
+        margin: 0;
+        padding-inline: var(--spacing-xl);
+        color: var(--color-primary);
+        background-color: var(--color-primary-fg);
+        border-color: var(--color-primary-fg);
+    }
+
+    a.button.secondary:any-link {
+        color: var(--color-primary-fg);
+        background-color: transparent;
+        border-color: color-mix(in srgb, var(--color-primary-fg) 40%, transparent);
+
+        &:hover {
+            background-color: color-mix(in srgb, var(--color-primary-fg) 12%, transparent);
+            border-color: var(--color-primary-fg);
+        }
+    }
+}
+
+.section.home-hero.compact {
+    padding-block: 3.5rem;
+    text-align: center;
+
+    h1,
+    h2 {
+        margin-inline: auto;
+        font-size: var(--heading-font-size-xl);
+    }
+
+    > .default-content-wrapper > p {
+        margin-inline: auto;
+    }
+
+    > .default-content-wrapper > .button-container {
+        margin-inline: var(--spacing-xs);
+    }
+}
+
+/* overlap the previous section (use under a home-hero) */
+main .section.pull-up {
+    position: relative;
+    z-index: 2;
+    margin-top: -5.5rem;
+}
+
+/* ── Centered section intro (style: centered) ───────────────────────────── */
+
+.section.centered > .default-content-wrapper {
+    text-align: center;
+
+    > p {
+        margin-inline: auto;
+    }
+}
+
+/* ── Steps — numbered how-it-works cards (style: grid, steps) ──────────────
+   Each `content` block in the section (a heading + a sentence) becomes one
+   numbered card; pair with `grid` and `columns: 3`. */
+
+.section.steps {
+    counter-reset: asc-step;
+
+    > .content-wrapper {
+        display: flex;
+
+        .content.block {
+            flex: 1;
+            padding: var(--spacing-xl);
+            background: var(--color-card);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius-xl);
+
+            &::before {
+                counter-increment: asc-step;
+                content: counter(asc-step);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 2.5rem;
+                height: 2.5rem;
+                margin-bottom: var(--spacing-md);
+                font-weight: 700;
+                color: var(--color-primary-fg);
+                background: var(--color-primary);
+                border-radius: var(--border-radius-full);
+            }
+
+            h3 {
+                margin: 0 0 var(--spacing-sm);
+                font-size: var(--heading-font-size-m);
+            }
+
+            p {
+                margin: 0;
+                color: var(--color-muted-fg);
+            }
+        }
+    }
+}
+
 /* @kit back-heading's plain-authoring equivalents (see above) — split out
    from the .asc-ui-back-heading rules and placed after @kit landing purely
    to satisfy ascending selector specificity (the :has() argument outweighs
