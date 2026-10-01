@@ -31,6 +31,23 @@
         gap: var(--spacing-sm);
     }
 
+    /* Vertical cards fill their grid cell and pin the CTA to the bottom-left, so
+       buttons line up across cards with different copy lengths. Horizontal
+       cards keep the CTA directly under the text. */
+    .asc-ui-asset-card:not(.asc-ui-asset-card--horizontal) {
+        .asc-ui-asset-card__body {
+            flex: 1;
+        }
+
+        .teaser__content {
+            margin-bottom: var(--spacing-md);
+        }
+
+        .teaser__cta {
+            margin-top: auto;
+        }
+    }
+
     .teaser__count {
         margin: 0;
         font-size: var(--body-font-size-xs);
