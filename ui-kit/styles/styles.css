@@ -178,7 +178,7 @@ header {
   flex-shrink: 0;
 }
 
-/* Chrome duality (share/sheet/board pages) — see scripts/asc/chrome.js.
+/* Chrome duality (share/sheet/board pages) — see scripts/asc/core/utils/chrome.js.
    is-chromeless skips loadHeader()/loadFooter() (scripts/scripts.js) entirely,
    but the <header>/<footer> elements themselves stay in the DOM, empty —
    header's own min-height: var(--nav-height) above still reserves that space

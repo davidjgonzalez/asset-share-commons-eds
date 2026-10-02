@@ -69,7 +69,7 @@ Architecture, events, data attributes, and extension points for building on top 
 | `blocks/` | You | Copy and modify blocks freely |
 | `blocks/action-*/` | You | Action dialog blocks — one per `/actions/*` path |
 | `styles/` | You | Add themes, override CSS variables |
-| `scripts/asc/html.js`, `tokens.js`, `section-grid.js` | You | Site-level helpers: HTML escaping helpers, `{{ }}` token resolver, and the section grid utility |
+| `tools/` | You | Node tooling such as `tools/extract-design-tokens.js`; never shipped to the browser |
 
 > Every file inside `scripts/asc/core/` starts with `// ASC Core — do not edit.` as a signal. You customize exclusively via `scripts/asc/configurations.js` and `scripts/asc.js`.
 
@@ -219,7 +219,7 @@ Configure the root path in `configurations.js`: `actions: { root: '/actions' }` 
 
 ## Content Variables — Token Templates {#tokens}
 
-{% raw %}Authored content anywhere in the document can use `{{ accessor }}` / `{{ accessor | fallback }}`{% endraw %} placeholders, resolved by `scripts/asc/tokens.js`. When a value is empty/null, the fallback text is used (or the token collapses to `""`); dangling separators (`·`, `,`, `—`) adjacent to an empty token are trimmed automatically.
+{% raw %}Authored content anywhere in the document can use `{{ accessor }}` / `{{ accessor | fallback }}`{% endraw %} placeholders, resolved by `scripts/asc/core/utils/tokens.js`. When a value is empty/null, the fallback text is used (or the token collapses to `""`); dangling separators (`·`, `,`, `—`) adjacent to an empty token are trimmed automatically.
 
 There are two complementary systems.
 

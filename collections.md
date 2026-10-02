@@ -430,7 +430,7 @@ A **published** collection is different from either of the above: something cura
 
 Any share, sheet, or board page can render two ways: **branded**, with the full site header, footer, search, and collections navigation (the visitor is still "inside" the wider asset library), or **standalone**, with none of that (the page reads as its own discrete microsite, with no way to wander back into the rest of the site through the UI). This is a presentational choice, not an access-control one: it hides navigation, not AEM/DAM permissions. Someone can still edit the URL by hand; nothing about this restricts what they can technically reach.
 
-Resolution order (`scripts/asc/chrome.js`):
+Resolution order (`scripts/asc/core/utils/chrome.js`):
 
 1. `?chrome=full` on the URL: force branded, overriding everything else
 2. `?chrome=none` on the URL: force standalone, overriding everything else
