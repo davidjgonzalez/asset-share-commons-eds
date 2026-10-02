@@ -1,7 +1,7 @@
 // ASC Core — do not edit. Customize via scripts/asc/configurations.js
 import services from "../services/services.js";
 import Rendition from "./rendition.js";
-import { toPropertyValue } from "../../html.js";
+import { toPropertyValue } from "../utils/html.js";
 
 export default class Asset {
   constructor(data) {

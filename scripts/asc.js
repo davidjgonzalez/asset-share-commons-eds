@@ -13,10 +13,10 @@ import services from './asc/core/services/services.js';
 import configurations from './asc/configurations.js';
 import { setupImageFallback } from './asc/core/utils/images.js';
 import { setupRoleButtonKeyboardSupport } from './asc/core/utils/keyboard.js';
-import { decorateASCSections } from './asc/section-grid.js';
-import { registerTokens } from './asc/tokens.js';
-import { registerSpeculationRules } from './asc/speculation-rules.js';
-import { isChromeless } from './asc/chrome.js';
+import { decorateASCSections } from './asc/core/utils/section-grid.js';
+import { registerTokens } from './asc/core/utils/tokens.js';
+import { registerSpeculationRules } from './asc/core/utils/speculation-rules.js';
+import { isChromeless } from './asc/core/utils/chrome.js';
 
 setupImageFallback();
 setupRoleButtonKeyboardSupport();
@@ -35,7 +35,7 @@ export function ascEager(doc) {
   // Set as early as possible (main exists in the raw HTML by now even though
   // decorateMain() hasn't run yet) so any [data-asc-nav-link] back-links
   // authored into the page's own content never flash visible before being
-  // hidden — see scripts/asc/chrome.js.
+  // hidden — see scripts/asc/core/utils/chrome.js.
   doc.body.classList.toggle('is-chromeless', isChromeless(doc.querySelector('main')));
 }
 

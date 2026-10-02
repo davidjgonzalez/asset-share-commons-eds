@@ -29,7 +29,7 @@
  */
 
 import Asset from '../../scripts/asc/core/models/asset.js';
-import { escHtml, renderPropertyValue } from '../../scripts/asc/html.js';
+import { escHtml, renderPropertyValue } from '../../scripts/asc/core/utils/html.js';
 import { listenWhileConnected } from '../../scripts/asc/core/utils/events.js';
 
 const MULTI_VALUE_LIMIT = 10;

@@ -6,7 +6,7 @@
  * Extract design tokens from a target website and generate an ASC theme CSS file.
  * 
  * Usage:
- *   node scripts/extract-design-tokens.js --url https://website.com --theme my-brand
+ *   node tools/extract-design-tokens.js --url https://website.com --theme my-brand
  * 
  * Options:
  *   --url      Target website URL to extract colors from
@@ -27,7 +27,7 @@ const themeIndex = args.indexOf('--theme');
 
 if (urlIndex === -1) {
   console.error('Error: --url is required');
-  console.error('Usage: node scripts/extract-design-tokens.js --url <url> --theme <name>');
+  console.error('Usage: node tools/extract-design-tokens.js --url <url> --theme <name>');
   process.exit(1);
 }
 
@@ -61,7 +61,7 @@ async function generateTheme() {
   console.log(`✅ Generated theme: styles/themes/${themeName}.css`);
   
   // Update configurations if requested
-  const configPath = path.join(__dirname, 'configurations.js');
+  const configPath = path.join(__dirname, '..', 'scripts', 'asc', 'configurations.js');
   if (fs.existsSync(configPath)) {
     updateConfiguration(configPath, themeName);
   }

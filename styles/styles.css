@@ -126,7 +126,7 @@
 
   /* Always-on-top context — above modals too, since actions that trigger a
      toast (download, copy URL, share) can happen from inside an open dialog */
-  --z-toast:          700;  /* notification toasts (scripts/asc/notifications.js) */
+  --z-toast:          700;  /* notification toasts (scripts/asc/core/services/notifications) */
 
   /* Select arrow (overridden to light in dark themes) */
   --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23555'/%3E%3C/svg%3E");
@@ -178,7 +178,7 @@ header {
   flex-shrink: 0;
 }
 
-/* Chrome duality (share/sheet/board pages) — see scripts/asc/chrome.js.
+/* Chrome duality (share/sheet/board pages) — see scripts/asc/core/utils/chrome.js.
    is-chromeless skips loadHeader()/loadFooter() (scripts/scripts.js) entirely,
    but the <header>/<footer> elements themselves stay in the DOM, empty —
    header's own min-height: var(--nav-height) above still reserves that space

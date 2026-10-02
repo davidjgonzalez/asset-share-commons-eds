@@ -78,7 +78,7 @@ Any share/sheet/board page can render two ways: **branded** (with the site's
 own header, footer, search, and collections navigation — the visitor is
 still "inside" the wider asset library) or **standalone** (none of that — the
 page reads as its own discrete microsite, with no way to wander back into the
-rest of the site via the UI). See `scripts/asc/chrome.js` for the resolution
+rest of the site via the UI). See `scripts/asc/core/utils/chrome.js` for the resolution
 logic. This is a presentational choice, not an access-control one — it hides
 navigation, not AEM/DAM permissions.
 

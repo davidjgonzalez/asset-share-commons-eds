@@ -2,7 +2,7 @@
 import services from '../../scripts/asc/core/services/services.js';
 import storage from '../../scripts/asc/core/services/storage/storage.js';
 import configurations from '../../scripts/asc/configurations.js';
-import { escHtml, escAttr } from '../../scripts/asc/html.js';
+import { escHtml, escAttr } from '../../scripts/asc/core/utils/html.js';
 import { parseActionFragment, wireDialogClose } from '../../scripts/asc.js';
 import { icon } from '../../scripts/asc/core/utils/icons.js';
 
@@ -70,7 +70,7 @@ export default async function decorate(block) {
     // Standalone (no site nav) is the existing default for every ?sheet= link
     // today — this switch makes that a per-share choice instead of a fixed
     // rule, defaulting checked so today's behavior doesn't change unless the
-    // sharer opts out. See scripts/asc/chrome.js for the read side.
+    // sharer opts out. See scripts/asc/core/utils/chrome.js for the read side.
     {
       id: 'chromeless', type: 'switch', label: 'Share as a standalone page (no site navigation)', defaultChecked: true,
     },
@@ -165,7 +165,7 @@ export default async function decorate(block) {
 
     const compressed = await services.url.encodeSheetPayload(payload);
     // Explicit chrome= param rather than relying only on the implicit "any
-    // ?sheet= link is standalone" default (scripts/asc/chrome.js) — makes the
+    // ?sheet= link is standalone" default (scripts/asc/core/utils/chrome.js) — makes the
     // sharer's choice durable even if that default ever changes.
     const chrome = fieldChecked('chromeless') ? 'none' : 'full';
     const url = `${window.location.origin}${SHEET_PATH}?sheet=${compressed}&chrome=${chrome}`;

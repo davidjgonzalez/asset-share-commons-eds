@@ -67,7 +67,7 @@
  * its own, while a sheet or authored link is a fixed, hand-picked set. None
  * of this runs for format: Text Only, since that never shows a thumbnail.
  */
-import { escHtml, escAttr } from '../../scripts/asc/html.js';
+import { escHtml, escAttr } from '../../scripts/asc/core/utils/html.js';
 import {
   MAX_MOSAIC_THUMBS, mosaicRowCounts, mosaicHeight, mosaicPattern,
 } from '../../scripts/asc/core/utils/mosaic.js';

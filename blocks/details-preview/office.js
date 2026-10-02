@@ -1,5 +1,5 @@
 /** @owner user */
-import { escAttr } from '../../scripts/asc/html.js';
+import { escAttr } from '../../scripts/asc/core/utils/html.js';
 
 const OFFICE_VIEWER = 'https://view.officeapps.live.com/op/embed.aspx?src=';
 

@@ -1,4 +1,5 @@
-/** @owner user */
+// ASC Core — do not edit. Customize via scripts/asc/configurations.js
+
 export function registerSpeculationRules() {
   const script = document.createElement('script');
   script.type = 'speculationrules';

@@ -1,5 +1,5 @@
 // ASC Core — do not edit. Customize via scripts/asc/configurations.js
-import { propValue, escHtml, escAttr } from '../../../html.js';
+import { propValue, escHtml, escAttr } from '../../utils/html.js';
 
 export default function get(asset) {
   const dist = asset.getProperty('jcr:content/metadata/dam:colorDistribution').data;

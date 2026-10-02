@@ -51,7 +51,7 @@ The tool analyzes:
 
 ```bash
 # Inside ASC workspace
-node scripts/extract-design-tokens.js --url https://target-website.com --theme my-brand
+node tools/extract-design-tokens.js --url https://target-website.com --theme my-brand
 ```
 
 **Output**:
@@ -113,7 +113,7 @@ git push
 Focus on a particular UI region:
 
 ```bash
-node scripts/extract-design-tokens.js \
+node tools/extract-design-tokens.js \
   --url https://website.com \
   --theme my-brand \
   --selector "header, .hero-section, .cta-button"
@@ -141,9 +141,9 @@ Edit the generated theme to override extracted colors:
 Generate several themes from different sources:
 
 ```bash
-node scripts/extract-design-tokens.js --url https://adobe.com --theme adobe
-node scripts/extract-design-tokens.js --url https://github.com --theme github
-node scripts/extract-design-tokens.js --url https://notion.so --theme notion
+node tools/extract-design-tokens.js --url https://adobe.com --theme adobe
+node tools/extract-design-tokens.js --url https://github.com --theme github
+node tools/extract-design-tokens.js --url https://notion.so --theme notion
 ```
 
 Then switch between them in `scripts/asc/configurations.js`:
@@ -262,7 +262,7 @@ All 16 tokens are generated and ready to use.
 ### Example 1: Extract Adobe.com Colors
 
 ```bash
-node scripts/extract-design-tokens.js \
+node tools/extract-design-tokens.js \
   --url https://www.adobe.com \
   --theme adobe-official
 ```
@@ -272,7 +272,7 @@ Creates `styles/themes/adobe-official.css` with Adobe's brand colors automatical
 ### Example 2: Extract and Tweak
 
 ```bash
-node scripts/extract-design-tokens.js \
+node tools/extract-design-tokens.js \
   --url https://github.com \
   --theme github-inspired
 ```
@@ -292,7 +292,7 @@ Then edit `styles/themes/github-inspired.css`:
 ```bash
 # Generate all at once
 for url in adobe.com netflix.com spotify.com; do
-  node scripts/extract-design-tokens.js --url "https://$url" --theme ${url%.*}
+  node tools/extract-design-tokens.js --url "https://$url" --theme ${url%.*}
 done
 ```
 
@@ -302,7 +302,7 @@ Creates themes: `adobe.css`, `netflix.css`, `spotify.css`.
 
 ## Next Steps
 
-1. **Generate** a theme: `node scripts/extract-design-tokens.js --url ...`
+1. **Generate** a theme: `node tools/extract-design-tokens.js --url ...`
 2. **Preview** in browser: `aem up --no-open` → `http://localhost:3000`
 3. **Refine** colors in `styles/themes/{name}.css` if needed
 4. **Activate** in `scripts/asc/configurations.js`

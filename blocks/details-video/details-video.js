@@ -16,7 +16,7 @@
  */
 
 import { readBlockConfig } from '../../scripts/asc/core/utils/blocks.js';
-import { escAttr } from '../../scripts/asc/html.js';
+import { escAttr } from '../../scripts/asc/core/utils/html.js';
 import Asset from '../../scripts/asc/core/models/asset.js';
 import { listenWhileConnected } from '../../scripts/asc/core/utils/events.js';
 

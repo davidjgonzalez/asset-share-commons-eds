@@ -15,7 +15,7 @@
 
 import { readBlockConfig } from "../../scripts/aem.js";
 import Asset from "../../scripts/asc/core/models/asset.js";
-import { escHtml } from "../../scripts/asc/html.js";
+import { escHtml } from "../../scripts/asc/core/utils/html.js";
 
 export default async function decorate(block) {
   const config = readBlockConfig(block);

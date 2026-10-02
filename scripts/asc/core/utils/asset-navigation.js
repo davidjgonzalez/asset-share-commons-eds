@@ -1,4 +1,5 @@
-/** @owner user */
+// ASC Core — do not edit. Customize via scripts/asc/configurations.js
+
 /**
  * asset-navigation — derives the "currently browsable list of assets" directly from the
  * DOM, for Prev/Next cycling in the asset details modal (blocks/details-modal/details-modal.js).

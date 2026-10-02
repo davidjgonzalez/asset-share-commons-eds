@@ -1,4 +1,5 @@
-/** @owner user */
+// ASC Core — do not edit. Customize via scripts/asc/configurations.js
+
 /*
  * Named-area section grid — a general "_layout: grid" paradigm for EDS sections,
  * modeled on the CSS grid-template-areas property.

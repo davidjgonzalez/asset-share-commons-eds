@@ -256,7 +256,7 @@ header.scrolled .nav-wrapper {
 }
 
 /* Standalone (chromeless) pages — no nav, no footer. Keyed to is-chromeless
-   (scripts/asc/chrome.js), not the raw page-sheet class — page-sheet just
+   (scripts/asc/core/utils/chrome.js), not the raw page-sheet class — page-sheet just
    means "this page has a ?sheet= link", which no longer always implies
    chromeless now that it's an overridable default (?chrome=full, or the
    "Share as a standalone page" switch in blocks/action-share). In practice

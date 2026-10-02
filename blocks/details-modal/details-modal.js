@@ -9,7 +9,7 @@
  */
 
 import services from '../../scripts/asc/core/services/services.js';
-import { getVisibleAssetIds, getNeighborAssetId } from '../../scripts/asc/asset-navigation.js';
+import { getVisibleAssetIds, getNeighborAssetId } from '../../scripts/asc/core/utils/asset-navigation.js';
 import { withViewTransition } from '../../scripts/asc/core/utils/view-transition.js';
 import { icon } from '../../scripts/asc/core/utils/icons.js';
 

@@ -16,7 +16,7 @@
  */
 import { readBlockConfig, addSearchEventListeners, enhanceSearchFilterDropdown } from '../../scripts/asc/core/utils/search.js';
 import { mountToHeader } from '../../scripts/asc/core/utils/header-mount.js';
-import { escAttr } from '../../scripts/asc/html.js';
+import { escAttr } from '../../scripts/asc/core/utils/html.js';
 
 export default function decorate(block) {
   const config = readBlockConfig(block, {}, {

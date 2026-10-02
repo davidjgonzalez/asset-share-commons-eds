@@ -16,7 +16,7 @@
 import { readBlockConfig } from '../../scripts/aem.js';
 import assetTeaser from '../../scripts/asc/core/parts/asset-teaser/asset-teaser.js';
 import services from '../../scripts/asc/core/services/services.js';
-import { escHtml } from '../../scripts/asc/html.js';
+import { escHtml } from '../../scripts/asc/core/utils/html.js';
 import { icon } from '../../scripts/asc/core/utils/icons.js';
 
 const SVG_ADD = icon('plus', { size: 14, strokeWidth: 2.5 });

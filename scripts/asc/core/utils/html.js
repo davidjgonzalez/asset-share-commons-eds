@@ -1,3 +1,5 @@
+// ASC Core — do not edit. Customize via scripts/asc/configurations.js
+
 /** Escape a string for safe insertion as HTML text content. */
 export function escHtml(str) {
     return String(str ?? '')

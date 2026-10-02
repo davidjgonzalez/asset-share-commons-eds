@@ -2,7 +2,7 @@
 import services from '../../scripts/asc/core/services/services.js';
 import { Events as CollectionEvents } from '../../scripts/asc/core/services/collections/collections.js';
 import { openNewCollectionDialog } from '../collections/collections.js';
-import { escHtml, escAttr } from '../../scripts/asc/html.js';
+import { escHtml, escAttr } from '../../scripts/asc/core/utils/html.js';
 import { icon } from '../../scripts/asc/core/utils/icons.js';
 
 const configurations = (await import('../../scripts/asc/configurations.js')).default;

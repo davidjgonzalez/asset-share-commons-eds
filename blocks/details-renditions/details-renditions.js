@@ -28,7 +28,7 @@
  *   |             | download, share      |  ← column whose value is action
  *   |             |                      |    keyword(s) → renders icon buttons
  *
- * Column values resolve through the shared token engine (scripts/asc/tokens.js)
+ * Column values resolve through the shared token engine (scripts/asc/core/utils/tokens.js)
  * against the CURRENT rendition; the owning asset is reachable via `asset.…`
  * (see resolveAssetPath below — that's where the asset-specific path rules live).
  * A value may be a bare path (`name`, `file-size`) or contain {{ }} tokens for
@@ -76,7 +76,7 @@
 import Asset from '../../scripts/asc/core/models/asset.js';
 import services from '../../scripts/asc/core/services/services.js';
 import { delegateEvent } from '../../scripts/asc/core/utils/events.js';
-import { resolveTokens } from '../../scripts/asc/tokens.js';
+import { resolveTokens } from '../../scripts/asc/core/utils/tokens.js';
 import { canCopyImage, copyImageToClipboard } from '../../scripts/asc/core/utils/clipboard-image.js';
 import { icon } from '../../scripts/asc/core/utils/icons.js';
 
@@ -485,7 +485,7 @@ function resolveRenditions(asset, ids) {
 /**
  * Build the per-rendition resolution context: rendition fields + display aliases,
  * plus an `asset` namespace so `{{asset.…}}` tokens resolve through the shared
- * engine (see scripts/asc/tokens.js) — `resolveTokens` switches into `ctx.asset`
+ * engine (see scripts/asc/core/utils/tokens.js) — `resolveTokens` switches into `ctx.asset`
  * for any `asset.`-prefixed accessor, handing the remaining path to
  * `assetResolver()`'s `getProperty`, which is where the asset-specific path
  * rules below (`properties`/`renditions` keywords, bracket indexing) apply.

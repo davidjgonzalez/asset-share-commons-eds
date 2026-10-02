@@ -1,3 +1,4 @@
+/** @owner user */
 /**
  * board-item — default renderer for an asset item on the board/collection canvas.
  *
@@ -37,9 +38,9 @@
  *   parseConfig): { mode, notes, searchProperties, ... }.
  * @returns {string} A single root element as an HTML string.
  */
-import services from './core/services/services.js';
-import { escHtml, escAttr } from './html.js';
-import { icon } from './core/utils/icons.js';
+import services from '../../scripts/asc/core/services/services.js';
+import { escHtml, escAttr } from '../../scripts/asc/core/utils/html.js';
+import { icon } from '../../scripts/asc/core/utils/icons.js';
 
 const ICONS = {
   close: icon('close'),

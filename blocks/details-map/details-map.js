@@ -19,7 +19,7 @@
  */
 import { readBlockConfig, loadCSS, loadScript } from '../../scripts/aem.js';
 import Asset from '../../scripts/asc/core/models/asset.js';
-import { escHtml } from '../../scripts/asc/html.js';
+import { escHtml } from '../../scripts/asc/core/utils/html.js';
 
 const LEAFLET_CSS = 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css';
 const LEAFLET_JS = 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js';

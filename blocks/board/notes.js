@@ -1,6 +1,6 @@
 /** @owner user */
 import services from '../../scripts/asc/core/services/services.js';
-import { escHtml } from '../../scripts/asc/html.js';
+import { escHtml } from '../../scripts/asc/core/utils/html.js';
 import { state } from './state.js';
 
 const PANEL_SIDE_ORDER = ['bottom', 'right', 'top', 'left'];

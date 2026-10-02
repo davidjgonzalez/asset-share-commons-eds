@@ -1,3 +1,5 @@
+// ASC Core — do not edit. Customize via scripts/asc/configurations.js
+
 /**
  * rendition-download-menu — a floating "pick a rendition" menu, shared by
  * search-results's quick-download and quick-copy-url card buttons. Each
@@ -17,8 +19,8 @@
  * don't share an in-memory cache; hitting the same rendition URL twice resolves
  * the second time from the browser's own HTTP cache.
  */
-import services from './core/services/services.js';
-import { escHtml, escAttr } from './html.js';
+import services from '../../services/services.js';
+import { escHtml, escAttr } from '../../utils/html.js';
 
 let panelEl = null;
 let openTrigger = null;

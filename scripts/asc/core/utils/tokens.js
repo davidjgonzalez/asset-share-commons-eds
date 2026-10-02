@@ -1,4 +1,5 @@
-/** @owner user */
+// ASC Core — do not edit. Customize via scripts/asc/configurations.js
+
 /**
  * Shared token resolver for the {{ accessor | fallback }} template syntax.
  *

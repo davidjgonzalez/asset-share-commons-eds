@@ -1,7 +1,7 @@
 /** @owner user */
 import { getMetadata, loadBlock } from '../../scripts/aem.js';
 import { loadFragment } from '../fragment/fragment.js';
-import { escHtml } from '../../scripts/asc/html.js';
+import { escHtml } from '../../scripts/asc/core/utils/html.js';
 
 export default async function decorate(block) {
   // Load nav fragment

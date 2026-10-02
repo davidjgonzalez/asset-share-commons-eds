@@ -5,7 +5,7 @@ headings, paragraphs, links, block table cells, and even the page's `<title>` / 
 description; at runtime a block resolves each token and writes the final string back into the
 DOM.
 
-All resolution shares one engine (`scripts/asc/tokens.js`), but there are **two ways to feed it
+All resolution shares one engine (`scripts/asc/core/utils/tokens.js`), but there are **two ways to feed it
 values**, depending on what kind of data your block has. Pick the right one — see
 "Which system should my block use?" below.
 
@@ -51,7 +51,7 @@ This part is shared by both systems below — it's all implemented by one functi
 ## System 1 — Page-wide registry: `registerTokens(context)`
 
 ```js
-import { registerTokens } from '../../scripts/asc/tokens.js';
+import { registerTokens } from '../../scripts/asc/core/utils/tokens.js';
 ```
 
 `registerTokens(context)`:
@@ -90,7 +90,7 @@ Registry keys are a single flat namespace, so **always prefix your keys** (`myTh
 
 ```js
 // my-widget.js
-import { registerTokens } from '../../scripts/asc/tokens.js';
+import { registerTokens } from '../../scripts/asc/core/utils/tokens.js';
 
 export default async function decorate(block) {
   const data = await fetchMyWidgetData();
@@ -167,7 +167,7 @@ Token: {{fulltext}}  →  "mountains"
 ## System 2 — Direct resolution: `resolveTokens()` / `resolveTokensInElement()`
 
 ```js
-import { resolveTokens, resolveTokensInElement } from '../../scripts/asc/tokens.js';
+import { resolveTokens, resolveTokensInElement } from '../../scripts/asc/core/utils/tokens.js';
 ```
 
 Use this when your block renders **many** independent contexts that shouldn't share one global
@@ -329,7 +329,7 @@ Both systems share the same coercion step before a value is inserted into the te
 
 | File | Purpose |
 |---|---|
-| `scripts/asc/tokens.js` | Shared implementation — `resolveTokens`, `resolveTokensInElement`, `resolveTokensInContent`, `registerTokens` |
+| `scripts/asc/core/utils/tokens.js` | Shared implementation — `resolveTokens`, `resolveTokensInElement`, `resolveTokensInContent`, `registerTokens` |
 | `scripts/asc.js` | Calls `registerTokens()` with URL params in `ascDecorateMain()` |
 | `blocks/collection-controls/collection-controls.js` | Page-registry example — `collection.*` |
 | `blocks/sheet-controls/sheet-controls.js` | Page-registry example — `sheet.*` |

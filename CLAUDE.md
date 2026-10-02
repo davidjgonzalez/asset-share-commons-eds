@@ -20,32 +20,30 @@ aem up              # Start local dev proxy at http://localhost:3000
 
 ```
 scripts/
+  aem.js, scripts.js, delayed.js   ← EDS BOILERPLATE (scripts.js carries ASC hooks)
   asc.js                ← USER-OWNED: ASC integration entry point (lifecycle hooks)
-  asc/                  ← USER-OWNED: exactly these 4 files, no more
-    configurations.js   ← USER-OWNED: all site configuration
-    section-grid.js     ← USER-OWNED: section grid utility
-    tokens.js           ← USER-OWNED: content variable resolver
-    html.js             ← USER-OWNED: HTML helpers
-    core/                ← ASC CORE: do not edit; all files begin with "// ASC Core"
-      services/
-      models/
-      utils/
-      parts/
-blocks/                 ← USER-OWNED: copy/modify blocks freely
+  asc/
+    configurations.js   ← USER-OWNED: all site configuration (the ONLY user file here)
+    core/               ← ASC CORE: do not edit; all files begin with "// ASC Core"
+      services/  models/  utils/  parts/
+blocks/                 ← USER-OWNED: copy/modify blocks freely (helpers live beside their block)
   action-*/             ← USER-OWNED: action blocks loaded by the action-pages service
 styles/                 ← USER-OWNED: themes and CSS variables
+tools/                  ← dev tooling (Node), never shipped to the browser
 ```
 
-Every file in `scripts/asc/core/` starts with `// ASC Core — do not edit.` as a signal. Users customize via `scripts/asc/configurations.js` and `scripts/asc.js` only.
+Every file in `scripts/asc/core/` starts with `// ASC Core — do not edit.` as a signal. Users customize via `scripts/asc/configurations.js` and `scripts/asc.js` only. Each folder has a `README.md` stating who may import from it and who may edit it.
 
-**`scripts/asc/` (root, not `core/`) is exactly the 4 files above — never add a 5th.**
-This list used to drift (`analytics.js`, `notifications.js`, `chrome.js`, and others
-accumulated there over time before being moved into `core/services/` and `core/utils/`
-where they belonged) — before adding any new file directly under `scripts/asc/`, ask:
+**`scripts/asc/` (root, not `core/`) holds `configurations.js` and nothing else — never add a second file.**
+This folder used to drift (`analytics.js`, `notifications.js`, `chrome.js`, `tokens.js`, `html.js`
+and others accumulated there before being moved into `core/` or next to the block that owns them)
+— before adding any new file directly under `scripts/asc/`, ask:
 
 - Does it hold **site-specific policy or data the owner is expected to edit** (a config
-  value, a swappable default, page-load wiring)? → it probably belongs in
-  `configurations.js` itself, not a new file.
+  value, a swappable default, page-load wiring)? → it belongs in `configurations.js`
+  itself, not a new file.
+- Is it a helper used by exactly one block (a palette, a default renderer)? → it lives in
+  that block's folder (`blocks/<name>/`), user-owned like the block.
 - Is its *entire* customization surface "add one `[target, eventType, handler]` tuple to
   a plain array"? A service can still legitimately live in `core/services/` and expose
   that array as a `customListeners` config option (see `analytics`/`notifications`/
@@ -78,14 +76,14 @@ ASC services auto-initialize when `scripts/asc.js` is imported; no explicit init
 > - `addPageTypeClasses(main)` (called from `loadEager()`) adds `page-search` / `page-collections`
 >   / `page-sheet` / `page-board` body classes based on which blocks are present
 > - `loadLazy()` gates `loadHeader()`/`loadFooter()` on `import { isChromeless } from
->   './asc/chrome.js'` rather than loading them unconditionally — see "Chrome Duality" below
+>   './asc/core/utils/chrome.js'` rather than loading them unconditionally — see "Chrome Duality" below
 
 ### Chrome Duality (Branded vs. Standalone Shares)
 
 Any share/sheet/board page can render **branded** (full site header/footer/nav) or
 **standalone** (none of it — reads as a discrete microsite, no way back into the site via the
 UI). Presentational only — it hides navigation, not AEM/DAM permissions. Resolution logic lives
-in `scripts/asc/chrome.js` (`isChromeless()`): `?chrome=full`/`?chrome=none` override anything;
+in `scripts/asc/core/utils/chrome.js` (`isChromeless()`): `?chrome=full`/`?chrome=none` override anything;
 otherwise `<meta name="chrome" content="none">` (authored, for fixed/authored shares) or a
 `.sheet` block / `?sheet=` param (ad hoc personal shares — this has always been their default)
 decide it. The "Share as a standalone page" switch in `blocks/action-share` makes that default an

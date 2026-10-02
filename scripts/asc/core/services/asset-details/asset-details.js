@@ -17,7 +17,7 @@
 import { decorateBlock, loadBlock } from '../../../../aem.js';
 import serviceConfigurations from '../configurations.js';
 import { loadFragment } from '../../utils/fragments.js';
-import { resolveTokensInContent } from '../../../tokens.js';
+import { resolveTokensInContent } from '../../utils/tokens.js';
 
 // URL parameter used for deep-linking to a specific asset's details
 const ASSET_URL_PARAM = 'asset';

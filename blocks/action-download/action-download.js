@@ -1,6 +1,6 @@
 /** @owner user */
 import services from '../../scripts/asc/core/services/services.js';
-import { escHtml, escAttr } from '../../scripts/asc/html.js';
+import { escHtml, escAttr } from '../../scripts/asc/core/utils/html.js';
 import { parseActionFragment, wireDialogClose } from '../../scripts/asc.js';
 
 const JSZIP_URL = 'https://esm.sh/jszip@3.10.1';

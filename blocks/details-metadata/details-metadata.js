@@ -19,7 +19,7 @@
  * - `display: grid` switches to the responsive cell layout (term over value).
  */
 import Asset from '../../scripts/asc/core/models/asset.js';
-import { escHtml as esc, renderPropertyValue } from '../../scripts/asc/html.js';
+import { escHtml as esc, renderPropertyValue } from '../../scripts/asc/core/utils/html.js';
 
 const MULTI_VALUE_LIMIT = 10;
 const RESERVED = new Set(['display', 'layout']);

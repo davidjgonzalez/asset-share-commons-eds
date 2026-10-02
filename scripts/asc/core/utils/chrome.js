@@ -1,4 +1,5 @@
-/** @owner user */
+// ASC Core — do not edit. Customize via scripts/asc/configurations.js
+
 /**
  * Chrome ("site navigation") duality for share/sheet/board pages — the same
  * published content can read as part of the overall Asset Share Commons site
@@ -25,7 +26,7 @@
  * class on its block wrapper regardless of decoration, so this is safe to
  * call as early as loadEager.
  */
-import { getMetadata } from '../aem.js';
+import { getMetadata } from '../../../aem.js';
 
 export function isChromeless(main = document.querySelector('main')) {
   const override = new URLSearchParams(window.location.search).get('chrome');

@@ -24,8 +24,8 @@
  *   Priority: URL param > localStorage > first authored option.
  */
 import { readBlockConfig, SEARCH_FORM } from '../../scripts/asc/core/utils/search.js';
-import { escAttr } from '../../scripts/asc/html.js';
-import { DEFAULT_PALETTE, nearestColor } from '../../scripts/asc/color-search.js';
+import { escAttr } from '../../scripts/asc/core/utils/html.js';
+import { DEFAULT_PALETTE, nearestColor } from './color-search.js';
 import services from '../../scripts/asc/core/services/services.js';
 import { icon } from '../../scripts/asc/core/utils/icons.js';
 

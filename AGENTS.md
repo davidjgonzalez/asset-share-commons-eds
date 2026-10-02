@@ -10,7 +10,7 @@ This file documents conventions, extension points, and architecture decisions fo
 |------|-------|------|
 | `scripts/asc/configurations.js` | **You** | Edit freely — all site configuration |
 | `scripts/asc.js` | **You** | Edit freely — ASC lifecycle entry point; add eager/lazy/delayed hooks here |
-| `scripts/asc/` (flat files, e.g. `board-item.js`, `tokens.js`, `html.js`, `chrome.js`) | **You** | Edit/fork freely — default implementations you're expected to read and customize |
+| `blocks/<name>/` helper files (e.g. `blocks/board/board-item.js`, `blocks/search-bar/color-search.js`) | **You** | Edit/fork freely — default implementations you're expected to read and customize |
 | `scripts/asc/core/` | **ASC core** | Do not edit — replace the whole folder on upgrades |
 | `blocks/` | **You** | Copy and modify blocks as needed |
 | `blocks/action-*/` | **You** | Action dialog blocks — one per `/actions/*` path |
@@ -91,7 +91,7 @@ a bounded-concurrency pool over the active search provider — override resoluti
 owning collection to drag positions back into, only a page an editor updates by changing the
 authored list itself. An id that resolves to an `AssetAccessError` (no permission) renders as a
 locked placeholder rather than being silently dropped — see `lockedBoardItemHtml` in
-`scripts/asc/board-item.js`.
+`blocks/board/board-item.js`.
 
 #### Source: sheet
 
@@ -327,7 +327,7 @@ declaring which cell it occupies — no per-layout CSS required.
 > co-area blocks into `.grid-area-stack` containers.
 >
 > `scripts.js` is boilerplate (not `scripts/asc/`), so **re-apply this edit after any EDS
-> boilerplate upgrade.** The logic itself lives in the user-owned `scripts/asc/section-grid.js`; the
+> boilerplate upgrade.** The logic itself lives in the user-owned `scripts/asc/core/utils/section-grid.js`; the
 > styling in `styles/sections.css` (imported by `styles.css` — consolidated from the former
 > per-layout files in `styles/sections/`, which no longer exist; edit `sections.css` directly).
 > Because `decorateMain` also runs for fragments loaded via `loadFragment` (e.g. the asset-details
@@ -370,7 +370,7 @@ declaring which cell it occupies — no per-layout CSS required.
 `center` fills whichever axis isn't otherwise given, or both when given alone (e.g. `center` on
 its own centers the block in both axes).
 
-`scripts/asc/section-grid.js` (called from `decorateMain`, before `decorateSections`) reads the
+`scripts/asc/core/utils/section-grid.js` (called from `decorateMain`, before `decorateSections`) reads the
 section-metadata block directly for `_`-prefixed keys, removes them (so EDS never sees them),
 then writes `--grid-areas` / `--grid-columns` / `--grid-cols` / `--grid-rows` / `--grid-gap`
 custom properties on the section and `--grid-area` / `--grid-align-self` / `--grid-justify-self`
@@ -388,7 +388,7 @@ Two token systems exist:
 
 #### 1 — Page-wide registry (URL params, `collection.*`, `sheet.*`, ...)
 
-**API**: `registerTokens(context)` in `scripts/asc/tokens.js`  
+**API**: `registerTokens(context)` in `scripts/asc/core/utils/tokens.js`  
 **Context**: a plain accumulating object — any block can merge its own `key → value` pairs into it
 
 `registerTokens(context)` merges `context` into a single page-wide registry, (re)scans the
@@ -467,7 +467,7 @@ Home / Collections       [links to / and /collections/]
 #### 2 — Asset (asset details template, asset cards)
 
 **Resolver**: `resolveTokens(template, context)` / `resolveTokensInElement(el, context)` /
-`resolveTokensInContent(root, context)` in `scripts/asc/tokens.js`  
+`resolveTokensInContent(root, context)` in `scripts/asc/core/utils/tokens.js`  
 **Called from**: the `assetDetails` service (`resolveTokensInContent(fragment, { asset })`) once the
 details template is loaded  
 **Context**: an `Asset` model instance, or a **namespace map** (`{ asset, rendition, ... }`)
@@ -561,7 +561,7 @@ Authoring (da.live):
 |             | download, share       |   ← value of action keyword(s) → icon buttons
 ```
 
-- **Values** resolve through the shared token engine (`scripts/asc/tokens.js`) against the
+- **Values** resolve through the shared token engine (`scripts/asc/core/utils/tokens.js`) against the
   **current rendition**; the owning asset is reachable via `asset.…`. A value is either a bare
   path (`name`, `file-size`) or contains `{{ }}` tokens for mixed text (`{{ width }}×{{ height }}`)
   — either form also supports `{{ accessor | fallback }}`.
@@ -1118,7 +1118,7 @@ URL shape: `{host}/adobe/dynamicmedia/deliver/dm-aid--{uuid}/{filename}?{params}
 
 `services.renditions.getDisplaySrcset(asset)` reads `display`, resolves URLs for the asset, and returns them sorted smallest to largest. `getDisplayUrl(asset)` (also `asset.displayUrl`) picks the mid-size entry as the `src` fallback. If nothing resolves it falls back to the static `cq5dam.thumbnail.319.319` node URL.
 
-Board cards (`asc-ui-asset-card--natural`, see `scripts/asc/board-item.js`) use the same ladder. `web-optimized-delivery` with only `width` set resizes proportionally (no crop), so the image keeps its native aspect ratio; the ladder's top end covers the board's up-to-3x zoom.
+Board cards (`asc-ui-asset-card--natural`, see `blocks/board/board-item.js`) use the same ladder. `web-optimized-delivery` with only `width` set resizes proportionally (no crop), so the image keeps its native aspect ratio; the ladder's top end covers the board's up-to-3x zoom.
 
 Board's CSS-transform-based zoom (`canvas.style.transform = ...scale(zoom)`) changes what's painted on screen without changing the `<img>`'s layout width — the dimension the browser's native srcset selection is based on — so a zoomed-in card would otherwise just upscale whatever low-res candidate it picked at rest. `board.js` compensates by re-pointing each visible image's `sizes` attribute at `offsetWidth * zoom` (debounced, on every pan/zoom change), which forces the browser to re-run its normal srcset selection against the zoomed-in effective size, picking a larger tier once it's actually needed on screen.
 

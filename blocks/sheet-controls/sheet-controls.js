@@ -1,8 +1,8 @@
 /** @owner user */
 import services from '../../scripts/asc/core/services/services.js';
-import { escHtml } from '../../scripts/asc/html.js';
+import { escHtml } from '../../scripts/asc/core/utils/html.js';
 import { triggerAction } from '../../scripts/asc.js';
-import { registerTokens } from '../../scripts/asc/tokens.js';
+import { registerTokens } from '../../scripts/asc/core/utils/tokens.js';
 
 const configurations = (await import('../../scripts/asc/configurations.js')).default;
 

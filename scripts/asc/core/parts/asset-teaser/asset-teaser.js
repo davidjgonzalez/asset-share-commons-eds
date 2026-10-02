@@ -4,7 +4,7 @@ import { loadCSS } from '../../../../aem.js';
 import collectionToggle from '../collection-toggle/collection-toggle.js';
 import serviceConfigurations from '../../../configurations.js';
 import services from '../../services/services.js';
-import { escAttr, pictureHtml } from '../../../html.js';
+import { escAttr, pictureHtml } from '../../utils/html.js';
 import { icon } from '../../utils/icons.js';
 
 loadCSS('/scripts/asc/core/parts/asset-teaser/asset-teaser.css');

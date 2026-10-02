@@ -365,7 +365,7 @@ const configurations = {
   //
   // board: {
   //   // Fully custom renderer for board/collection canvas items — see the markup
-  //   // contract documented at the top of scripts/asc/board-item.js (the default
+  //   // contract documented at the top of blocks/board/board-item.js (the default
   //   // implementation) for what's required to keep drag/select/remove/notes/search
   //   // working. Import your own module at the top of this file and assign it here.
   //   itemRenderer: myBoardItem,

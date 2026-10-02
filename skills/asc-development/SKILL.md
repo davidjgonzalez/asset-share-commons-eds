@@ -56,9 +56,9 @@ This skill fetches content from AEM Author/Publish instances and links to AEM do
 
 ```
 scripts/asc/configurations.js  ← YOUR FILE — edit freely, the single customization entry point
-scripts/asc/section-grid.js    ← YOUR FILE — section grid utility
-scripts/asc/tokens.js          ← YOUR FILE — content variable resolver
-scripts/asc/html.js            ← YOUR FILE — HTML helpers
+scripts/asc/core/utils/section-grid.js    ← YOUR FILE — section grid utility
+scripts/asc/core/utils/tokens.js          ← YOUR FILE — content variable resolver
+scripts/asc/core/utils/html.js            ← YOUR FILE — HTML helpers
 scripts/asc/core/              ← ASC CORE — never edit; all files start with "// ASC Core — do not edit."
 blocks/                        ← YOUR BLOCKS — copy and modify freely (each has /** @owner user */)
 styles/                        ← YOUR STYLES — add themes, override tokens
@@ -198,7 +198,7 @@ Invoke the **building-blocks** skill, but use ASC references instead of Adobe's 
 - [ ] No direct imports between blocks
 
 **Accessibility checklist** (see [references/accessibility-guidelines.md](references/accessibility-guidelines.md)):
-- [ ] Icon-only buttons have `aria-label` — use `escAttr()` from `scripts/asc/html.js`
+- [ ] Icon-only buttons have `aria-label` — use `escAttr()` from `scripts/asc/core/utils/html.js`
 - [ ] Decorative SVGs / emoji icons have `aria-hidden="true"`
 - [ ] Images have `alt` text: meaningful text for content images; `alt=""` for decorative
 - [ ] Custom interactive elements that are not `<button>` or `<a>` carry an appropriate `role`

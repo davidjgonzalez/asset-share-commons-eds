@@ -1,6 +1,6 @@
 /** @owner user */
 import services from '../../scripts/asc/core/services/services.js';
-import { BOARD_CARD_WIDTH, boardItemHeight } from '../../scripts/asc/board-item.js';
+import { BOARD_CARD_WIDTH, boardItemHeight } from './board-item.js';
 
 const PLACE_ORIGIN = 80;
 const PLACE_GAP = 20;

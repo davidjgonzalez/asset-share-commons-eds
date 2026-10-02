@@ -2,7 +2,7 @@
 import Asset from '../../scripts/asc/core/models/asset.js';
 import services from '../../scripts/asc/core/services/services.js';
 import { Events as CollectionEvents } from '../../scripts/asc/core/services/collections/collections.js';
-import { escHtml, escAttr, formatUpdated } from '../../scripts/asc/html.js';
+import { escHtml, escAttr, formatUpdated } from '../../scripts/asc/core/utils/html.js';
 import { readBlockConfig } from '../../scripts/asc/core/utils/blocks.js';
 import {
   MAX_MOSAIC_THUMBS, mosaicRowCounts, mosaicHeight, mosaicPattern,

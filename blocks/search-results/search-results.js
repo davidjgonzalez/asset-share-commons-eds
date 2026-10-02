@@ -8,7 +8,7 @@ import { mountToHeader } from '../../scripts/asc/core/utils/header-mount.js';
 import { Events as CollectionEvents } from '../../scripts/asc/core/services/collections/collections.js';
 import services from '../../scripts/asc/core/services/services.js';
 import configurations from '../../scripts/asc/configurations.js';
-import { toggleRenditionMenu, prefetchRenditionSizes } from '../../scripts/asc/rendition-download-menu.js';
+import { toggleRenditionMenu, prefetchRenditionSizes } from '../../scripts/asc/core/parts/rendition-download-menu/rendition-download-menu.js';
 import { canCopyImage, copyImageToClipboard } from '../../scripts/asc/core/utils/clipboard-image.js';
 import { withViewTransition } from '../../scripts/asc/core/utils/view-transition.js';
 import { icon } from '../../scripts/asc/core/utils/icons.js';

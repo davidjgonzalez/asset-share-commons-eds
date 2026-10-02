@@ -50,8 +50,8 @@ scripts/asc/core/
     search/       — search orchestration + providers
     …             — other singleton services
   models/         — Asset, Rendition, User data models
-  utils/          — shared utilities (events, blocks, search, fragments)
-  parts/          — reusable UI components (AssetTeaser, …)
+  utils/          — shared utilities (events, html helpers, tokens, section grid, chrome, icons, dialogs, …)
+  parts/          — reusable UI components (AssetTeaser, collection toggle, rendition menu, …)
 ```
 
 ---
@@ -99,20 +99,20 @@ styles/
   sections/           — section-level layout helpers (grid, inline, full-width, aside)
 ```
 
-#### Scripts
+#### Block helpers
+
+Files used by exactly one block live in that block's folder and are user-owned like the block.
 
 | File | Purpose |
 |------|---------|
-| `scripts/asc/section-grid.js` | Named-area CSS grid for section metadata — called internally by `ascDecorateMain` |
-| `scripts/asc/tokens.js` | `{{ accessor \| fallback }}` content variable resolver — called internally by `ascDecorateMain` |
-| `scripts/asc/html.js` | Shared HTML helpers: `escHtml`, `escAttr`, `formatUpdated` — import into any block that builds HTML strings |
-| `scripts/asc/board-item.js` | Default board/collection card renderer — swap via `configurations.board.itemRenderer` |
-| `scripts/asc/color-search.js` | Color-picker palette + nearest-match algorithm for `search-bar`'s color search |
-| `scripts/asc/asset-navigation.js` | Derives the Prev/Next asset list for the details modal from the current page DOM |
-| `scripts/asc/speculation-rules.js` | Registers a Speculation Rules script for same-origin link prefetching |
-| `scripts/asc/rendition-download-menu.js` | Shared floating rendition-picker menu (download / copy-url / copy-image triggers) |
-| `scripts/asc/chrome.js` | Branded-vs-standalone page chrome resolution — see "Chrome Duality" in `CLAUDE.md` |
-| `scripts/extract-design-tokens.js` | Dev utility — extracts token values for tooling/docs |
+| `blocks/board/board-item.js` | Default board/collection card renderer — swap via `configurations.board.itemRenderer` |
+| `blocks/search-bar/color-search.js` | Color-picker palette + nearest-match algorithm for `search-bar`'s color search |
+
+#### Tooling
+
+| File | Purpose |
+|------|---------|
+| `tools/extract-design-tokens.js` | Node CLI — generates a theme from a website's colors (see `skills/asc-theme-from-website`) |
 
 #### Content pages and demos
 
@@ -131,46 +131,12 @@ styles/
 │   ├── scripts.js              EDS boilerplate (ASC-modified)
 │   ├── delayed.js              EDS boilerplate
 │   ├── asc.js                  USER — ASC entry point; lifecycle hooks + action-page utils
-│   ├── extract-design-tokens.js USER — dev tooling
-│   └── asc/                    USER — user-facing ASC files
-│       ├── configurations.js   USER — all site configuration
-│       ├── section-grid.js     USER — section grid utility (called by asc.js)
-│       ├── tokens.js           USER — content variable resolver (called by asc.js)
-│       ├── html.js             USER — escHtml / escAttr / formatUpdated
-│       ├── … more flat USER files — see the "Scripts" table above
-│       └── core/               ASC CORE — do not edit
-│           ├── services/
-│           │   └── action-pages/   — /actions/* link interceptor + loadBlock runner
-│           ├── models/
-│           ├── utils/
-│           └── parts/
-│
-├── blocks/                     USER — all blocks live here
-│   ├── <block>/
-│   │   ├── <block>.js
-│   │   └── <block>.css
-│   └── action-<name>/          USER — action dialog blocks
-│       ├── action-<name>.js
-│       └── action-<name>.css
-│
-├── styles/
-│   ├── styles.css              EDS boilerplate
-│   ├── fonts.css               EDS boilerplate
-│   ├── lazy-styles.css         EDS boilerplate
-│   ├── tokens.css              EDS boilerplate
-│   ├── ui-kit.css              USER — ASC UI Kit primitives
-│   ├── themes/                 USER — theme CSS variables
-│   └── sections/               USER — section layout helpers
-│
-└── docs/                       Reference documentation
-    ├── UI_KIT.md               Kit catalog (agent + developer reference)
-    ├── ui-kit.html             Kit visual gallery (open in browser)
-    ├── CSS_CONVENTION.md       CSS naming and coding standards
-    ├── CONTENT_VARIABLES.md    {{ }} token syntax reference
-    ├── GRID_LAYOUT.md          Section grid variable reference
-    ├── DEV_SETUP.md            Local dev environment guide
-    ├── MCP_SETUP.md            AEM DA MCP tool reference
-    └── QUICKSTART.md           Zero-to-running-site guide
+│   └── asc/
+│       ├── configurations.js   USER — all site configuration (only user file in this folder)
+│       └── core/               ASC CORE — do not edit (services, models, utils, parts)
+├── blocks/                     USER — blocks and their private helpers
+├── styles/                     USER — kit, themes, tokens
+└── tools/                      dev tooling (Node), not shipped to the browser
 ```
 
 ---

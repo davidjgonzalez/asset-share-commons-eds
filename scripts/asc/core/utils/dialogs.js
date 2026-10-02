@@ -8,7 +8,7 @@
  *   const name = await promptDialog({ title: 'Duplicate collection', label: 'Name', value: 'Copy of X' });
  *   if (!name) return;
  */
-import { escHtml, escAttr } from '../../html.js';
+import { escHtml, escAttr } from './html.js';
 
 let counter = 0;
 

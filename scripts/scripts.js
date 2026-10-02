@@ -19,7 +19,7 @@ import {
   ascLazy,
   ascDelayed,
 } from './asc.js';
-import { isChromeless } from './asc/chrome.js';
+import { isChromeless } from './asc/core/utils/chrome.js';
 
 /**
  * Builds hero block and prepends to main in a new section.

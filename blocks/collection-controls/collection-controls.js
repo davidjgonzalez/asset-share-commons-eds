@@ -2,11 +2,11 @@
 import services from '../../scripts/asc/core/services/services.js';
 import storage from '../../scripts/asc/core/services/storage/storage.js';
 import { Events as CollectionEvents } from '../../scripts/asc/core/services/collections/collections.js';
-import { escHtml, escAttr, formatUpdated } from '../../scripts/asc/html.js';
+import { escHtml, escAttr, formatUpdated } from '../../scripts/asc/core/utils/html.js';
 import {
   triggerAction, wireDialogClose, confirmDialog,
 } from '../../scripts/asc.js';
-import { registerTokens } from '../../scripts/asc/tokens.js';
+import { registerTokens } from '../../scripts/asc/core/utils/tokens.js';
 import { icon } from '../../scripts/asc/core/utils/icons.js';
 
 const configurations = (await import('../../scripts/asc/configurations.js')).default;

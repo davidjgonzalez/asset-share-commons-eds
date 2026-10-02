@@ -1,5 +1,5 @@
 /** @owner user */
-import { toggleRenditionMenu, prefetchRenditionSizes } from '../../scripts/asc/rendition-download-menu.js';
+import { toggleRenditionMenu, prefetchRenditionSizes } from '../../scripts/asc/core/parts/rendition-download-menu/rendition-download-menu.js';
 import { canCopyImage, copyImageToClipboard } from '../../scripts/asc/core/utils/clipboard-image.js';
 import { icon } from '../../scripts/asc/core/utils/icons.js';
 

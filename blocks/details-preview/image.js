@@ -1,5 +1,5 @@
 /** @owner user */
-import { escAttr } from '../../scripts/asc/html.js';
+import { escAttr } from '../../scripts/asc/core/utils/html.js';
 import { renditionTagsHtml, parseFields } from './rendition-tags.js';
 import { renditionActionsHtml, updateRenditionActions } from './rendition-actions.js';
 

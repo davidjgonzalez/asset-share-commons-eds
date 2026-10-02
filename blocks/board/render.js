@@ -1,12 +1,12 @@
 /** @owner user */
-import { escHtml, escAttr } from '../../scripts/asc/html.js';
-import defaultBoardItemHtml from '../../scripts/asc/board-item.js';
+import { escHtml, escAttr } from '../../scripts/asc/core/utils/html.js';
+import defaultBoardItemHtml from './board-item.js';
 import { placeNewItems } from './layout.js';
 
 const configurations = (await import('../../scripts/asc/configurations.js')).default;
 
 // Swap in a fully custom item renderer via configurations.board.itemRenderer — see
-// scripts/asc/board-item.js (the default implementation) for the markup contract.
+// blocks/board/board-item.js (the default implementation) for the markup contract.
 const boardItemHtml = configurations.board?.itemRenderer || defaultBoardItemHtml;
 
 export function expiredHtml(expiresAt) {
