@@ -90,7 +90,7 @@ It maps what you want to do in natural language to the right file, mechanism, an
 > → `assetDetails.templates` routing function in `configurations.js`
 
 > "I need to add a smart crop rendition"
-> → `renditions.definitions` entry with `type: 'asset-delivery'` in `configurations.js`
+> → `renditions.definitions` entry with `type: 'dm-scene7' or 'dm-openapi'` in `configurations.js`
 
 ---
 
@@ -329,7 +329,7 @@ Create a PR with:
 | Show new metadata on cards | `configurations.js` | `properties.custom` + `searchResults.views.cards` |
 | Add list column | `configurations.js` | `searchResults.views.list` |
 | Route details by MIME type | `configurations.js` | `assetDetails.templates` |
-| Add DM smart crop | `configurations.js` | `renditions.definitions` (`type: 'asset-delivery'`) |
+| Add DM smart crop | `configurations.js` | `renditions.definitions` (`type: 'dm-scene7' or 'dm-openapi'`) |
 | Add static rendition | `configurations.js` | `renditions.definitions` (`type: 'static'`) |
 | Add developer base filter | `configurations.js` | `search.basePredicates` — see [QB predicates](references/querybuilder-predicates.md) |
 | Add author-managed base filter | `/asc` workbook → `search-predicates` sheet + `configurations.search.sheet` | name/value rows; write full QB predicate names incl. group prefix if needed |

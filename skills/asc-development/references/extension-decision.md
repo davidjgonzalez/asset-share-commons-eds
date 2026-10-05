@@ -75,8 +75,8 @@ Describe what you want in one sentence. Find the closest match below. Follow the
 | Use case | Mechanism | Guide |
 |----------|-----------|-------|
 | Add a new downloadable rendition | `renditions.definitions` | [→ Rendition definitions](#rendition-definitions) |
-| Add a DM smart crop rendition | `type: 'asset-delivery'`, `params: 'smartcrop=Name'` | [→ Rendition definitions](#rendition-definitions) |
-| Add a legacy DM / Scene7 rendition | `type: 'url'`, `url: '${dm.apiServer}is/image/${dm.file}'` | [→ Rendition definitions](#rendition-definitions) |
+| Add a DM smart crop rendition | `type: 'dm-scene7'`, `smartCropId: 'Name'` (classic) or `type: 'dm-openapi'`, `params: 'smartcrop=Name'` (OpenAPI) | [→ Rendition definitions](#rendition-definitions) |
+| Add a legacy DM / Scene7 rendition | `type: 'url-template'`, `template: '${dm.api-server}is/image/${dm.file}'` | [→ Rendition definitions](#rendition-definitions) |
 | Change the AEM download endpoint | `downloads.initiateUrl` | [→ Downloads config](#downloads-config) |
 | Change download polling speed / timeout | `downloads.quickPollTimeout`, `downloads.pollInterval` | [→ Downloads config](#downloads-config) |
 
@@ -123,17 +123,18 @@ properties: {
   custom: {
     // Key = property name used everywhere (details-property, searchResults.views, etc.)
     // Value = function(asset, options) => display string | null
-    'brand': (asset) => asset.getProperty('jcr:content/metadata/myco:brand'),
+    // NOTE: getProperty() returns a { data, text } wrapper — read `.data` for the raw value.
+    'brand': (asset) => asset.getProperty('jcr:content/metadata/myco:brand').data,
 
     'approval-status': (asset) => {
-      const s = asset.getProperty('jcr:content/metadata/dam:status');
+      const s = asset.getProperty('jcr:content/metadata/dam:status').data;
       return s ? s.charAt(0).toUpperCase() + s.slice(1) : null;
     },
 
     // Composed from multiple fields
     'dimensions-label': (asset) => {
-      const w = asset.getProperty('tiff:ImageWidth');
-      const h = asset.getProperty('tiff:ImageLength');
+      const w = asset.getProperty('tiff:ImageWidth').data;
+      const h = asset.getProperty('tiff:ImageLength').data;
       return (w && h) ? `${w} × ${h} px` : null;
     },
   },
@@ -444,32 +445,35 @@ renditions: {
       name: 'original',           // Exact string match
     },
 
-    // ── DM with OpenAPI (AEMaaCS + Dynamic Media) — named smart crop ──────────
+    // ── Classic DM / Scene7 (AEMaaCS + Dynamic Media) — named smart crop ──────
     {
       id: 'smart-crop-hero',
       label: 'Hero Crop',
-      type: 'asset-delivery',
-      params: 'smartcrop=Hero',   // ?smartcrop=Hero appended to delivery URL
+      type: 'dm-scene7',
+      smartCropId: 'Hero',        // the DM-registered smart-crop name (case-sensitive)
       accepts: (asset) => asset.mimeType?.startsWith('image/'),
     },
 
-    // ── DM with OpenAPI — image preset ────────────────────────────────────────
+    // ── DM with OpenAPI — named smart crop / image preset ─────────────────────
     {
       id: 'web-preset',
       label: 'Web Optimized',
-      type: 'asset-delivery',
-      params: 'imagePreset=web&format=webp',
+      type: 'dm-openapi',
+      params: 'imagePreset=web&format=webp',  // raw query string appended to the delivery URL
       accepts: (asset) => asset.mimeType?.startsWith('image/'),
     },
 
     // ── Legacy DM / Scene7 IS-IR — URL template ───────────────────────────────
-    // ${dm.*} variables resolve from dam:scene7* metadata on the asset
+    // type 'url-template': `template` is a STRING; ${dm.*}/${asset.*} tokens resolve
+    // from the asset's dam:scene7* metadata (${dm.api-server}, ${dm.file}, etc.).
+    // (For a fully computed URL, use type 'url' instead, where `url` is a function
+    // (asset) => string.)
     {
       id: 'dm-large',
       label: 'Large (DM)',
-      type: 'url',
-      url: '${dm.apiServer}is/image/${dm.file}?$large$',
-      accepts: (asset) => !!asset.getProperty('dam:scene7File'),
+      type: 'url-template',
+      template: '${dm.api-server}is/image/${dm.file}?$large$',
+      accepts: (asset) => !!asset.getProperty('dam:scene7File').data,
     },
 
     // ── Conditional: different thumbnail for videos vs. images ─────────────────
@@ -490,8 +494,15 @@ renditions: {
 | Type | Resolves URL from | When to use |
 |------|-------------------|-------------|
 | `static` | JCR rendition nodes (`jcr:content/renditions/*`) | Any AEM instance |
-| `url` | Template string with `${asset.*}` and `${dm.*}` tokens | Legacy DM / Scene7 |
-| `asset-delivery` | AEM Asset Delivery API (`/adobe/dynamicmedia/deliver/{uuid}/`) | AEMaaCS + DM with OpenAPI |
+| `url` | `url(asset)` function returning a URL string | Fully custom / computed URLs |
+| `url-template` | `template` string with `${asset.*}` / `${dm.*}` tokens | Legacy DM / Scene7 (IS-IR) |
+| `dm-scene7` | Classic DM smart crop by `smartCropId` | AEMaaCS + classic Dynamic Media |
+| `dm-openapi` | DM OpenAPI delivery (`/adobe/dynamicmedia/deliver/{uuid}/`) + `params` | AEMaaCS + DM with OpenAPI |
+| `web-optimized-delivery` | AEM web-optimized delivery endpoint | AEMaaCS |
+
+> The authoritative list of rendition types and their exact per-type fields lives in the
+> commented `renditions.definitions` block in `scripts/asc/configurations.js` — treat it as the
+> source of truth if this table and it ever disagree.
 
 ---
 

@@ -17,16 +17,21 @@ do not edit them directly, or your changes will be lost on the next upgrade.
 | `scripts/aem.js` | Core EDS loader (block discovery, eager/lazy/delayed phases) |
 | `scripts/scripts.js` | Page lifecycle entry point — ASC adds hooks here (see below) |
 | `scripts/delayed.js` | Post-load analytics and non-critical work |
-| `styles/styles.css` | Base EDS styles (reset, body, fonts, layout) |
 | `styles/fonts.css` | Web font declarations |
 | `styles/lazy-styles.css` | Styles deferred to the lazy phase |
-| `styles/tokens.css` | Design tokens (colors, spacing, typography) |
 | `head.html` | `<head>` fragment |
 | `404.html` | 404 page |
 
+> **Not boilerplate, despite looking like it:** `styles/styles.css` and `styles/tokens.css`
+> started from the EDS boilerplate but are now heavily ASC-authored (the `.btn`/`.asc-panel`/
+> `.asc-dialog` primitives, the full design-token set, section rules). Treat them as **user-owned**
+> — do NOT pull them from the EDS boilerplate on an upgrade, or you will lose that work.
+
 > **`scripts/scripts.js` is boilerplate, but ASC modifies it** — it imports four lifecycle hooks
-> from `scripts/asc.js` (`ascEager`, `ascDecorateMain`, `ascLazy`, `ascDelayed`) and calls them
-> at the matching EDS phases. Re-apply these modifications after any EDS boilerplate upgrade.
+> from `scripts/asc.js` (`ascEager`, `ascDecorateMain`, `ascLazy`, `ascDelayed`) **plus
+> `isChromeless` from `scripts/asc/core/utils/chrome.js`**, and calls them at the matching EDS
+> phases. Re-apply these modifications after any EDS boilerplate upgrade — the full list is in the
+> "Upgrading" section below and in `CLAUDE.md`.
 
 ---
 
@@ -157,16 +162,28 @@ Files used by exactly one block live in that block's folder and are user-owned l
 
 ## Upgrading
 
-**EDS boilerplate upgrade:** Pull the latest `scripts/aem.js`, `scripts/scripts.js`,
-`styles/styles.css`, etc. from the EDS boilerplate template. Then re-apply the ASC
-modifications to `scripts/scripts.js`:
+**EDS boilerplate upgrade:** Pull the latest `scripts/aem.js` and `scripts/delayed.js` (and
+`head.html`, `404.html`, `styles/fonts.css`, `styles/lazy-styles.css` if you want them refreshed)
+from the EDS boilerplate template. Do **not** pull `styles/styles.css` or `styles/tokens.css` —
+they are ASC-authored now (see the note above). Then re-apply every ASC modification to
+`scripts/scripts.js` (these are the complete set — keep this list identical to `CLAUDE.md`):
 ```js
+// Imports:
 import { ascEager, ascDecorateMain, ascLazy, ascDelayed } from './asc.js';
-// In loadEager: ascEager(doc)
-// In decorateMain (after decorateBlocks): ascDecorateMain(main)
-// In loadLazy: ascLazy()
-// In loadDelayed: ascDelayed()
+import { isChromeless } from './asc/core/utils/chrome.js';
+
+// loadEager(doc):      ascEager(doc)            // theme class + is-chromeless body class
+//                      addPageTypeClasses(main) // ASC-added helper; page-search/-collections/-sheet/-board
+// decorateMain(main):  ascDecorateMain(main)    // LAST line, after decorateBlocks(main)
+// loadLazy():          ascLazy()
+//                      gate loadHeader()/loadFooter() behind `if (!isChromeless(main))`
+// loadDelayed():       ascDelayed()             // before the stock delayed import
 ```
 
-**ASC Core upgrade:** Replace `scripts/asc/` wholesale. Your customizations live outside
-that directory, so they are safe.
+`addPageTypeClasses(main)` is itself an ASC-added function in `scripts.js` — re-add it too.
+
+**ASC Core upgrade:** Replace `scripts/asc/core/` wholesale. Everything you own lives outside it
+(`scripts/asc/configurations.js`, `scripts/asc.js`, `blocks/`, `styles/`, `tools/`), so it is safe
+— but never overwrite `scripts/asc/configurations.js`. After replacing core, run `npm run lint`,
+and confirm the imports in `scripts/asc.js` and `scripts/scripts.js` still resolve against the new
+core (a core reorg can rename an export those two user-owned files deep-import).

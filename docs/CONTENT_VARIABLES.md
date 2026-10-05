@@ -259,7 +259,8 @@ valid accessors:
 // configurations.js
 properties: {
   custom: {
-    'brand': (asset) => asset.getProperty('jcr:content/metadata/myco:brand'),
+    // getProperty() returns a { data, text } wrapper — read `.data` for the raw value.
+    'brand': (asset) => asset.getProperty('jcr:content/metadata/myco:brand').data,
   }
 }
 ```

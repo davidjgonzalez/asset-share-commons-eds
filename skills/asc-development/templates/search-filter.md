@@ -378,7 +378,7 @@ main .search-path .search-path__title {
 | QueryBuilder | ✅ Full | Exact, flat, self flags respected; multiple paths ORed together |
 | OpenAPI | ⚠️ Limited | Only first selected path used; exact/flat/self ignored; mapped to `filter[assetAncestorPath]` |
 
-**Recommendation**: Use path filter primarily with QueryBuilder provider. Document OpenAPI limitation if using with asset-delivery renditions.
+**Recommendation**: Use path filter primarily with QueryBuilder provider. Document OpenAPI limitation if using with DM OpenAPI (dm-openapi) renditions.
 
 ### Live Demo
 

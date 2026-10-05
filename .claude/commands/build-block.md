@@ -52,8 +52,8 @@ blocks/<block-name>/
 ### JavaScript shell
 ```js
 /** @owner user */
-import services from '../../scripts/asc/services/services.js';
-import { delegateEvent } from '../../scripts/asc/utils/events.js';
+import services from '../../scripts/asc/core/services/services.js';
+import { delegateEvent } from '../../scripts/asc/core/utils/events.js';
 
 export default async function decorate(block) {
   // 1. Read block config (authored rows become your config object)
@@ -63,9 +63,9 @@ export default async function decorate(block) {
 ```
 
 Key rules:
-- Import services from `scripts/asc/services/services.js` — not individually
+- Import services from `scripts/asc/core/services/services.js` — not individually
 - Never bind events with `addEventListener` directly on child elements; always use
-  `delegateEvent(block, selector, event, handler)` from `scripts/asc/utils/events.js`
+  `delegateEvent(block, selector, event, handler)` from `scripts/asc/core/utils/events.js`
 - Use `data-asc-action="noun:verb@event"` for standard ASC actions (collection:add,
   asset:details:open, etc.) — the Actions service handles these globally
 - Use `data-asc-asset="<uuid>"` to attach an asset reference to DOM elements
@@ -187,8 +187,8 @@ Manual checks:
 | Kit CSS source | `styles/ui-kit.css` (grep `@kit <name>`) |
 | CSS token reference | `styles/tokens.css` + `styles/styles.css` |
 | CSS conventions | `docs/CSS_CONVENTION.md` |
-| Event binding | `scripts/asc/utils/events.js` → `delegateEvent()` |
-| All services | `scripts/asc/services/services.js` |
+| Event binding | `scripts/asc/core/utils/events.js` → `delegateEvent()` |
+| All services | `scripts/asc/core/services/services.js` |
 | ASC event names | `AGENTS.md` → "Custom Events" |
 | Data attributes | `AGENTS.md` → "Data Attributes" |
 | Block examples | `blocks/` — existing blocks are reference implementations |

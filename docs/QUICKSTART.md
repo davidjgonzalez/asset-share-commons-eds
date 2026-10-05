@@ -262,8 +262,9 @@ To expose non-standard JCR metadata fields in details blocks or search result vi
 ```js
 properties: {
   custom: {
-    'brand': (asset) => asset.getProperty('jcr:content/metadata/myco:brand'),
-    'approval-status': (asset) => asset.getProperty('jcr:content/metadata/dam:status'),
+    // getProperty() returns a { data, text } wrapper — read `.data` for the raw value.
+    'brand': (asset) => asset.getProperty('jcr:content/metadata/myco:brand').data,
+    'approval-status': (asset) => asset.getProperty('jcr:content/metadata/dam:status').data,
   },
 },
 ```
