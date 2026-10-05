@@ -58,43 +58,41 @@ const configurations = {
     //   'jcr:content/metadata/dam:colorDistribution',  // required for colors property
     // ],
     //
-    // Static QueryBuilder predicates always merged into every query.
-    // These are overridden by form data (user search inputs), so they are
-    // safe to use for baseline filters (approved assets, specific folder, etc.).
+    // Static baseline filters merged into EVERY search, ahead of the visitor's own
+    // filters. Provider-neutral FilterDescriptors (see services/search/request.js) —
+    // the active provider's translators map them, so they work under QueryBuilder,
+    // OpenAPI, or a custom provider alike. Each: { type, field?, op?, values, match? }.
     //
-    // Any predicate from the QueryBuilder API is supported:
-    // https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/implementing/developing/full-stack/search/query-builder-predicates
-    //
-    // basePredicates: {
+    // baseFilters: [
     //   // Only show approved assets
-    //   'property': 'jcr:content/metadata/dam:status',
-    //   'property.value': 'approved',
+    //   { type: 'property', field: 'jcr:content/metadata/dam:status', op: 'equals', values: ['approved'] },
+    //   // Restrict to a specific folder
+    //   { type: 'path', op: 'under', values: ['/content/dam/brand'] },
+    //   // Only a specific set of tags (OR'd)
+    //   { type: 'tags', values: ['properties:orientation/landscape'] },
+    // ],
     //
-    //   // Restrict to a specific folder (overrides basePath for this filter)
-    //   'path': '/content/dam/brand',
-    //
-    //   // Exclude a sub-folder
-    //   'excludepaths': '.*subassets.*',
-    //
-    //   // Only assets modified in the last 30 days
-    //   'relativedaterange.property': 'jcr:content/jcr:lastModified',
-    //   'relativedaterange.lowerBound': '-30d',
-    // },
+    // A provider-specific predicate with no neutral type yet? Add a neutral type +
+    // a translator entry (search.translators.<provider>) rather than leaking provider
+    // syntax here. See docs/SEARCH_FILTERS.md.
 
-    // ── Search config sheet (content-author-level static predicates) ──────
+    // ── Search config sheet (content-author-level baseline filters) ──────
     // Points to the /asc workbook in da.live. SearchService reads the sheet
-    // named "search-predicates" (/asc.json?sheet=search-predicates).
+    // named "search-filters" (/asc.json?sheet=search-filters).
     //
-    // Sheet columns: name | value
-    // Write full QB predicate names — include group prefixes if needed.
+    // Sheet columns: type | field | op | values | match
+    //   - type   : neutral filter type (property | path | tags | daterange | …)
+    //   - field  : metadata path (for property/tags/daterange); blank for path
+    //   - op     : equals | in | under | between | … (defaults to equals)
+    //   - values : one value, or several separated by `|`
+    //   - match  : any (default) | all
     // Example:
     //
-    //   name                                  | value
-    //   --------------------------------------|--------------------------------
-    //   path                                  | /content/dam/brand
-    //   notexpired.property                   | jcr:content/metadata/dam:expirationDate
-    //   1000_group.property                   | jcr:content/metadata/dam:status
-    //   1000_group.property.value             | approved
+    //   type      | field                                | op     | values               | match
+    //   ----------|--------------------------------------|--------|----------------------|------
+    //   path      |                                      | under  | /content/dam/brand   |
+    //   property  | jcr:content/metadata/dam:status      | equals | approved             |
+    //   tags      | jcr:content/metadata/cq:tags         | in     | ns:a/x | ns:a/y       | any
     //
     sheet: '/asc',
 

@@ -1,6 +1,6 @@
 // ASC Core — do not edit. Customize via scripts/asc/configurations.js
 
-import SearchProvider from '../search-provider.js';
+import SearchProvider, { expandDateBound } from '../search-provider.js';
 import Asset from '../../../models/asset.js';
 import AssetAccessError from '../../../models/asset-access-error.js';
 import aem from '../../aem/aem.js';
@@ -8,24 +8,27 @@ import aem from '../../aem/aem.js';
 /**
  * Search provider for AEM Dynamic Media OpenAPI Search.
  * Endpoint: GET /adobe/assets/search
- *
- * API documentation:
  * https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/assets/dynamicmedia/dynamic-media-open-apis/search-assets-api
  *
- * Note: This provider maps the same form data Map used by QueryBuilder to
- * OpenAPI-compatible parameters, so all search blocks work with both providers.
+ * The same neutral SearchRequest used by QueryBuilder maps to OpenAPI filter params
+ * through the `translators` registry below. The OpenAPI Search API has no generic
+ * property filter, so a `property` filter on a field this provider can't map is
+ * skipped with a warning (never silently dropped) — add the mapping to PROPERTY_MAP,
+ * or supply a custom translator via configurations.search.translators.openapi.
  */
-export default class OpenApiProvider extends SearchProvider {
-  constructor(config) {
-    super(config);
-    this.searchUrl = config.url || aem.getUrl('/adobe/assets/search');
-    this.pageSize = config.pageSize || 24;
-  }
 
-  /**
-   * Maps JCR date property paths to their OpenAPI filter key equivalents.
-   * Used when translating QB daterange predicates → OpenAPI filter params.
-   */
+// Neutral sort vocabulary → OpenAPI sort fields.
+const SORT = {
+  relevance: 'score',
+  created: 'created',
+  modified: 'modified',
+  title: 'name',
+};
+
+export default class OpenApiProvider extends SearchProvider {
+  static id = 'openapi';
+
+  /** JCR date property paths → OpenAPI date filter keys. */
   static get DATE_PROPERTY_MAP() {
     return {
       'jcr:content/metadata/jcr:created': 'createdAt',
@@ -37,10 +40,7 @@ export default class OpenApiProvider extends SearchProvider {
     };
   }
 
-  /**
-   * Maps common JCR metadata property paths to their OpenAPI filter key equivalents.
-   * Used when translating QB property predicates → OpenAPI filter params.
-   */
+  /** JCR metadata property paths → OpenAPI filter keys. */
   static get PROPERTY_MAP() {
     return {
       'jcr:content/metadata/dc:format': 'assetFormat',
@@ -48,141 +48,56 @@ export default class OpenApiProvider extends SearchProvider {
     };
   }
 
-  /**
-   * Translate form data (QueryBuilder-style field names) into OpenAPI query params.
-   *
-   * The search blocks emit QB-native field names like:
-   *   `{n}_group.{predicate}.{param}` (e.g. `2_group.daterange.lowerBound`)
-   *
-   * This method performs a two-pass scan:
-   *   Pass 1 — group all `{n}_group.*` entries by their group number and predicate name
-   *   Pass 2 — map each known predicate type to its OpenAPI equivalent filter param
-   *
-   * Predicates handled:
-   *   daterange  → filter[createdAt|modifiedAt][from|to]
-   *   tagid      → filter[assetTagIds][]
-   *   property   → filter[assetFormat][] (for dc:format) and other mapped properties
-   *
-   * @param {Map} formData
-   * @returns {URLSearchParams}
-   */
-  buildParams(formData) {
-    const params = new URLSearchParams();
-
-    // ── Top-level, non-group params ─────────────────────────────────────────
-    // fulltext can be bare ('fulltext') or group-prefixed ('N_group.fulltext') from search-bar.
-    const fulltextValue = formData.get('fulltext')
-      || [...formData.entries()].find(([k]) => /^\d+_group\.fulltext$/.test(k))?.[1];
-    if (fulltextValue) params.set('q', fulltextValue);
-
-    // Bare top-level path (e.g. from search-hidden or configurations.basePredicates).
-    // Group-scoped paths (N_group.path, N_group.M_path) are handled in the pre-scan below.
-    const path = formData.get('path');
-    if (path) params.set('filter[assetAncestorPath]', path);
-
-    params.set('p.offset', formData.get('p.offset') || '0');
-    params.set('p.limit', formData.get('p.limit') || String(this.pageSize));
-
-    const orderby = formData.get('orderby');
-    if (orderby) {
-      const sortFieldMap = {
-        '@jcr:content/metadata/dc:created': 'created',
-        '@jcr:content/metadata/dc:title': 'name',
-        '@jcr:score': 'score',
-      };
-      const sortOrder = formData.get('orderby.sort') || 'desc';
-      params.set('sort', `${sortFieldMap[orderby] || 'created'}:${sortOrder}`);
-    }
-
-    // ── Pass 1: collect QB predicate groups ─────────────────────────────────
-    // Matches `{groupNum}_group.{predicateName}.{paramKey}` (e.g. `2_group.daterange.lowerBound`)
-    const groups = {};
-
-    // Pre-scan: collect direct path predicates emitted by search-path.
-    // Radio/dropdown emit N_group.path=<value>; checkboxes emit N_group.M_path=<value>.
-    // Neither has a sub-key, so neither matches the main pass-1 regex below.
-    formData.forEach((value, name) => {
-      const m = name.match(/^(\d+)_group\.(?:\d+_)?path$/);
-      if (!m) return;
-      (groups[m[1]] ??= {});
-      (groups[m[1]].path ??= { values: [] }).values.push(value);
-    });
-
-    formData.forEach((value, name) => {
-      const match = name.match(/^(\d+)_group\.(\w+)\.(.+)$/);
-      if (!match) return;
-      const [, groupNum, predicateName, paramKey] = match;
-      const g = (groups[groupNum] ??= {});
-      const p = (g[predicateName] ??= {});
-      if (/^\d+_value$/.test(paramKey)) {
-        // Indexed values (e.g. 0_value, 1_value) → collected as an array
-        (p.values ??= []).push(value);
-      } else {
-        p[paramKey] = value;
+  static translators = {
+    property: (filter) => {
+      const key = OpenApiProvider.PROPERTY_MAP[filter.field];
+      if (!key) {
+        // eslint-disable-next-line no-console
+        console.warn(`[ASC] OpenAPI provider has no filter mapping for property "${filter.field}" — filter skipped. Add it to OpenApiProvider.PROPERTY_MAP or search.translators.openapi.`);
+        return [];
       }
-    });
+      return filter.values.map((v) => [`filter[${key}][]`, v]);
+    },
 
-    // ── Pass 2: map known predicates to OpenAPI filter params ───────────────
-    Object.values(groups).forEach((group) => {
-      // daterange predicate → filter[createdAt|modifiedAt][from|to]
-      if (group.daterange) {
-        const { property, lowerBound, upperBound } = group.daterange;
-        const filterKey = OpenApiProvider.DATE_PROPERTY_MAP[property] || 'createdAt';
-        if (lowerBound) params.set(`filter[${filterKey}][from]`, lowerBound);
-        if (upperBound) params.set(`filter[${filterKey}][to]`, upperBound);
-      }
+    tags: (filter) => filter.values.map((v) => ['filter[assetTagIds][]', v]),
 
-      // tagid predicate → filter[assetTagIds][]
-      if (group.tagid?.values?.length) {
-        group.tagid.values.forEach((tag) => params.append('filter[assetTagIds][]', tag));
-      }
+    path: (filter) => (filter.values.length ? [['filter[assetAncestorPath]', filter.values[0]]] : []),
 
-      // path predicate → filter[assetAncestorPath] (first selected value)
-      // search-path emits N_group.path (radio/dropdown) or N_group.M_path (checkboxes),
-      // both collected into group.path.values by the pre-scan above.
-      if (group.path?.values?.length && !params.has('filter[assetAncestorPath]')) {
-        params.set('filter[assetAncestorPath]', group.path.values[0]);
-      }
+    daterange: (filter) => {
+      const key = OpenApiProvider.DATE_PROPERTY_MAP[filter.field] || 'createdAt';
+      const [lower, upper] = filter.values;
+      const pairs = [];
+      if (lower) pairs.push([`filter[${key}][from]`, expandDateBound(lower, 'lower')]);
+      if (upper) pairs.push([`filter[${key}][to]`, expandDateBound(upper, 'upper')]);
+      return pairs;
+    },
 
-      // property predicate — map known JCR property paths to OpenAPI equivalents.
-      // Only dc:format and cq:tags are mapped; other properties are silently ignored
-      // because the OpenAPI Search API has no generic property filter.
-      if (group.property?.property && group.property?.values?.length) {
-        const { property: jcrProp, values } = group.property;
-        const filterKey = OpenApiProvider.PROPERTY_MAP[jcrProp];
-        if (filterKey) {
-          values.forEach((v) => params.append(`filter[${filterKey}][]`, v));
-        }
-      }
-    });
+    color: (filter) => (filter.values.length ? [['filter[color]', filter.values[0]]] : []),
+  };
 
-    // Pass through any filter[*] params injected verbatim (e.g. from search-hidden).
-    // Already-set params are not overwritten — explicit mapping above takes precedence.
-    formData.forEach((value, name) => {
-      if (!name.startsWith('filter[') || params.has(name)) return;
-      if (Array.isArray(value)) {
-        value.forEach((v) => params.append(name, v));
-      } else {
-        params.set(name, value);
-      }
-    });
-
-    return params;
+  constructor(config) {
+    super(config);
+    this.searchUrl = config.url || aem.getUrl('/adobe/assets/search');
+    this.pageSize = config.pageSize || 24;
   }
 
-  async search(formData) {
-    let params = this.buildParams(formData);
+  applyScaffold(params, request) {
+    if (request.text) params.set('q', request.text);
+    params.set('p.offset', String(request.offset || 0));
+    params.set('p.limit', String(request.limit || this.pageSize));
+    params.set('sort', `${SORT[request.sort.field] || SORT.created}:${request.sort.direction}`);
+  }
 
+  async search(request) {
+    let params = this.buildRequest(request);
     if (this.config.preprocessQuery) {
       params = await this.config.preprocessQuery(params);
     }
 
     const headers = { Accept: 'application/json', ...await aem.getHeaders() };
     const response = await fetch(`${this.searchUrl}?${params}`, { headers });
-
     const data = await response.json();
 
-    // Map OpenAPI response shape to the normalized ASC results shape
     const hits = data.assetResults || data.hits || [];
     let results = {
       more: data.nextCursor !== null && data.nextCursor !== undefined,
@@ -191,9 +106,7 @@ export default class OpenApiProvider extends SearchProvider {
       total: data.total?.value !== undefined ? data.total.value : hits.length,
       success: response.ok,
       assets: hits.map((hit) => {
-        // Normalize OpenAPI asset shape to the JCR-style object Asset expects
-        const normalized = this._normalizeHit(hit);
-        const asset = new Asset(normalized);
+        const asset = new Asset(this._normalizeHit(hit));
         window.asc.cache.assets.set(asset.uuid, asset);
         return asset;
       }),
@@ -206,16 +119,14 @@ export default class OpenApiProvider extends SearchProvider {
     return results;
   }
 
-  /**
-   * Normalize an OpenAPI search hit to the JCR-style object shape
-   * that the Asset model expects.
-   */
+  /** Normalize an OpenAPI hit to the JCR-style shape the Asset model expects. */
+  // eslint-disable-next-line class-methods-use-this
   _normalizeHit(hit) {
     const metadata = hit['asset:metadata'] || hit.metadata || {};
     return {
       'jcr:path': hit.path || hit['asset:path'],
       'jcr:content': {
-        'metadata': {
+        metadata: {
           'dc:title': metadata['dc:title'] || hit.name,
           'dc:description': metadata['dc:description'],
           'dc:format': metadata['dc:format'],
@@ -230,12 +141,9 @@ export default class OpenApiProvider extends SearchProvider {
   }
 
   /**
-   * Fetch a single asset by UUID via the direct resource endpoint.
-   * Unlike QueryBuilder's search-based lookup (see querybuilder.js), this is a direct
-   * GET on the asset resource, so AEM returns a real 401/403 when the viewer's session
-   * lacks read access — distinguishable here from a genuine 404. Callers that care about
-   * that distinction (e.g. collection hydration) check for an AssetAccessError before
-   * treating the result as "not found".
+   * Fetch a single asset by UUID via the direct resource endpoint. Unlike QueryBuilder,
+   * a forbidden asset returns a real 401/403 here (distinguishable from 404), surfaced
+   * as an AssetAccessError so callers (e.g. collection hydration) can tell them apart.
    */
   async getAssetById(id) {
     if (window.asc.cache.assets.has(id)) {

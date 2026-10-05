@@ -2,19 +2,15 @@
 /**
  * search-property — metadata property filter.
  *
- * Provider compatibility:
- *   QueryBuilder → property predicate (any JCR property path supported)
- *   OpenAPI      → Partial support. Only the following properties are mapped to
- *                  OpenAPI filter params (see openapi.js PROPERTY_MAP):
- *                    jcr:content/metadata/dc:format  → filter[assetFormat][]
- *                    jcr:content/metadata/cq:tags    → filter[assetTagIds][]
- *                  All other property paths are silently ignored by OpenAPI.
- *                  Use search-tags for tag filtering — it has full OpenAPI support.
- *
- * AEM QueryBuilder documentation - Property:
- * https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/implementing/developing/full-stack/search/query-builder-predicates#property
+ * Emits a neutral `property` FilterDescriptor (see services/search/request.js). The
+ * active provider's translator maps it:
+ *   QueryBuilder → property predicate (any JCR property path)
+ *   OpenAPI      → filter[assetFormat]/[assetTagIds] for mapped fields only; an
+ *                  unmapped field warns and is skipped (never silently dropped).
+ *                  Use search-tags for tags — it has full OpenAPI support.
  **/
 import { readBlockConfig, getOptions, addSearchEventListeners, enhanceSearchFilterDropdown } from '../../scripts/asc/core/utils/search.js';
+import { filterAttrs, decodeInitialFilter } from '../../scripts/asc/core/services/search/request.js';
 import { mountToHeader } from '../../scripts/asc/core/utils/header-mount.js';
 
 export default function decorate(block) {
@@ -29,6 +25,18 @@ export default function decorate(block) {
     and: false,
     options: [],
   });
+
+  // Deterministic filter id (type:field) so a shared URL hydrates this block without
+  // carrying the id. Author an `id` row only to disambiguate two filters on the same field.
+  const filterId = config.id || `property:${config.property}`;
+  config.descriptor = {
+    id: filterId,
+    type: 'property',
+    field: config.property,
+    op: config.operation,
+    match: config.and ? 'all' : 'any',
+  };
+  config.initial = decodeInitialFilter(filterId);
 
   block.innerHTML = html(config);
   enhanceSearchFilterDropdown(block, config.title || 'Filter');
@@ -63,26 +71,6 @@ export default function decorate(block) {
 function html(config) {
   const type = config.type || 'checkbox';
   return `
-    <input type="hidden"
-           name="${config.group}_group.${config.name}.property"
-           value="${config.property}"
-           form="${config.form}"
-           for="${config.fieldset}"/>
-
-    ${config.and ? `
-    <input type="hidden"
-           name="${config.group}_group.${config.name}.and"
-           value="true"
-           form="${config.form}"
-           for="${config.fieldset}"/>` : ''}
-
-    ${config.operation ? `
-    <input type="hidden"
-           name="${config.group}_group.${config.name}.operation"
-           value="${config.operation}"
-           form="${config.form}"
-           for="${config.fieldset}"/>` : ''}
-
     ${type === 'radio' || type === 'checkbox' ? `
     <fieldset class="search-property__group">
       ${config.title ? `<legend class="search-property__title">${config.title}</legend>` : ''}
@@ -97,18 +85,16 @@ function html(config) {
 export function htmlCheckboxes(config) {
   return `<ul class="search-property__options asc-ui-dropdown__list">
     ${config.options.filter((o) => o.value).map((option, index) => {
-      const name = `${config.group}_group.${config.name}.${index}_value`;
-      const id = `${config.fieldset}-option-${index}`;
-      const checked = config.initial[name] === option.value;
+      const id = `${config.descriptor.id}-option-${index}`;
+      const checked = config.initial.values.includes(option.value);
       return `
         <li class="search-property__option">
           <label class="asc-ui-dropdown__item">
             <input type="checkbox"
                    id="${id}"
-                   name="${name}"
                    value="${option.value}"
                    ${checked ? 'checked' : ''}
-                   data-asc-fieldset="${config.fieldset}"
+                   ${filterAttrs(config.descriptor)}
                    form="${config.form}"/>
             ${option.text}
           </label>
@@ -118,20 +104,19 @@ export function htmlCheckboxes(config) {
 }
 
 export function htmlRadio(config) {
-  const sharedName = `${config.group}_group.${config.name}.value`;
   return `<ul class="search-property__options asc-ui-dropdown__list">
     ${config.options.filter((o) => o.value).map((option, index) => {
-      const id = `${config.fieldset}-option-${index}`;
-      const checked = config.initial[sharedName] === option.value;
+      const id = `${config.descriptor.id}-option-${index}`;
+      const checked = config.initial.values[0] === option.value;
       return `
         <li class="search-property__option">
           <label class="asc-ui-dropdown__item">
             <input type="radio"
                    id="${id}"
-                   name="${sharedName}"
+                   name="${config.descriptor.id}"
                    value="${option.value}"
                    ${checked ? 'checked' : ''}
-                   data-asc-fieldset="${config.fieldset}"
+                   ${filterAttrs(config.descriptor)}
                    form="${config.form}"/>
             ${option.text}
           </label>
@@ -141,12 +126,10 @@ export function htmlRadio(config) {
 }
 
 export function htmlDropdown(config) {
-  const name = `${config.group}_group.${config.name}.value`;
-  const selected = config.initial[name] || '';
+  const selected = config.initial.values[0] || '';
   return `
-    <select name="${name}"
-            aria-label="${config.title || 'Select option'}"
-            data-asc-fieldset="${config.fieldset}"
+    <select aria-label="${config.title || 'Select option'}"
+            ${filterAttrs(config.descriptor)}
             form="${config.form}">
       <option value="">${config.title || 'Select…'}</option>
       ${config.options.filter((o) => o.value).map((option) => `

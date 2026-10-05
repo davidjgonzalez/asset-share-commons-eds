@@ -3,6 +3,9 @@
 import serviceConfigurations from '../configurations.js';
 import QueryBuilderProvider from './providers/querybuilder.js';
 import OpenApiProvider from './providers/openapi.js';
+import {
+  createRequest, encodeRequest, decodeRequest, normalizeFilter, DEFAULT_SORT,
+} from './request.js';
 
 export const Events = {
   SEARCH_START: 'asc:search:execute',
@@ -12,8 +15,7 @@ export const Events = {
 
 // Built-in provider registry. Add custom providers from configurations.js via
 // `search.providers` (object keyed by id) — a custom entry with a built-in's id
-// overrides it. This mirrors `renditions.resolvers`, so no block ever edits this
-// file to register a provider.
+// overrides it. Mirrors `renditions.resolvers`, so no block ever edits this file.
 const BUILT_IN_PROVIDERS = {
   querybuilder: QueryBuilderProvider,
   openapi: OpenApiProvider,
@@ -28,10 +30,11 @@ class SearchService {
     this.config = config;
     this.accepts = config.accepts || DEFAULT_ACCEPTS;
     this.form = config.form || 'asc-search-form';
+    this.pageSize = config.pageSize || 24;
     this.searchInProgress = false;
+    this._offset = 0;
+    this._lastResult = null;
 
-    // Instantiate the configured provider. Custom providers registered in
-    // configurations.search.providers override/extend the built-ins.
     const providers = { ...BUILT_IN_PROVIDERS, ...(config.providers || {}) };
     const ProviderClass = providers[config.provider || 'querybuilder'];
     if (!ProviderClass) {
@@ -39,7 +42,9 @@ class SearchService {
     }
     this.provider = new ProviderClass(config);
 
-    this._sheetPredicates = {};
+    // Static, developer-authored baseline filters (neutral descriptors), always applied.
+    this.baseFilters = (config.baseFilters || []).map(normalizeFilter);
+    this._sheetFilters = [];
     this._sheetReady = null;
 
     this.init();
@@ -50,12 +55,10 @@ class SearchService {
       if (event.detail?.source === 'query-params') {
         this.executeSearchFromUrl(event.detail.value || window.location.search);
       } else {
-        this.executeSearchFromFormData(event);
+        this.executeSearchFromForm(event);
       }
     });
 
-    // Wait until all blocks are decorated before running the initial search.
-    // The search-page check runs here — after blocks exist — not at import time.
     document.addEventListener('asc:blocks:loaded', () => {
       if (document.querySelector('.block.search-bar, .block.search-results, .block.search-property, .block.search-path, .block.search-tags, .block.search-date-range')) {
         this.executeSearchFromUrl(window.location.search);
@@ -67,164 +70,76 @@ class SearchService {
     return this.form;
   }
 
+  // ── Sheet-authored neutral filters ──────────────────────────────────────────
+
   _requireSheet() {
-    if (!this._sheetReady) this._sheetReady = this._loadSheetPredicates();
+    if (!this._sheetReady) this._sheetReady = this._loadSheetFilters();
     return this._sheetReady;
   }
 
-  async _loadSheetPredicates() {
+  async _loadSheetFilters() {
     const url = this.config.sheet;
     if (!url) return;
     try {
-      const resp = await fetch(`${url}.json?sheet=search-predicates`);
+      const resp = await fetch(`${url}.json?sheet=search-filters`);
       if (!resp.ok) return;
       const { data = [] } = await resp.json();
-      this._sheetPredicates = this._parseSheetPredicates(data);
-    } catch { /* sheet missing or malformed — silently skip */ }
+      this._sheetFilters = data.map((row) => normalizeFilter({
+        id: row.id || undefined,
+        type: row.type,
+        field: row.field,
+        op: row.op,
+        match: row.match,
+        values: typeof row.values === 'string' ? row.values.split('|').map((v) => v.trim()).filter(Boolean) : row.values,
+      })).filter((f) => f.type && (f.values.length || f.type === 'similar'));
+    } catch { /* sheet missing or malformed — degrade to no sheet filters */ }
   }
 
-  _parseSheetPredicates(rows) {
-    const result = {};
-    rows.forEach(({ name, value }) => {
-      if (name && value) result[name] = value;
-    });
-    return result;
-  }
+  // ── Request assembly ─────────────────────────────────────────────────────────
 
   /**
-   * Background search — inherits basePredicates and sheet predicates but does
-   * not update the browser URL, fire search events, or block concurrent searches.
-   * Use for programmatic fetches (similar assets, related content, etc.).
-   *
-   * @param {Map<string, string|string[]>} formData  QB-style params
-   * @returns {Promise<{assets: Asset[], total: number, size: number}>}
+   * Read a neutral SearchRequest from the DOM form. Filter value inputs carry a
+   * `data-asc-filter` descriptor (JSON: id/type/field/op/match/meta); inputs sharing
+   * an id accumulate values. Date bounds use `data-asc-bound="lower|upper"`. Text,
+   * sort field and sort direction controls carry data-asc-search-* flags.
    */
-  async searchSilent(formData) {
-    await this._requireSheet();
-    const withSheet = new Map([
-      ...Object.entries(this._sheetPredicates),
-      ...formData,
-    ]);
-    try {
-      const results = await this.provider.search(withSheet);
-      if (results?.assets && this.accepts) {
-        results.assets = results.assets.filter((a) => this.accepts(a));
-        results.size = results.assets.length;
-      }
-      return results ?? { assets: [], total: 0, size: 0 };
-    } catch {
-      return { assets: [], total: 0, size: 0 };
-    }
-  }
-
-  async executeSearchFromUrl(queryParams = window.location.search) {
-    const formId = this.getForm();
-    const formData = new Map([
-      ...this.collectFormData(formId),
-      ...new Map(new URLSearchParams(queryParams)),
-    ]);
-
-    const results = await this._search(formData);
-
-    document.dispatchEvent(
-      new CustomEvent(Events.SEARCH_COMPLETE, {
-        detail: {
-          results,
-          query: queryParams,
-          type: 'page-load',
-          formData: new Map(formData),
-        },
-      }),
-    );
-  }
-
-  async executeSearchFromFormData(event) {
-    const formId = event.detail?.form || this.getForm();
-    const formData = this.collectFormData(formId);
-
-    if (event.detail?.type !== 'load-more') {
-      formData.set('p.offset', '0');
-    }
-
-    const results = await this._search(formData);
-    if (results === undefined) return; // concurrent search in flight — silently drop
-
-    document.dispatchEvent(
-      new CustomEvent(Events.SEARCH_COMPLETE, {
-        detail: {
-          results,
-          type: event.detail?.type || 'page-load',
-          formData: new Map(formData),
-        },
-      }),
-    );
-  }
-
-  async _search(formData) {
-    if (this.searchInProgress) return undefined;
-    this.searchInProgress = true;
-
-    await this._requireSheet();
-
-    try {
-      const cleaned = this.cleanFormData(formData);
-      const adjusted = this.adjustFormData(cleaned);
-      const withSheet = new Map([
-        ...Object.entries(this._sheetPredicates),
-        ...adjusted,
-      ]);
-
-      this.updateBrowserUrl(this.provider.buildParams(withSheet));
-
-      const results = await this.provider.search(withSheet);
-
-      if (results && this.accepts) {
-        const before = results.assets.length;
-        results.assets = results.assets.filter((asset) => this.accepts(asset));
-        const removed = before - results.assets.length;
-        results.size = results.assets.length;
-        results.total = Math.max(0, (results.total || 0) - removed);
-      }
-
-      return results;
-    } catch (error) {
-      console.error('Search failed:', error);
-      document.dispatchEvent(
-        new CustomEvent(Events.SEARCH_ERROR, {
-          detail: { error, formData: new Map(formData) },
-        }),
-      );
-      return {
-        more: false, offset: 0, size: 0, total: 0, success: false, assets: [], error: error.message,
-      };
-    } finally {
-      this.searchInProgress = false;
-    }
-  }
-
-  collectFormData(formId) {
-    const formData = new Map();
-    const inputs = document.querySelectorAll(`[form="${formId}"], form#${formId}`);
+  collectRequest(formId) {
+    const inputs = document.querySelectorAll(`[form="${formId}"], form#${formId} [name]`);
+    let text = '';
+    const sort = { ...DEFAULT_SORT };
+    const byId = new Map();
 
     inputs.forEach((input) => {
-      const { name } = input;
-      const value = this.getInputValue(input);
+      const ds = input.dataset || {};
+      if (ds.ascSearchText !== undefined) { text = (input.value || '').trim(); return; }
+      if (ds.ascSearchSort !== undefined) { if (input.value) sort.field = input.value; return; }
+      if (ds.ascSearchDir !== undefined) { if (input.value) sort.direction = input.value; return; }
+      if (!ds.ascFilter) return;
 
-      if (name && value !== '') {
-        if (formData.has(name)) {
-          const existing = formData.get(name);
-          if (Array.isArray(existing)) {
-            existing.push(value);
-          } else {
-            formData.set(name, [existing, value]);
-          }
-        } else {
-          formData.set(name, value);
-        }
+      const value = this.getInputValue(input);
+      let base;
+      try { base = JSON.parse(ds.ascFilter); } catch { return; }
+      const entry = byId.get(base.id) || { base, values: [], bounds: {} };
+      if (ds.ascBound) {
+        if (!this.isEmpty(value)) entry.bounds[ds.ascBound] = value;
+      } else if (Array.isArray(value)) {
+        value.forEach((v) => { if (v) entry.values.push(v); });
+      } else if (!this.isEmpty(value)) {
+        entry.values.push(value);
       }
+      byId.set(base.id, entry);
     });
 
-    return formData;
+    const filters = [...byId.values()].map(({ base, values, bounds }) => {
+      if (base.type === 'daterange') {
+        return { ...base, values: [bounds.lower || '', bounds.upper || ''] };
+      }
+      return { ...base, values };
+    });
+
+    return createRequest({
+      text, filters, sort, limit: this.pageSize, offset: this._offset,
+    });
   }
 
   getInputValue(input) {
@@ -240,83 +155,103 @@ class SearchService {
     }
   }
 
-  cleanFormData(formData) {
-    const cleaned = new Map();
-
-    formData.forEach((value, name) => {
-      if (this.isEmpty(value)) return;
-
-      const fieldset = this.getFieldset(name);
-
-      if (name.startsWith('asc.')) {
-        cleaned.set(name, value);
-      } else if (fieldset) {
-        if (this.hasFieldsetSupport(fieldset, formData)) {
-          cleaned.set(name, value);
-        }
-      } else {
-        const input = document.querySelector(`[name="${CSS.escape(name)}"]`);
-        const forAttribute = input?.getAttribute('for');
-
-        if (forAttribute) {
-          const fieldsetHasValidInput = Array.from(formData.keys()).some((key) => {
-            const fieldsetInput = document.querySelector(`[name="${CSS.escape(key)}"]`);
-            return fieldsetInput?.getAttribute('data-asc-fieldset') === forAttribute
-              && !this.isEmpty(formData.get(key));
-          });
-          if (fieldsetHasValidInput) cleaned.set(name, value);
-        } else {
-          cleaned.set(name, value);
-        }
-      }
-    });
-
-    return cleaned;
-  }
-
   isEmpty(value) {
     if (Array.isArray(value)) return value.length === 0 || value.every((v) => v === '');
     return value === '' || value == null;
   }
 
-  getFieldset(inputName) {
-    const input = document.querySelector(`[name="${CSS.escape(inputName)}"]`);
-    return input?.getAttribute('data-asc-fieldset') || null;
+  /** Merge developer base filters + sheet filters + user filters into one request. */
+  _mergeFilters(request) {
+    return {
+      ...request,
+      filters: [...this.baseFilters, ...this._sheetFilters, ...request.filters],
+    };
   }
 
-  hasFieldsetSupport(fieldset, formData) {
-    const supportingInputs = document.querySelectorAll(`[for="${CSS.escape(fieldset)}"]`);
-    for (const supportingInput of supportingInputs) {
-      if (!this.isEmpty(formData.get(supportingInput.name))) return true;
-    }
-    return supportingInputs.length === 0;
-  }
+  // ── Execution ────────────────────────────────────────────────────────────────
 
-  adjustFormData(formData) {
-    const adjusted = new Map(formData);
-    adjusted.forEach((value, name) => {
-      if (typeof value !== 'string') return;
-      // Date inputs emit YYYY-MM-DD — append a time component so both providers get clean ISO 8601
-      if (name.endsWith('daterange.lowerBound') && !value.includes('T')) {
-        adjusted.set(name, `${value}T00:00:00.000Z`);
-      } else if (name.endsWith('daterange.upperBound') && !value.includes('T')) {
-        adjusted.set(name, `${value}T23:59:59.999Z`);
+  /** Background search — no URL update, no events, no concurrency lock. */
+  async searchSilent(partial) {
+    await this._requireSheet();
+    const request = this._mergeFilters(createRequest(partial));
+    try {
+      const results = await this.provider.search(request);
+      if (results?.assets && this.accepts) {
+        results.assets = results.assets.filter((a) => this.accepts(a));
+        results.size = results.assets.length;
       }
-    });
-    return adjusted;
+      return results ?? { assets: [], total: 0, size: 0 };
+    } catch {
+      return { assets: [], total: 0, size: 0 };
+    }
   }
 
-  updateBrowserUrl(params) {
+  async executeSearchFromUrl(queryParams = window.location.search) {
+    this._offset = 0;
+    const request = decodeRequest(queryParams);
+    request.limit = this.pageSize;
+    const results = await this._search(request, { updateUrl: false });
+    document.dispatchEvent(new CustomEvent(Events.SEARCH_COMPLETE, {
+      detail: { results, request, type: 'page-load' },
+    }));
+  }
+
+  async executeSearchFromForm(event) {
+    const formId = event.detail?.form || this.getForm();
+    if (event.detail?.type === 'load-more' && this._lastResult) {
+      this._offset = (this._lastResult.offset || 0) + (this._lastResult.size || 0);
+    } else {
+      this._offset = 0;
+    }
+    const request = this.collectRequest(formId);
+    const results = await this._search(request, { updateUrl: true });
+    if (results === undefined) return; // concurrent search — drop
+    document.dispatchEvent(new CustomEvent(Events.SEARCH_COMPLETE, {
+      detail: { results, request, type: event.detail?.type || 'filter' },
+    }));
+  }
+
+  async _search(request, { updateUrl } = {}) {
+    if (this.searchInProgress) return undefined;
+    this.searchInProgress = true;
+    await this._requireSheet();
+
+    try {
+      const merged = this._mergeFilters(request);
+      if (updateUrl) this.updateBrowserUrl(request); // URL carries only user filters, not base/sheet
+
+      const results = await this.provider.search(merged);
+
+      if (results && this.accepts) {
+        const before = results.assets.length;
+        results.assets = results.assets.filter((asset) => this.accepts(asset));
+        const removed = before - results.assets.length;
+        results.size = results.assets.length;
+        results.total = Math.max(0, (results.total || 0) - removed);
+      }
+
+      this._lastResult = results;
+      return results;
+    } catch (error) {
+      console.error('Search failed:', error);
+      document.dispatchEvent(new CustomEvent(Events.SEARCH_ERROR, {
+        detail: { error, request },
+      }));
+      return {
+        more: false, offset: 0, size: 0, total: 0, success: false, assets: [], error: error.message,
+      };
+    } finally {
+      this.searchInProgress = false;
+    }
+  }
+
+  /** Serialize only the user's request (text/filters/sort/limit) to the URL. */
+  updateBrowserUrl(request) {
     const url = new URL(window.location);
-    url.search = '';
-    params.forEach((value, key) => url.searchParams.append(key, value));
-    url.searchParams.delete('p.offset');
+    url.search = encodeRequest(request).toString();
     window.history.replaceState({}, '', url);
   }
 
-  /**
-   * Fetch a single asset by UUID. Delegates to the active provider.
-   */
   async getAssetById(id) {
     return this.provider.getAssetById(id);
   }

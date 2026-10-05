@@ -77,15 +77,20 @@ class WebMcp {
           },
         },
         execute: async ({ query, path, tags, dateFrom, dateTo, limit } = {}) => {
-          const formData = new Map();
-          if (query) formData.set('fulltext', query);
-          if (path) formData.set('path', path);
-          if (tags?.length) formData.set('1_tagid', tags);
-          if (dateFrom) formData.set('daterange.lowerBound', dateFrom);
-          if (dateTo) formData.set('daterange.upperBound', dateTo);
-          formData.set('p.limit', String(limit || 20));
+          const filters = [];
+          if (path) filters.push({ type: 'path', op: 'under', values: [path] });
+          if (tags?.length) {
+            filters.push({
+              type: 'tags', field: 'jcr:content/metadata/cq:tags', op: 'in', values: tags,
+            });
+          }
+          if (dateFrom || dateTo) {
+            filters.push({
+              type: 'daterange', field: 'jcr:content/metadata/jcr:created', op: 'between', values: [dateFrom || '', dateTo || ''],
+            });
+          }
 
-          const results = await search.searchSilent(formData);
+          const results = await search.searchSilent({ text: query || '', filters, limit: limit || 20 });
           return JSON.stringify({
             total: results.total,
             assets: results.assets.map(toAssetSummary),

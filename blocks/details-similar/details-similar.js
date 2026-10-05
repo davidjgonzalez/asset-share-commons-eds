@@ -90,19 +90,23 @@ function buildHtml(config, resultsHtml) {
 
 /**
  * Fetch similar assets via SearchService.searchSilent(), which automatically
- * applies basePredicates and sheet-based scoping. QueryBuilder only — the
- * `similar` predicate is not supported by the OpenAPI provider.
+ * applies base filters and sheet-based scoping. QueryBuilder only — the neutral
+ * `similar` filter type has no OpenAPI translator, so it warns and is skipped there.
  *
  * @param {Asset} asset  The reference asset
  * @param {number} max   Maximum results to return
  * @returns {Promise<Asset[]>}
  */
 async function fetchSimilarAssets(asset, max) {
-  const results = await services.search.searchSilent(new Map([
-    ['similar', asset.path],
-    ['similar.fields', 'jcr:content/metadata/dc:tags jcr:content/metadata/dc:format'],
-    ['p.limit', String(max + 1)],
-  ]));
+  const results = await services.search.searchSilent({
+    filters: [{
+      type: 'similar',
+      op: 'similar',
+      values: [asset.path],
+      meta: { fields: 'jcr:content/metadata/dc:tags jcr:content/metadata/dc:format' },
+    }],
+    limit: max + 1,
+  });
 
   return (results.assets || [])
     .filter((a) => a.uuid !== asset.uuid)

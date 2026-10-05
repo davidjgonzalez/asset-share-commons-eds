@@ -16,21 +16,6 @@ import { readBlockConfig as readGenericBlockConfig, getOptions as getGenericBloc
 
 export const SEARCH_FORM = 'asc-search-form';
 
-// Assigns stable group numbers to filter blocks in first-call order (DOM order,
-// since EDS decorates blocks top-to-bottom). Only blocks that call readBlockConfig
-// receive a number — non-filter blocks are never counted.
-const _groupMap = new WeakMap();
-let _groupCounter = 0;
-
-export function getGroup(block) {
-  if (!_groupMap.has(block)) _groupMap.set(block, ++_groupCounter);
-  return _groupMap.get(block);
-}
-
-export function getFieldName({group, name, parameter = ''}) {
-  return parameter ? `${group}_group.${name}.${parameter}` : `${group}_group.${name}`;
-}
-
 export function getOptions({content = '', initialValues = {}, delimiter = ':', splitter = undefined}) {
   return getGenericBlockOptions({content, initialValues, delimiter, splitter});
 }
@@ -128,19 +113,12 @@ export function enhanceSearchFilterDropdown(block, fallbackLabel = 'Filter') {
 
 export function readBlockConfig(block, transform = {}, defaults = {}) {
     const config = readGenericBlockConfig(block, transform, defaults);
-    const group = getGroup(block);
-
+    // `id` (if authored) passes through via `...config`. Each filter block derives a
+    // deterministic default id (e.g. `type:field`) when none is authored, so a shared
+    // URL hydrates the same filter without carrying the id.
     return {
       ...defaults,
       form: SEARCH_FORM,
-      group: group,
-      field: getFieldName({group, name: config.name}),
-      parameter: (value, index) => { 
-        index = (!isNaN(index) && Number(index) >= 0) ? `${Number(index)}_` : '';
-        return `${getFieldName({group, name: config.name})}.${index}${value}` 
-      },
-      fieldset: `${SEARCH_FORM}-${group}_group-${config.name}`,
-      initial: getInitialValues(window.location.search, group),
       ...config,
     };
 }
@@ -165,41 +143,3 @@ export function parseKeyValue(content, delimiter = ':') {
   });
 }
 
-// Returns an object of initial values from a params object, matching the group pattern
-export function getInitialValues(searchParams, group) {
-  // Ensure searchParams is a URLSearchParams instance
-  if (!(searchParams instanceof URLSearchParams)) {
-    searchParams = new URLSearchParams(searchParams);
-  }
-
-  // Build a regex to match keys like: [group]_group.[optional index]name[.([optional index]parameter)]
-  const pattern = new RegExp(
-    //`^(${group}_group\\.)?(\\d+_)?${name}(\\.(\\d+_)?${parameter})?$`
-    `^(${group}_group\\.)(.*)$`
-  );
-
-  const result = {};
-
-  for (const [key, value] of searchParams.entries()) {
-    if (pattern.test(key) && typeof value === 'string' && value.trim() !== '') {
-      if (!result[key]) {
-        result[key] = [];
-      }
-      result[key].push(value);
-    } else if (key.startsWith('asc.')) {
-      if (!result[key]) {
-        result[key] = [];
-      }
-      result[key].push(value);
-    }
-  }
-
-  // Convert single-value arrays to just the value
-  for (const k in result) {
-    if (result[k].length === 1) {
-      result[k] = result[k][0];
-    }
-  }
-
-  return result;
-}

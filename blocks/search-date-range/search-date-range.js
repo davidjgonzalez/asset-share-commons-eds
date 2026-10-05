@@ -15,14 +15,20 @@
  * Both "From" and "To" inputs are optional at query time — omitting either end leaves that bound open.
  */
 import { readBlockConfig, addSearchEventListeners, enhanceSearchFilterDropdown } from '../../scripts/asc/core/utils/search.js';
+import { filterAttrs, decodeInitialFilter } from '../../scripts/asc/core/services/search/request.js';
 import { mountToHeader } from '../../scripts/asc/core/utils/header-mount.js';
-import { escAttr } from '../../scripts/asc/core/utils/html.js';
 
 export default function decorate(block) {
   const config = readBlockConfig(block, {}, {
     name: 'daterange',
     property: 'jcr:content/metadata/dam:assetLastModified',
   });
+
+  const filterId = config.id || `daterange:${config.property}`;
+  config.descriptor = {
+    id: filterId, type: 'daterange', field: config.property, op: 'between',
+  };
+  config.initial = decodeInitialFilter(filterId);
 
   block.innerHTML = html(config);
   enhanceSearchFilterDropdown(block, config.title || 'Date');
@@ -55,51 +61,29 @@ export default function decorate(block) {
 }
 
 function html(config) {
-  const lowerName = config.parameter('lowerBound');
-  const upperName = config.parameter('upperBound');
-  // URL persistence writes full ISO (e.g. "2024-01-15T00:00:00.000Z"); <input type="date">
-  // only accepts YYYY-MM-DD — strip the time suffix so the picker restores its visual state.
-  const lowerInitial = (config.initial[lowerName] || '').slice(0, 10);
-  const upperInitial = (config.initial[upperName] || '').slice(0, 10);
+  // The URL may carry full ISO (e.g. "2024-01-15T00:00:00.000Z"); <input type="date">
+  // only accepts YYYY-MM-DD — strip any time suffix so the picker restores its state.
+  const lowerInitial = (config.initial.bounds.lower || '').slice(0, 10);
+  const upperInitial = (config.initial.bounds.upper || '').slice(0, 10);
 
   return `
-    <!-- QB: daterange.property — which JCR date field to filter on -->
-    <input type="hidden"
-           name="${config.parameter('property')}"
-           value="${escAttr(config.property)}"
-           form="${config.form}"
-           for="${config.fieldset}"/>
-    <!-- QB: operations — always >= for lower, <= for upper -->
-    <input type="hidden"
-           name="${config.parameter('lowerOperation')}"
-           value=">="
-           form="${config.form}"
-           for="${config.fieldset}"/>
-    <input type="hidden"
-           name="${config.parameter('upperOperation')}"
-           value="<="
-           form="${config.form}"
-           for="${config.fieldset}"/>
-
     ${config.title ? `<label class="search-date-range__title">${config.title}</label>` : ''}
 
     <div class="search-date-range__inputs">
       <label class="search-date-range__field asc-ui-field">
         <span class="asc-ui-field__label">From</span>
         <input type="date"
-               id="${config.fieldset}-lower"
-               name="${lowerName}"
+               id="${config.descriptor.id}-lower"
                value="${lowerInitial}"
-               data-asc-fieldset="${config.fieldset}"
+               ${filterAttrs(config.descriptor, { bound: 'lower' })}
                form="${config.form}"/>
       </label>
       <label class="search-date-range__field asc-ui-field">
         <span class="asc-ui-field__label">To</span>
         <input type="date"
-               id="${config.fieldset}-upper"
-               name="${upperName}"
+               id="${config.descriptor.id}-upper"
                value="${upperInitial}"
-               data-asc-fieldset="${config.fieldset}"
+               ${filterAttrs(config.descriptor, { bound: 'upper' })}
                form="${config.form}"/>
       </label>
     </div>

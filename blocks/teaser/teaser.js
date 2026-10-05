@@ -72,6 +72,7 @@ import {
   MAX_MOSAIC_THUMBS, mosaicRowCounts, mosaicHeight, mosaicPattern,
 } from '../../scripts/asc/core/utils/mosaic.js';
 import services from '../../scripts/asc/core/services/services.js';
+import { decodeRequest } from '../../scripts/asc/core/services/search/request.js';
 
 const configurations = (await import('../../scripts/asc/configurations.js')).default;
 const SEARCH_PAGE = (configurations.search?.page || '/search').replace(/\/$/, '');
@@ -130,9 +131,11 @@ async function thumbnailsFromSheet(sheetParam) {
 
 async function thumbnailsFromSearch(searchParams) {
   try {
-    const formData = new Map(searchParams);
-    formData.set('p.limit', String(MAX_MOSAIC_THUMBS));
-    const { assets, total } = await services.search.searchSilent(formData);
+    // The CTA links to the search page, whose URL uses the neutral codec — decode it
+    // back to a request, then cap it to the mosaic thumbnail count.
+    const request = decodeRequest(searchParams);
+    request.limit = MAX_MOSAIC_THUMBS;
+    const { assets, total } = await services.search.searchSilent(request);
     const thumbnails = (assets || []).filter(Boolean);
     return { thumbnails, total: total || thumbnails.length, kind: 'search' };
   } catch {

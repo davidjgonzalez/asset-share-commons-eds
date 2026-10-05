@@ -1,6 +1,5 @@
 /** @owner user */
 import { readBlockConfig } from '../../scripts/asc/core/utils/blocks.js';
-import { SEARCH_FORM } from '../../scripts/asc/core/utils/search.js';
 import assetTeaser from '../../scripts/asc/core/parts/asset-teaser/asset-teaser.js';
 import collectionToggle from '../../scripts/asc/core/parts/collection-toggle/collection-toggle.js';
 import { initSelection } from '../../scripts/asc/core/utils/selection.js';
@@ -569,8 +568,6 @@ export default async function decorate(block) {
 
 function html(config) {
   return `
-    <input type="hidden" name="p.limit" value="${config.limit || 24}" form="${SEARCH_FORM}"/>
-    <input type="hidden" name="p.offset" value="0" form="${SEARCH_FORM}"/>
     <input type="hidden" name="asc.search-results.more" value="true"/>
     <input type="hidden" name="asc.search-results.total" value="0"/>
 
@@ -674,11 +671,8 @@ async function addEventListeners(block, _config) {
     const endEl = block.querySelector('.search-results__end');
     endEl.hidden = results.more || !(results.size > 0);
 
-    // Derive next offset from the server-reported values so fresh searches
-    // (offset=0) always reset correctly.
-    const newOffset = (results.offset || 0) + (results.size || 0);
-    block.querySelector('[name="p.offset"]').value = newOffset;
-
+    // Paging offset is tracked by the search service now (it derives the next
+    // offset from the last result on a load-more), so there's nothing to write here.
     const display = getDisplayMode();
     const resultsEl = block.querySelector('[data-asc-results]');
     resultsEl.dataset.display = display;

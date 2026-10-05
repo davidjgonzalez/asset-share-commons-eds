@@ -36,11 +36,12 @@ class AuthoredAssetsService {
     if (!reference) return null;
     if (!reference.startsWith('/')) return search.getAssetById(reference);
 
-    const result = await search.searchSilent(new Map([
-      ['path', reference],
-      ['path.exact', 'true'],
-      ['p.limit', '2'],
-    ]));
+    const result = await search.searchSilent({
+      filters: [{
+        type: 'path', op: 'under', values: [reference], meta: { exact: true },
+      }],
+      limit: 2,
+    });
     return result.assets?.find((asset) => asset.path === reference) || null;
   }
 

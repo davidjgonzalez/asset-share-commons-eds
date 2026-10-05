@@ -24,6 +24,7 @@
  *   Priority: URL param > localStorage > first authored option.
  */
 import { readBlockConfig, SEARCH_FORM } from '../../scripts/asc/core/utils/search.js';
+import { filterAttrs, decodeInitialText } from '../../scripts/asc/core/services/search/request.js';
 import { escAttr } from '../../scripts/asc/core/utils/html.js';
 import { DEFAULT_PALETTE, nearestColor } from './color-search.js';
 import services from '../../scripts/asc/core/services/services.js';
@@ -46,10 +47,12 @@ const DEFAULT_VIEW_OPTIONS = [
   { label: 'Cards', value: 'cards' },
   { label: 'List', value: 'list' },
 ];
+// Values are the neutral sort vocabulary (see services/search/request.js SORT_FIELDS);
+// each provider maps them to its own order field. Add `Modified : modified` if wanted.
 const DEFAULT_SORT_OPTIONS = [
-  { label: 'Relevance', value: '@jcr:score' },
-  { label: 'Created', value: '@jcr:created' },
-  { label: 'Title', value: '@jcr:content/metadata/dc:title' },
+  { label: 'Relevance', value: 'relevance' },
+  { label: 'Created', value: 'created' },
+  { label: 'Title', value: 'title' },
 ];
 const DEFAULT_ORDER_OPTIONS = [
   { label: 'Descending', value: 'desc' },
@@ -88,7 +91,6 @@ export default function decorate(block) {
   const config = readBlockConfig(block, {}, {
     placeholder: 'Search assets...',
     inputType: 'search',
-    name: 'fulltext',
     redirect: SEARCH_PAGE,
   });
   // A `redirect` row may have been pasted as a full URL copied from a different
@@ -106,8 +108,10 @@ export default function decorate(block) {
   // that mode existed) rather than trusting localStorage blindly.
   const storedDisplay = localStorage.getItem(LS_DISPLAY);
   const display = viewOptions.some((o) => o.value === storedDisplay) ? storedDisplay : viewOptions[0].value;
-  const orderby    = params.get('orderby')      || localStorage.getItem(LS_ORDERBY)    || sortOptions[0].value;
-  const orderbySort= params.get('orderby.sort') || localStorage.getItem(LS_ORDERBY_SORT) || orderOptions[0].value;
+  // Sort rides in the neutral URL as `sort=field:direction`. Priority: URL > LS > first option.
+  const [urlSortField, urlSortDir] = (params.get('sort') || '').split(':');
+  const orderby    = urlSortField || localStorage.getItem(LS_ORDERBY)    || sortOptions[0].value;
+  const orderbySort= urlSortDir   || localStorage.getItem(LS_ORDERBY_SORT) || orderOptions[0].value;
   const colorSearchEnabled = COLOR_SEARCH_ENABLED && config['color-search'] !== 'false';
   const color = colorSearchEnabled ? (localStorage.getItem(LS_COLOR) || '') : '';
 
@@ -132,20 +136,17 @@ function html(config, {
   display, orderby, orderbySort, viewOptions, sortOptions, orderOptions,
   colorSearchEnabled, color,
 }) {
-  const initial = config.initial[`${config.group}_group.${config.name}`]
-    || new URLSearchParams(window.location.search).get(config.name)
-    || '';
+  const initial = decodeInitialText();
 
   return `
     <div class="asc-ui-search">
       <input type="${config.inputType}" placeholder="${config.placeholder}"
              form="${config.form}"
-             name="${config.field}"
-             value="${initial}"
-             data-asc-filter="${config.id}">
+             value="${escAttr(initial)}"
+             data-asc-search-text>
 
       ${colorSearchEnabled ? `
-      <input type="hidden" name="filter[color]" form="${SEARCH_FORM}" value="${escAttr(color)}">
+      <input type="hidden" class="search-bar__color-value" ${filterAttrs({ id: 'color', type: 'color', field: '', op: 'equals' })} form="${SEARCH_FORM}" value="${escAttr(color)}">
       <div class="asc-ui-search__action search-bar__ctrl--color">
         <div class="asc-ui-dropdown" title="Search by color">
           <button type="button" class="search-bar__color-trigger" aria-expanded="false" aria-controls="search-bar-color-panel" aria-label="Search by color"${SUPPORTS_POPOVER ? ' popovertarget="search-bar-color-panel"' : ''}>
@@ -174,14 +175,14 @@ function html(config, {
 
       <label class="asc-ui-segmented__option search-bar__ctrl" title="Sort by">
         <span aria-hidden="true">${ICONS.sortField}</span>
-        <select name="orderby" form="${SEARCH_FORM}" aria-label="Sort by">
+        <select name="orderby" form="${SEARCH_FORM}" aria-label="Sort by" data-asc-search-sort>
           ${optionHtml(sortOptions, orderby)}
         </select>
       </label>
 
       <label class="asc-ui-segmented__option search-bar__ctrl" title="Sort direction">
         <span aria-hidden="true">${ICONS[orderbySort] || ICONS.desc}</span>
-        <select name="orderby.sort" form="${SEARCH_FORM}" aria-label="Sort direction">
+        <select name="orderby.sort" form="${SEARCH_FORM}" aria-label="Sort direction" data-asc-search-dir>
           ${optionHtml(orderOptions, orderbySort)}
         </select>
       </label>
@@ -240,7 +241,7 @@ function addColorEventListeners(block) {
   const panel = colorDropdown.querySelector('.asc-ui-dropdown__panel');
   const colorInput = colorDropdown.querySelector('.asc-ui-color-picker__input');
   const swatch = colorDropdown.querySelector('.asc-ui-swatch__dot');
-  const hiddenField = block.querySelector('input[name="filter[color]"]');
+  const hiddenField = block.querySelector('.search-bar__color-value');
 
   const closePanel = () => {
     if (SUPPORTS_POPOVER) {
@@ -319,6 +320,7 @@ function needsRedirect(config) {
 
 function redirectToSearch(config, value) {
   const url = new URL(config.redirect, window.location.origin);
-  if (value.trim()) url.searchParams.set(config.name, value.trim());
+  // The search page reads the neutral URL codec — free text rides in `q`.
+  if (value.trim()) url.searchParams.set('q', value.trim());
   window.location.href = url.toString();
 }

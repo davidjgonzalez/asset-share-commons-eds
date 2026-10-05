@@ -11,15 +11,15 @@
  * network search resolves means the header visibly grows/shifts the page
  * after first paint. Doing it as soon as blocks are loaded (synchronous,
  * local DOM read) sets the header's real height before that first paint.
- * Reads active state directly from the DOM ([data-asc-fieldset] inputs) so
+ * Reads active state directly from the DOM ([data-asc-filter] inputs) so
  * it picks up initial URL-restored values without any extra wiring.
  *
  * Pill removal dispatches `asc:search:execute` — the same event every filter
  * block uses, so the search re-runs and all blocks stay in sync.
  *
  * Inputs NOT shown as pills (intentionally):
- *   - type="hidden" supporting params (operations, property names, etc.)
- *   - The fulltext search-bar input (has data-asc-filter, not data-asc-fieldset)
+ *   - type="hidden" inputs (e.g. the color filter)
+ *   - The free-text search-bar input (has data-asc-search-text, not data-asc-filter)
  *
  * Authoring: no configuration rows needed; just add the block to any search page.
  */
@@ -32,9 +32,9 @@ export default function decorate(block) {
   document.addEventListener('asc:search:complete', () => update(block));
 
   block.addEventListener('click', (e) => {
-    const pill = e.target.closest('[data-filter-name]');
+    const pill = e.target.closest('[data-filter-id]');
     if (pill) {
-      removeFilter(pill.dataset.filterName, pill.dataset.filterValue, pill.dataset.filterType);
+      removeFilter(pill.dataset.filterId, pill.dataset.filterValue, pill.dataset.filterType);
       return;
     }
     if (e.target.closest('.search-active-filters__clear-all')) {
@@ -59,11 +59,11 @@ function update(block) {
 
   block.innerHTML = `
     <ul class="search-active-filters__list asc-ui-chip-list" role="list">
-      ${filters.map(({ name, value, label, type }) => `
+      ${filters.map(({ id, value, label, type }) => `
         <li>
           <button type="button"
                   class="search-active-filters__pill asc-ui-chip asc-ui-chip--removable"
-                  data-filter-name="${esc(name)}"
+                  data-filter-id="${esc(id)}"
                   data-filter-value="${esc(value)}"
                   data-filter-type="${esc(type)}"
                   aria-label="Remove filter: ${esc(label)}">
@@ -79,25 +79,31 @@ function update(block) {
     </ul>`;
 }
 
+function filterId(input) {
+  try { return JSON.parse(input.dataset.ascFilter).id; } catch { return null; }
+}
+
 function collectActiveFilters() {
   const filters = [];
   const seenRadios = new Set();
 
-  document.querySelectorAll(`[form="${SEARCH_FORM}"][data-asc-fieldset]`).forEach((input) => {
+  document.querySelectorAll(`[form="${SEARCH_FORM}"][data-asc-filter]`).forEach((input) => {
     const type = input.type?.toLowerCase();
     if (type === 'hidden') return;
+    const id = filterId(input);
+    if (!id) return;
 
     if (type === 'checkbox' && input.checked) {
-      filters.push({ name: input.name, value: input.value, label: labelFor(input), type });
+      filters.push({ id, value: input.value, label: labelFor(input), type });
     } else if (type === 'radio' && input.checked) {
-      if (seenRadios.has(input.name)) return;
-      seenRadios.add(input.name);
-      filters.push({ name: input.name, value: input.value, label: labelFor(input), type });
+      if (seenRadios.has(id)) return;
+      seenRadios.add(id);
+      filters.push({ id, value: input.value, label: labelFor(input), type });
     } else if (input.tagName === 'SELECT' && input.value) {
       const label = input.options[input.selectedIndex]?.text || input.value;
-      filters.push({ name: input.name, value: input.value, label, type: 'select' });
+      filters.push({ id, value: input.value, label, type: 'select' });
     } else if (type === 'date' && input.value) {
-      filters.push({ name: input.name, value: input.value, label: dateLabelFor(input), type });
+      filters.push({ id, value: input.value, label: dateLabelFor(input), type });
     }
   });
 
@@ -113,26 +119,26 @@ function dateLabelFor(input) {
   const [y, m, d] = input.value.split('-').map(Number);
   const formatted = new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
     .format(new Date(y, m - 1, d));
-  if (input.name.includes('lowerBound')) return `From: ${formatted}`;
-  if (input.name.includes('upperBound')) return `To: ${formatted}`;
+  if (input.dataset.ascBound === 'lower') return `From: ${formatted}`;
+  if (input.dataset.ascBound === 'upper') return `To: ${formatted}`;
   return formatted;
 }
 
-function removeFilter(name, value, type) {
-  if (type === 'radio') {
-    // Clear all radios sharing this name — radio groups don't have per-option removal.
-    document.querySelectorAll(`[form="${SEARCH_FORM}"][name="${CSS.escape(name)}"]`)
-      .forEach((r) => { r.checked = false; });
-  } else if (type === 'checkbox') {
-    const input = document.querySelector(
-      `[form="${SEARCH_FORM}"][name="${CSS.escape(name)}"][value="${CSS.escape(value)}"]`,
-    );
-    if (input) input.checked = false;
-  } else {
-    // select, date
-    const input = document.querySelector(`[form="${SEARCH_FORM}"][name="${CSS.escape(name)}"]`);
-    if (input) input.value = '';
-  }
+function inputsForId(id) {
+  return [...document.querySelectorAll(`[form="${SEARCH_FORM}"][data-asc-filter]`)]
+    .filter((input) => filterId(input) === id);
+}
+
+function removeFilter(id, value, type) {
+  inputsForId(id).forEach((input) => {
+    if (type === 'radio') {
+      input.checked = false;
+    } else if (type === 'checkbox') {
+      if (input.value === value) input.checked = false;
+    } else {
+      input.value = '';
+    }
+  });
 
   document.dispatchEvent(new CustomEvent('asc:search:execute', {
     detail: { form: SEARCH_FORM, source: 'filter' },
@@ -140,11 +146,12 @@ function removeFilter(name, value, type) {
 }
 
 function clearAllFilters() {
-  document.querySelectorAll(`[form="${SEARCH_FORM}"][data-asc-fieldset]`).forEach((input) => {
+  document.querySelectorAll(`[form="${SEARCH_FORM}"][data-asc-filter]`).forEach((input) => {
     const type = input.type?.toLowerCase();
+    if (type === 'hidden') return;
     if (type === 'checkbox' || type === 'radio') {
       input.checked = false;
-    } else if (type !== 'hidden') {
+    } else {
       input.value = '';
     }
   });
