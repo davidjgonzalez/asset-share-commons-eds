@@ -13,6 +13,7 @@ import {
   loadCSS,
 } from './aem.js';
 
+// ASC-HOOK:start imports — re-add after an EDS boilerplate upgrade (see docs/PROJECT_STRUCTURE.md)
 import {
   ascEager,
   ascDecorateMain,
@@ -20,6 +21,7 @@ import {
   ascDelayed,
 } from './asc.js';
 import { isChromeless } from './asc/core/utils/chrome.js';
+// ASC-HOOK:end imports
 
 /**
  * Builds hero block and prepends to main in a new section.
@@ -59,6 +61,7 @@ function buildAutoBlocks(main) {
   }
 }
 
+// ASC-HOOK:start addPageTypeClasses — ASC-added helper; re-add after an EDS boilerplate upgrade
 /**
  * Adds page-type body classes based on which blocks are present.
  * Called after decorateMain so block class names are available.
@@ -72,6 +75,7 @@ function addPageTypeClasses(main) {
   }
   if (main.querySelector('.board')) document.body.classList.add('page-board');
 }
+// ASC-HOOK:end addPageTypeClasses
 
 /**
  * Decorates the main element.
@@ -83,7 +87,7 @@ export function decorateMain(main) {
   buildAutoBlocks(main);
   decorateSections(main);
   decorateBlocks(main);
-  ascDecorateMain(main);
+  ascDecorateMain(main); // ASC-HOOK decorateMain — run token substitution + section grid after decorateBlocks
 }
 
 /**
@@ -93,12 +97,12 @@ export function decorateMain(main) {
 async function loadEager(doc) {
   document.documentElement.lang = 'en';
   decorateTemplateAndTheme();
-  ascEager(doc);
+  ascEager(doc); // ASC-HOOK loadEager — theme + is-chromeless body class
 
   const main = doc.querySelector('main');
   if (main) {
     decorateMain(main);
-    addPageTypeClasses(main);
+    addPageTypeClasses(main); // ASC-HOOK loadEager — page-type body classes
     document.body.classList.add('appear');
     await loadSection(main.querySelector('.section'), waitForFirstImage);
   }
@@ -118,7 +122,7 @@ async function loadEager(doc) {
  * @param {Element} doc The container element
  */
 async function loadLazy(doc) {
-  ascLazy();
+  ascLazy(); // ASC-HOOK loadLazy — SEO + speculation rules
 
   const main = doc.querySelector('main');
   await loadSections(main);
@@ -127,10 +131,12 @@ async function loadLazy(doc) {
   const element = hash ? doc.getElementById(hash.substring(1)) : false;
   if (hash && element) element.scrollIntoView();
 
+  // ASC-HOOK:start loadLazy chrome gating — gate header/footer on chromeless shares
   if (!isChromeless(main)) {
     loadHeader(doc.querySelector('header'));
     loadFooter(doc.querySelector('footer'));
   }
+  // ASC-HOOK:end loadLazy chrome gating
 
   loadCSS(`${window.hlx.codeBasePath}/styles/lazy-styles.css`);
   loadFonts();
@@ -141,7 +147,7 @@ async function loadLazy(doc) {
  * without impacting the user experience.
  */
 function loadDelayed() {
-  ascDelayed();
+  ascDelayed(); // ASC-HOOK loadDelayed
   window.setTimeout(() => import('./delayed.js'), 3000);
 }
 

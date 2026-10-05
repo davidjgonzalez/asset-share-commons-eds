@@ -180,10 +180,24 @@ import { isChromeless } from './asc/core/utils/chrome.js';
 // loadDelayed():       ascDelayed()             // before the stock delayed import
 ```
 
-`addPageTypeClasses(main)` is itself an ASC-added function in `scripts.js` — re-add it too.
+`addPageTypeClasses(main)` is itself an ASC-added function in `scripts.js` — re-add it too. Each of
+these edits is wrapped in `// ASC-HOOK:start …` / `// ASC-HOOK:end …` (or a trailing `// ASC-HOOK …`)
+comment in `scripts.js`, so you can find and re-apply them after a boilerplate refresh.
 
-**ASC Core upgrade:** Replace `scripts/asc/core/` wholesale. Everything you own lives outside it
-(`scripts/asc/configurations.js`, `scripts/asc.js`, `blocks/`, `styles/`, `tools/`), so it is safe
-— but never overwrite `scripts/asc/configurations.js`. After replacing core, run `npm run lint`,
-and confirm the imports in `scripts/asc.js` and `scripts/scripts.js` still resolve against the new
-core (a core reorg can rename an export those two user-owned files deep-import).
+**ASC Core upgrade — use the updater:** `scripts/asc/core/` is designed to be replaced wholesale.
+Run it with:
+
+```bash
+# one-time: point at your ASC template repo
+git remote add asc-upstream git@github.com:davidjgonzalez/asset-share-commons-eds.git
+
+npm run asc:update              # or: node tools/asc-update.js --remote asc-upstream --ref main
+```
+
+On a clean working tree it fetches the template, compares `scripts/asc/core/VERSION`, moves to an
+`asc-update/<version>` branch, replaces `scripts/asc/core/**`, then runs lint and checks that every
+import in the user-owned `scripts/asc.js` / `scripts/scripts.js` still resolves against the new core
+(a renamed core export is the one way a wholesale replace can break a user file). It never commits —
+review the diff, run the app, then commit. Everything you own (`configurations.js`, `asc.js`,
+`blocks/`, `styles/`, `tools/`) is left untouched. The EDS boilerplate (including `scripts.js`) is
+also left untouched — refresh that separately and re-apply the `// ASC-HOOK` edits above.

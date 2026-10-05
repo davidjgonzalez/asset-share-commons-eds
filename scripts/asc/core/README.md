@@ -1,5 +1,7 @@
 # scripts/asc/core/
 
+The `VERSION` file in this folder is the ASC Core version; `tools/asc-update.js` reads it to compare against the template on an upgrade.
+
 The ASC framework. **Do not edit.** Every file starts with `// ASC Core — do not edit.`, and the
 whole folder is replaced when you upgrade ASC. Change behavior through `scripts/asc/configurations.js`.
 
