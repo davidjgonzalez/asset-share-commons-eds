@@ -10,6 +10,31 @@
  */
 const configurations = {
 
+  // ─── Author-editable settings sheet (optional) ─────────────────────────────────
+  // When set, ASC fetches this da.live sheet once at startup and overlays a curated set
+  // of keys onto this config, so content authors can change them without a code deploy.
+  // The values in THIS file are the defaults/fallback.
+  //
+  // Precedence: configurations.js (code) < settings sheet < URL param.
+  // Left unset by default → nothing is fetched, zero overhead.
+  //
+  // Sheet columns: key | value   (key is a dotted path from the whitelist below)
+  //   key                     | value
+  //   ------------------------|-----------
+  //   theme.default           | studio
+  //   search.pageSize         | 36
+  //   notifications.location  | top-right
+  //   analytics.enabled       | true
+  //
+  // Whitelisted keys (only these may come from the sheet — code owns everything else):
+  //   theme.default · search.pageSize · search.page ·
+  //   seo.enabled · seo.siteName · seo.defaultImage · seo.canonicalBase ·
+  //   analytics.enabled · notifications.enabled · notifications.location · notifications.duration ·
+  //   activity.enabled · activity.max · webmcp.enabled · init.preload · debug.debug
+  // URL-param overrides (single visit): ?theme= → theme.default, ?pageSize= → search.pageSize
+  //
+  // settings: { sheet: '/asc', sheetName: 'settings' },
+
   // ─── AEM Connection ──────────────────────────────────────────────────────────
   aem: {
     // The hostname of your AEM author or publish instance.
