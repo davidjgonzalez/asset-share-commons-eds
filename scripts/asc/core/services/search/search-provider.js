@@ -3,11 +3,13 @@
 /**
  * SearchProvider is the base class for all search API implementations.
  *
- * To add a custom search provider:
- * 1. Extend this class
+ * To add a custom search provider (no core edits needed):
+ * 1. Extend this class in your own module (e.g. blocks/<something>/my-provider.js)
  * 2. Implement search() and buildParams()
- * 3. Set search.provider in scripts/configurations.js to your provider's id
- * 4. Register it in scripts/asc/core/services/search/search.js
+ * 3. Register it from scripts/asc/configurations.js:
+ *      import MyProvider from '../../blocks/.../my-provider.js';
+ *      search: { provider: 'my-provider', providers: { 'my-provider': MyProvider } }
+ *    A custom entry whose id matches a built-in ('querybuilder' / 'openapi') overrides it.
  */
 export default class SearchProvider {
   constructor(config) {

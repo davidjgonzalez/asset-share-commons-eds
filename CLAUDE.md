@@ -169,7 +169,9 @@ Configure the root path in `scripts/asc/configurations.js`:
 - `scripts/asc/core/services/search/providers/querybuilder.js` — AEM QueryBuilder (default)
 - `scripts/asc/core/services/search/providers/openapi.js` — AEM Dynamic Media OpenAPI Search
 
-Switch providers in `scripts/asc/configurations.js`: `search: { provider: 'openapi' }`.
+Switch providers in `scripts/asc/configurations.js`: `search: { provider: 'openapi' }`. Register a
+custom provider the same way, with no core edits, via `search: { providers: { 'my-id': MyClass } }`
+(mirrors `renditions.resolvers`; a custom id matching a built-in overrides it).
 
 ### Asset Details Modal
 

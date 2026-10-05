@@ -732,9 +732,10 @@ Both QB and OpenAPI providers receive the merged sheet params through the normal
 
 ### Adding a custom search provider
 
+Define the provider in user-owned space (e.g. a block folder), not under `scripts/asc/core/`:
 ```js
-// scripts/asc/core/services/search/providers/my-provider.js
-import SearchProvider from '../search-provider.js';
+// blocks/search-results/my-provider.js
+import SearchProvider from '../../scripts/asc/core/services/search/search-provider.js';
 
 export default class MyProvider extends SearchProvider {
   async search(formData) {
@@ -751,19 +752,17 @@ export default class MyProvider extends SearchProvider {
 }
 ```
 
-Register in `scripts/asc/core/services/search/search.js`:
+Register AND activate from `scripts/asc/configurations.js` — no ASC Core edits:
 ```js
-const PROVIDERS = {
-  querybuilder: QueryBuilderProvider,
-  openapi: OpenApiProvider,
-  'my-provider': MyProvider,
-};
-```
+import MyProvider from '../../blocks/search-results/my-provider.js';
 
-Activate in `scripts/asc/configurations.js`:
-```js
-search: { provider: 'my-provider' }
+search: {
+  provider: 'my-provider',
+  providers: { 'my-provider': MyProvider },  // merged over built-ins; same id overrides
+}
 ```
+`search.providers` mirrors `renditions.resolvers`; the service merges it over the built-in
+`querybuilder`/`openapi` registry at construction.
 
 ---
 

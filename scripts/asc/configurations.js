@@ -24,8 +24,16 @@ const configurations = {
 
   // ─── Search ──────────────────────────────────────────────────────────────────
   search: {
-    // Which search API to use. 'querybuilder' (default) or 'openapi'.
+    // Which search API to use. 'querybuilder' (default) or 'openapi' — or the id
+    // of a custom provider registered in `providers` below.
     provider: 'querybuilder',
+
+    // Register custom search providers without editing ASC Core. Keyed by id;
+    // each value is a class extending SearchProvider
+    // (scripts/asc/core/services/search/search-provider.js). An id matching a
+    // built-in ('querybuilder'/'openapi') overrides it. Mirrors renditions.resolvers.
+    //   import MyProvider from '../../blocks/.../my-provider.js';
+    //   providers: { 'my-provider': MyProvider },
 
     // The page to navigate to when a search-bar is used from a page that has
     // no search results block (e.g. the site header). The query is appended as

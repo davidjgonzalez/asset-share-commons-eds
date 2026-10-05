@@ -327,13 +327,12 @@ The OpenAPI provider translates QB-style form fields from search filter blocks i
 
 **Use when**: You need to connect ASC to a search API other than AEM QueryBuilder or AEM OpenAPI (e.g. Elasticsearch, Algolia, Coveo).
 
-**Step 1**: Create the provider in `scripts/asc/core/services/search/providers/my-provider.js`:
+**Step 1**: Create the provider in your own (user-owned) space — e.g. a block folder like
+`blocks/search-results/my-provider.js`. It does NOT go under `scripts/asc/core/` (that's ASC Core):
 
 ```js
-// NOTE: This goes inside scripts/asc/ which is normally ASC Core.
-// A custom provider is the one valid reason to add a file here.
-import SearchProvider from '../search-provider.js';
-import Asset from '../../../models/asset.js';
+import SearchProvider from '../../scripts/asc/core/services/search/search-provider.js';
+import Asset from '../../scripts/asc/core/models/asset.js';
 
 export default class MyProvider extends SearchProvider {
   // Called for every search. Must return the standard results shape.
@@ -391,22 +390,20 @@ function transformHit(hit) {
 }
 ```
 
-**Step 2**: Register it in `scripts/asc/core/services/search/search.js`:
+**Step 2 + 3**: Register AND activate it from `scripts/asc/configurations.js` — no core edits:
 
 ```js
-// Add to the PROVIDERS map:
-const PROVIDERS = {
-  querybuilder: QueryBuilderProvider,
-  openapi: OpenApiProvider,
-  'my-provider': MyProvider,          // ← add this
-};
+import MyProvider from '../../blocks/search-results/my-provider.js';
+
+// ...
+search: {
+  provider: 'my-provider',
+  providers: { 'my-provider': MyProvider },  // id matching a built-in overrides it
+},
 ```
 
-**Step 3**: Activate in `scripts/asc/configurations.js`:
-
-```js
-search: { provider: 'my-provider' },
-```
+(`search.providers` mirrors `renditions.resolvers` — the registry merges your entries over the
+built-ins, so adding a provider never touches a `// ASC Core — do not edit.` file.)
 
 ---
 

@@ -10,8 +10,11 @@ export const Events = {
   SEARCH_ERROR: 'asc:search:error',
 };
 
-// Provider registry — add custom providers here or via configurations.js
-const PROVIDERS = {
+// Built-in provider registry. Add custom providers from configurations.js via
+// `search.providers` (object keyed by id) — a custom entry with a built-in's id
+// overrides it. This mirrors `renditions.resolvers`, so no block ever edits this
+// file to register a provider.
+const BUILT_IN_PROVIDERS = {
   querybuilder: QueryBuilderProvider,
   openapi: OpenApiProvider,
 };
@@ -27,10 +30,12 @@ class SearchService {
     this.form = config.form || 'asc-search-form';
     this.searchInProgress = false;
 
-    // Instantiate the configured provider
-    const ProviderClass = PROVIDERS[config.provider || 'querybuilder'];
+    // Instantiate the configured provider. Custom providers registered in
+    // configurations.search.providers override/extend the built-ins.
+    const providers = { ...BUILT_IN_PROVIDERS, ...(config.providers || {}) };
+    const ProviderClass = providers[config.provider || 'querybuilder'];
     if (!ProviderClass) {
-      throw new Error(`Unknown search provider: "${config.provider}". Valid values: ${Object.keys(PROVIDERS).join(', ')}`);
+      throw new Error(`Unknown search provider: "${config.provider}". Valid values: ${Object.keys(providers).join(', ')}`);
     }
     this.provider = new ProviderClass(config);
 
