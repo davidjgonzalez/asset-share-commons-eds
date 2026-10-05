@@ -283,6 +283,7 @@ the library needs to know about it regardless of where it's ultimately placed.
 | `docs/PROJECT_STRUCTURE.md` | Ownership zones — EDS boilerplate vs ASC Core vs user-owned |
 | `docs/CSS_CONVENTION.md` | Full CSS coding standards |
 | `docs/CONTENT_VARIABLES.md` | `{{ }}` token system — page-wide registry vs per-asset resolution, full API + authoring examples |
+| `docs/SEARCH_FILTERS.md` | Provider-neutral search filter model — SearchRequest/FilterDescriptor, per-provider translator registry, how blocks emit + hydrate filters, neutral URL codec |
 | `docs/ANALYTICS.md` | Web analytics plan — event catalog mapping, vendor wiring, `services.analytics` |
 | `docs/ACTIVITY.md` | Per-user activity history (searches, views, downloads, etc.) — entry schema, storage, `services.activity` |
 | `docs/SEO.md` | Page metadata/SEO — canonical URLs, Open Graph/Twitter Card tags, JSON-LD structured data, `services.seo` |

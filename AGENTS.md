@@ -663,72 +663,52 @@ The Actions service listens to DOM events globally, parses `data-asc-action`, fi
 
 ## Search Provider Abstraction
 
-Search blocks emit **QueryBuilder-native field names** (e.g. `{n}_group.daterange.lowerBound`). Both providers read this form data — the QueryBuilder provider passes it as-is; the OpenAPI provider's `buildParams()` performs a two-pass QB→OpenAPI translation.
+Search is **provider-neutral**. Blocks never emit QueryBuilder or OpenAPI syntax; they
+describe filters as a neutral `SearchRequest`, and each provider translates it. Full
+detail in `docs/SEARCH_FILTERS.md`.
 
-### Form field naming convention
-
-All search block inputs carry `form="asc-search-form"` so `SearchService.collectFormData()` picks them up. Most field names follow the QB group sub-key pattern:
-
+**SearchRequest** (`scripts/asc/core/services/search/request.js`):
 ```
-{groupNum}_group.{predicateName}.{paramKey}    ← property, daterange, tagid predicates
+{ text, filters: [FilterDescriptor], sort: { field, direction }, offset, limit }
+FilterDescriptor = { id, type, field, op, values: [...], match: 'any'|'all', meta }
 ```
+Built-in filter types: `fulltext` (carried as `text`), `property`, `path`, `daterange`,
+`tags`, `color`, `similar`. Neutral sort vocabulary: `relevance | created | modified | title`.
 
-**Exception — `path` predicate:** The QB `path` predicate takes its value directly as the key (no `.value` sub-key). `search-path` therefore emits:
+### How a request flows
 
+1. Each filter block renders value inputs carrying a `data-asc-filter` descriptor
+   (JSON: `id/type/field/op/match/meta`) via `filterAttrs()` from `request.js`; all carry
+   `form="asc-search-form"`. Date inputs add `data-asc-bound="lower|upper"`. search-bar's
+   text input uses `data-asc-search-text`; its sort controls use
+   `data-asc-search-sort` / `data-asc-search-dir`.
+2. `SearchService.collectRequest()` reads those into a `SearchRequest`, grouping inputs by
+   descriptor `id`. Filter `id` defaults to `type:field` (deterministic, so a shared URL
+   hydrates the same filter without carrying the id); author an `id` row to disambiguate.
+3. `provider.buildRequest(request)` dispatches each filter to a **translator** keyed by
+   neutral type, then adds scaffold (text, sort, paging, provider base params).
+4. The browser URL is the neutral codec (`q`, `filters` JSON, `sort`, `limit`); paging offset
+   is tracked by the service, not the URL. Blocks hydrate from it via `decodeInitialFilter()`.
+
+### Translator registry (the extension point)
+
+Each provider declares `static translators = { [type]: (filter, ctx) => [[key, value], …] }`.
+Adding support for a filter type — or a QB predicate not used yet — is one entry. A type with
+no translator for the active provider **warns and is skipped** (never silently dropped).
+Extend/override from config without editing core:
+```js
+search: { translators: { querybuilder: { myType: fn }, openapi: { myType: fn } } }
 ```
-{n}_group.path=/content/dam/…                  ← radio / dropdown (single selection)
-{n}_group.1_path=/path1
-{n}_group.2_path=/path2                         ← checkbox (multi-selection)
-{n}_group.p.or=true                             ← emitted alongside multi-select checkboxes
-```
+`OpenApiProvider.PROPERTY_MAP` / `DATE_PROPERTY_MAP` (static getters) map JCR fields to OpenAPI
+filter keys for the `property`/`daterange` translators.
 
-`path.exact` and `path.flat` are sub-keys of the `path` predicate and remain in `{n}_group.path.exact` / `{n}_group.path.flat` form.  
-`path.self` is **deprecated** by AEM — do not use it.
+### Baseline filters and the config sheet
 
-**Reference:** [QueryBuilder Predicate Reference](https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/implementing/developing/full-stack/search/query-builder-predicates)
-
-`groupNum` is the block's **filter-block-index** — assigned in DOM order, counting only blocks that call `readBlockConfig` from `search.js` (i.e. actual filter blocks, not display blocks like `search-results`). This number is stable across page loads as long as the filter blocks on the page don't change, which makes it safe to use in shareable URLs.
-
-**Group number ranges:**
-- Filter blocks (DOM order, via `readBlockConfig` from `search.js`): groups `1`–`n`
-### Search config sheet (content-author static predicates)
-
-`configurations.search.sheet` points to the `/asc` workbook in da.live. `SearchService` fetches the `search-predicates` sheet (`/asc.json?sheet=search-predicates`) lazily on first search and merges it into every search (tier 2b, between `basePredicates` and live form data).
-
-Sheet format — two columns:
-
-| name | value |
-|------|-------|
-| `path` | `/content/dam/brand` |
-| `notexpired.property` | `jcr:content/metadata/dam:expirationDate` |
-| `1000_group.property` | `jcr:content/metadata/dam:status` |
-| `1000_group.property.value` | `approved` |
-
-- **`name`** — full QB predicate name; include group prefix (`1000_group.*`) when grouping is needed
-- **`value`** — predicate value
-
-Both QB and OpenAPI providers receive the merged sheet params through the normal `formData` Map; OpenAPI translates them via its existing two-pass scan.
-
-`SearchService.searchSilent(formData)` also applies sheet predicates, making it available to blocks like `details-similar` that run outside the search page's DOM.
-
-### OpenAPI provider predicate mapping
-
-`OpenApiProvider.buildParams()` performs a two-pass scan:
-
-**Pass 1** — groups all `{n}_group.*` form entries by group number and predicate name.
-
-**Pass 2** — maps known predicates:
-
-| QB predicate | OpenAPI filter param | Notes |
-|-------------|----------------------|-------|
-| `daterange.lowerBound` + `.property` | `filter[createdAt\|modifiedAt][from]` | Property mapped via `DATE_PROPERTY_MAP` |
-| `daterange.upperBound` + `.property` | `filter[createdAt\|modifiedAt][to]` | Same mapping |
-| `tagid.N_value` | `filter[assetTagIds][]` | Each selected tag appended |
-| `property.N_value` + `.property=dc:format` | `filter[assetFormat][]` | Via `PROPERTY_MAP` |
-| `path` / `M_path` | `filter[assetAncestorPath]` | First value used; radio/dropdown → `N_group.path`; checkboxes → `N_group.M_path` |
-| `fulltext` | `q` | Top-level, not a predicate group |
-
-`DATE_PROPERTY_MAP` and `PROPERTY_MAP` are static getters on `OpenApiProvider` — extend them there to support additional JCR property → OpenAPI filter mappings.
+`configurations.search.baseFilters` is an array of neutral descriptors applied to every search,
+ahead of the visitor's own. The `search.sheet` workbook's `search-filters` sheet
+(`/asc.json?sheet=search-filters`, columns `type | field | op | values | match`) does the same,
+author-editable. Both are merged by the service (`searchSilent()` applies them too). The
+`search-hidden` block pushes neutral descriptors onto `services.search.baseFilters`.
 
 ### Adding a custom search provider
 
