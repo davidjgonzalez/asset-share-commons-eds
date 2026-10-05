@@ -107,6 +107,32 @@ search: {
 A custom entry whose key matches a built-in type overrides it. This mirrors
 `renditions.resolvers` and `search.providers`.
 
+## Built-in filter type coverage
+
+The neutral model is a curated capability vocabulary, not a 1:1 mirror of QueryBuilder. These
+types ship with translators; add more on demand (one entry per provider).
+
+| Neutral type | QueryBuilder | OpenAPI | Shape |
+|---|---|---|---|
+| `fulltext` (request `text`) | `fulltext` | `q` | — |
+| `property` | `property` | `filter[*]` for mapped fields, else warn | `field`, `values`, `match` |
+| `tags` | `tagid` | `filter[assetTagIds][]` | `field`, `values`, `match` |
+| `path` | `path` / OR'd paths | `filter[assetAncestorPath]` | `values`, `meta:{exact,flat}` |
+| `daterange` | `daterange` | `filter[createdAt\|modifiedAt][from/to]` | `field`, `values:[lower,upper]` |
+| `relativedaterange` | `relativedaterange` | resolved to absolute `from/to` | `field`, `values:[lower,upper]` e.g. `-30d`,`now` |
+| `color` | — (warn) | `filter[color]` | `values:[hex]` |
+| `similar` | `similar` (MLT) | — (warn) | `values:[path]`, `meta:{fields}` |
+| `range` | `rangeproperty` | — (warn) | `field`, `values:[min,max]`, `meta:{lowerOp,upperOp}` |
+| `boolproperty` | `boolproperty` | — (warn) | `field`, `values:[true\|false]` |
+| `nodename` | `nodename` | — (warn) | `values:[glob]` |
+| `excludepaths` | `excludepaths` | — (warn) | `values:[regex]` |
+| `notexpired` | OR group (future-dated OR unset) | — (warn) | `field` (expiration date property), no values |
+| sort | `orderby` + `orderby.sort` | `sort=field:dir` | `relevance\|created\|modified\|title` |
+| paging | `p.offset` / `p.limit` | `p.offset` / `p.limit` | request `offset`/`limit` |
+
+OOTB QueryBuilder predicates not yet mapped (e.g. `contentfragment`, `hasPermission`,
+`savedquery`, raw structural groups) are a one-entry translator away when a block needs them.
+
 ## Baseline filters
 
 Developer- and author-set filters applied to every search, ahead of the visitor's own:

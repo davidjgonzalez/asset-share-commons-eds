@@ -113,3 +113,29 @@ export function expandDateBound(value, which) {
   if (value.includes('T')) return value;
   return which === 'upper' ? `${value}T23:59:59.999Z` : `${value}T00:00:00.000Z`;
 }
+
+/**
+ * Resolve a QueryBuilder-style relative date offset to an absolute ISO instant, for
+ * providers (OpenAPI) that have no relative-date predicate. Accepts `now`, `0`, or
+ * `[+-]N{s|m|h|d|w|M|y}` (m = minutes, M = months), e.g. `-30d`, `-1M`, `now`.
+ * Returns '' when the input isn't a recognizable relative offset.
+ */
+export function relativeToISO(rel) {
+  if (!rel) return '';
+  if (rel === 'now' || rel === '0') return new Date().toISOString();
+  const m = String(rel).trim().match(/^([+-]?\d+)\s*(s|m|h|d|w|M|y)$/);
+  if (!m) return '';
+  const n = parseInt(m[1], 10);
+  const d = new Date();
+  const ops = {
+    s: () => d.setSeconds(d.getSeconds() + n),
+    m: () => d.setMinutes(d.getMinutes() + n),
+    h: () => d.setHours(d.getHours() + n),
+    d: () => d.setDate(d.getDate() + n),
+    w: () => d.setDate(d.getDate() + n * 7),
+    M: () => d.setMonth(d.getMonth() + n),
+    y: () => d.setFullYear(d.getFullYear() + n),
+  };
+  ops[m[2]]();
+  return d.toISOString();
+}

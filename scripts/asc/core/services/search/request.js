@@ -41,6 +41,10 @@ export const DEFAULT_SORT = { field: 'created', direction: 'desc' };
 
 const DEFAULT_LIMIT = 24;
 
+// Filter types that are meaningful with no `values` (flags / reference-only), so
+// createRequest must not drop them as "empty".
+const VALUELESS_TYPES = new Set(['similar', 'notexpired']);
+
 /** Normalize a partial descriptor to the full shape (stable defaults, array values). */
 export function normalizeFilter(filter = {}) {
   const {
@@ -65,7 +69,7 @@ export function createRequest(partial = {}) {
   } = partial;
   return {
     text: String(text || ''),
-    filters: filters.map(normalizeFilter).filter((f) => f.values.length || f.type === 'similar'),
+    filters: filters.map(normalizeFilter).filter((f) => f.values.length || VALUELESS_TYPES.has(f.type)),
     sort: normalizeSort(sort),
     offset: Number(offset) || 0,
     limit: Number(limit) || DEFAULT_LIMIT,

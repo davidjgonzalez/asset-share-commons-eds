@@ -1,6 +1,6 @@
 // ASC Core — do not edit. Customize via scripts/asc/configurations.js
 
-import SearchProvider, { expandDateBound } from '../search-provider.js';
+import SearchProvider, { expandDateBound, relativeToISO } from '../search-provider.js';
 import Asset from '../../../models/asset.js';
 import AssetAccessError from '../../../models/asset-access-error.js';
 import aem from '../../aem/aem.js';
@@ -73,6 +73,21 @@ export default class OpenApiProvider extends SearchProvider {
     },
 
     color: (filter) => (filter.values.length ? [['filter[color]', filter.values[0]]] : []),
+
+    // Relative window resolved to absolute instants (OpenAPI has no relative predicate).
+    relativedaterange: (filter) => {
+      const key = OpenApiProvider.DATE_PROPERTY_MAP[filter.field] || 'createdAt';
+      const [lower, upper] = filter.values;
+      const pairs = [];
+      const from = relativeToISO(lower);
+      const to = relativeToISO(upper);
+      if (from) pairs.push([`filter[${key}][from]`, from]);
+      if (to) pairs.push([`filter[${key}][to]`, to]);
+      return pairs;
+    },
+
+    // range, boolproperty, excludepaths, nodename, notexpired: no OpenAPI equivalent —
+    // intentionally omitted, so buildRequest() warns and skips them on this provider.
   };
 
   constructor(config) {

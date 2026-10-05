@@ -93,6 +93,62 @@ export default class QueryBuilderProvider extends SearchProvider {
       if (filter.meta?.fields) pairs.push([`${base}.mltfields`, filter.meta.fields]);
       return pairs;
     },
+
+    // Relative date window, e.g. values ['-30d', 'now'] (OpenAPI resolves to absolute).
+    relativedaterange: (filter, { group }) => {
+      const base = `${group}_group.relativedaterange`;
+      const [lower, upper] = filter.values;
+      const pairs = [[`${base}.property`, filter.field]];
+      if (lower) pairs.push([`${base}.lowerBound`, lower]);
+      if (upper) pairs.push([`${base}.upperBound`, upper]);
+      return pairs;
+    },
+
+    // Numeric/string range on a property, e.g. values [min, max] (QueryBuilder only).
+    range: (filter, { group }) => {
+      const base = `${group}_group.rangeproperty`;
+      const [min, max] = filter.values;
+      const pairs = [[`${base}.property`, filter.field]];
+      if (min !== undefined && min !== '') {
+        pairs.push([`${base}.lowerBound`, min]);
+        pairs.push([`${base}.lowerOperation`, filter.meta?.lowerOp || '>=']);
+      }
+      if (max !== undefined && max !== '') {
+        pairs.push([`${base}.upperBound`, max]);
+        pairs.push([`${base}.upperOperation`, filter.meta?.upperOp || '<=']);
+      }
+      return pairs;
+    },
+
+    // Boolean flag property (QueryBuilder only).
+    boolproperty: (filter, { group }) => {
+      const base = `${group}_group.boolproperty`;
+      return [[`${base}.property`, filter.field], [`${base}.value`, String(filter.values[0] ?? 'true')]];
+    },
+
+    // Exclude a subtree by path regex (QueryBuilder only).
+    excludepaths: (filter, { group }) => (filter.values.length <= 1
+      ? [[`${group}_group.excludepaths`, filter.values[0]]]
+      : filter.values.map((v, i) => [`${group}_group.${i + 1}_excludepaths`, v])),
+
+    // Match by node (file) name glob, e.g. '*.jpg' (QueryBuilder only).
+    nodename: (filter, { group }) => (filter.values.length <= 1
+      ? [[`${group}_group.nodename`, filter.values[0]]]
+      : filter.values.map((v, i) => [`${group}_group.${i + 1}_nodename`, v])),
+
+    // "Not expired": expiration date is in the future OR the property is absent.
+    // Emits a two-predicate OR group over the authored expiration-date field.
+    notexpired: (filter, { group }) => {
+      const g = `${group}_group`;
+      const field = filter.field;
+      return [
+        [`${g}.p.or`, 'true'],
+        [`${g}.1_relativedaterange.property`, field],
+        [`${g}.1_relativedaterange.lowerBound`, '0'],
+        [`${g}.2_property`, field],
+        [`${g}.2_property.operation`, 'not'],
+      ];
+    },
   };
 
   constructor(config) {
