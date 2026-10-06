@@ -1,7 +1,7 @@
 ---
 layout: page
 title: Auth Setup: OAuth / OIDC
-permalink: /auth/oauth
+permalink: /auth-oauth
 sidebar:
   - label: OAuth / OIDC
     items:
@@ -26,7 +26,7 @@ sidebar:
       - title: Auth overview
         url: "/auth"
       - title: SAML setup
-        url: "/auth/saml"
+        url: "/auth-saml"
 ---
 
 # Auth Setup: OAuth / OIDC

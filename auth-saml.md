@@ -1,7 +1,7 @@
 ---
 layout: page
 title: Auth Setup: SAML
-permalink: /auth/saml
+permalink: /auth-saml
 sidebar:
   - label: SAML
     items:
@@ -26,7 +26,7 @@ sidebar:
       - title: Auth overview
         url: "/auth"
       - title: OAuth setup
-        url: "/auth/oauth"
+        url: "/auth-oauth"
 ---
 
 # Auth Setup: SAML

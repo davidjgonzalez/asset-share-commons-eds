@@ -22,9 +22,9 @@ sidebar:
   - label: Setup guides
     items:
       - title: OAuth / OIDC
-        url: "/auth/oauth"
+        url: "/auth-oauth"
       - title: SAML
-        url: "/auth/saml"
+        url: "/auth-saml"
 ---
 
 # Authentication
@@ -35,8 +35,8 @@ one seam, so adding a new scheme never touches ASC Core. You write a strategy cl
 and register it from `configurations.js`, exactly like a custom search provider or
 rendition resolver.
 
-> **Setup guides:** [OAuth / OIDC]({{ '/auth/oauth' | relative_url }}) and
-> [SAML]({{ '/auth/saml' | relative_url }}). Both end at the same place, so they
+> **Setup guides:** [OAuth / OIDC]({{ '/auth-oauth' | relative_url }}) and
+> [SAML]({{ '/auth-saml' | relative_url }}). Both end at the same place, so they
 > share one ASC configuration and differ only in how you set up AEM.
 
 ---
