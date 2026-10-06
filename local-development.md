@@ -186,6 +186,12 @@ to trust its local certificate authority):
 ```
 # Caddyfile
 asc.localtest.me {
+    # localtest.me is a public domain, so force Caddy's internal (local) CA
+    # instead of trying to fetch a Let's Encrypt cert for a 127.0.0.1 host.
+    # Without this you get ERR_SSL_PROTOCOL_ERROR. First run installs the local
+    # CA into your trust store and prompts once for your password.
+    tls internal
+
     # AEM paths ASC calls: APIs, renditions, auth handler, profile probe, logout.
     @aem path /content/* /bin/* /adobe/* /libs/* /system/* /saml_login* /callback/*
     handle @aem {
@@ -294,3 +300,7 @@ config. See the setup guides linked from
 - **`aem up` content looks wrong behind the proxy.** Make sure the proxy forwards
   the `Host` header and that only AEM path prefixes are routed to AEM; everything
   else must reach `localhost:3000`.
+- **`ERR_SSL_PROTOCOL_ERROR` on `asc.localtest.me`.** Caddy tried to fetch a public
+  Let's Encrypt cert for a loopback host. Add `tls internal` to the site block (as
+  shown above) and restart Caddy; approve the one time prompt to install its local
+  CA. If port 443 will not bind, run Caddy with `sudo`.
