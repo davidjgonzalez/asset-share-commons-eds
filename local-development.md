@@ -9,13 +9,15 @@ sidebar:
         url: "#overview"
       - title: What you need
         url: "#need"
+      - title: Choosing your AEM
+        url: "#aem-target"
       - title: The dev loop
         url: "#loop"
   - label: Single domain
     items:
       - title: Why one origin
         url: "#why"
-      - title: Quick path (localhost)
+      - title: Quick path (local SDK)
         url: "#quick"
       - title: Reverse proxy (recommended)
         url: "#proxy"
@@ -64,15 +66,36 @@ site as the front end. That is what the single domain section below solves.
 
 - **Node.js 18+** and the AEM CLI: `npm install -g @adobe/aem-cli`
 - The repo cloned, with `npm install` run once (lint tooling only, nothing builds)
-- An **AEM instance** with DAM assets, one of:
-  - the local **AEM SDK** (the quickstart jar), usually publish on
-    `http://localhost:4503`, or
-  - a **Cloud dev** publish instance
-    (`https://publish-pXXXX-eYYYY.adobeaemcloud.com`)
 - A **da.live** workspace for authored content (see Quick Start)
+- An **AEM instance** with DAM assets. This choice matters for ASC, see
+  [Choosing your AEM](#aem-target) below.
 - For authenticated dev: a way to put EDS and AEM on **one origin** (the
   [reverse proxy](#proxy) below) and, because AEM's cookie is `Secure`,
   [local HTTPS](#tls)
+
+### Choosing your AEM {#aem-target}
+
+ASC relies on AEM features that only exist on **AEM as a Cloud Service**, not in the
+local quickstart jar. Pick your target with that in mind:
+
+| Target | Web-optimized delivery, DM OpenAPI, smart crops, asset-microservice renditions | Use it for |
+|--------|:---:|-----------|
+| **RDE** (Rapid Development Environment) **(recommended)** | yes | Full-feature ASC development with a fast deploy loop. A real Cloud Service environment, so everything works, deployed to in seconds with the `aio aem rde` CLI. |
+| **Cloud dev / stage publish** | yes | Full-feature development against a shared environment. |
+| **Local AEM SDK** (quickstart jar) | **no** | Front end, blocks, styling, QueryBuilder search, and the auth cookie plumbing only. The SDK does not run asset microservices, so web-optimized delivery, the `openapi` search provider, smart crops, and cloud rendition generation are unavailable, and many thumbnails will not resolve. |
+
+> **Why not the SDK by default?** The local SDK is great for front-end iteration,
+> but it cannot reproduce the cloud delivery and search surfaces ASC uses most. If
+> you point `aem.host` at an SDK and images or OpenAPI search come back empty, this
+> is why. Use **RDE** (or a Cloud dev instance) for anything rendition, delivery,
+> or OpenAPI related.
+
+**RDE in brief.** RDE is an AEMaaCS program environment tuned for rapid iteration.
+It runs the same stack as every other Cloud Service environment (so all asset
+features work) but lets you deploy bundles and content in seconds without a full
+Cloud Manager pipeline, via the Adobe I/O CLI
+(`aio plugins:install @adobe/aio-cli-plugin-aem-rde`, then `aio aem rde install`).
+Point ASC's `aem.host` at the RDE **publish** host.
 
 ---
 
@@ -108,16 +131,21 @@ a reverse proxy. Then the cookie is first party and there is no CORS at all.
 
 ---
 
-## Quick path: localhost ports {#quick}
+## Quick path: local SDK ports {#quick}
 
-If your AEM is the local SDK, the shortest route needs **no proxy**. The browser
-treats "site" as scheme plus registrable domain and **ignores the port**, so
-`localhost:3000` (EDS) and `localhost:4503` (AEM) are already **same site**. The
-`login-token` cookie (domain `localhost`) will ride your `<img>` and fetch requests.
+This shortcut applies **only if you develop against the local AEM SDK**, and it
+inherits all of the SDK's [feature limitations](#aem-target), so it is for front
+end and auth-plumbing work, not rendition or OpenAPI work. For RDE or a Cloud
+instance, skip to the [reverse proxy](#proxy).
+
+With the SDK it needs **no proxy**: the browser treats "site" as scheme plus
+registrable domain and **ignores the port**, so `localhost:3000` (EDS) and
+`localhost:4503` (AEM) are already **same site**. The `login-token` cookie (domain
+`localhost`) rides your `<img>` and fetch requests.
 
 ```js
 // scripts/asc/configurations.js
-aem: { host: 'http://localhost:4503' },
+aem: { host: 'http://localhost:4503' },   // local SDK publish
 users: {
   strategy: 'aem',
   aem: { profilePath: '/libs/granite/security/currentuser.json' },
@@ -133,8 +161,8 @@ Two caveats:
   **HTTPS**. Over plain `http://localhost` a Secure cookie will not be set. If that
   bites you, use the reverse proxy with [local TLS](#tls) instead.
 
-Good enough to validate auth logic fast; the reverse proxy below mirrors production
-more faithfully.
+Good enough to validate auth logic fast against an SDK; the reverse proxy below is
+what you use for RDE or Cloud, and mirrors production more faithfully.
 
 ---
 
@@ -145,7 +173,10 @@ everything else goes to `aem up`. The browser sees one origin, so the cookie is
 first party and CORS disappears.
 
 Use a local hostname that resolves to your machine. `*.localtest.me` always points
-at `127.0.0.1`, so `asc.localtest.me` needs no `/etc/hosts` edit.
+at `127.0.0.1`, so `asc.localtest.me` needs no `/etc/hosts` edit. The AEM upstream
+here is your **RDE or Cloud publish** host, so all delivery and OpenAPI features
+work; swap in `https://localhost:4503` only if you accept the
+[SDK limitations](#aem-target).
 
 **Caddy** (easiest, gives automatic local HTTPS):
 
@@ -155,8 +186,8 @@ asc.localtest.me {
     # AEM paths ASC calls: APIs, renditions, auth handler, profile probe, logout.
     @aem path /content/* /bin/* /adobe/* /libs/* /system/* /saml_login* /callback/*
     handle @aem {
-        reverse_proxy https://localhost:4503 {
-            transport http { tls_insecure_skip_verify }
+        # Your RDE/Cloud publish host (or https://localhost:4503 for a local SDK).
+        reverse_proxy https://publish-pXXXX-eYYYY.adobeaemcloud.com {
             header_up Host {upstream_hostport}
         }
     }
@@ -188,7 +219,9 @@ users: {
 Open `https://asc.localtest.me` (not `localhost:3000`). API calls to
 `/bin/*`, `/adobe/*`, `/content/*` route to AEM; the cookie rides everything.
 
-> **nginx** works the same way: `location ~ ^/(content|bin|adobe|libs|system|saml_login|callback)` proxies to AEM, `location /` proxies to `http://localhost:3000`. Add `proxy_set_header Host` and, for the AEM upstream over https, `proxy_ssl_verify off` for local self signed certs.
+> **Local SDK upstream over HTTPS?** Add `transport http { tls_insecure_skip_verify }` inside the Caddy `reverse_proxy` block to accept the SDK's self signed certificate. A real RDE/Cloud host has a valid certificate and needs nothing extra.
+
+> **nginx** works the same way: `location ~ ^/(content|bin|adobe|libs|system|saml_login|callback)` proxies to AEM, `location /` proxies to `http://localhost:3000`. Add `proxy_set_header Host` and, for a local SDK upstream over https, `proxy_ssl_verify off` for its self signed certificate.
 
 Adjust the AEM path list to your deployment. If your download initiate endpoint or
 auth callback lives elsewhere, add its prefix to the `@aem` matcher.
