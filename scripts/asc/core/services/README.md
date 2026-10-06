@@ -11,8 +11,8 @@ then `services.search`, `services.collections`, and so on. Services may import `
 | Service | Responsibility |
 |---------|----------------|
 | `search/` | Search orchestration; providers in `search/providers/` (`querybuilder`, `openapi`) |
-| `aem/` | AEM host and URL management, auth headers |
-| `users/` | IMS/SSO detection, auth headers for AEM calls |
+| `aem/` | AEM host and URL management; `authorizedFetch()` chokepoint for all AEM requests |
+| `users/` | Identity + credential delivery via a pluggable AuthStrategy (`users/strategies/`: `anonymous`, `aem`). See docs/AUTH.md |
 | `collections/` | Collections, favorites and sheets state (localStorage) |
 | `asset-details/` | URL-addressable details modal, template per MIME type |
 | `renditions/` | Rendition definitions and resolvers |

@@ -142,9 +142,7 @@ export function prefetchRenditionSizes(asset) {
 
 async function fetchAndApplySize(rendition) {
   try {
-    const isAemUrl = rendition.url.startsWith(services.aem.getHost());
-    const headers = isAemUrl ? await services.aem.getHeaders() : {};
-    const res = await fetch(rendition.url, { method: 'HEAD', credentials: isAemUrl ? 'include' : 'omit', headers });
+    const res = await services.aem.authorizedFetch(rendition.url, { method: 'HEAD' });
     if (!res.ok) return;
     const contentLength = res.headers.get('content-length');
     if (!contentLength) return;

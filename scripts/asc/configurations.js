@@ -47,6 +47,36 @@ const configurations = {
     // deliveryHost: '',
   },
 
+  // ─── Authentication ───────────────────────────────────────────────────────────
+  // ASC gets identity and attaches credentials through a single pluggable
+  // AuthStrategy (core/services/users/strategies/). Everything auth flows through
+  // that seam, so a new scheme is a drop-in — no core edits. See docs/AUTH.md.
+  users: {
+    // Active strategy id. Built-ins:
+    //   'anonymous' (default) — public DAM; no identity, no credentials attached.
+    //   'aem'                 — AEM Publish native session (login-token cookie).
+    //                           Federation (OAuth/OIDC or SAML) is configured on
+    //                           AEM; in every case AEM sets the cookie and the
+    //                           browser rides it on all requests (fetch AND <img>).
+    strategy: 'anonymous',
+
+    // Register custom strategies without editing core. Keyed by id; each value is a
+    // class extending AuthStrategy (core/services/users/strategies/strategy.js). An
+    // id matching a built-in overrides it. Mirrors search.providers / renditions.resolvers.
+    //   import MyAuth from '../../blocks/.../my-auth.js';
+    //   strategies: { 'my-auth': MyAuth },
+
+    // Config for the 'aem' strategy (read only when strategy === 'aem').
+    // REQUIREMENT: because the credential is a cookie sent to AEM Publish, EDS and
+    // AEM Publish must share a registrable domain — reverse-proxy both under one
+    // origin, or give AEM Publish a custom domain under your apex. See docs/AUTH.md.
+    // aem: {
+    //   loginPath: '/',   // AEM entry that triggers OAuth/SAML and returns to EDS
+    //   logoutPath: '/system/sling/logout.html',
+    //   profilePath: '/libs/granite/security/currentuser.json', // session probe
+    // },
+  },
+
   // ─── Search ──────────────────────────────────────────────────────────────────
   search: {
     // Which search API to use. 'querybuilder' (default) or 'openapi' — or the id

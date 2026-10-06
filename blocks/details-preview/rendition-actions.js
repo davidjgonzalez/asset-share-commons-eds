@@ -77,9 +77,7 @@ export function updateRenditionActions(container, asset, rendition) {
 // same-origin AEM responses can override it with Content-Disposition.
 async function blobDownload(url, filename) {
   try {
-    const isAemUrl = url.startsWith(services.aem.getHost());
-    const headers = isAemUrl ? await services.aem.getHeaders() : {};
-    const res = await fetch(url, { credentials: isAemUrl ? 'include' : 'omit', headers });
+    const res = await services.aem.authorizedFetch(url);
     if (!res.ok) throw new Error(String(res.status));
     const blobUrl = URL.createObjectURL(await res.blob());
     const a = Object.assign(document.createElement('a'), { href: blobUrl, download: filename });

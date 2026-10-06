@@ -109,8 +109,7 @@ export default class OpenApiProvider extends SearchProvider {
       params = await this.config.preprocessQuery(params);
     }
 
-    const headers = { Accept: 'application/json', ...await aem.getHeaders() };
-    const response = await fetch(`${this.searchUrl}?${params}`, { headers });
+    const response = await aem.authorizedFetch(`${this.searchUrl}?${params}`, { headers: { Accept: 'application/json' } });
     const data = await response.json();
 
     const hits = data.assetResults || data.hits || [];
@@ -165,8 +164,7 @@ export default class OpenApiProvider extends SearchProvider {
       return window.asc.cache.assets.get(id);
     }
 
-    const headers = { Accept: 'application/json', ...await aem.getHeaders() };
-    const response = await fetch(aem.getUrl(`/adobe/assets/${id}`), { headers });
+    const response = await aem.authorizedFetch(aem.getUrl(`/adobe/assets/${id}`), { headers: { Accept: 'application/json' } });
 
     if (response.status === 401 || response.status === 403) {
       return new AssetAccessError(id, response.status);

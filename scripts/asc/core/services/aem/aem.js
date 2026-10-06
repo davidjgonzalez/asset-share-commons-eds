@@ -42,9 +42,31 @@ class AEM {
     return this.config.host?.includes('localhost');
   }
 
+  /** True when `url` targets this AEM host (so auth should be applied). */
+  isAemUrl(url) {
+    const host = this.getHost();
+    return Boolean(host) && String(url).startsWith(host);
+  }
+
   /**
-   * Returns headers for AEM API requests, including auth if the user is signed in.
-   * Use this for all fetch() calls to AEM endpoints.
+   * The single chokepoint for AEM requests. Applies the active auth strategy
+   * (headers and/or credentials mode) to AEM-bound requests and leaves foreign
+   * URLs (CDN/DM delivery) untouched. Use this for ALL fetch() calls that might
+   * hit AEM — callers never decide headers or `credentials` themselves.
+   *
+   * @param {string} url
+   * @param {RequestInit} [init]
+   * @returns {Promise<Response>}
+   */
+  async authorizedFetch(url, init = {}) {
+    if (!this.isAemUrl(url)) return fetch(url, init);
+    const decorated = await users.decorateRequest(init);
+    return fetch(url, decorated);
+  }
+
+  /**
+   * Headers the active auth strategy would attach to an AEM request. Prefer
+   * authorizedFetch(); use this only when building a request init by hand.
    *
    * @returns {Promise<Record<string, string>>}
    */

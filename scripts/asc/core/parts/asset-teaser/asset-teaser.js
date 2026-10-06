@@ -45,21 +45,23 @@ function thumbnailVideoHtml(asset) {
         { minWidth: 0, width: 300 },
       ],
     })
-    : `<img class="asc-asset-teaser__poster" src="${escAttr(asset.displayUrl)}" alt="${escAttr(alt)}" loading="lazy" />`;
+    : `<img class="asc-asset-teaser__poster" src="${escAttr(services.users.authorizeMediaUrl(asset.displayUrl))}" alt="${escAttr(alt)}" loading="lazy" />`;
   return `${poster}<video class="asc-asset-teaser__video" muted loop playsinline preload="none"
-            data-asc-video-src="${escAttr(asset.url)}"
+            data-asc-video-src="${escAttr(services.users.authorizeMediaUrl(asset.url))}"
             aria-label="${escAttr(alt)}" tabindex="-1"></video>`;
 }
 
 function thumbnailImgHtml(asset) {
   const alt = imgAlt(asset);
+  // No-op under cookie/anonymous auth; a signed-URL strategy rewrites media URLs.
+  const media = (u) => services.users.authorizeMediaUrl(u);
   const srcset = services.renditions.getDisplaySrcset(asset);
   if (srcset.length) {
-    const srcsetAttr = srcset.map((r) => `${r.url} ${r.size.width}w`).join(', ');
-    const src = srcset[Math.floor(srcset.length / 2)].url;
+    const srcsetAttr = srcset.map((r) => `${media(r.url)} ${r.size.width}w`).join(', ');
+    const src = media(srcset[Math.floor(srcset.length / 2)].url);
     return `<img src="${src}" srcset="${srcsetAttr}" sizes="(min-width: 1024px) 300px, (min-width: 600px) 250px, 300px" alt="${alt}" loading="lazy" />`;
   }
-  return `<img src="${asset.displayUrl}" alt="${alt}" loading="lazy" />`;
+  return `<img src="${media(asset.displayUrl)}" alt="${alt}" loading="lazy" />`;
 }
 
 function thumbnailHtml(asset) {

@@ -192,8 +192,7 @@ export default class QueryBuilderProvider extends SearchProvider {
       params = await this.config.preprocessQuery(params);
     }
 
-    const headers = await aem.getHeaders();
-    const response = await fetch(`${this.searchUrl}?${params}`, { headers });
+    const response = await aem.authorizedFetch(`${this.searchUrl}?${params}`);
     const qbResults = await response.json();
 
     let results = {
@@ -239,8 +238,7 @@ export default class QueryBuilderProvider extends SearchProvider {
       'p.nodedepth': '10',
     });
 
-    const headers = await aem.getHeaders();
-    const response = await fetch(`${this.searchUrl}?${params}`, { headers });
+    const response = await aem.authorizedFetch(`${this.searchUrl}?${params}`);
     const data = await response.json();
 
     if (!data.hits?.length) return null;

@@ -182,15 +182,13 @@ class Downloads {
 
   async _initiateAndPoll(job, autoDownload) {
     try {
-      const headers = await aem.getHeaders();
       const body = new URLSearchParams();
       job.assetPaths.forEach((p) => body.append("path", p));
       job.renditionIds.forEach((r) => body.append("renditions", r));
 
-      const res = await fetch(aem.getUrl(this.initiateUrl), {
+      const res = await aem.authorizedFetch(aem.getUrl(this.initiateUrl), {
         method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded", ...headers },
-        credentials: "include",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: body.toString(),
       });
 
@@ -223,7 +221,6 @@ class Downloads {
     if (!job.aemJobId) return;
 
     const deadline = Date.now() + this.quickPollTimeoutMs;
-    const headers = await aem.getHeaders();
     const statusUrl = `${aem.getUrl(this.initiateUrl)}?jobId=${encodeURIComponent(job.aemJobId)}`;
 
     while (Date.now() < deadline) {
@@ -233,7 +230,7 @@ class Downloads {
       if (!current) return; // job was removed
 
       try {
-        const res = await fetch(statusUrl, { headers, credentials: "include" });
+        const res = await aem.authorizedFetch(statusUrl);
         if (!res.ok) continue;
         const data = await res.json();
         const aemStatus = (data.status || "").toUpperCase();

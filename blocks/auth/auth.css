@@ -1,0 +1,16 @@
+.block.auth {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-s, 0.75rem);
+
+    & .auth__user {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--spacing-xs, 0.5rem);
+    }
+
+    & .auth__name {
+        font-weight: 600;
+        color: var(--color-text, inherit);
+    }
+}

@@ -347,8 +347,8 @@ function wireRenditionInteractions(block, asset, renditions, initiallyVisible = 
   // Intercept every download click so we control the filename.
   // Native <a href download> is unreliable: cross-origin ignores the download attr,
   // and same-origin AEM responses can override it with Content-Disposition.
-  // Blob download always wins. For CDN/DM URLs omit credentials so the request
-  // stays a simple CORS request compatible with Access-Control-Allow-Origin: *.
+  // Blob download always wins. authorizedFetch applies auth to AEM URLs and leaves
+  // foreign CDN/DM URLs as a plain fetch.
   delegateEvent(block, 'a[data-asc-action~="rendition:download@click"]', 'click', async (e) => {
     const renditionId = e.target.closest('[data-asc-rendition]')?.dataset?.ascRendition;
     const rendition = renditionId && byId.get(renditionId);
@@ -363,12 +363,7 @@ function wireRenditionInteractions(block, asset, renditions, initiallyVisible = 
 
     const filename = buildFilename(asset, rendition);
     try {
-      const isAemUrl = rendition.url.startsWith(services.aem.getHost());
-      const headers = isAemUrl ? await services.aem.getHeaders() : {};
-      const res = await fetch(rendition.url, {
-        credentials: isAemUrl ? 'include' : 'omit',
-        headers,
-      });
+      const res = await services.aem.authorizedFetch(rendition.url);
       if (!res.ok) throw new Error(res.status);
       const blobUrl = URL.createObjectURL(await res.blob());
       const a = Object.assign(document.createElement('a'), { href: blobUrl, download: filename });
@@ -631,9 +626,7 @@ function esc(str) {
 
 async function fetchFileSize(url) {
   try {
-    const isAemUrl = url.startsWith(services.aem.getHost());
-    const headers = isAemUrl ? await services.aem.getHeaders() : {};
-    const res = await fetch(url, { method: 'HEAD', credentials: isAemUrl ? 'include' : 'omit', headers });
+    const res = await services.aem.authorizedFetch(url, { method: 'HEAD' });
     if (!res.ok) return null;
     const cl = res.headers.get('content-length');
     return cl ? parseInt(cl, 10) : null;

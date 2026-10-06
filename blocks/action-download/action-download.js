@@ -54,27 +54,17 @@ function buildDownloadItems(assets, selectedRenditionIds) {
   return items;
 }
 
-async function getAuthHeaders(url) {
-  const isAemHost = url.startsWith(services.aem.getHost());
-  return isAemHost ? services.aem.getHeaders() : {};
-}
-
 async function fetchBinary(url) {
-  // AEM's CORS config allows credentialed cross-origin requests for API endpoints (e.g.
-  // dam.downloadbinaries.json) but not for raw binary rendition paths — and auth here is a
-  // Bearer token in a header anyway (see users.js), never a cookie, so credentials aren't
-  // needed. Sending credentials: 'include' against a host that doesn't echo back
-  // Access-Control-Allow-Credentials just makes the browser block the response outright.
-  const headers = await getAuthHeaders(url);
-  const res = await fetch(url, { headers });
+  // authorizedFetch applies the active auth strategy for AEM URLs (and leaves
+  // foreign CDN/DM URLs untouched); the strategy decides headers vs. cookie.
+  const res = await services.aem.authorizedFetch(url);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.blob();
 }
 
 async function urlExists(url) {
   try {
-    const headers = await getAuthHeaders(url);
-    const res = await fetch(url, { method: 'HEAD', headers });
+    const res = await services.aem.authorizedFetch(url, { method: 'HEAD' });
     return res.ok;
   } catch {
     return false;

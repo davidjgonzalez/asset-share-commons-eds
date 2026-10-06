@@ -28,6 +28,10 @@ export default function picture(asset, options = {}) {
   const loading = eager ? 'eager' : 'lazy';
   const fetchpriority = eager ? 'high' : 'auto';
 
+  // Let the active auth strategy authorize browser-loaded media URLs (no-op for
+  // cookie/anonymous; a signed-URL strategy rewrites them). See users service.
+  const media = (u) => services.users.authorizeMediaUrl(u);
+
   // Collect delivery renditions — exclude cq5dam.thumbnail.* (display thumbnails,
   // not delivery renditions) and sort largest first.
   const imageRenditions = asset.staticRenditions
@@ -35,7 +39,7 @@ export default function picture(asset, options = {}) {
     .filter((r) => !r.id?.startsWith('cq5dam.thumbnail.'))
     .sort((a, b) => (b.width || 0) - (a.width || 0));
 
-  const thumbnailUrl = services.renditions.getDisplayUrl(asset);
+  const thumbnailUrl = media(services.renditions.getDisplayUrl(asset));
 
   if (!imageRenditions.length) {
     return `<img ${buildAttrString({ src: thumbnailUrl, alt: altText, loading, fetchpriority, ...imgAttributes })} />`;
@@ -46,16 +50,16 @@ export default function picture(asset, options = {}) {
     sources = breakpoints.map((bp) => {
       const rendition = imageRenditions.find((r) => r.width >= bp.renditionWidth)
         || imageRenditions[imageRenditions.length - 1];
-      return `<source srcset="${rendition.url}" type="${rendition.mimeType}" media="${bp.media}" />`;
+      return `<source srcset="${media(rendition.url)}" type="${rendition.mimeType}" media="${bp.media}" />`;
     }).join('\n');
   } else {
     // Auto: one <source> per rendition, largest first, each guarded by a min-width.
     sources = imageRenditions.map((r, i) => {
       const next = imageRenditions[i + 1];
-      const media = next ? `(min-width: ${next.width + 1}px)` : '';
-      return media
-        ? `<source srcset="${r.url}" type="${r.mimeType}" media="${media}" />`
-        : `<source srcset="${r.url}" type="${r.mimeType}" />`;
+      const mq = next ? `(min-width: ${next.width + 1}px)` : '';
+      return mq
+        ? `<source srcset="${media(r.url)}" type="${r.mimeType}" media="${mq}" />`
+        : `<source srcset="${media(r.url)}" type="${r.mimeType}" />`;
     }).join('\n');
   }
 
@@ -65,7 +69,7 @@ export default function picture(asset, options = {}) {
     : 'width: 100%; object-fit: cover;';
 
   const imgAttrStr = buildAttrString({
-    src: fallback.url, alt: altText, loading, fetchpriority, style, ...imgAttributes,
+    src: media(fallback.url), alt: altText, loading, fetchpriority, style, ...imgAttributes,
   });
 
   return `<picture>\n${sources}\n<img ${imgAttrStr} />\n</picture>`;
