@@ -178,7 +178,10 @@ here is your **RDE or Cloud publish** host, so all delivery and OpenAPI features
 work; swap in `https://localhost:4503` only if you accept the
 [SDK limitations](#aem-target).
 
-**Caddy** (easiest, gives automatic local HTTPS):
+**Caddy** (easiest, gives automatic local HTTPS). Install it from
+[caddyserver.com/docs/install](https://caddyserver.com/docs/install){:target="_blank"}
+(on macOS: `brew install caddy`; the first `caddy run` with HTTPS will prompt once
+to trust its local certificate authority):
 
 ```
 # Caddyfile
