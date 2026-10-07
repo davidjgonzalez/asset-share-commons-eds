@@ -48,7 +48,11 @@ export default class AemSessionStrategy extends AuthStrategy {
     // The login-token cookie is HttpOnly and unreadable from JS, so detect the
     // session by asking AEM. credentials:'include' sends the cookie (same-site).
     try {
-      const resp = await fetch(`${this.host}${this.profilePath}`, { credentials: 'include' });
+      // The answer is per-user, so it must never come from a shared (CDN/dispatcher)
+      // cache: a unique query string guarantees a cache miss.
+      const probe = new URL(this.profilePath, `${this.host}/`);
+      probe.searchParams.set('_', Date.now());
+      const resp = await fetch(probe, { credentials: 'include', cache: 'no-store' });
       if (!resp.ok) return;
       const data = await resp.json();
       const userId = data.userId || data.authorizableId || data.id;
