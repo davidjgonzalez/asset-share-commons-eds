@@ -26,8 +26,9 @@ const DEFAULT_PROFILE_PATH = '/libs/granite/security/currentuser.json';
  *    read it; we ask AEM "who am I?")
  *
  * Config (configurations.users.aem):
- *   loginPath   AEM entry that triggers federation and returns to EDS (required for login UI)
- *   logoutPath  AEM logout endpoint
+ *   loginPath   URL (path + query) that triggers federation. Handler-specific params live
+ *               here, not in code. `{returnTo}` is replaced with where to land afterward.
+ *   logoutPath  AEM logout URL; `{returnTo}` supported the same way
  *   profilePath session probe (default /libs/granite/security/currentuser.json)
  */
 export default class AemSessionStrategy extends AuthStrategy {
@@ -79,25 +80,36 @@ export default class AemSessionStrategy extends AuthStrategy {
     return { ...init, credentials: 'include' };
   }
 
-  /** Redirect the browser to AEM's auth entry point; AEM returns to `returnTo`. */
+  /** Redirect the browser to the configured AEM login URL. */
   login(returnTo = window.location.href) {
-    const url = new URL(this.loginPath, `${this.host}/`);
-    // AEM auth handlers read the post-login redirect from `resource`, and Sling
-    // rejects absolute URLs (open-redirect protection). When EDS and AEM share an
-    // origin (reverse proxy) send a path-only value; otherwise pass it through.
-    const target = new URL(returnTo, window.location.href);
-    const sameOrigin = target.origin === new URL(this.host).origin;
-    url.searchParams.set('resource', sameOrigin ? `${target.pathname}${target.search}${target.hash}` : target.href);
-    window.location.assign(url.toString());
+    window.location.assign(this._url(this.loginPath, returnTo));
   }
 
-  /** Redirect to AEM's logout (if configured); otherwise just reload. */
-  logout() {
+  /** Redirect to the configured AEM logout URL (or just reload if none). */
+  logout(returnTo = window.location.href) {
     if (!this.logoutPath) {
       window.location.reload();
       return;
     }
-    const url = new URL(this.logoutPath, `${this.host}/`);
-    window.location.assign(url.toString());
+    window.location.assign(this._url(this.logoutPath, returnTo));
+  }
+
+  /** Resolve a path template against the AEM host, substituting {returnTo}. */
+  _url(template, returnTo) {
+    const path = template.replace('{returnTo}', encodeURIComponent(this._relativeReturn(returnTo)));
+    return new URL(path, `${this.host}/`).toString();
+  }
+
+  /**
+   * AEM's OIDC/SAML handlers accept only a RELATIVE post-login/logout redirect
+   * (no scheme, no `//`) as open-redirect protection. That is workable when EDS and
+   * AEM share an origin (reverse proxy), where a path means the same thing on both.
+   * Across different hosts a relative path would resolve against AEM, so pass the
+   * absolute URL through and let AEM's own allow-list decide.
+   */
+  _relativeReturn(returnTo) {
+    const target = new URL(returnTo, window.location.href);
+    const sameOrigin = target.origin === new URL(this.host).origin;
+    return sameOrigin ? `${target.pathname}${target.search}${target.hash}` : target.href;
   }
 }
