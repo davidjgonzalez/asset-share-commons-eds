@@ -82,8 +82,12 @@ export default class AemSessionStrategy extends AuthStrategy {
   /** Redirect the browser to AEM's auth entry point; AEM returns to `returnTo`. */
   login(returnTo = window.location.href) {
     const url = new URL(this.loginPath, `${this.host}/`);
-    // AEM auth handlers read the post-login redirect from `resource`.
-    url.searchParams.set('resource', returnTo);
+    // AEM auth handlers read the post-login redirect from `resource`, and Sling
+    // rejects absolute URLs (open-redirect protection). When EDS and AEM share an
+    // origin (reverse proxy) send a path-only value; otherwise pass it through.
+    const target = new URL(returnTo, window.location.href);
+    const sameOrigin = target.origin === new URL(this.host).origin;
+    url.searchParams.set('resource', sameOrigin ? `${target.pathname}${target.search}${target.hash}` : target.href);
     window.location.assign(url.toString());
   }
 
