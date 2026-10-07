@@ -60,8 +60,10 @@ share a registrable domain** (eTLD+1). Two ways to get there:
 users: {
   strategy: 'aem',                 // 'anonymous' (default) | 'aem' | <custom id>
   aem: {
-    loginPath:   '/',              // AEM entry that triggers OAuth/SAML, returns to EDS
-    logoutPath:  '/system/sling/logout.html',
+    // URL templates: handler-specific params live in config, not code.
+    // {returnTo} is replaced with the page to come back to (relative path).
+    loginPath:   '/content/dam.html?redirect={returnTo}',   // OIDC; SAML uses /system/sling/login?...&saml_request_path={returnTo}
+    logoutPath:  '/system/sling/logout?redirect={returnTo}',
     profilePath: '/libs/granite/security/currentuser.json', // session probe
   },
 },
