@@ -13,11 +13,9 @@ sidebar:
         url: "#idp"
       - title: 2. Configure AEM
         url: "#aem"
-      - title: 3. Protect the path
-        url: "#protect"
-      - title: 4. Configure ASC
+      - title: 3. Configure ASC
         url: "#asc"
-      - title: 5. Verify
+      - title: 4. Verify
         url: "#verify"
       - title: Troubleshooting
         url: "#trouble"
@@ -27,147 +25,238 @@ sidebar:
         url: "/auth"
       - title: SAML setup
         url: "/auth-saml"
+      - title: Local Development
+        url: "/local-development"
 ---
 
 # Auth Setup: OAuth / OIDC
 
-This guide configures **AEM Publish** as an OpenID Connect relying party so that a
-user signing in through your OAuth or OIDC identity provider ends up with an AEM
-`login-token` cookie. Asset Share Commons then rides that cookie. Read the
-[Auth overview]({{ '/auth' | relative_url }}) first for the model and the domain
-requirement.
+This guide configures **AEM Publish** as an OpenID Connect (OIDC) client so a user
+who signs in at your identity provider ends up with an AEM `login-token` cookie.
+Asset Share Commons then rides that cookie. Read the
+[Auth overview]({{ '/auth' | relative_url }}) first for the model and the single
+domain requirement, and [Local Development]({{ '/local-development' | relative_url }})
+to put EDS and AEM on one origin.
 
 > ASC does not implement OAuth. AEM performs the OIDC flow and sets the cookie.
-> ASC only triggers the redirect and detects the resulting session.
+> The AEM side below follows Adobe's documentation,
+> [Open ID Connect Support for AEM as a Cloud Service on Publish Tier](https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/security/open-id-connect-support-for-aem-as-a-cloud-service-on-publish-tier){:target="_blank"}.
+> Property names can change between AEM releases, so treat that page as the source of
+> truth if anything here disagrees.
 
 ---
 
 ## How it fits {#how}
 
 ```
-User -> AEM protected path -> AEM OIDC handler -> your IdP -> back to AEM
-     -> AEM sets login-token cookie -> redirect to EDS -> ASC sees the session
+Sign in -> AEM protected path -> AEM OIDC handler -> your IdP -> back to
+{protected path}/j_security_check -> AEM sets login-token cookie
+-> redirect to the page named in ?redirect= -> ASC sees the session
 ```
 
-The only ASC setting that matters is `loginPath`: the AEM URL that triggers the
-OIDC flow and then returns to EDS.
+Two facts shape the ASC side:
+
+- Login is triggered by requesting a **path the handler protects**. There is no
+  separate login endpoint.
+- The post login destination is the **`redirect` query parameter**, and it must be a
+  **relative path**. Absolute URLs are rejected (open redirect protection). That is
+  why ASC and AEM sharing one origin matters.
 
 ---
 
 ## Prerequisites {#prereqs}
 
-- AEM as a Cloud Service (the OIDC authentication handler ships with AEMaaCS).
-- An OAuth/OIDC identity provider (Okta, Azure AD / Entra ID, Ping, Auth0, Google,
-  Adobe IMS, and so on).
-- EDS and AEM Publish served from the **same registrable domain**. See the
-  [domain requirement]({{ '/auth#domain' | relative_url }}). Set this up before
-  testing, or the cookie will not reach your images.
+- AEM as a Cloud Service with a **publish** tier (OIDC is a publish tier feature).
+  An [RDE]({{ '/local-development' | relative_url }}#aem-target) works.
+- An OIDC provider. The example below uses a free **Auth0** tenant.
+- EDS and AEM on one origin, for example `https://asc.localtest.me` from the
+  [Local Development]({{ '/local-development' | relative_url }}) page. The values
+  below use that host; substitute yours.
 
 ---
 
-## 1. Register the application with your IdP {#idp}
+## 1. Register the application at Auth0 {#idp}
 
-In your IdP, create an OIDC web application and record:
+1. In the Auth0 dashboard open **Applications > Applications > Create Application**.
+   Choose **Regular Web Applications**.
+2. On the **Settings** tab, note the **Domain** (for example
+   `dev-abc123.us.auth0.com`), **Client ID**, and **Client Secret**.
+3. Set **Allowed Callback URLs** to the AEM callback. AEM requires it to be the
+   protected path plus `/j_security_check`:
 
-- **Client ID** and **Client secret**.
-- **Issuer** (the OIDC discovery base, for example
-  `https://your-idp.example.com/`).
-- **Redirect URI**: the AEM callback. For the AEMaaCS OIDC handler this is
-  typically `https://<your-aem-domain>/system/console` style callback or the
-  handler's configured callback path. Use the callback path you set in step 2.
-- **Scopes**: at least `openid profile email`.
+   ```
+   https://asc.localtest.me/content/dam/j_security_check
+   ```
+
+4. Set **Allowed Logout URLs** to where users return after sign out, for example
+   `https://asc.localtest.me/`.
+5. Save, then create a test user under **User Management > Users**.
+
+The OIDC metadata lives at
+`https://<your-domain>/.well-known/openid-configuration`. AEM reads it from the
+`baseUrl` you configure next.
 
 ---
 
-## 2. Configure the AEM OIDC authentication handler {#aem}
+## 2. Configure AEM {#aem}
 
-Add an OSGi configuration to your AEM Publish configuration in the repository
-(`/apps/<your-app>/osgiconfig/config.publish/`). The relevant factory is the
-Adobe Granite OAuth / OIDC authentication handler. A representative configuration:
+OIDC on AEMaaCS publish needs five OSGi configurations. Put them in your project's
+`ui.config` under `.../osgiconfig/config.publish/` (or deploy them to an RDE).
+Replace the Auth0 domain, secret name, and host with yours. Use `auth0` as the
+unique suffix and connection name throughout.
+
+**1. Connection** `org.apache.sling.auth.oauth_client.impl.OidcConnectionImpl~auth0.cfg.json`
 
 ```json
-// com.adobe.granite.auth.oauth.impl.OidcAuthenticationHandler~asc.cfg.json
 {
-  "path": ["/content/dam", "/bin/querybuilder", "/adobe/assets"],
-  "callbackUri": "https://<your-aem-domain>/callback/oidc",
-  "clientId": "$[env:OIDC_CLIENT_ID]",
-  "clientSecret": "$[secret:OIDC_CLIENT_SECRET]",
-  "issuer": "https://your-idp.example.com/",
+  "name": "auth0",
   "scopes": ["openid", "profile", "email"],
-  "createUser": true,
-  "userIDProperty": "email"
+  "baseUrl": "https://dev-abc123.us.auth0.com",
+  "clientId": "YOUR_CLIENT_ID",
+  "clientSecret": "$[secret:AUTH0_CLIENT_SECRET]",
+  "endSessionEndpoint": "https://dev-abc123.us.auth0.com/oidc/logout"
 }
 ```
 
-Notes:
+Store the secret as a Cloud Manager environment secret named `AUTH0_CLIENT_SECRET`.
+Never commit it.
 
-- Store `clientSecret` as a Cloud Manager secret environment variable, never in
-  source.
-- `createUser: true` lets AEM provision a user record on first login so each
-  visitor is a real principal (which is what enforces per user asset access).
-- The exact PID and property names vary by AEM version. Confirm against your
-  AEM release documentation.
+**2. Handler** `org.apache.sling.auth.oauth_client.impl.OidcAuthenticationHandler~auth0.cfg.json`
+
+```json
+{
+  "path": ["/content/dam"],
+  "callbackUri": "https://asc.localtest.me/content/dam/j_security_check",
+  "pkceEnabled": false,
+  "defaultConnectionName": "auth0",
+  "idp": "auth0-idp"
+}
+```
+
+`path` is what gets protected, and `callbackUri` must be that path plus
+`/j_security_check` and match what you registered at Auth0 exactly. Protecting
+`/content/dam` means anonymous visitors are challenged for any asset, which is a good
+first test. See [a login only path](#opt-in) for keeping the DAM public.
+
+**3. User info** `org.apache.sling.auth.oauth_client.impl.SlingUserInfoProcessorImpl~auth0.cfg.json`
+
+```json
+{
+  "connection": "auth0",
+  "groupsInIdToken": false,
+  "storeAccessToken": false,
+  "storeRefreshToken": false,
+  "storeIdToken": true,
+  "idpNameInPrincipals": true
+}
+```
+
+**4. Sync** `org.apache.jackrabbit.oak.spi.security.authentication.external.impl.DefaultSyncHandler~auth0.cfg.json`
+
+```json
+{
+  "handler.name": "auth0",
+  "user.pathPrefix": "auth0",
+  "group.pathPrefix": "oidc",
+  "user.expirationTime": "1h",
+  "user.membershipExpTime": "1h",
+  "group.expirationTime": "1d",
+  "user.membershipNestingDepth": "1",
+  "user.dynamicMembership": true,
+  "user.enforceDynamicMembership": true,
+  "group.dynamicGroups": true,
+  "user.propertyMapping": [
+    "profile/givenName=profile/given_name",
+    "profile/familyName=profile/family_name",
+    "rep:fullname=profile/name",
+    "profile/email=profile/email",
+    "id_token=id_token"
+  ]
+}
+```
+
+**5. Login module** `org.apache.jackrabbit.oak.spi.security.authentication.external.impl.ExternalLoginModuleFactory~auth0.cfg.json`
+
+```json
+{
+  "sync.handlerName": "auth0",
+  "idp.name": "auth0-idp"
+}
+```
+
+The names must line up: `idp` in the handler equals `idp.name` in the login module,
+and `handler.name` in the sync handler equals `sync.handlerName`.
+
+Deploy these to publish. Also confirm your **dispatcher and CDN** allow the callback
+path and `j_security_check`, and do not cache the authenticated responses. Adobe's
+OIDC page does not cover this, so check it against your own dispatcher config.
+
+> **Single logout** (clearing the Auth0 session too) needs
+> `enableSPInitiatedSingleLogout`, `logoutRedirectPath`, and
+> `logoutRedirectAllowedHosts` on the handler, plus syncing the stored ID token to
+> publish. Skip it for the first test; sign out will still clear the AEM cookie.
 
 ---
 
-## 3. Protect the resource paths {#protect}
+## 3. Configure ASC {#asc}
 
-AEM only runs the handler on paths it guards. The `path` values above cover the
-endpoints ASC calls (QueryBuilder, OpenAPI assets, and DAM renditions). Make sure
-anonymous access to those paths is closed if you want authentication enforced, and
-left open if you want a public browse with optional sign in. Decide this
-deliberately: ASC supports both because the `aem` strategy simply sends the cookie
-when present.
-
----
-
-## 4. Configure ASC {#asc}
+The AEM URLs above carry handler specific parameters, so they live in config, not in
+code. `{returnTo}` is replaced with the page to return to, as a relative path.
 
 ```js
 // scripts/asc/configurations.js
+aem: { host: 'https://asc.localtest.me' },   // your single origin
 users: {
   strategy: 'aem',
   aem: {
-    // A path AEM guards with the OIDC handler. Hitting it while unauthenticated
-    // starts the OIDC flow; afterward AEM returns to the resource in `resource`.
-    loginPath: '/content/dam',
-    logoutPath: '/system/sling/logout.html',
+    // Requesting a protected path starts the OIDC flow.
+    loginPath: '/content/dam.html?redirect={returnTo}',
+    logoutPath: '/system/sling/logout?redirect={returnTo}',
     profilePath: '/libs/granite/security/currentuser.json',
   },
 },
 ```
 
-`loginPath` should be a path the handler protects, so navigating to it triggers
-login. ASC appends the current page as `resource` so AEM returns the user to EDS
-after authenticating.
+Place the `auth` block in your header so users have a **Sign in** button.
 
 ---
 
-## 5. Verify {#verify}
+## 4. Verify {#verify}
 
-1. Deploy AEM config and publish. Set ASC `strategy: 'aem'`.
-2. Place the `auth` block in your header. Load the site signed out: you should see
-   **Sign in**.
-3. Click **Sign in**. You are redirected to AEM, then to your IdP, then back.
-4. Confirm the `login-token` cookie exists for your AEM domain (browser dev tools,
-   Application, Cookies).
-5. Confirm images load and search returns results while signed in. The network
-   panel should show the cookie on requests to AEM, including `<img>` requests.
-6. The `auth` block should now show your name and **Sign out**.
+1. Load the site over your single origin. The `auth` block shows **Sign in**.
+2. Click it. You go to AEM, then Auth0, then back to the page you were on.
+3. In dev tools (Application, Cookies) confirm a `login-token` cookie for your host.
+4. Open `/libs/granite/security/currentuser.json`. It should name your user instead of
+   `anonymous`.
+5. Confirm search and images still load, and that the cookie is sent on `<img>`
+   requests.
+6. The `auth` block shows your name and **Sign out**.
+
+---
+
+## Keeping the DAM public: a login only path {#opt-in}
+
+Protecting `/content/dam` forces everyone to sign in. To keep it public and make login
+optional, protect a small dedicated path instead (for example `/content/asc-login`),
+point `path`, `callbackUri`, and `loginPath` at it, and give signed in users extra
+access with ACLs. This needs a content node at that path, so create and deploy one
+first. Verify the behavior on your environment before relying on it.
 
 ---
 
 ## Troubleshooting {#trouble}
 
-- **Images broken when signed in, search works.** The cookie is not reaching
-  `<img>` requests, which means EDS and AEM are not same site. Fix the
-  [domain topology]({{ '/auth#domain' | relative_url }}).
-- **Always shows Sign in after returning from IdP.** The session probe
-  (`profilePath`) is not seeing the cookie. Check that `profilePath` is on the AEM
-  host, that the cookie was set, and that the probe request is same site.
-- **Redirect loop.** `loginPath` is not actually protected, so AEM never
-  challenges, or the callback URI does not match what the IdP has registered.
-- **Blocked by CORS on the probe or search.** If any ASC request is still cross
-  origin, AEM must return `Access-Control-Allow-Origin` for your EDS origin plus
-  `Access-Control-Allow-Credentials: true`. A same origin reverse proxy avoids this
-  entirely.
+- **Always shows Sign in after returning.** The probe is not seeing the cookie. Check
+  the cookie exists for your single origin host and the probe request is same site.
+- **Redirect loop or error at the IdP.** The callback URL registered at Auth0 does not
+  match `callbackUri` exactly, or `loginPath` is not under the handler's `path`.
+- **Lands on a raw AEM page after login.** The `redirect` parameter was dropped or was
+  not a relative path. Check `loginPath` includes `?redirect={returnTo}`.
+- **Login works, images broken.** The cookie is not reaching `<img>` requests, so EDS
+  and AEM are not same site. See [Local Development]({{ '/local-development' | relative_url }}).
+- **Issuer or metadata errors.** Some IdPs publish an issuer with a trailing slash. If
+  `baseUrl` discovery fails, replace it with the manual endpoints
+  (`authorizationEndpoint`, `tokenEndpoint`, `jwkSetURL`, `issuer`) shown on Adobe's
+  OIDC page.
+- **Blocked by CORS.** Only appears when ASC and AEM are different origins. A single
+  origin proxy avoids it.

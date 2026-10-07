@@ -123,8 +123,9 @@ share a registrable domain** (the same eTLD+1). Two ways to get there:
 users: {
   strategy: 'aem',                 // 'anonymous' (default) | 'aem' | <custom id>
   aem: {
-    loginPath:   '/',              // AEM entry that triggers OAuth or SAML, returns to EDS
-    logoutPath:  '/system/sling/logout.html',
+    // URL templates: handler specific params live here. {returnTo} = page to return to.
+    loginPath:   '/content/dam.html?redirect={returnTo}',   // OIDC example; see the setup guides
+    logoutPath:  '/system/sling/logout?redirect={returnTo}',
     profilePath: '/libs/granite/security/currentuser.json', // session probe
   },
 },
@@ -140,7 +141,7 @@ users: {
 
 The OAuth versus SAML choice is entirely AEM side and does not change any ASC
 config. Both end at the `login-token` cookie, so `strategy: 'aem'` covers both. The
-setup guides differ only in how you configure AEM and what `loginPath` points at.
+setup guides differ only in how you configure AEM and the `loginPath` / `logoutPath` URLs.
 
 ---
 

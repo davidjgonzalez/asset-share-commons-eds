@@ -13,11 +13,9 @@ sidebar:
         url: "#metadata"
       - title: 2. Configure AEM
         url: "#aem"
-      - title: 3. Protect the path
-        url: "#protect"
-      - title: 4. Configure ASC
+      - title: 3. Configure ASC
         url: "#asc"
-      - title: 5. Verify
+      - title: 4. Verify
         url: "#verify"
       - title: Troubleshooting
         url: "#trouble"
@@ -27,154 +25,169 @@ sidebar:
         url: "/auth"
       - title: OAuth setup
         url: "/auth-oauth"
+      - title: Local Development
+        url: "/local-development"
 ---
 
 # Auth Setup: SAML
 
-This guide configures **AEM Publish** as a SAML 2.0 service provider (SP) so that a
-user signing in through your SAML identity provider ends up with an AEM
-`login-token` cookie. Asset Share Commons then rides that cookie. Read the
-[Auth overview]({{ '/auth' | relative_url }}) first for the model and the domain
-requirement.
+This guide configures **AEM Publish** as a SAML 2.0 service provider (SP) so a user who
+signs in at your identity provider ends up with an AEM `login-token` cookie. Asset
+Share Commons then rides that cookie. Read the [Auth overview]({{ '/auth' | relative_url }})
+first for the model and the single domain requirement.
 
-> ASC does not implement SAML. SAML is a server terminated, redirect and POST based
-> protocol; AEM is the service provider that handles the assertion and sets the
-> cookie. From ASC's point of view SAML and OAuth are identical: both end at the
-> `login-token` cookie, so both use `strategy: 'aem'`.
+> ASC does not implement SAML. AEM is the service provider that handles the assertion
+> and sets the cookie, so ASC uses the same `strategy: 'aem'` as OAuth. The AEM side
+> follows Adobe's
+> [SAML 2.0 on AEM as a Cloud Service](https://experienceleague.adobe.com/en/docs/experience-manager-learn/cloud-service/authentication/saml-2-0){:target="_blank"}
+> guide. Property names can change between releases, so treat that page as the source
+> of truth if anything here disagrees.
 
 ---
 
 ## How it fits {#how}
 
 ```
-User -> AEM protected path -> AEM SAML SP -> your IdP (SAML assertion)
-     -> back to AEM ACS endpoint -> AEM sets login-token cookie
-     -> redirect to EDS -> ASC sees the session
+Sign in -> /system/sling/login -> your IdP -> POST to {publish}/saml_login
+-> AEM sets login-token cookie -> redirect to saml_request_path -> ASC sees the session
 ```
 
-As with OAuth, the only ASC setting that matters is `loginPath`: the AEM URL that
-triggers the SAML flow and then returns to EDS.
+Unlike OIDC, login goes through `/system/sling/login` and the destination is the
+`saml_request_path` parameter. Both are set in ASC config, not code.
 
 ---
 
 ## Prerequisites {#prereqs}
 
-- AEM as a Cloud Service (the SAML 2.0 authentication handler ships with AEM).
-- A SAML 2.0 identity provider (Okta, Azure AD / Entra ID, Ping, ADFS, Shibboleth,
-  and so on).
-- EDS and AEM Publish served from the **same registrable domain**. See the
-  [domain requirement]({{ '/auth#domain' | relative_url }}). Set this up before
-  testing, or the cookie will not reach your images.
+- AEM as a Cloud Service with a publish tier. An
+  [RDE]({{ '/local-development' | relative_url }}#aem-target) works.
+- A SAML 2.0 identity provider (Okta, Entra ID, Ping, and so on).
+- EDS and AEM on one origin. See
+  [Local Development]({{ '/local-development' | relative_url }}).
 
 ---
 
 ## 1. Exchange metadata with your IdP {#metadata}
 
-SAML is a two way trust:
+- **From the IdP:** its SSO URL, its identifier (entity ID), and its signing
+  certificate. Upload the certificate in AEM at **Tools > Security > Trust Store** and
+  note the alias, which becomes `idpCertAlias`. Replicate it to publish.
+- **To the IdP:** register AEM as a service provider. The assertion consumer service
+  (ACS) URL is `https://<your-host>/saml_login`, and the SP entity ID is the value you
+  set as `serviceProviderEntityId`.
+- If you enable assertion encryption, add the SP private key and certificate chain
+  under **Tools > Security > Users > authentication-service > Keystore**, note the
+  alias for `spPrivateKeyAlias`, and keep the keystore password as a secret.
 
-- **From the IdP:** obtain its metadata XML (or the signing certificate, issuer or
-  entityID, and single sign on URL). AEM needs these to validate assertions.
-- **To the IdP:** register AEM as a service provider. The IdP needs AEM's
-  entityID and its assertion consumer service (ACS) URL, which is the AEM SAML
-  handler endpoint on your AEM domain. Confirm the exact ACS path for your AEM
-  version.
-
-Map at least a NameID or email attribute so AEM can identify the user.
+Map a NameID or attribute (for example `uid` or email) so AEM can identify the user.
 
 ---
 
-## 2. Configure the AEM SAML authentication handler {#aem}
+## 2. Configure AEM {#aem}
 
-Add an OSGi configuration to your AEM Publish configuration in the repository
-(`/apps/<your-app>/osgiconfig/config.publish/`). The relevant factory is the
-Adobe Granite SAML 2.0 authentication handler. A representative configuration:
+Put these in your project's `ui.config` under `.../osgiconfig/config.publish/`.
+
+**SAML handler** `com.adobe.granite.auth.saml.SamlAuthenticationHandler~asc.cfg.json`
 
 ```json
-// com.adobe.granite.auth.saml.SamlAuthenticationHandler~asc.cfg.json
 {
-  "path": ["/content/dam", "/bin/querybuilder", "/adobe/assets"],
+  "path": ["/content/dam"],
+  "idpCertAlias": "your-idp-cert-alias",
+  "idpIdentifier": "https://your-idp.example.com/entity-id",
   "idpUrl": "https://your-idp.example.com/sso/saml",
-  "idpCertAlias": "asc-idp",
-  "serviceProviderEntityId": "https://<your-aem-domain>",
-  "assertionConsumerServiceURL": "https://<your-aem-domain>/saml_login",
-  "spPrivateKeyAlias": "asc-sp",
+  "serviceProviderEntityId": "https://asc.localtest.me",
+  "useEncryption": false,
   "createUser": true,
+  "userIntermediatePath": "asc/idp",
   "addGroupMemberships": true,
-  "userIDAttribute": "email",
-  "nameIdFormat": "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress"
+  "groupMembershipAttribute": "groupMembership",
+  "defaultRedirectUrl": "/",
+  "userIDAttribute": "uid",
+  "nameIdFormat": "urn:oasis:names:tc:SAML:2.0:nameid-format:transient",
+  "handleLogout": false,
+  "clockTolerance": 60,
+  "service.ranking": 5002
 }
 ```
 
-Notes:
+If you turn on `useEncryption`, also set `spPrivateKeyAlias` and
+`"keyStorePassword": "$[secret:SAML_AEM_KEYSTORE_PASSWORD]"`.
 
-- Import the IdP signing certificate into the AEM trust store under the alias you
-  reference in `idpCertAlias`, and configure the SP key pair for
-  `spPrivateKeyAlias`.
-- `createUser: true` provisions a user record on first login, so each visitor is a
-  real principal, which is what enforces per user asset access.
-  `addGroupMemberships` can map IdP groups to AEM groups for finer access control.
-- The exact PID and property names vary by AEM version. Confirm against your AEM
-  release documentation.
+**Referrer filter** `org.apache.sling.security.impl.ReferrerFilter.cfg.json`
+
+```json
+{
+  "allow.empty": true,
+  "allow.hosts": ["your-idp.example.com"],
+  "filter.methods": ["POST"],
+  "exclude.agents.regexp": []
+}
+```
+
+**CORS policy** `com.adobe.granite.cors.impl.CORSPolicyImpl~saml.cfg.json`
+
+```json
+{
+  "alloworigin": ["https://your-idp.example.com", "null"],
+  "allowedpaths": [".*/saml_login"],
+  "supportedmethods": ["POST"]
+}
+```
+
+**Dispatcher** must allow the SAML endpoints:
+
+```
+/0190 { /type "allow" /method "POST" /url "*/saml_login" }
+/0191 { /type "allow" /method "GET"  /url "/system/sling/login" /query "*" }
+/0192 { /type "allow" /method "POST" /url "/system/sling/login" }
+```
+
+Finally the protected content needs a login requirement, either a Closed User Group
+with authentication required or ACLs that deny anonymous read, with authentication
+support enabled and a login page set. See Adobe's guide for the exact steps.
 
 ---
 
-## 3. Protect the resource paths {#protect}
-
-AEM only runs the handler on paths it guards. The `path` values above cover the
-endpoints ASC calls (QueryBuilder, OpenAPI assets, and DAM renditions). Close
-anonymous access to those paths if you want authentication enforced, or leave it
-open for public browse with optional sign in. The `aem` strategy sends the cookie
-whenever one is present, so both modes work.
-
----
-
-## 4. Configure ASC {#asc}
+## 3. Configure ASC {#asc}
 
 ```js
 // scripts/asc/configurations.js
+aem: { host: 'https://asc.localtest.me' },   // your single origin
 users: {
   strategy: 'aem',
   aem: {
-    // A path AEM guards with the SAML handler. Hitting it while unauthenticated
-    // starts the SAML flow; afterward AEM returns to the resource in `resource`.
-    loginPath: '/content/dam',
-    logoutPath: '/system/sling/logout.html',
+    loginPath: '/system/sling/login?resource=/content/dam&saml_request_path={returnTo}',
+    logoutPath: '/system/sling/logout?resource=/content/dam&redirect={returnTo}',
     profilePath: '/libs/granite/security/currentuser.json',
   },
 },
 ```
 
-This is the **same ASC configuration as OAuth**. Only the AEM handler differs.
+`{returnTo}` becomes a relative path to the page the user was on. The OAuth and SAML
+setups differ only in these two URLs and the AEM configuration above.
 
 ---
 
-## 5. Verify {#verify}
+## 4. Verify {#verify}
 
-1. Deploy AEM config and publish. Set ASC `strategy: 'aem'`.
-2. Place the `auth` block in your header. Load the site signed out: you should see
-   **Sign in**.
-3. Click **Sign in**. You are redirected to AEM, then to your IdP, then back
-   through the ACS endpoint.
-4. Confirm the `login-token` cookie exists for your AEM domain.
-5. Confirm images load and search returns results while signed in, and that the
-   cookie appears on `<img>` requests to AEM.
-6. The `auth` block should now show your name and **Sign out**.
+1. Load the site over your single origin. The `auth` block shows **Sign in**.
+2. Click it. You go to AEM, then the IdP, then back through `/saml_login`.
+3. Confirm a `login-token` cookie for your host.
+4. `/libs/granite/security/currentuser.json` should name your user.
+5. Confirm search and images load, and that the cookie is sent on `<img>` requests.
 
 ---
 
 ## Troubleshooting {#trouble}
 
-- **Images broken when signed in, search works.** The cookie is not reaching
-  `<img>` requests, which means EDS and AEM are not same site. Fix the
-  [domain topology]({{ '/auth#domain' | relative_url }}).
-- **Assertion rejected / invalid signature.** The IdP certificate in AEM's trust
-  store does not match the IdP, or clock skew is too large. Re import the cert and
-  check server time.
-- **Returns to AEM instead of EDS after login.** Confirm ASC passes `resource` (it
-  does by default) and that the AEM handler honors the post login redirect.
-- **Always shows Sign in after returning.** The session probe (`profilePath`) is
-  not seeing the cookie. Check it is on the AEM host and the request is same site.
-- **Blocked by CORS.** If any ASC request is still cross origin, AEM must return
-  `Access-Control-Allow-Origin` for your EDS origin plus
-  `Access-Control-Allow-Credentials: true`. A same origin reverse proxy avoids this
-  entirely.
+- **Assertion rejected or invalid signature.** The IdP certificate in the Trust Store
+  does not match the IdP, was not replicated to publish, or the clocks differ by more
+  than `clockTolerance`.
+- **POST to `/saml_login` blocked.** The Referrer filter, CORS policy, or dispatcher
+  rule above is missing.
+- **Lands on `/` instead of your page.** `saml_request_path` is missing from
+  `loginPath`, so AEM falls back to `defaultRedirectUrl`.
+- **Always shows Sign in after returning.** The probe is not seeing the cookie. Check
+  the cookie and that the request is same site.
+- **Login works, images broken.** EDS and AEM are not same site. See
+  [Local Development]({{ '/local-development' | relative_url }}).
